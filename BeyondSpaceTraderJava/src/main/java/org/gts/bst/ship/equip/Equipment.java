@@ -73,7 +73,7 @@ abstract public class Equipment extends STSerializableObject implements Cloneabl
   }
 
   public String Name() {
-    return "Name not defined";
+    return Strings.text("Equipment.NameNotDefined");
   }
 
   public TechLevel MinimumTechLevel() {

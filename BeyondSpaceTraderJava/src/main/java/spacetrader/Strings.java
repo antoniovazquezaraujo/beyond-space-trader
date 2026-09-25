@@ -28,7 +28,10 @@ public final class Strings {
   private Strings() {
   }
 
-  private static String text(String key) {
+  /**
+   * The text of a bundle key; also used by the model enums whose names are texts.
+   */
+  public static String text(String key) {
     return BUNDLE.getString(key);
   }
 
