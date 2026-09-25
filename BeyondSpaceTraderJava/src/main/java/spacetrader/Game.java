@@ -1,7 +1,6 @@
 package spacetrader;
 import java.util.Arrays;
 import java.util.Iterator;
-import jwinforms.WinformPane;
 import org.gts.bst.view.DialogResult;
 import org.gts.bst.ApplicationST;
 import org.gts.bst.cargo.CargoBuyOffer;
@@ -24,6 +23,7 @@ import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.ship.equip.ShieldType;
 import org.gts.bst.ship.equip.WeaponType;
 import org.gts.bst.view.DialogService;
+import org.gts.bst.view.EncounterDialogHost;
 import spacetrader.enums.AlertType;
 import spacetrader.enums.GameEndType;
 import spacetrader.enums.OpponentType;
@@ -34,11 +34,6 @@ import spacetrader.enums.SpecialResource;
 import spacetrader.enums.StarSystemId;
 import spacetrader.enums.SystemPressure;
 import spacetrader.enums.TechLevel;
-import spacetrader.gui.FormCargoBuy;
-import spacetrader.gui.FormCargoSell;
-import spacetrader.gui.FormEncounter;
-import spacetrader.gui.FormJettison;
-import spacetrader.gui.FormPlunder;
 import spacetrader.stub.ArrayList;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
@@ -1025,35 +1020,6 @@ public class Game extends STSerializableObject {
     }
   }
 
-  private void legacyCargoBuy(int tradeItem, boolean max, WinformPane owner, CargoBuyOp op) {
-    CargoBuyOffer offer = CargoBuyOffer(tradeItem, op);
-    if(offer == null) {
-      return;
-    }
-    int qty = max ? offer.maxAmount() : promptCargoBuy(offer, owner);
-    CargoBuy(offer, qty);
-  }
-
-  private int promptCargoBuy(CargoBuyOffer offer, WinformPane owner) {
-    FormCargoBuy form = new FormCargoBuy(offer.tradeItem(), offer.maxAmount(), offer.op());
-    return form.ShowDialog(owner) == jwinforms.enums.DialogResult.OK ? form.Amount() : 0;
-  }
-
-  private void legacyCargoSell(int tradeItem, boolean all, WinformPane owner, CargoSellOp op) {
-    CargoSellOffer offer = CargoSellOffer(tradeItem, op);
-    if(offer == null) {
-      return;
-    }
-    int qty = all ? offer.maxAmount() : promptCargoSell(offer, owner);
-    CargoSell(offer, qty);
-  }
-
-  private int promptCargoSell(CargoSellOffer offer, WinformPane owner) {
-    FormCargoSell form = new FormCargoSell(offer.tradeItem(), offer.maxAmount(), offer.op(), offer.price());
-    return form.ShowDialog(owner) == jwinforms.enums.DialogResult.OK ? form.Amount() : 0;
-  }
-
-
   private void CreateShips() {
     // set the details of the Dragonfly...
     Dragonfly().Crew()[0] = Mercenaries()[CrewMemberId.Dragonfly.CastToInt()];
@@ -1101,7 +1067,7 @@ public class Game extends STSerializableObject {
     setQuestStatusPrincess(SpecialEvent.StatusPrincessRescued);
   }
 
-  private void EncounterScoop(WinformPane owner) {
+  private void EncounterScoop(EncounterDialogHost host) {
     // Chance 50% to pick something up on Normal level, 33% on Hard level, 25% on Impossible level, and 100% on Easy or Beginner.
     if((_difficulty.CastToInt() < Difficulty.Normal.CastToInt() || Functions.GetRandom(_difficulty.CastToInt()) == 0)
         && getOpponent().FilledCargoBays() > 0) {
@@ -1113,7 +1079,7 @@ public class Game extends STSerializableObject {
       if(Dialogs().alert(AlertType.EncounterScoop, Consts.TradeItems[tradeItem].Name()) == DialogResult.Yes) {
         boolean jettisoned = false;
         if(cmdr.getShip().FreeCargoBays() == 0 && Dialogs().alert(AlertType.EncounterScoopNoRoom) == DialogResult.Yes) {
-          (new FormJettison()).ShowDialog(owner);
+          host.showJettison();
           jettisoned = true;
         }
         if(cmdr.getShip().FreeCargoBays() > 0) {
@@ -1187,7 +1153,7 @@ public class Game extends STSerializableObject {
     }
   }
 
-  private void EncounterWon(WinformPane owner) {
+  private void EncounterWon(EncounterDialogHost host) {
     if(getEncounterType().CastToInt() >= EncounterType.PirateAttack.CastToInt()
         && getEncounterType().CastToInt() <= EncounterType.PirateDisabled.CastToInt()
         && getOpponent().Type() != ShipType.Mantis
@@ -1219,7 +1185,7 @@ public class Game extends STSerializableObject {
             cmdr.setCash(cmdr.getCash() + getOpponent().Bounty());
           }
           cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillPirate);
-          EncounterScoop(owner);
+          EncounterScoop(host);
         }
         break;
       case PoliceAttack:
@@ -1240,7 +1206,7 @@ public class Game extends STSerializableObject {
       case TraderSurrender:
         cmdr.setKillsTrader(cmdr.getKillsTrader() + 1);
         cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillTrader);
-        EncounterScoop(owner);
+        EncounterScoop(host);
         break;
       default:
         break;
@@ -1417,7 +1383,7 @@ public class Game extends STSerializableObject {
     return _difficulty;
   }
 
-  public EncounterResult EncounterExecuteAction(WinformPane owner) {
+  public EncounterResult EncounterExecuteAction(EncounterDialogHost host) {
     EncounterResult result = EncounterResult.Continue;
     int prevCmdrHull = cmdr.getShip().getHull();
     int prevOppHull = getOpponent().getHull();
@@ -1482,7 +1448,7 @@ public class Game extends STSerializableObject {
         setEncounterOppFleeing(false);
       }
     } else if(getOpponent().getHull() <= 0) {
-      EncounterWon(owner);
+      EncounterWon(host);
       result = EncounterResult.Normal;
     } else {
       boolean escaped = false;
@@ -2074,12 +2040,12 @@ public class Game extends STSerializableObject {
     return attack;
   }
 
-  public boolean EncounterVerifyBoard(WinformPane owner) {
+  public boolean EncounterVerifyBoard(EncounterDialogHost host) {
     boolean board = false;
     if(Dialogs().alert(AlertType.EncounterMarieCeleste) == DialogResult.Yes) {
       board = true;
       int narcs = cmdr.getShip().Cargo()[TradeItemType.Narcotics.CastToInt()];
-      (new FormPlunder()).ShowDialog(owner);
+      host.showPlunder();
       if(cmdr.getShip().Cargo()[TradeItemType.Narcotics.CastToInt()] > narcs) {
         setJustLootedMarie(true);
       }
@@ -2263,10 +2229,9 @@ public class Game extends STSerializableObject {
       cmdr.getShip().PerformRepairs();
       if(DetermineEncounter()) {
         uneventful = false;
-        FormEncounter form = new FormEncounter();
-        form.ShowDialog(getParentWindow());
+        EncounterResult result = getParentWindow().showEncounter();
         getParentWindow().UpdateStatusBar();
-        switch(form.Result()) {
+        switch(result) {
           case Arrested:
             setClicks(0);
             Arrested();
@@ -2564,22 +2529,6 @@ public class Game extends STSerializableObject {
     IncDays(term);
   }
 
-  public void CargoBuyTrader(int tradeItem, WinformPane owner) {
-    legacyCargoBuy(tradeItem, false, owner, CargoBuyOp.BuyTrader);
-  }
-
-  public void CargoJettison(int tradeItem, boolean all, WinformPane owner) {
-    legacyCargoSell(tradeItem, all, owner, CargoSellOp.Jettison);
-  }
-
-  public void CargoPlunder(int tradeItem, boolean max, WinformPane owner) {
-    legacyCargoBuy(tradeItem, max, owner, CargoBuyOp.InPlunder);
-  }
-
-  public void CargoSellTrader(int tradeItem, WinformPane owner) {
-    legacyCargoSell(tradeItem, false, owner, CargoSellOp.SellTrader);
-  }
-
   public void CreateFlea() {
     cmdr.setShip(new Ship(ShipType.Flea));
     cmdr.getShip().Crew()[0] = Commander();
@@ -2646,8 +2595,8 @@ public class Game extends STSerializableObject {
     }
   }
 
-  public void EncounterPlunder(WinformPane owner) {
-    (new FormPlunder()).ShowDialog(owner);
+  public void EncounterPlunder(EncounterDialogHost host) {
+    host.showPlunder();
     if(getEncounterType().CastToInt() >= EncounterType.TraderAttack.CastToInt()) {
       cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScorePlunderTrader);
       if(getOpponentDisabled()) {
@@ -2667,15 +2616,15 @@ public class Game extends STSerializableObject {
     cmdr.setReputationScore(cmdr.getReputationScore() + (getOpponent().Type().CastToInt() / 2 + 1));
   }
 
-  public void EncounterTrade(WinformPane owner) {
+  public void EncounterTrade(EncounterDialogHost host) {
     boolean buy = (getEncounterType() == EncounterType.TraderBuy);
     int item = (buy ? cmdr.getShip() : getOpponent()).GetRandomTradeableItem();
     String alertStr = buy ? "selling" : "buying";
     int cash = cmdr.getCash();
     if(getEncounterType() == EncounterType.TraderBuy) {
-      CargoSellTrader(item, owner);
+      host.sellTraderCargo(item);
     } else { // EncounterType.TraderSell
-      CargoBuyTrader(item, owner);
+      host.buyTraderCargo(item);
     }
     if(cmdr.getCash() != cash) {
       Dialogs().alert(AlertType.EncounterTradeCompleted, alertStr, Consts.TradeItems[item].Name());

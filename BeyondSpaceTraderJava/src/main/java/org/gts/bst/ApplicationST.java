@@ -52,6 +52,7 @@ import jwinforms.enums.StatusBarPanelAutoSize;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.crew.CrewMemberId;
+import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.VeryRareEncounter;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.Gadget;
@@ -69,6 +70,7 @@ import org.gts.bst.view.MainWindow;
 import org.gts.bst.view.ShipyardViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
+import org.gts.bst.view.TravelView;
 import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.CrewMember;
@@ -92,6 +94,7 @@ import spacetrader.gui.FormBuyRepairs;
 import spacetrader.gui.FormCargoBuy;
 import spacetrader.gui.FormCargoSell;
 import spacetrader.gui.FormCosts;
+import spacetrader.gui.FormEncounter;
 import spacetrader.gui.FormEquipment;
 import spacetrader.gui.FormFind;
 import spacetrader.gui.FormMonster;
@@ -114,7 +117,7 @@ import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
 
-public class ApplicationST extends WinformWindow implements MainView, MainWindow {
+public class ApplicationST extends WinformWindow implements MainView, MainWindow, TravelView {
   private Button btnDesign;
   private Button btnNews;
   private Button btnSpecial;
@@ -2885,6 +2888,13 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   @Override
   public void refresh() {
     UpdateAll();
+  }
+
+  @Override
+  public EncounterResult showEncounter() {
+    FormEncounter form = new FormEncounter();
+    form.ShowDialog(this);
+    return form.Result();
   }
 
   @Override

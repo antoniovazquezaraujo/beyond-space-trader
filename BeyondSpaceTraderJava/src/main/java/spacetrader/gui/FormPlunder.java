@@ -10,6 +10,8 @@ import jwinforms.enums.DialogResult;
 import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
+import org.gts.bst.cargo.CargoBuyOffer;
+import org.gts.bst.cargo.CargoBuyOp;
 import spacetrader.Game;
 import spacetrader.Ship;
 
@@ -518,8 +520,19 @@ public class FormPlunder extends WinformForm {
   }
 
   private void Plunder(int tradeItem, boolean all) {
-    game.CargoPlunder(tradeItem, all, this);
+    CargoBuyOffer offer = game.CargoBuyOffer(tradeItem, CargoBuyOp.InPlunder);
+    if(offer != null) {
+      Integer qty = all ? Integer.valueOf(offer.maxAmount()) : askQuantity(offer);
+      if(qty != null) {
+        game.CargoBuy(offer, qty);
+      }
+    }
     UpdateAll();
+  }
+
+  private Integer askQuantity(CargoBuyOffer offer) {
+    FormCargoBuy form = new FormCargoBuy(offer.tradeItem(), offer.maxAmount(), offer.op());
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
   private void UpdateAll() {

@@ -13,6 +13,8 @@ import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
 import spacetrader.Commander;
+import org.gts.bst.cargo.CargoSellOffer;
+import org.gts.bst.cargo.CargoSellOp;
 import spacetrader.Game;
 import spacetrader.Ship;
 
@@ -523,8 +525,19 @@ public class FormJettison extends WinformForm {
   }
 
   private void Jettison(int tradeItem, boolean all) {
-    game.CargoJettison(tradeItem, all, this);
+    CargoSellOffer offer = game.CargoSellOffer(tradeItem, CargoSellOp.Jettison);
+    if(offer != null) {
+      Integer qty = all ? Integer.valueOf(offer.maxAmount()) : askQuantity(offer);
+      if(qty != null) {
+        game.CargoSell(offer, qty);
+      }
+    }
     UpdateAll();
+  }
+
+  private Integer askQuantity(CargoSellOffer offer) {
+    FormCargoSell form = new FormCargoSell(offer.tradeItem(), offer.maxAmount(), offer.op(), offer.price());
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
   private void UpdateAll() {

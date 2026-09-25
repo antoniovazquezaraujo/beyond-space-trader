@@ -2,9 +2,13 @@ package org.gts.bst.presenter;
 
 import java.util.EnumSet;
 import java.util.Set;
-import jwinforms.WinformPane;
+import org.gts.bst.cargo.CargoBuyOffer;
+import org.gts.bst.cargo.CargoBuyOp;
+import org.gts.bst.cargo.CargoSellOffer;
+import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.view.EncounterAction;
+import org.gts.bst.view.EncounterDialogHost;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
 import spacetrader.Game;
@@ -13,23 +17,19 @@ import spacetrader.Ship;
 
 /**
  * Drives an encounter: renders the available actions and the state, and routes the
- * player's commands to the model.
- *
- * <p>The {@code owner} is transitional: the model still opens the jettison and plunder
- * dialogs. It will disappear when those screens are migrated.
+ * player's commands to the model. It also implements the screens the model asks for
+ * while resolving an encounter.
  */
-public class EncounterPresenter {
+public class EncounterPresenter implements EncounterDialogHost {
   private final Game game;
   private final Ship cmdrship;
   private final EncounterView view;
-  private final WinformPane owner;
   private EncounterResult result = EncounterResult.Continue;
 
-  public EncounterPresenter(Game game, EncounterView view, WinformPane owner) {
+  public EncounterPresenter(Game game, EncounterView view) {
     this.game = game;
     this.cmdrship = game.Commander().getShip();
     this.view = view;
-    this.owner = owner;
   }
 
   public void start() {
@@ -56,7 +56,7 @@ public class EncounterPresenter {
   }
 
   public void board() {
-    if(game.EncounterVerifyBoard(owner)) {
+    if(game.EncounterVerifyBoard(this)) {
       exit(EncounterResult.Normal);
     }
   }
@@ -96,7 +96,7 @@ public class EncounterPresenter {
 
   public void plunder() {
     disableAuto();
-    game.EncounterPlunder(owner);
+    game.EncounterPlunder(this);
     exit(EncounterResult.Normal);
   }
 
@@ -115,7 +115,7 @@ public class EncounterPresenter {
   }
 
   public void trade() {
-    game.EncounterTrade(owner);
+    game.EncounterTrade(this);
     exit(EncounterResult.Normal);
   }
 
@@ -126,8 +126,40 @@ public class EncounterPresenter {
     }
   }
 
+  @Override
+  public void showJettison() {
+    view.showJettison();
+  }
+
+  @Override
+  public void showPlunder() {
+    view.showPlunder();
+  }
+
+  @Override
+  public void buyTraderCargo(int tradeItem) {
+    CargoBuyOffer offer = game.CargoBuyOffer(tradeItem, CargoBuyOp.BuyTrader);
+    if(offer != null) {
+      Integer qty = view.askCargoBuyQuantity(offer);
+      if(qty != null) {
+        game.CargoBuy(offer, qty);
+      }
+    }
+  }
+
+  @Override
+  public void sellTraderCargo(int tradeItem) {
+    CargoSellOffer offer = game.CargoSellOffer(tradeItem, CargoSellOp.SellTrader);
+    if(offer != null) {
+      Integer qty = view.askCargoSellQuantity(offer);
+      if(qty != null) {
+        game.CargoSell(offer, qty);
+      }
+    }
+  }
+
   private void executeAction() {
-    result = game.EncounterExecuteAction(owner);
+    result = game.EncounterExecuteAction(this);
     if(result == EncounterResult.Continue) {
       update();
       if(game.getEncounterContinueFleeing() || game.getEncounterContinueAttacking()) {
