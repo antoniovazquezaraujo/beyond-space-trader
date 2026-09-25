@@ -27,7 +27,7 @@ import spacetrader.Game;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
 import spacetrader.enums.ShipyardId;
-import spacetrader.stub.ArrayList;
+import java.util.ArrayList;
 import spacetrader.util.Util;
 
 

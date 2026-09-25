@@ -5,6 +5,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.Random;
 import jwinforms.Graphics;
 import jwinforms.GraphicsUnit;
@@ -14,12 +17,9 @@ import jwinforms.WfImage;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.view.DialogService;
 import spacetrader.enums.AlertType;
-import spacetrader.stub.ArrayList;
-import spacetrader.stub.BinaryFormatter;
-import spacetrader.stub.RegistryKey;
-import spacetrader.stub.SerializationException;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Log;
+import spacetrader.util.SettingsFile;
 import spacetrader.util.Util;
 
 
@@ -110,9 +110,8 @@ public class Functions {
     return (int)(Rand() % max);
   }
 
-  public static RegistryKey GetRegistryKey() {
-    File regfile = new File("registryKey.properties");
-    return new RegistryKey(regfile);
+  public static SettingsFile GetSettingsFile() {
+    return new SettingsFile(new File("settings.properties"));
   }
 
   public static boolean IsInt(String toParse) {
@@ -130,15 +129,15 @@ public class Functions {
     FileInputStream inStream = null;
     try {
       inStream = new FileInputStream(fileName/* , FileMode.Open */);
-      obj = (new BinaryFormatter()).Deserialize(inStream);
+      obj = new ObjectInputStream(inStream).readObject();
     } catch(FileNotFoundException e) {
       if(!ignoreMissingFile) {
         dialogs.alert(AlertType.FileErrorOpen, fileName, e.getMessage());
       }
+    } catch(ClassNotFoundException ex) {
+      dialogs.alert(AlertType.FileErrorOpen, fileName, Strings.FileFormatBad);
     } catch(IOException ex) {
       dialogs.alert(AlertType.FileErrorOpen, fileName, ex.getMessage());
-    } catch(SerializationException ex) {
-      dialogs.alert(AlertType.FileErrorOpen, fileName, Strings.FileFormatBad);
     } finally {
       if(inStream != null) {
         try {
@@ -208,7 +207,7 @@ public class Functions {
     try {
       new File(fileName).createNewFile();
       outStream = new FileOutputStream(fileName, false);
-      (new BinaryFormatter()).Serialize(outStream, toSerialize);
+      new ObjectOutputStream(outStream).writeObject(toSerialize);
       saveOk = true;
     } catch(IOException ex) {
       dialogs.alert(AlertType.FileErrorSave, fileName, ex.getMessage());

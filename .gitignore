@@ -8,6 +8,7 @@ target/
 # Runtime data
 save/
 autosave_*.sav
+settings.properties
 registryKey.properties
 *.log
 

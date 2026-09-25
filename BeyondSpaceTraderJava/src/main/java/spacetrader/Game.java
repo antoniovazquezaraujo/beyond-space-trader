@@ -34,7 +34,7 @@ import spacetrader.enums.SpecialResource;
 import spacetrader.enums.StarSystemId;
 import spacetrader.enums.SystemPressure;
 import spacetrader.enums.TechLevel;
-import spacetrader.stub.ArrayList;
+import java.util.ArrayList;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
@@ -156,7 +156,7 @@ public class Game extends STSerializableObject {
     _arrivedViaWormhole = GetValueFromHash(hash, "_arrivedViaWormhole", _arrivedViaWormhole);
     _paidForNewspaper = GetValueFromHash(hash, "_paidForNewspaper", _paidForNewspaper);
     _litterWarning = GetValueFromHash(hash, "_litterWarning", _litterWarning);
-    _newsEvents = new ArrayList<>(Arrays.asList(GetValueFromHash(hash, "_newsEvents", _newsEvents.ToArray(new Integer[0]))));
+    _newsEvents = new ArrayList<>(Arrays.asList(GetValueFromHash(hash, "_newsEvents", _newsEvents.toArray(new Integer[0]))));
     _difficulty = Difficulty.FromInt(GetValueFromHash(hash, "_difficulty", _difficulty, Integer.class));
     _cheatEnabled = GetValueFromHash(hash, "_cheatEnabled", _cheatEnabled);
     _autoSave = GetValueFromHash(hash, "_autoSave", _autoSave);

@@ -13,7 +13,8 @@ import org.gts.bst.ship.equip.WeaponType;
 import spacetrader.enums.OpponentType;
 import spacetrader.enums.SkillType;
 import spacetrader.enums.StarSystemId;
-import spacetrader.stub.ArrayList;
+import java.util.ArrayList;
+import java.util.Collections;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
@@ -977,8 +978,8 @@ public class Ship extends ShipSpec {
         tradeItems.add(tradeItem);
       }
     }
-    tradeItems.Sort();
-    tradeItems.Reverse();
+    Collections.sort(tradeItems);
+    Collections.reverse(tradeItems);
     int hidden = HiddenCargoBays();
     if(PrincessOnBoard()) {
       hidden--;
@@ -987,7 +988,7 @@ public class Ship extends ShipSpec {
       hidden--;
     }
     if(hidden > 0) {
-      tradeItems.RemoveRange(0, hidden);
+      tradeItems.subList(0, hidden).clear();
     }
     return tradeItems;
   }
