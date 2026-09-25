@@ -14,18 +14,14 @@ import jwinforms.enums.DialogResult;
 import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
-import spacetrader.Commander;
-import spacetrader.Consts;
-import spacetrader.Functions;
+import org.gts.bst.presenter.CommanderPresenter;
+import org.gts.bst.view.CommanderView;
+import org.gts.bst.view.CommanderViewModel;
 import spacetrader.Game;
-import spacetrader.PoliceRecord;
-import spacetrader.Reputation;
-import spacetrader.Strings;
 
 
-public class FormViewCommander extends WinformForm {
+public class FormViewCommander extends WinformForm implements CommanderView {
   private final Game game = Game.CurrentGame();
-  private final Commander cmdr = game.Commander();
   private Button btnClose;
   private GroupBox boxSkills;
   private GroupBox boxFinances;
@@ -61,7 +57,7 @@ public class FormViewCommander extends WinformForm {
 
   public FormViewCommander() {
     InitializeComponent();
-    InitializeScreen();
+    new CommanderPresenter(game, this).update();
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -359,35 +355,25 @@ public class FormViewCommander extends WinformForm {
     ResumeLayout(false);
   }
 
-  private void InitializeScreen() {
-    lblName.setText(cmdr.Name());
-    lblDifficulty.setText(Strings.DifficultyLevels[game.Difficulty().CastToInt()]);
-    lblTime.setText(Functions.Multiples(cmdr.getDays(), Strings.TimeUnit));
-    lblPilot.setText(cmdr.Pilot() + " (" + cmdr.getShip().Pilot() + ")");
-    lblFighter.setText(cmdr.Fighter() + " (" + cmdr.getShip().Fighter() + ")");
-    lblTrader.setText(cmdr.Trader() + " (" + cmdr.getShip().Trader() + ")");
-    lblEngineer.setText(cmdr.Engineer() + " (" + cmdr.getShip().Engineer() + ")");
-    lblCash.setText(Functions.FormatMoney(cmdr.getCash()));
-    lblDebt.setText(Functions.FormatMoney(cmdr.getDebt()));
-    lblNetWorth.setText(Functions.FormatMoney(cmdr.Worth()));
-    lblKills.setText(Functions.FormatNumber(cmdr.getKillsPirate() + cmdr.getKillsPolice() + cmdr.getKillsTrader()));
-    lblRecord.setText(PoliceRecord.GetPoliceRecordFromScore(cmdr.getPoliceRecordScore()).Name());
-    lblReputation.setText(Reputation.GetReputationFromScore(cmdr.getReputationScore()).Name());
-    int score = cmdr.getPoliceRecordScore();
-    if(score <= Consts.PoliceRecordScoreCrook) {
-      lblBountyLabel.setVisible(true);
-      lblBountyLabel.setText("Bounty offered:");
-      lblBounty.setVisible(true);
-      lblBounty.setText(Functions.FormatMoney(-1000 * score));
-    } else if(score >= Consts.PoliceRecordScoreTrusted) {
-      lblBountyLabel.setVisible(true);
-      lblBountyLabel.setText("Angry kingpins:");
-      lblBounty.setVisible(true);
-      lblBounty.setText(Functions.FormatNumber(score / 5));
-    } else {
-      lblBountyLabel.setVisible(false);
-      lblBounty.setVisible(false);
-    }
+  @Override
+  public void render(CommanderViewModel model) {
+    lblName.setText(model.name());
+    lblDifficulty.setText(model.difficulty());
+    lblTime.setText(model.time());
+    lblPilot.setText(model.pilot());
+    lblFighter.setText(model.fighter());
+    lblTrader.setText(model.trader());
+    lblEngineer.setText(model.engineer());
+    lblCash.setText(model.cash());
+    lblDebt.setText(model.debt());
+    lblNetWorth.setText(model.netWorth());
+    lblKills.setText(model.kills());
+    lblRecord.setText(model.record());
+    lblReputation.setText(model.reputation());
+    lblBountyLabel.setVisible(model.bounty().visible());
+    lblBountyLabel.setText(model.bounty().label());
+    lblBounty.setVisible(model.bounty().visible());
+    lblBounty.setText(model.bounty().amount());
   }
 
   public static void main(String[] args) throws Exception {
