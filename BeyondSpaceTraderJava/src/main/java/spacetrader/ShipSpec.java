@@ -1,5 +1,6 @@
 package spacetrader;
 import jwinforms.WfImage;
+import org.gts.bst.ApplicationST;
 import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
@@ -164,7 +165,11 @@ public class ShipSpec extends STSerializableObject {
   }
 
   public void UpdateCustomImageOffsetConstants() {
-    WfImage image = Game.CurrentGame().getParentWindow().CustomShipImages()[0];
+    ApplicationST parent = Game.CurrentGame().getParentWindow();
+    if(parent == null) {
+      return;
+    }
+    WfImage image = parent.CustomShipImages()[0];
     int custIndex = ShipType.Custom.CastToInt();
     // Find the first column of pixels that has a non-white pixel for the X value, and the last column for the width.
     int x = Functions.GetColumnOfFirstNonWhitePixel(image, 1);

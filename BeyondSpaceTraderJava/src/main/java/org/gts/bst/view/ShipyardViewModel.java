@@ -21,4 +21,3 @@ public record ShipyardViewModel(
     String escapePod,
     boolean podVisible) {
 }
-

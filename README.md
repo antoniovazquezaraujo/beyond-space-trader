@@ -11,16 +11,16 @@ This repository starts from the upstream snapshot `spacetraderjava-code-r69`
 
 ## Status
 
-Work in progress. The game builds and runs, and the first round of import bugs is fixed:
-startup, the leftover debug cheat and save/load serialization. The model has headless
-tests that run in CI.
+Work in progress. The game builds and runs, the imported bugs are fixed and the model is
+decoupled from the Swing front-end through Model-View-Presenter (view interfaces, view
+models and presenters with headless tests). The UI port to Lanterna is the next milestone.
 
 Roadmap:
 
 - [x] Fix startup issues (singleton, look & feel, resource paths)
 - [x] Remove the debug cheat from the `Game` constructor
 - [x] Replace the NetBeans/Ant build with Maven and drop JNLP/WebStart
-- [ ] Refactor towards Model-View-Presenter
+- [x] Refactor towards Model-View-Presenter
 - [ ] Port the UI to Lanterna
 
 ## Layout
