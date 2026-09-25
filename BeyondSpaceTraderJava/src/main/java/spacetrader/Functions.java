@@ -61,7 +61,7 @@ public class Functions {
   }
 
   public static String FormatList(String[] listItems) {
-    return StringVars(Strings.ListStrings[listItems.length], listItems);
+    return StringVars(Strings.ListStrings.get(listItems.length), listItems);
   }
 
   public static String FormatMoney(int num) {

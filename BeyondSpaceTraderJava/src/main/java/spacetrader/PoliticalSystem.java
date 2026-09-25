@@ -89,7 +89,7 @@ public class PoliticalSystem {
   }
 
   public String Name() {
-    return Strings.PoliticalSystemNames[_type.CastToInt()];
+    return Strings.PoliticalSystemNames.get(_type.CastToInt());
   }
 
   public int ReactionIllegal() {

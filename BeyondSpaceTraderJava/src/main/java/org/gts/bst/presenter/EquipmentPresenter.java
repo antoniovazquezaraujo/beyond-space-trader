@@ -173,8 +173,8 @@ public class EquipmentPresenter {
     return new EquipmentInfoViewModel(
         true,
         selected.Name(),
-        Strings.EquipmentTypes[selected.EquipmentType().CastToInt()],
-        Strings.EquipmentDescriptions[selected.EquipmentType().CastToInt()][selected.SubType().asInteger()],
+        Strings.EquipmentTypes.get(selected.EquipmentType().CastToInt()),
+        Strings.EquipmentDescriptions.get(selected.EquipmentType().CastToInt()).get(selected.SubType().asInteger()),
         Functions.FormatMoney(selected.Price()),
         Functions.FormatMoney(selected.SellPrice()),
         power,
@@ -214,10 +214,10 @@ public class EquipmentPresenter {
     int base;
     switch(equipment.EquipmentType()) {
       case Shield:
-        base = Strings.WeaponNames.length;
+        base = Strings.WeaponNames.size();
         break;
       case Gadget:
-        base = Strings.WeaponNames.length + Strings.ShieldNames.length;
+        base = Strings.WeaponNames.size() + Strings.ShieldNames.size();
         break;
       default:
         base = 0;

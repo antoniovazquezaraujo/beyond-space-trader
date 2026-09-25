@@ -281,7 +281,7 @@ public class StarSystem extends STSerializableObject {
   }
 
   public String Name() {
-    return Strings.SystemNames[_id.CastToInt()];
+    return Strings.SystemNames.get(_id.CastToInt());
   }
 
   public PoliticalSystem PoliticalSystem() {

@@ -23,7 +23,7 @@ public class PoliceRecord {
   }
 
   public String Name() {
-    return Strings.PoliceRecordNames[_type.CastToInt()];
+    return Strings.PoliceRecordNames.get(_type.CastToInt());
   }
 
   public PoliceRecordType Type() {

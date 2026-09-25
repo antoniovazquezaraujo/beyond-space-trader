@@ -54,7 +54,7 @@ class GameTest {
   void universeContainsEveryNamedSystem() {
     Game game = newGame(Difficulty.Normal);
 
-    assertEquals(Strings.SystemNames.length, game.Universe().length);
+    assertEquals(Strings.SystemNames.size(), game.Universe().length);
   }
 
   @Test

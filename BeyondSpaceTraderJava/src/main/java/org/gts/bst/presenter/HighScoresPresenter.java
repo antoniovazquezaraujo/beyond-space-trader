@@ -50,10 +50,10 @@ public class HighScoresPresenter {
     return new Row(true, record.Name(),
         Functions.FormatNumber(record.Score() / 10) + "." + record.Score() % 10,
         Functions.StringVars(Strings.HighScoreStatus, new String[] {
-            Strings.GameCompletionTypes[record.Type().CastToInt()],
+            Strings.GameCompletionTypes.get(record.Type().CastToInt()),
             Functions.Multiples(record.Days(), Strings.TimeUnit),
             Functions.Multiples(record.Worth(), Strings.MoneyUnit),
-            Strings.DifficultyLevels[record.Difficulty().CastToInt()].toLowerCase()
+            Strings.DifficultyLevels.get(record.Difficulty().CastToInt()).toLowerCase()
         }));
   }
 }

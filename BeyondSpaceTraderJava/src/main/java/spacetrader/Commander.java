@@ -47,7 +47,8 @@ public class Commander extends CrewMember {
     _ship = new Ship(GetValueFromHash(hash, "_ship"/*,_ship*/, Hashtable.class));
     _priceCargo = GetValueFromHash(hash, "_priceCargo", _priceCargo, int[].class);
     Game.CurrentGame().Mercenaries()[CrewMemberId.Commander.CastToInt()] = this;
-    Strings.CrewMemberNames[CrewMemberId.Commander.CastToInt()] = GetValueFromHash(hash, "_name", Strings.CrewMemberNames[CrewMemberId.Commander.CastToInt()]);
+    Strings.SetCrewMemberName(CrewMemberId.Commander,
+        GetValueFromHash(hash, "_name", Strings.CrewMemberNames.get(CrewMemberId.Commander.CastToInt())));
   }
 
   public void PayInterest() {
@@ -119,7 +120,7 @@ public class Commander extends CrewMember {
       for(int i = 0; i < special.length; i++) {
         if(getShip().HasEquipment(special[i])) {
           if(specToBuy.Slots(special[i].EquipmentType()) == 0) {
-            dialogs().alert(AlertType.ShipBuyNoSlots, newShipName, special[i].Name(), Strings.EquipmentTypes[special[i].EquipmentType().CastToInt()]);
+            dialogs().alert(AlertType.ShipBuyNoSlots, newShipName, special[i].Name(), Strings.EquipmentTypes.get(special[i].EquipmentType().CastToInt()));
           } else {
             extraCost += special[i].TransferPrice();
             add[i] = true;

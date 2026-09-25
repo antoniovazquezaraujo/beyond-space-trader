@@ -34,6 +34,7 @@ import spacetrader.enums.StarSystemId;
 import spacetrader.enums.SystemPressure;
 import spacetrader.enums.TechLevel;
 import java.util.ArrayList;
+import java.util.List;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
@@ -47,7 +48,7 @@ public final class Game extends STSerializableObject {
   // Game Data
   private StarSystem[] _universe;
   private int[] _wormholes = new int[6];
-  private CrewMember[] _mercenaries = new CrewMember[Strings.CrewMemberNames.length];
+  private CrewMember[] _mercenaries = new CrewMember[Strings.CrewMemberNames.size()];
   private Ship _dragonfly = new Ship(ShipType.Dragonfly);
   private Ship _scarab = new Ship(ShipType.Scarab);
   private Ship _scorpion = new Ship(ShipType.Scorpion);
@@ -971,7 +972,7 @@ public final class Game extends STSerializableObject {
         break;
     }
     if(qtyInHand == 0) {
-      Dialogs().alert(AlertType.CargoNoneToSell, Strings.CargoSellOps[op.CastToInt()]);
+      Dialogs().alert(AlertType.CargoNoneToSell, Strings.CargoSellOps.get(op.CastToInt()));
       return null;
     }
     if(op == CargoSellOp.SellSystem && unitPrice <= 0) {
@@ -1251,7 +1252,7 @@ public final class Game extends STSerializableObject {
   }
 
   private void GenerateUniverse() {
-    _universe = new StarSystem[Strings.SystemNames.length];
+    _universe = new StarSystem[Strings.SystemNames.size()];
     int i, j;
     for(i = 0; i < _universe.length; i++) {
       StarSystemId id = (StarSystemId.FromInt(i));
@@ -1329,7 +1330,7 @@ public final class Game extends STSerializableObject {
   private void InitializeCommander(String name, CrewMember commanderCrewMember) {
     cmdr = new Commander(commanderCrewMember);
     Mercenaries()[CrewMemberId.Commander.CastToInt()] = Commander();
-    Strings.CrewMemberNames[CrewMemberId.Commander.CastToInt()] = name;
+    Strings.SetCrewMemberName(CrewMemberId.Commander, name);
     while(cmdr.CurrentSystem() == null) {
       StarSystem system = _universe[Functions.GetRandom(_universe.length)];
       if(system.SpecialEventType() == SpecialEventType.NA
@@ -1525,7 +1526,7 @@ public final class Game extends STSerializableObject {
         if(cmdr.getShip().SculptureOnBoard()) {
           precious.add(Strings.EncounterHideSculpture);
         }
-        Dialogs().alert(AlertType.PreciousHidden, Functions.StringVars(Strings.ListStrings[precious.size()], precious.toArray(new String[0])));
+        Dialogs().alert(AlertType.PreciousHidden, Functions.StringVars(Strings.ListStrings.get(precious.size()), precious.toArray(new String[0])));
       } else if(cmdr.getShip().SculptureOnBoard()) {
         setQuestStatusSculpture(SpecialEvent.StatusSculptureNotStarted);
         Dialogs().alert(AlertType.EncounterPiratesTakeSculpture);
@@ -1867,8 +1868,8 @@ public final class Game extends STSerializableObject {
   }
 
   public String NewspaperHead() {
-    String[] heads = Strings.NewsMastheads[cmdr.CurrentSystem().PoliticalSystemType().CastToInt()];
-    String head = heads[cmdr.CurrentSystem().Id().CastToInt() % heads.length];
+    List<String> heads = Strings.NewsMastheads.get(cmdr.CurrentSystem().PoliticalSystemType().CastToInt());
+    String head = heads.get(cmdr.CurrentSystem().Id().CastToInt() % heads.size());
     return Functions.StringVars(head, cmdr.CurrentSystem().Name());
   }
 
@@ -1878,17 +1879,17 @@ public final class Game extends STSerializableObject {
     // We're using the GetRandom2 function so that the same number is generated each time for the same "version" of the newspaper. -JAF
     Functions.RandSeed(curSys.Id().CastToInt(), cmdr.getDays());
     for(Integer event : _newsEvents) {
-      items.add(Functions.StringVars(Strings.NewsEvent[event], new String[]{
+      items.add(Functions.StringVars(Strings.NewsEvent.get(event), new String[]{
             cmdr.Name(), cmdr.CurrentSystem().Name(), cmdr.getShip().Name()}));
     }
     if(curSys.SystemPressure() != SystemPressure.None) {
-      items.add(Strings.NewsPressureInternal[curSys.SystemPressure().CastToInt()]);
+      items.add(Strings.NewsPressureInternal.get(curSys.SystemPressure().CastToInt()));
     }
     if(cmdr.getPoliceRecordScore() <= Consts.PoliceRecordScoreVillain) {
-      String baseStr = Strings.NewsPoliceRecordPsychopath[Functions.GetRandom2(Strings.NewsPoliceRecordPsychopath.length)];
+      String baseStr = Strings.NewsPoliceRecordPsychopath.get(Functions.GetRandom2(Strings.NewsPoliceRecordPsychopath.size()));
       items.add(Functions.StringVars(baseStr, cmdr.Name(), curSys.Name()));
     } else if(cmdr.getPoliceRecordScore() >= Consts.PoliceRecordScoreHero) {
-      String baseStr = Strings.NewsPoliceRecordHero[Functions.GetRandom2(Strings.NewsPoliceRecordHero.length)];
+      String baseStr = Strings.NewsPoliceRecordHero.get(Functions.GetRandom2(Strings.NewsPoliceRecordHero.size()));
       items.add(Functions.StringVars(baseStr, cmdr.Name(), curSys.Name()));
     }
     // and now, finally, useful news (if any); base probability of a story showing up is (50 / MAXTECHLEVEL) * Current Tech Level
@@ -1910,9 +1911,9 @@ public final class Game extends STSerializableObject {
         // And not-always-shown stories
         if(_universe[i].SystemPressure() != SystemPressure.None
             && Functions.GetRandom2(100) <= Consts.StoryProbability * curSys.TechLevel().ordinal() + 10 * (5 - _difficulty.CastToInt())) {
-          int index = Functions.GetRandom2(Strings.NewsPressureExternal.length);
-          String baseStr = Strings.NewsPressureExternal[index];
-          String pressure = Strings.NewsPressureExternalPressures[_universe[i].SystemPressure().CastToInt()];
+          int index = Functions.GetRandom2(Strings.NewsPressureExternal.size());
+          String baseStr = Strings.NewsPressureExternal.get(index);
+          String pressure = Strings.NewsPressureExternalPressures.get(_universe[i].SystemPressure().CastToInt());
           items.add(Functions.StringVars(baseStr, pressure, _universe[i].Name()));
           realNews = true;
         }
@@ -1920,13 +1921,13 @@ public final class Game extends STSerializableObject {
     }
     // if there's no useful news, we throw up at least one headline from our canned news list.
     if(!realNews) {
-      String[] headlines = Strings.NewsHeadlines[curSys.PoliticalSystemType().CastToInt()];
-      boolean[] shown = new boolean[headlines.length];
-      int toShow = Functions.GetRandom2(headlines.length);
+      List<String> headlines = Strings.NewsHeadlines.get(curSys.PoliticalSystemType().CastToInt());
+      boolean[] shown = new boolean[headlines.size()];
+      int toShow = Functions.GetRandom2(headlines.size());
       for(int i = 0; i <= toShow; i++) {
-        int index = Functions.GetRandom2(headlines.length);
+        int index = Functions.GetRandom2(headlines.size());
         if(!shown[index]) {
-          items.add(headlines[index]);
+          items.add(headlines.get(index));
           shown[index] = true;
         }
       }

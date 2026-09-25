@@ -66,9 +66,9 @@ public class ShipyardPresenter {
         Functions.StringVars(Strings.ShipyardTitle, yard.Name()),
         yard.Id().CastToInt(),
         Functions.StringVars(Strings.ShipyardWelcome, yard.Name(), yard.Engineer()),
-        Strings.Sizes[yard.SpecialtySize().CastToInt()],
-        Strings.ShipyardSkills[yard.Skill().CastToInt()],
-        Strings.ShipyardSkillDescriptions[yard.Skill().CastToInt()],
+        Strings.Sizes.get(yard.SpecialtySize().CastToInt()),
+        Strings.ShipyardSkills.get(yard.Skill().CastToInt()),
+        Strings.ShipyardSkillDescriptions.get(yard.Skill().CastToInt()),
         Functions.StringVars(Strings.ShipyardWarning, "" + Shipyard.PENALTY_FIRST_PCT, "" + Shipyard.PENALTY_SECOND_PCT),
         sizeNames, sizeIndex, templateNames(), templateIndex, name, numerics(),
         "" + yard.UnitsUsed(), Functions.FormatPercent(yard.PercentOfMaxUnits()), percentLevel(),
@@ -152,7 +152,7 @@ public class ShipyardPresenter {
       return;
     }
     if(cmdr.TradeShip(yard.ShipSpec(), yard.TotalCost(cmdr), name)) {
-      Strings.ShipNames[ShipType.Custom.CastToInt()] = name;
+      Strings.SetShipName(ShipType.Custom, name);
       if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
         game.setQuestStatusScarab(SpecialEvent.StatusScarabNotStarted);
       }
@@ -170,7 +170,7 @@ public class ShipyardPresenter {
     sizeNames.clear();
     for(ShipSize size : yard.AvailableSizes()) {
       sizes.add(size);
-      sizeNames.add(Functions.StringVars(Strings.ShipyardSizeItem, Strings.Sizes[size.CastToInt()],
+      sizeNames.add(Functions.StringVars(Strings.ShipyardSizeItem, Strings.Sizes.get(size.CastToInt()),
           Functions.Multiples(Shipyard.MaxUnits(size), Strings.ShipyardUnit)));
     }
   }
@@ -180,7 +180,7 @@ public class ShipyardPresenter {
     templates.add(new ShipTemplate(cmdr.getShip(), Strings.ShipNameCurrentShip));
     templates.add(Consts.ShipTemplateSeparator);
     for(ShipSize size : sizes) {
-      templates.add(new ShipTemplate(size, Strings.Sizes[size.CastToInt()] + Strings.ShipNameTemplateSuffixMinimum));
+      templates.add(new ShipTemplate(size, Strings.Sizes.get(size.CastToInt()) + Strings.ShipNameTemplateSuffixMinimum));
     }
     templates.add(Consts.ShipTemplateSeparator);
     for(ShipSpec spec : Consts.ShipSpecs) {

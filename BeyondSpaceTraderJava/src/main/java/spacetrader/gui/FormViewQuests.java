@@ -89,8 +89,8 @@ public class FormViewQuests extends WinformForm implements QuestsView {
   public void render(QuestsViewModel model) {
     lblQuests.setText(model.text());
     if(model.hasQuests()) {
-      for(int i = 0; i < Strings.SystemNames.length; i++) {
-        String systemName = Strings.SystemNames[i];
+      for(int i = 0; i < Strings.SystemNames.size(); i++) {
+        String systemName = Strings.SystemNames.get(i);
         int start = 0;
         int index = -1;
         while((index = lblQuests.getText().indexOf(systemName, start)) >= 0) {

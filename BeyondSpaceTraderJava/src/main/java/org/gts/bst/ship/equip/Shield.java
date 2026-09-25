@@ -48,7 +48,7 @@ public class Shield extends Equipment {
 
   @Override
   public String Name() {
-    return Strings.ShieldNames[_type.id];
+    return Strings.ShieldNames.get(_type.id);
   }
 
   @Override

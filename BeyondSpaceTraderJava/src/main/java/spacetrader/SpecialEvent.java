@@ -99,11 +99,11 @@ public class SpecialEvent {
   }
 
   public String String() {
-    return Strings.SpecialEventStrings[_type.CastToInt()];
+    return Strings.SpecialEventStrings.get(_type.CastToInt());
   }
 
   public String Title() {
-    return Strings.SpecialEventTitles[_type.CastToInt()];
+    return Strings.SpecialEventTitles.get(_type.CastToInt());
   }
 
   public SpecialEventType Type() {

@@ -42,7 +42,7 @@ public class Gadget extends Equipment {
 
   @Override
   public String Name() {
-    return Strings.GadgetNames[_type.asInteger()];
+    return Strings.GadgetNames.get(_type.asInteger());
   }
 
   @Override

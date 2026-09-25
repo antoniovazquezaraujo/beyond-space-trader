@@ -81,7 +81,8 @@ public class ShipSpec extends STSerializableObject {
     }
     // Get the name if the ship is a custom design.
     if(_type == ShipType.Custom) {
-      Strings.ShipNames[ShipType.Custom.CastToInt()] = GetValueFromHash(hash, "_name", Strings.ShipNames[ShipType.Custom.CastToInt()]);
+      Strings.SetShipName(ShipType.Custom,
+          GetValueFromHash(hash, "_name", Strings.ShipNames.get(ShipType.Custom.CastToInt())));
       Consts.SetCustomShipSpec(new ShipSpec(
           _type, _size, _cargoBays, _weaponSlots, _shieldSlots, _gadgetSlots, _crewQuarters, _fuelTanks,
           _fuelCost, _hullStrength, _repairCost, _price, _occurrence, _police, _pirates, _traders, _minTech));
@@ -301,7 +302,7 @@ public class ShipSpec extends STSerializableObject {
   }
 
   public String Name() {
-    return Strings.ShipNames[Type().CastToInt()];
+    return Strings.ShipNames.get(Type().CastToInt());
   }
 
   public int Occurrence() {

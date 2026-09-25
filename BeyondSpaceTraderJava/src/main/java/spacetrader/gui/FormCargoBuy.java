@@ -36,8 +36,8 @@ public class FormCargoBuy extends WinformForm {
     InitializeComponent();
     numAmount.setMaximum(maxAmount);
     numAmount.setValue(numAmount.getMinimum());
-    setText(Functions.StringVars(Strings.CargoTitle, Strings.CargoBuyOps[op.id], Consts.TradeItems.get(item).Name()));
-    lblQuestion.setText(Functions.StringVars("How many do you want to ^1?", Strings.CargoBuyOps[op.id].toLowerCase()));
+    setText(Functions.StringVars(Strings.CargoTitle, Strings.CargoBuyOps.get(op.id), Consts.TradeItems.get(item).Name()));
+    lblQuestion.setText(Functions.StringVars("How many do you want to ^1?", Strings.CargoBuyOps.get(op.id).toLowerCase()));
     switch(op) {
       case BuySystem:
         lblStatement.setText(Functions.StringVars("At ^1 each, you can buy up to ^2.", Functions.FormatMoney(game.PriceCargoBuy()[item]), Functions.FormatNumber(maxAmount)));
