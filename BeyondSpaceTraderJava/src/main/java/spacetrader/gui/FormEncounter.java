@@ -19,11 +19,14 @@ import jwinforms.SystemColors;
 import jwinforms.Timer;
 import jwinforms.WinformForm;
 import jwinforms.enums.BorderStyle;
+import jwinforms.enums.DialogResult;
 import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
 import java.util.Set;
+import org.gts.bst.cargo.CargoBuyOffer;
+import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.presenter.EncounterPresenter;
 import org.gts.bst.view.EncounterAction;
@@ -128,7 +131,7 @@ public class FormEncounter extends WinformForm implements EncounterView {
     buttons = new Button[]{
       btnAttack, btnBoard, btnBribe, btnDrink, btnFlee, btnIgnore, btnInt, btnMeet, btnPlunder, btnSubmit, btnSurrender, btnTrade, btnYield
     };
-    presenter = new EncounterPresenter(game, this, this);
+    presenter = new EncounterPresenter(game, this);
     presenter.start();
     UpdateTribbles();
   }
@@ -1131,6 +1134,28 @@ public class FormEncounter extends WinformForm implements EncounterView {
   @Override
   public void stopTimer() {
     tmrTick.Stop();
+  }
+
+  @Override
+  public void showJettison() {
+    (new FormJettison()).ShowDialog(this);
+  }
+
+  @Override
+  public void showPlunder() {
+    (new FormPlunder()).ShowDialog(this);
+  }
+
+  @Override
+  public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
+    FormCargoBuy form = new FormCargoBuy(offer.tradeItem(), offer.maxAmount(), offer.op());
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
+  }
+
+  @Override
+  public Integer askCargoSellQuantity(CargoSellOffer offer) {
+    FormCargoSell form = new FormCargoSell(offer.tradeItem(), offer.maxAmount(), offer.op(), offer.price());
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
   private void applyActions(Set<EncounterAction> actions) {

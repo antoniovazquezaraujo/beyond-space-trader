@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
+import org.gts.bst.cargo.CargoBuyOffer;
+import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
@@ -24,7 +26,7 @@ class EncounterPresenterTest {
     FakeView view = new FakeView();
     game.setEncounterType(EncounterType.PirateAttack);
 
-    new EncounterPresenter(game, view, null).start();
+    new EncounterPresenter(game, view).start();
 
     assertEquals(Set.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender), view.model.actions());
     assertFalse(view.model.continueVisible());
@@ -36,7 +38,7 @@ class EncounterPresenterTest {
     FakeView view = new FakeView();
     game.setEncounterType(EncounterType.MarieCeleste);
 
-    new EncounterPresenter(game, view, null).start();
+    new EncounterPresenter(game, view).start();
 
     assertEquals(Set.of(EncounterAction.Board, EncounterAction.Ignore), view.model.actions());
   }
@@ -47,7 +49,7 @@ class EncounterPresenterTest {
     FakeView view = new FakeView();
     game.setEncounterType(EncounterType.TraderBuy);
 
-    new EncounterPresenter(game, view, null).start();
+    new EncounterPresenter(game, view).start();
 
     assertEquals(Set.of(EncounterAction.Attack, EncounterAction.Ignore, EncounterAction.Trade), view.model.actions());
   }
@@ -57,7 +59,7 @@ class EncounterPresenterTest {
     Game game = newGame();
     FakeView view = new FakeView();
     game.setEncounterType(EncounterType.PirateAttack);
-    EncounterPresenter presenter = new EncounterPresenter(game, view, null);
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
     presenter.start();
 
     game.setEncounterContinueAttacking(true);
@@ -72,13 +74,39 @@ class EncounterPresenterTest {
     Game game = newGame();
     FakeView view = new FakeView();
     game.setEncounterType(EncounterType.PirateAttack);
-    EncounterPresenter presenter = new EncounterPresenter(game, view, null);
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
     presenter.start();
 
     presenter.ignore();
 
     assertTrue(view.closed);
     assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void theJettisonScreenGoesThroughTheView() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.showJettison();
+
+    assertTrue(view.jettisonShown);
+  }
+
+  @Test
+  void buyingFromTheTraderUsesTheCargoOffer() {
+    Game game = newGame();
+    game.getOpponent().Cargo()[0] = 3;
+    game.Commander().setCash(10000);
+    FakeView view = new FakeView();
+    view.cargoBuyAnswer = 1;
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.buyTraderCargo(0);
+
+    assertEquals(2, game.getOpponent().Cargo()[0]);
+    assertEquals(1, game.Commander().getShip().Cargo()[0]);
   }
 
   private static Game newGame() {
@@ -91,6 +119,10 @@ class EncounterPresenterTest {
     private EncounterViewModel model;
     private boolean closed;
     private boolean timer;
+    private boolean jettisonShown;
+    private boolean plunderShown;
+    private Integer cargoBuyAnswer;
+    private Integer cargoSellAnswer;
 
     @Override
     public void render(EncounterViewModel model) {
@@ -110,6 +142,26 @@ class EncounterPresenterTest {
     @Override
     public void stopTimer() {
       timer = false;
+    }
+
+    @Override
+    public void showJettison() {
+      jettisonShown = true;
+    }
+
+    @Override
+    public void showPlunder() {
+      plunderShown = true;
+    }
+
+    @Override
+    public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
+      return cargoBuyAnswer;
+    }
+
+    @Override
+    public Integer askCargoSellQuantity(CargoSellOffer offer) {
+      return cargoSellAnswer;
     }
   }
 }
