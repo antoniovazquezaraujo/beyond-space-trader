@@ -49,7 +49,7 @@ public class FormAbout extends WinformForm {
     lblTitle.setLocation(new Point(172, 8));
     lblTitle.setSize(new FormSize(187, 13));
     lblTitle.setTabIndex(33);
-    lblTitle.setText("Space Trader for Windows 2.01");
+    lblTitle.setText("Beyond Space Trader");
     // lblAbout
     lblAbout.setLocation(new Point(172, 32));
     lblAbout.setSize(new FormSize(272, 160));
