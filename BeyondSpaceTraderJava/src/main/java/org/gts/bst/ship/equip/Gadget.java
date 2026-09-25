@@ -47,15 +47,7 @@ public class Gadget extends Equipment {
 
   @Override
   public boolean TypeEquals(Object type) {
-    boolean equal = false;
-    try {
-      if(Type() == (GadgetType)type) {
-        equal = true;
-      }
-    } catch(Exception e) {
-      Log.write("Ignored Exception " + e);
-    }
-    return equal;
+    return Type() == type;
   }
 
   public GadgetType Type() {
