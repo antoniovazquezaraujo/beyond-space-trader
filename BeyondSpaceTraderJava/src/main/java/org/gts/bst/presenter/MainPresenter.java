@@ -37,6 +37,60 @@ public class MainPresenter {
     this.view = view;
   }
 
+  public void updateAll() {
+    updateCargo();
+    updateDock();
+    updateShipyard();
+    updateStatusBar();
+    updateSystemInfo();
+    updateTargetSystemInfo();
+    updateCharts();
+  }
+
+  /**
+   * Returns true when fuel was bought.
+   */
+  public boolean buyFuel() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return false;
+    }
+    Commander cmdr = game.Commander();
+    Ship ship = cmdr.getShip();
+    int maxAmount = Math.min(cmdr.getCash(), (ship.FuelTanks() - ship.getFuel()) * ship.getFuelCost());
+    Integer amount = view.askFuelAmount(maxAmount);
+    if(amount == null) {
+      return false;
+    }
+    int toAdd = amount / ship.getFuelCost();
+    ship.setFuel(ship.getFuel() + toAdd);
+    cmdr.setCash(cmdr.getCash() - toAdd * ship.getFuelCost());
+    updateAll();
+    return true;
+  }
+
+  /**
+   * Returns true when repairs were bought.
+   */
+  public boolean buyRepairs() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return false;
+    }
+    Commander cmdr = game.Commander();
+    Ship ship = cmdr.getShip();
+    int maxAmount = Math.min(cmdr.getCash(), (ship.HullStrength() - ship.getHull()) * ship.getRepairCost());
+    Integer amount = view.askRepairsAmount(maxAmount);
+    if(amount == null) {
+      return false;
+    }
+    int toAdd = amount / ship.getRepairCost();
+    ship.setHull(ship.getHull() + toAdd);
+    cmdr.setCash(cmdr.getCash() - toAdd * ship.getRepairCost());
+    updateAll();
+    return true;
+  }
+
   public void updateStatusBar() {
     Game game = gameSupplier.get();
     if(game == null) {

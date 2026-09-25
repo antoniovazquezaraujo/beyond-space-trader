@@ -14,23 +14,19 @@ import jwinforms.enums.DialogResult;
 import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
-import spacetrader.Commander;
-import spacetrader.Game;
 
 
 public class FormBuyRepairs extends WinformForm {
-  private final Game game = Game.CurrentGame();
-  private final Commander cmdr = game.Commander();
   private Button btnOk;
   private Button btnMax;
   private Button btnNothing;
   private Label lblQuestion;
   private NumericUpDown numAmount;
 
-  public FormBuyRepairs() {
+  public FormBuyRepairs(int maxAmount) {
     InitializeComponent();
-    numAmount.setMaximum(Math.min(cmdr.getCash(), (cmdr.getShip().HullStrength() - cmdr.getShip().getHull()) * cmdr.getShip().getRepairCost()));
-    numAmount.setValue(numAmount.getMaximum());
+    numAmount.setMaximum(maxAmount);
+    numAmount.setValue(maxAmount);
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -107,7 +103,7 @@ public class FormBuyRepairs extends WinformForm {
   }
 
   public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
-    FormBuyRepairs form = new FormBuyRepairs();
+    FormBuyRepairs form = new FormBuyRepairs(1000);
     Launcher.runForm(form);
     System.out.println(form.Amount());
   }
