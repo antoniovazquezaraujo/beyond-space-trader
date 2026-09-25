@@ -36,7 +36,6 @@ import java.util.List;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
-
 public final class Game extends STSerializableObject {
   private static Game game;
   private Commander cmdr;
@@ -116,9 +115,10 @@ public final class Game extends STSerializableObject {
       _universe = generated.systems();
       _wormholes = generated.wormholes();
     } while(!(UniverseGenerator.PlaceSpecialEvents(_universe, _wormholes) && UniverseGenerator.PlaceShipyards(_universe)));
-    InitializeCommander(name, new CrewMember(CrewMemberId.Commander, pilot, fighter, trader, engineer, StarSystemId.NA));
-    GenerateCrewMemberList();
-    CreateShips();
+    cmdr = NewGameSetup.InitializeCommander(name,
+        new CrewMember(CrewMemberId.Commander, pilot, fighter, trader, engineer, StarSystemId.NA), _universe, Mercenaries());
+    NewGameSetup.GenerateCrewMemberList(Mercenaries(), _universe.length, _difficulty);
+    NewGameSetup.CreateShips(Dragonfly(), _scarab, _scorpion, _spaceMonster, Mercenaries());
     CalculatePrices(cmdr.CurrentSystem());
     Game.this.ResetVeryRareEncounters();
     if(_difficulty.CastToInt() < Difficulty.Normal.CastToInt()) {
@@ -910,35 +910,6 @@ public final class Game extends STSerializableObject {
     }
   }
 
-  private void CreateShips() {
-    // set the details of the Dragonfly...
-    Dragonfly().Crew()[0] = Mercenaries()[CrewMemberId.Dragonfly.CastToInt()];
-    Dragonfly().AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
-    Dragonfly().AddEquipment(Consts.WeapObjs.get(WeaponType.PulseLaser.id));
-    Dragonfly().AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
-    Dragonfly().AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
-    Dragonfly().AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
-    Dragonfly().AddEquipment(Consts.Gadgets.get(GadgetType.AutoRepairSystem.asInteger()));
-    Dragonfly().AddEquipment(Consts.Gadgets.get(GadgetType.TargetingSystem.asInteger()));
-    // set the details of the Scarab...
-    _scarab.Crew()[0] = Mercenaries()[CrewMemberId.Scarab.CastToInt()];
-    _scarab.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
-    _scarab.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
-    // set the details of the Scorpion...
-    _scorpion.Crew()[0] = Mercenaries()[CrewMemberId.Scorpion.CastToInt()];
-    _scorpion.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
-    _scorpion.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
-    _scorpion.AddEquipment(Consts.Shields.get(ShieldType.Reflective.id));
-    _scorpion.AddEquipment(Consts.Shields.get(ShieldType.Reflective.id));
-    _scorpion.AddEquipment(Consts.Gadgets.get(GadgetType.AutoRepairSystem.asInteger()));
-    _scorpion.AddEquipment(Consts.Gadgets.get(GadgetType.TargetingSystem.asInteger()));
-    // set the details of the Space Monster...
-    _spaceMonster.Crew()[0] = Mercenaries()[CrewMemberId.SpaceMonster.CastToInt()];
-    _spaceMonster.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
-    _spaceMonster.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
-    _spaceMonster.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
-  }
-
   private void EncounterDefeatDragonfly() {
     cmdr.setKillsPirate(cmdr.getKillsPirate() + 1);
     cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillPirate);
@@ -1103,70 +1074,8 @@ public final class Game extends STSerializableObject {
     cmdr.setReputationScore(cmdr.getReputationScore() + (getOpponent().Type().CastToInt() / 2 + 1));
   }
 
-  private void GenerateCrewMemberList() {
-    int[] used = new int[_universe.length];
-    int d = _difficulty.CastToInt();
-    // Zeethibal may be on Kravat
-    used[StarSystemId.Kravat.CastToInt()] = 1;
-    // special individuals:
-    // Zeethibal, Jonathan Wild's Nephew - skills will be set later.
-    // Wild, Jonathan Wild earns his keep now - JAF.
-    // Jarek, Ambassador Jarek earns his keep now - JAF.
-    // Dummy pilots for opponents.
-    Mercenaries()[CrewMemberId.Zeethibal.CastToInt()] = new CrewMember(CrewMemberId.Zeethibal, 5, 5, 5, 5, StarSystemId.NA);
-    Mercenaries()[CrewMemberId.Opponent.CastToInt()] = new CrewMember(CrewMemberId.Opponent, 5, 5, 5, 5, StarSystemId.NA);
-    Mercenaries()[CrewMemberId.Wild.CastToInt()] = new CrewMember(CrewMemberId.Wild, 7, 10, 2, 5, StarSystemId.NA);
-    Mercenaries()[CrewMemberId.Jarek.CastToInt()] = new CrewMember(CrewMemberId.Jarek, 3, 2, 10, 4, StarSystemId.NA);
-    Mercenaries()[CrewMemberId.Princess.CastToInt()] = new CrewMember(CrewMemberId.Princess, 4, 3, 8, 9, StarSystemId.NA);
-    Mercenaries()[CrewMemberId.FamousCaptain.CastToInt()] = new CrewMember(CrewMemberId.FamousCaptain, 10, 10, 10, 10, StarSystemId.NA);
-    Mercenaries()[CrewMemberId.Dragonfly.CastToInt()] = new CrewMember(CrewMemberId.Dragonfly, 4 + d, 6 + d, 1, 6 + d, StarSystemId.NA);
-    Mercenaries()[CrewMemberId.Scarab.CastToInt()] = new CrewMember(CrewMemberId.Scarab, 5 + d, 6 + d, 1, 6 + d, StarSystemId.NA);
-    Mercenaries()[CrewMemberId.Scorpion.CastToInt()] = new CrewMember(CrewMemberId.Scorpion, 8 + d, 8 + d, 1, 6 + d, StarSystemId.NA);
-    Mercenaries()[CrewMemberId.SpaceMonster.CastToInt()] = new CrewMember(CrewMemberId.SpaceMonster, 8 + d, 8 + d, 1, 1 + d, StarSystemId.NA);
-    // JAF - Changing this to allow multiple mercenaries in each system, but no more than three.
-    for(int i = 1; i < Mercenaries().length; i++) {
-      // Only create a CrewMember Object if one doesn't already exist in this slot in the array.
-      if(Mercenaries()[i] == null) {
-        StarSystemId id;
-        boolean ok = false;
-        do {
-          id = StarSystemId.FromInt(Functions.GetRandom(_universe.length));
-          if(used[id.CastToInt()] < 3) {
-            used[id.CastToInt()]++;
-            ok = true;
-          }
-        } while(!ok);
-        Mercenaries()[i] = new CrewMember(CrewMemberId.FromInt(i), Functions.RandomSkill(), Functions.RandomSkill(), Functions.RandomSkill(), Functions.RandomSkill(), id);
-      }
-    }
-  }
-
   private void GenerateOpponent(OpponentType oppType) {
     setOpponent(new Ship(oppType));
-  }
-
-  private void InitializeCommander(String name, CrewMember commanderCrewMember) {
-    cmdr = new Commander(commanderCrewMember);
-    Mercenaries()[CrewMemberId.Commander.CastToInt()] = Commander();
-    Strings.SetCrewMemberName(CrewMemberId.Commander, name);
-    while(cmdr.CurrentSystem() == null) {
-      StarSystem system = _universe[Functions.GetRandom(_universe.length)];
-      if(system.SpecialEventType() == SpecialEventType.NA
-          && system.TechLevel().ordinal() > TechLevel.t0.ordinal()
-          && system.TechLevel().ordinal() < TechLevel.t7.ordinal()) {
-        // Make sure at least three other systems can be reached
-        int close = 0;
-        for(int i = 0; i < _universe.length && close < 3; i++) {
-          if(i != system.Id().CastToInt() && Functions.Distance(_universe[i], system) <= cmdr.getShip().FuelTanks()) {
-            close++;
-          }
-        }
-        if(close >= 3) {
-          cmdr.CurrentSystem(system);
-        }
-      }
-    }
-    cmdr.CurrentSystem().Visited(true);
   }
 
   private void NormalDeparture(int fuel) {
