@@ -1,6 +1,5 @@
 package spacetrader.gui;
 import java.awt.Point;
-import javax.swing.UnsupportedLookAndFeelException;
 import jwinforms.Button;
 import jwinforms.ComponentResourceManager;
 import jwinforms.Font;
@@ -78,9 +77,5 @@ public class FormAbout extends WinformForm {
     ((ISupportInitialize)(picLogo)).EndInit();
     ResumeLayout(false);
     PerformLayout();
-  }
-
-  public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
-    Launcher.runForm(new FormAbout());
   }
 }

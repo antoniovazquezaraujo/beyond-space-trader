@@ -625,9 +625,4 @@ public class FormEquipment extends WinformForm implements EquipmentView {
     }
     return EquipmentType.Gadget;
   }
-
-  public static void main(String[] args) throws Exception {
-    FormEquipment fe = new FormEquipment(() -> {});
-    Launcher.runForm(fe);
-  }
 }

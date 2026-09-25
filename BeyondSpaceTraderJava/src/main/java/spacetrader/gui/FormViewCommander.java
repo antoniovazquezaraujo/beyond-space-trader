@@ -375,9 +375,4 @@ public class FormViewCommander extends WinformForm implements CommanderView {
     lblBounty.setVisible(model.bounty().visible());
     lblBounty.setText(model.bounty().amount());
   }
-
-  public static void main(String[] args) throws Exception {
-    FormViewCommander form = new FormViewCommander();
-    Launcher.runForm(form);
-  }
 }

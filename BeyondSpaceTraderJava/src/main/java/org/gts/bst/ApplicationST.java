@@ -349,9 +349,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   private final int IMG_G_V = 1;
   private final int IMG_G_W = 2;
   private final int IMG_S_N = 3;
-//  private final int IMG_S_NS = 4;
   private final int IMG_S_V = 5;
-//  private final int IMG_S_VS = 6;
   private final int IMG_S_W = 7;
   private final DialogService dialogs = new SwingDialogService(this);
   private Game game = null;
@@ -3572,7 +3570,6 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
     if(game == null) {
       e.Graphics.FillRectangle(DEFAULT_BRUSH, 0, 0, picShortRangeChart.getWidth(), picShortRangeChart.getHeight());
     } else {
-      int[] wormholes = game.Wormholes();
       int fuel = cmdr.getShip().getFuel();
       int centerX = picShortRangeChart.getWidth() / 2;
       int centerY = picShortRangeChart.getHeight() / 2;

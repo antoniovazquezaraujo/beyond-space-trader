@@ -1,7 +1,6 @@
 package spacetrader.gui;
 import java.awt.Point;
 import java.util.Arrays;
-import javax.swing.UnsupportedLookAndFeelException;
 import jwinforms.Button;
 import jwinforms.EventArgs;
 import jwinforms.FormSize;
@@ -100,11 +99,5 @@ public class FormBuyRepairs extends WinformForm {
 
   public int Amount() {
     return numAmount.getValue();
-  }
-
-  public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
-    FormBuyRepairs form = new FormBuyRepairs(1000);
-    Launcher.runForm(form);
-    System.out.println(form.Amount());
   }
 }
