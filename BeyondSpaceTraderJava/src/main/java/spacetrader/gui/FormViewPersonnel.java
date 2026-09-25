@@ -16,20 +16,16 @@ import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
-import org.gts.bst.crew.CrewMemberId;
-import spacetrader.Commander;
-import spacetrader.CrewMember;
-import spacetrader.Functions;
+import org.gts.bst.presenter.PersonnelPresenter;
+import org.gts.bst.view.PersonnelInfo;
+import org.gts.bst.view.PersonnelView;
+import org.gts.bst.view.PersonnelViewModel;
 import spacetrader.Game;
-import spacetrader.Ship;
-import spacetrader.Strings;
-import spacetrader.enums.AlertType;
 
 
-public class FormViewPersonnel extends WinformForm {
+public class FormViewPersonnel extends WinformForm implements PersonnelView {
   private final Game game = Game.CurrentGame();
-  private final Commander cmdr = game.Commander();
-  private final Ship ship = cmdr.getShip();
+  private final PersonnelPresenter presenter;
   private Button btnClose;
   private Button btnHireFire;
   private GroupBox boxForHire;
@@ -49,12 +45,12 @@ public class FormViewPersonnel extends WinformForm {
   private Label lblForHireNone;
   private ListBox lstForHire;
   private ListBox lstCrew;
-  private CrewMember selectedCrewMember = null;
   private boolean handlingSelect = false;
 
   public FormViewPersonnel() {
     InitializeComponent();
-    UpdateAll();
+    presenter = new PersonnelPresenter(game, this);
+    presenter.update();
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -114,7 +110,7 @@ public class FormViewPersonnel extends WinformForm {
     lstCrew.setSelectedIndexChanged(new EventHandler<Object, EventArgs>() {
       @Override
       public void handle(Object sender, EventArgs e) {
-        SelectedIndexChanged(sender, e);
+        crewSelected(sender, e);
       }
     });
     // boxForHire
@@ -141,7 +137,7 @@ public class FormViewPersonnel extends WinformForm {
     lstForHire.setSelectedIndexChanged(new EventHandler<Object, EventArgs>() {
       @Override
       public void handle(Object sender, EventArgs e) {
-        SelectedIndexChanged(sender, e);
+        forHireSelected(sender, e);
       }
     });
     // boxInfo
@@ -275,118 +271,79 @@ public class FormViewPersonnel extends WinformForm {
     ResumeLayout(false);
   }
 
-  private void DeselectAll() {
-    lstForHire.clearSelected();
-    lstCrew.clearSelected();
-  }
-
-  private void UpdateAll() {
-    selectedCrewMember = null;
-    UpdateForHire();
-    UpdateCurrentCrew();
-    UpdateInfo();
-  }
-
-  private void UpdateCurrentCrew() {
-    CrewMember[] crew = ship.Crew();
-    lstCrew.Items.clear();
-    for(int i = 1; i < crew.length; i++) {
-      if(crew[i] == null) {
-        lstCrew.Items.add(Strings.PersonnelVacancy);
-      } else {
-        lstCrew.Items.add(crew[i]);
+  @Override
+  public void render(PersonnelViewModel model) {
+    handlingSelect = true;
+    try {
+      lstCrew.Items.clear();
+      for(String entry : model.crewEntries()) {
+        lstCrew.Items.add(entry);
       }
-    }
-    boolean entries = (lstCrew.Items.size() > 0);
-    lstCrew.setVisible(entries);
-    lblCrewNoQuarters.setVisible(!entries);
-    if(entries) {
-      lstCrew.setHeight(lstCrew.getItemHeight() * Math.min(lstCrew.Items.size(), 6) + 2);
-    } else { //TODO: remove this when Strings are moved to resource.
-      lblCrewNoQuarters.setText(Strings.PersonnelNoQuarters);
-    }
-  }
-
-  private void UpdateForHire() {
-    CrewMember[] mercs = cmdr.CurrentSystem().MercenariesForHire();
-    lstForHire.Items.clear();
-    for(int i = 0; i < mercs.length; i++) {
-      lstForHire.Items.add(mercs[i]);
-    }
-    boolean entries = (lstForHire.Items.size() > 0);
-    lstForHire.setVisible(entries);
-    lblForHireNone.setVisible(!entries);
-    if(entries) {
-      lstForHire.setHeight(lstForHire.getItemHeight() * Math.min(lstForHire.Items.size(), 6) + 2);
-    } else { // TODO: remove this when Strings are moved to resource.
-      lblForHireNone.setText(Strings.PersonnelNoMercenaries);
-    }
-  }
-
-  private void UpdateInfo() {
-    boolean visible = false;
-    boolean rateVisible = false;
-    boolean hireFireVisible = false;
-    if(selectedCrewMember != null) {
-      visible = true;
-      if(selectedCrewMember.Rate() > 0) {
-        rateVisible = true;
+      lstCrew.setVisible(model.crewVisible());
+      lblCrewNoQuarters.setVisible(!model.crewVisible());
+      lblCrewNoQuarters.setText(model.crewEmptyText());
+      if(model.crewVisible()) {
+        lstCrew.setHeight(lstCrew.getItemHeight() * Math.min(model.crewEntries().size(), 6) + 2);
       }
-      lblName.setText(selectedCrewMember.Name());
-      lblRate.setText(Functions.StringVars(Strings.MoneyRateSuffix, Functions.FormatMoney(selectedCrewMember.Rate())));
-      lblPilot.setText(selectedCrewMember.Pilot() + "");
-      lblFighter.setText(selectedCrewMember.Fighter() + "");
-      lblTrader.setText(selectedCrewMember.Trader() + "");
-      lblEngineer.setText(selectedCrewMember.Engineer() + "");
-      btnHireFire.setText(ship.HasCrew(selectedCrewMember.Id()) ? Strings.MercenaryFire : Strings.MercenaryHire);
-      hireFireVisible = rateVisible || selectedCrewMember.Id() == CrewMemberId.Zeethibal;
+      lstForHire.Items.clear();
+      for(String entry : model.forHireEntries()) {
+        lstForHire.Items.add(entry);
+      }
+      lstForHire.setVisible(model.forHireVisible());
+      lblForHireNone.setVisible(!model.forHireVisible());
+      lblForHireNone.setText(model.forHireEmptyText());
+      if(model.forHireVisible()) {
+        lstForHire.setHeight(lstForHire.getItemHeight() * Math.min(model.forHireEntries().size(), 6) + 2);
+      }
+    } finally {
+      handlingSelect = false;
     }
-    lblName.setVisible(visible);
-    lblRate.setVisible(rateVisible);
-    lblPilotLabel.setVisible(visible);
-    lblFighterLabel.setVisible(visible);
-    lblTraderLabel.setVisible(visible);
-    lblEngineerLabel.setVisible(visible);
-    lblPilot.setVisible(visible);
-    lblFighter.setVisible(visible);
-    lblTrader.setVisible(visible);
-    lblEngineer.setVisible(visible);
-    btnHireFire.setVisible(hireFireVisible);
+    renderInfo(model.info());
+  }
+
+  @Override
+  public void renderInfo(PersonnelInfo info) {
+    lblName.setVisible(info.visible());
+    lblName.setText(info.name());
+    lblRate.setVisible(info.rateVisible());
+    lblRate.setText(info.rate());
+    lblPilotLabel.setVisible(info.visible());
+    lblFighterLabel.setVisible(info.visible());
+    lblTraderLabel.setVisible(info.visible());
+    lblEngineerLabel.setVisible(info.visible());
+    lblPilot.setVisible(info.visible());
+    lblPilot.setText(info.pilot());
+    lblFighter.setVisible(info.visible());
+    lblFighter.setText(info.fighter());
+    lblTrader.setVisible(info.visible());
+    lblTrader.setText(info.trader());
+    lblEngineer.setVisible(info.visible());
+    lblEngineer.setText(info.engineer());
+    btnHireFire.setVisible(info.hireFireVisible());
+    btnHireFire.setText(info.hireFireText());
+  }
+
+  private void crewSelected(Object sender, EventArgs e) {
+    if(!handlingSelect) {
+      handlingSelect = true;
+      lstForHire.clearSelected();
+      handlingSelect = false;
+      presenter.selectCrew(lstCrew.getSelectedIndex());
+    }
+  }
+
+  private void forHireSelected(Object sender, EventArgs e) {
+    if(!handlingSelect) {
+      handlingSelect = true;
+      lstCrew.clearSelected();
+      handlingSelect = false;
+      presenter.selectForHire(lstForHire.getSelectedIndex());
+    }
   }
 
   private void HireFire(Object sender, EventArgs e) {
-    if(selectedCrewMember != null && btnHireFire.getVisible()) {
-      if(ship.HasCrew(selectedCrewMember.Id())) {
-        if(FormAlert.Alert(AlertType.CrewFireMercenary, this, selectedCrewMember.Name()) == DialogResult.Yes) {
-          ship.Fire(selectedCrewMember.Id());
-          UpdateAll();
-          game.getParentWindow().UpdateAll();
-        }
-      } else {
-        if(ship.FreeCrewQuarters() == 0) {
-          FormAlert.Alert(AlertType.CrewNoQuarters, this, selectedCrewMember.Name());
-        } else {
-          ship.Hire(selectedCrewMember);
-          UpdateAll();
-          game.getParentWindow().UpdateAll();
-        }
-      }
-    }
-  }
-
-  private void SelectedIndexChanged(Object sender, EventArgs e) {
-    if(!handlingSelect) {
-      handlingSelect = true;
-      Object obj = ((ListBox)sender).getSelectedItem();
-      DeselectAll();
-      if(obj instanceof CrewMember) {
-        ((ListBox)sender).setSelectedItem(obj);
-        selectedCrewMember = (CrewMember)obj;
-      } else {
-        selectedCrewMember = null;
-      }
-      handlingSelect = false;
-      UpdateInfo();
+    if(presenter.hireFire()) {
+      game.getParentWindow().UpdateAll(); // TODO: move to the application navigator (#4)
     }
   }
 }
