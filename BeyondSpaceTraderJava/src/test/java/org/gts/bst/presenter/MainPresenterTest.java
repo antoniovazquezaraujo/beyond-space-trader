@@ -4,9 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
+import org.gts.bst.view.CargoRowViewModel;
+import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
@@ -37,6 +40,7 @@ class MainPresenterTest {
 
     presenter.updateStatusBar();
     presenter.updateSystemInfo();
+    presenter.updateCargo();
     presenter.updateDock();
     presenter.updateShipyard();
     presenter.updateTargetSystemInfo();
@@ -45,6 +49,9 @@ class MainPresenterTest {
     assertEquals("No Game Loaded.", view.status.extra());
     assertEquals("", view.system.name());
     assertFalse(view.system.newsVisible());
+    assertEquals(Consts.TradeItems.length, view.cargo.rows().size());
+    assertEquals("", view.cargo.rows().get(0).sellPrice());
+    assertFalse(view.cargo.rows().get(0).sellVisible());
     assertEquals("", view.dock.fuelStatus());
     assertFalse(view.dock.fuelButtonVisible());
     assertEquals("", view.shipyard.shipsForSale());
@@ -71,6 +78,41 @@ class MainPresenterTest {
     assertEquals(system.TechLevel().name, view.system.tech());
     assertTrue(view.system.pressurePreVisible());
     assertTrue(view.system.newsVisible());
+  }
+
+  @Test
+  void showsTheCargoTable() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    MainPresenter presenter = new MainPresenter(() -> game, view);
+
+    presenter.updateCargo();
+
+    List<CargoRowViewModel> rows = view.cargo.rows();
+    assertEquals(Consts.TradeItems.length, rows.size());
+    for(CargoRowViewModel row : rows) {
+      assertEquals("0", row.sellQty());
+      assertTrue(row.sellVisible());
+      assertEquals("-----------", row.targetPrice());
+      assertEquals("------------", row.targetDiff());
+      assertEquals("--------", row.targetPct());
+      assertFalse(row.buyBold());
+    }
+    assertEquals("" + game.Commander().CurrentSystem().TradeItems()[0], rows.get(0).buyQty());
+  }
+
+  @Test
+  void marksCargoSoldAtAProfit() {
+    Game game = newGame();
+    int sell = game.PriceCargoSell()[0];
+    game.Commander().getShip().Cargo()[0] = 3;
+    game.Commander().PriceCargo()[0] = 0;
+    FakeView view = new FakeView();
+
+    new MainPresenter(() -> game, view).updateCargo();
+
+    assertEquals("3", view.cargo.rows().get(0).sellQty());
+    assertEquals(sell > 0, view.cargo.rows().get(0).sellBold());
   }
 
   @Test
@@ -144,6 +186,7 @@ class MainPresenterTest {
   private static class FakeView implements MainView {
     private MainStatusViewModel status;
     private SystemInfoViewModel system;
+    private CargoViewModel cargo;
     private DockViewModel dock;
     private ShipyardViewModel shipyard;
     private TargetSystemViewModel target;
@@ -156,6 +199,11 @@ class MainPresenterTest {
     @Override
     public void renderSystemInfo(SystemInfoViewModel model) {
       system = model;
+    }
+
+    @Override
+    public void renderCargo(CargoViewModel model) {
+      cargo = model;
     }
 
     @Override

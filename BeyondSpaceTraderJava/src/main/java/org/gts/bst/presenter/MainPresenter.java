@@ -1,7 +1,11 @@
 package org.gts.bst.presenter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 import org.gts.bst.ship.ShipType;
+import org.gts.bst.view.CargoRowViewModel;
+import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
@@ -74,6 +78,45 @@ public class MainPresenter {
                 mercs.length == 1 ? mercs[0].Name() : mercs.length + Strings.Mercenaries)
             : "",
         specialVisible ? system.SpecialEvent().Title() : ""));
+  }
+
+  public void updateCargo() {
+    Game game = gameSupplier.get();
+    if(game == null || game.Commander().CurrentSystem() == null) {
+      List<CargoRowViewModel> emptyRows = new ArrayList<>(Consts.TradeItems.length);
+      for(int i = 0; i < Consts.TradeItems.length; i++) {
+        emptyRows.add(CargoRowViewModel.empty());
+      }
+      view.renderCargo(new CargoViewModel(emptyRows));
+      return;
+    }
+    Commander cmdr = game.Commander();
+    Ship ship = cmdr.getShip();
+    int[] buy = game.PriceCargoBuy();
+    int[] sell = game.PriceCargoSell();
+    StarSystem warpSys = game.WarpSystem();
+    List<CargoRowViewModel> rows = new ArrayList<>(Consts.TradeItems.length);
+    for(int i = 0; i < Consts.TradeItems.length; i++) {
+      int price = warpSys == null ? 0 : Consts.TradeItems[i].StandardPrice(warpSys);
+      boolean targetKnown = warpSys != null && warpSys.DestOk() && price > 0;
+      int cargo = ship.Cargo()[i];
+      int stock = cmdr.CurrentSystem().TradeItems()[i];
+      int diff = price - buy[i];
+      rows.add(new CargoRowViewModel(
+          sell[i] > 0 ? Functions.FormatMoney(sell[i]) : "no trade",
+          "" + cargo,
+          sell[i] > 0 ? "All" : "Dump",
+          true,
+          buy[i] > 0 ? Functions.FormatMoney(buy[i]) : "not sold",
+          "" + stock,
+          buy[i] > 0,
+          targetKnown ? Functions.FormatMoney(price) : "-----------",
+          targetKnown && buy[i] > 0 ? (diff > 0 ? "+" : "") + Functions.FormatMoney(diff) : "------------",
+          targetKnown && buy[i] > 0 ? (diff > 0 ? "+" : "") + Functions.FormatNumber(100 * diff / buy[i]) + "%" : "--------",
+          sell[i] * cargo > cmdr.PriceCargo()[i],
+          targetKnown && buy[i] > 0 && diff > 0 && stock > 0));
+    }
+    view.renderCargo(new CargoViewModel(rows));
   }
 
   public void updateDock() {

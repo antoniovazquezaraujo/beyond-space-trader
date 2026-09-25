@@ -56,6 +56,8 @@ import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.Shield;
 import org.gts.bst.ship.equip.Weapon;
 import org.gts.bst.presenter.MainPresenter;
+import org.gts.bst.view.CargoRowViewModel;
+import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.DialogService;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
@@ -2852,60 +2854,30 @@ public class ApplicationST extends WinformWindow implements MainView {
   }
 
   private void UpdateCargo() {
-    if(game == null || cmdr.CurrentSystem() == null) {
-      for(int i = 0; i < lblSellPrice.length; i++) {
-        lblSellPrice[i].setText("");
-        lblBuyPrice[i].setText("");
-        lblTargetPrice[i].setText("");
-        lblTargetDiff[i].setText("");
-        lblTargetPct[i].setText("");
-        btnSellQty[i].setVisible(false);
-        btnSellAll[i].setVisible(false);
-        btnBuyQty[i].setVisible(false);
-        btnBuyMax[i].setVisible(false);
-      }
-    } else {
-      int[] buy = game.PriceCargoBuy();
-      int[] sell = game.PriceCargoSell();
-      cmdr = game.Commander();//todo: is this unnecessary? GAC
-      StarSystem warpSys = game.WarpSystem();
-      for(int i = 0; i < lblSellPrice.length; i++) {
-        int price = warpSys == null ? 0 : Consts.TradeItems[i].StandardPrice(warpSys);
-        lblSellPrice[i].setText(sell[i] > 0 ? Functions.FormatMoney(sell[i]) : "no trade");
-        btnSellQty[i].setText("" + cmdr.getShip().Cargo()[i]);
-        btnSellQty[i].setVisible(true);
-        btnSellAll[i].setText(sell[i] > 0 ? "All" : "Dump");
-        btnSellAll[i].setVisible(true);
-        lblBuyPrice[i].setText(buy[i] > 0 ? Functions.FormatMoney(buy[i]) : "not sold");
-        btnBuyQty[i].setText("" + cmdr.CurrentSystem().TradeItems()[i]);
-        btnBuyQty[i].setVisible(buy[i] > 0);
-        btnBuyMax[i].setVisible(buy[i] > 0);
-        if(sell[i] * cmdr.getShip().Cargo()[i] > cmdr.PriceCargo()[i]) {
-          lblSellPrice[i].setFont(lblSystemNameLabel.getFont());
-        } else {
-          lblSellPrice[i].setFont(lblSell.getFont());
-        }
-        if(warpSys != null && warpSys.DestOk() && price > 0) {
-          lblTargetPrice[i].setText(Functions.FormatMoney(price));
-        } else {
-          lblTargetPrice[i].setText("-----------");
-        }
-        if(warpSys != null && warpSys.DestOk() && price > 0 && buy[i] > 0) {
-          int diff = price - buy[i];
-          lblTargetDiff[i].setText((diff > 0 ? "+" : "") + Functions.FormatMoney(diff));
-          lblTargetPct[i].setText((diff > 0 ? "+" : "") + Functions.FormatNumber(100 * diff / buy[i]) + "%");
-          lblBuyPrice[i].setFont(
-              (diff > 0 && cmdr.CurrentSystem().TradeItems()[i] > 0)
-              ? lblSystemNameLabel.getFont() : lblBuy.getFont());
-        } else {
-          lblTargetDiff[i].setText("------------");
-          lblTargetPct[i].setText("--------");
-          lblBuyPrice[i].setFont(lblBuy.getFont());
-        }
-        lblTargetPrice[i].setFont(lblBuyPrice[i].getFont());
-        lblTargetDiff[i].setFont(lblBuyPrice[i].getFont());
-        lblTargetPct[i].setFont(lblBuyPrice[i].getFont());
-      }
+    mainPresenter.updateCargo();
+  }
+
+  @Override
+  public void renderCargo(CargoViewModel model) {
+    for(int i = 0; i < lblSellPrice.length; i++) {
+      CargoRowViewModel row = model.rows().get(i);
+      lblSellPrice[i].setText(row.sellPrice());
+      lblSellPrice[i].setFont(row.sellBold() ? lblSystemNameLabel.getFont() : lblSell.getFont());
+      btnSellQty[i].setText(row.sellQty());
+      btnSellQty[i].setVisible(row.sellVisible());
+      btnSellAll[i].setText(row.sellButtonText());
+      btnSellAll[i].setVisible(row.sellVisible());
+      lblBuyPrice[i].setText(row.buyPrice());
+      lblBuyPrice[i].setFont(row.buyBold() ? lblSystemNameLabel.getFont() : lblBuy.getFont());
+      btnBuyQty[i].setText(row.buyQty());
+      btnBuyQty[i].setVisible(row.buyVisible());
+      btnBuyMax[i].setVisible(row.buyVisible());
+      lblTargetPrice[i].setText(row.targetPrice());
+      lblTargetDiff[i].setText(row.targetDiff());
+      lblTargetPct[i].setText(row.targetPct());
+      lblTargetPrice[i].setFont(lblBuyPrice[i].getFont());
+      lblTargetDiff[i].setFont(lblBuyPrice[i].getFont());
+      lblTargetPct[i].setFont(lblBuyPrice[i].getFont());
     }
   }
 
