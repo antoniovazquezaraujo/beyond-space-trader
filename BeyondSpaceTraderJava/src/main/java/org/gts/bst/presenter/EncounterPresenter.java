@@ -20,6 +20,7 @@ import org.gts.bst.view.EncounterDialogHost;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
 import spacetrader.Game;
+import spacetrader.Trade;
 import spacetrader.Ship;
 
 
@@ -146,22 +147,22 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   @Override
   public void buyTraderCargo(int tradeItem) {
-    CargoBuyOffer offer = game.CargoBuyOffer(tradeItem, CargoBuyOp.BuyTrader);
+    CargoBuyOffer offer = Trade.CargoBuyOffer(game, tradeItem, CargoBuyOp.BuyTrader);
     if(offer != null) {
       Integer qty = view.askCargoBuyQuantity(offer);
       if(qty != null) {
-        game.CargoBuy(offer, qty);
+        Trade.CargoBuy(game, offer, qty);
       }
     }
   }
 
   @Override
   public void sellTraderCargo(int tradeItem) {
-    CargoSellOffer offer = game.CargoSellOffer(tradeItem, CargoSellOp.SellTrader);
+    CargoSellOffer offer = Trade.CargoSellOffer(game, tradeItem, CargoSellOp.SellTrader);
     if(offer != null) {
       Integer qty = view.askCargoSellQuantity(offer);
       if(qty != null) {
-        game.CargoSell(offer, qty);
+        Trade.CargoSell(game, offer, qty);
       }
     }
   }
