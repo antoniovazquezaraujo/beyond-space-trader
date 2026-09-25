@@ -19,4 +19,14 @@ public interface MainView {
   void renderShipyard(ShipyardViewModel model);
 
   void renderTargetSystem(TargetSystemViewModel model);
+
+  /**
+   * Asks the player how much to spend on fuel; returns {@code null} when cancelled.
+   */
+  Integer askFuelAmount(int maxAmount);
+
+  /**
+   * Asks the player how much to spend on repairs; returns {@code null} when cancelled.
+   */
+  Integer askRepairsAmount(int maxAmount);
 }

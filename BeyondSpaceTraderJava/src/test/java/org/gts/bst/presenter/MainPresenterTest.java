@@ -2,6 +2,7 @@ package org.gts.bst.presenter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -138,6 +139,61 @@ class MainPresenterTest {
   }
 
   @Test
+  void buysFuel() {
+    Game game = newGame();
+    game.Commander().getShip().setFuel(0);
+    FakeView view = new FakeView();
+    view.fuelAnswer = 14;
+    MainPresenter presenter = new MainPresenter(() -> game, view);
+
+    assertTrue(presenter.buyFuel());
+    assertEquals(14, game.Commander().getShip().getFuel());
+    assertEquals(986, game.Commander().getCash());
+    assertEquals("Cash: 986 cr.", view.status.cash());
+  }
+
+  @Test
+  void cancellingTheFuelDialogChangesNothing() {
+    Game game = newGame();
+    game.Commander().getShip().setFuel(0);
+    FakeView view = new FakeView();
+    MainPresenter presenter = new MainPresenter(() -> game, view);
+
+    assertFalse(presenter.buyFuel());
+    assertEquals(0, game.Commander().getShip().getFuel());
+    assertEquals(1000, game.Commander().getCash());
+  }
+
+  @Test
+  void buysRepairs() {
+    Game game = newGame();
+    game.Commander().getShip().setHull(90);
+    FakeView view = new FakeView();
+    view.repairsAnswer = 20;
+    MainPresenter presenter = new MainPresenter(() -> game, view);
+
+    assertTrue(presenter.buyRepairs());
+    assertEquals(100, game.Commander().getShip().getHull());
+    assertEquals(980, game.Commander().getCash());
+  }
+
+  @Test
+  void updateAllRendersEveryArea() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+
+    new MainPresenter(() -> game, view).updateAll();
+
+    assertNotNull(view.status);
+    assertNotNull(view.system);
+    assertNotNull(view.charts);
+    assertNotNull(view.cargo);
+    assertNotNull(view.dock);
+    assertNotNull(view.shipyard);
+    assertNotNull(view.target);
+  }
+
+  @Test
   void showsTheFuelAndHullState() {
     Game game = newGame();
     FakeView view = new FakeView();
@@ -213,6 +269,8 @@ class MainPresenterTest {
     private DockViewModel dock;
     private ShipyardViewModel shipyard;
     private TargetSystemViewModel target;
+    private Integer fuelAnswer;
+    private Integer repairsAnswer;
 
     @Override
     public void renderStatusBar(MainStatusViewModel model) {
@@ -247,6 +305,16 @@ class MainPresenterTest {
     @Override
     public void renderTargetSystem(TargetSystemViewModel model) {
       target = model;
+    }
+
+    @Override
+    public Integer askFuelAmount(int maxAmount) {
+      return fuelAnswer;
+    }
+
+    @Override
+    public Integer askRepairsAmount(int maxAmount) {
+      return repairsAnswer;
     }
   }
 }

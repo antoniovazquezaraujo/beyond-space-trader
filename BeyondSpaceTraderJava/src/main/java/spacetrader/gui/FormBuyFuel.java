@@ -13,23 +13,19 @@ import jwinforms.enums.DialogResult;
 import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
-import spacetrader.Commander;
-import spacetrader.Game;
 
 
 public class FormBuyFuel extends WinformForm {
-  private final Game game = Game.CurrentGame();
-  private final Commander cmdr = game.Commander();
   private Button btnOk;
   private Button btnMax;
   private Button btnNothing;
   private Label lblQuestion;
   private NumericUpDown numAmount;
 
-  public FormBuyFuel() {
+  public FormBuyFuel(int maxAmount) {
     InitializeComponent();
-    numAmount.setMaximum(Math.min(cmdr.getCash(), (cmdr.getShip().FuelTanks() - cmdr.getShip().getFuel()) * cmdr.getShip().getFuelCost()));
-    numAmount.setValue(numAmount.getMaximum());
+    numAmount.setMaximum(maxAmount);
+    numAmount.setValue(maxAmount);
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.

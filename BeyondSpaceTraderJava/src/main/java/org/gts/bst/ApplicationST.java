@@ -2846,17 +2846,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   }
 
   public void UpdateAll() {
-    UpdateCargo();
-    UpdateDock();
-    UpdateShipyard();
-    UpdateStatusBar();
-    UpdateSystemInfo();
-    UpdateTargetSystemInfo();
-    UpdateCharts();
-  }
-
-  private void UpdateCargo() {
-    mainPresenter.updateCargo();
+    mainPresenter.updateAll();
   }
 
   @Override
@@ -2883,10 +2873,6 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
     }
   }
 
-  private void UpdateCharts() {
-    mainPresenter.updateCharts();
-  }
-
   @Override
   public void renderCharts(ChartsViewModel model) {
     picGalacticChart.Refresh();
@@ -2903,8 +2889,16 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
     UpdateAll();
   }
 
-  private void UpdateDock() {
-    mainPresenter.updateDock();
+  @Override
+  public Integer askFuelAmount(int maxAmount) {
+    FormBuyFuel form = new FormBuyFuel(maxAmount);
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
+  }
+
+  @Override
+  public Integer askRepairsAmount(int maxAmount) {
+    FormBuyRepairs form = new FormBuyRepairs(maxAmount);
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
   @Override
@@ -2915,10 +2909,6 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
     lblHullStatus.setText(model.hullStatus());
     lblRepairCost.setText(model.repairCost());
     btnRepair.setVisible(model.repairButtonVisible());
-  }
-
-  private void UpdateShipyard() {
-    mainPresenter.updateShipyard();
   }
 
   @Override
@@ -2944,10 +2934,6 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
     statusBarPanelExtra.setText(model.extra());
   }
 
-  private void UpdateSystemInfo() {
-    mainPresenter.updateSystemInfo();
-  }
-
   @Override
   public void renderSystemInfo(SystemInfoViewModel model) {
     lblSystemName.setText(model.name());
@@ -2968,10 +2954,6 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
     if(model.specialVisible()) {
       tipSpecial.SetToolTip(btnSpecial, model.specialTooltip());
     }
-  }
-
-  private void UpdateTargetSystemInfo() {
-    mainPresenter.updateTargetSystemInfo();
   }
 
   @Override
@@ -3270,13 +3252,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   }
 
   private void btnFuel_Click(Object sender, EventArgs e) {
-    FormBuyFuel form = new FormBuyFuel();
-    if(form.ShowDialog(this) == DialogResult.OK) {
-      int toAdd = form.Amount() / cmdr.getShip().getFuelCost();
-      cmdr.getShip().setFuel(cmdr.getShip().getFuel() + toAdd);
-      cmdr.setCash(cmdr.getCash() - (toAdd * cmdr.getShip().getFuelCost()));
-      UpdateAll();
-    }
+    mainPresenter.buyFuel();
   }
 
   private void btnJump_Click(Object sender, EventArgs e) {
@@ -3329,13 +3305,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   }
 
   private void btnRepair_Click(Object sender, EventArgs e) {
-    FormBuyRepairs form = new FormBuyRepairs();
-    if(form.ShowDialog(this) == DialogResult.OK) {
-      int toAdd = form.Amount() / cmdr.getShip().getRepairCost();
-      cmdr.getShip().setHull(cmdr.getShip().getHull() + toAdd);
-      cmdr.setCash(cmdr.getCash() - (toAdd * cmdr.getShip().getRepairCost()));
-      UpdateAll();
-    }
+    mainPresenter.buyRepairs();
   }
 
   private void btnSpecial_Click(Object sender, EventArgs e) {
