@@ -55,7 +55,12 @@ import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.Shield;
 import org.gts.bst.ship.equip.Weapon;
+import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.DialogService;
+import org.gts.bst.view.MainStatusViewModel;
+import org.gts.bst.view.MainView;
+import org.gts.bst.view.SystemInfoViewModel;
+import org.gts.bst.view.TargetSystemViewModel;
 import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.CrewMember;
@@ -99,7 +104,7 @@ import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
 
-public class ApplicationST extends WinformWindow {
+public class ApplicationST extends WinformWindow implements MainView {
   private Button btnDesign;
   private Button btnNews;
   private Button btnSpecial;
@@ -338,6 +343,7 @@ public class ApplicationST extends WinformWindow {
   private final DialogService dialogs = new SwingDialogService(this);
   private Game game = null;
   private Commander cmdr = null;
+  private final MainPresenter mainPresenter = new MainPresenter(() -> game, this);
   private final Pen DEFAULT_PEN = new Pen(Color.black);
   private final Brush DEFAULT_BRUSH = new SolidBrush(Color.white);
   private String SaveGameFile = null;
@@ -2984,90 +2990,62 @@ public class ApplicationST extends WinformWindow {
   }
 
   public void UpdateStatusBar() {
-    if(game == null) {
-      statusBarPanelCash.setText("");
-      statusBarPanelBays.setText("");
-      statusBarPanelCosts.setText("");
-      statusBarPanelExtra.setText("No Game Loaded.");
-    } else {
-      statusBarPanelCash.setText("Cash: " + Functions.FormatMoney(cmdr.getCash()));
-      statusBarPanelBays.setText(
-          "Bays: " + cmdr.getShip().FilledCargoBays() + "/" + cmdr.getShip().CargoBays());
-      statusBarPanelCosts.setText("Current Costs: " + Functions.FormatMoney(game.CurrentCosts()));
-      statusBarPanelExtra.setText("");
-    }
+    mainPresenter.updateStatusBar();
+  }
+
+  @Override
+  public void renderStatusBar(MainStatusViewModel model) {
+    statusBarPanelCash.setText(model.cash());
+    statusBarPanelBays.setText(model.bays());
+    statusBarPanelCosts.setText(model.costs());
+    statusBarPanelExtra.setText(model.extra());
   }
 
   private void UpdateSystemInfo() {
-    if(game == null || cmdr.CurrentSystem() == null) {
-      lblSystemName.setText("");
-      lblSystemSize.setText("");
-      lblSystemTech.setText("");
-      lblSystemPolSys.setText("");
-      lblSystemResource.setText("");
-      lblSystemPolice.setText("");
-      lblSystemPirates.setText("");
-      lblSystemPressure.setText("");
-      lblSystemPressurePre.setVisible(false);
-      btnNews.setVisible(false);
-      btnMerc.setVisible(false);
-      btnSpecial.setVisible(false);
-    } else {
-      StarSystem system = cmdr.CurrentSystem();
-      CrewMember[] mercs = system.MercenariesForHire();
-      lblSystemName.setText(system.Name());
-      lblSystemSize.setText(Strings.Sizes[system.Size().CastToInt()]);
-      lblSystemTech.setText(system.TechLevel().name);
-      lblSystemPolSys.setText(system.PoliticalSystem().Name());
-      lblSystemResource.setText(system.SpecialResource().name);
-      lblSystemPolice.setText(Strings.ActivityLevels[system.PoliticalSystem().ActivityPolice().CastToInt()]);
-      lblSystemPirates.setText(Strings.ActivityLevels[system.PoliticalSystem().ActivityPirates().CastToInt()]);
-      lblSystemPressure.setText(system.SystemPressure().name);
-      lblSystemPressurePre.setVisible(true);
-      btnNews.setVisible(true);
-      btnMerc.setVisible(mercs.length > 0);
-      if(btnMerc.getVisible()) {
-        tipMerc.SetToolTip(btnMerc, Functions.StringVars(
-            Strings.MercenariesForHire,
-            mercs.length == 1 ? mercs[0].Name() : mercs.length + Strings.Mercenaries));
-      }
-      btnSpecial.setVisible(system.ShowSpecialButton());
-      if(btnSpecial.getVisible()) {
-        tipSpecial.SetToolTip(btnSpecial, system.SpecialEvent().Title());
-      }
+    mainPresenter.updateSystemInfo();
+  }
+
+  @Override
+  public void renderSystemInfo(SystemInfoViewModel model) {
+    lblSystemName.setText(model.name());
+    lblSystemSize.setText(model.size());
+    lblSystemTech.setText(model.tech());
+    lblSystemPolSys.setText(model.polSys());
+    lblSystemResource.setText(model.resource());
+    lblSystemPolice.setText(model.police());
+    lblSystemPirates.setText(model.pirates());
+    lblSystemPressure.setText(model.pressure());
+    lblSystemPressurePre.setVisible(model.pressurePreVisible());
+    btnNews.setVisible(model.newsVisible());
+    btnMerc.setVisible(model.mercVisible());
+    if(model.mercVisible()) {
+      tipMerc.SetToolTip(btnMerc, model.mercTooltip());
+    }
+    btnSpecial.setVisible(model.specialVisible());
+    if(model.specialVisible()) {
+      tipSpecial.SetToolTip(btnSpecial, model.specialTooltip());
     }
   }
 
   private void UpdateTargetSystemInfo() {
-    btnNextSystem.setVisible(game != null);
-    btnPrevSystem.setVisible(game != null);
-    if(game == null || game.WarpSystem() == null) {
-      lblTargetName.setText("");
-      lblTargetSize.setText("");
-      lblTargetTech.setText("");
-      lblTargetPolSys.setText("");
-      lblTargetResource.setText("");
-      lblTargetPolice.setText("");
-      lblTargetPirates.setText("");
-      lblTargetDistance.setText("");
-      lblTargetOutOfRange.setVisible(false);
-      btnWarp.setVisible(false);
-      btnTrack.setVisible(false);
-    } else {
-      StarSystem system = game.WarpSystem();
-      int distance = Functions.Distance(cmdr.CurrentSystem(), system);
-      lblTargetName.setText(system.Name());
-      lblTargetSize.setText(Strings.Sizes[system.Size().CastToInt()]);
-      lblTargetTech.setText(system.TechLevel().name);
-      lblTargetPolSys.setText(system.PoliticalSystem().Name());
-      lblTargetResource.setText(system.Visited() ? system.SpecialResource().name : Strings.Unknown);
-      lblTargetPolice.setText(Strings.ActivityLevels[system.PoliticalSystem().ActivityPolice().CastToInt()]);
-      lblTargetPirates.setText(Strings.ActivityLevels[system.PoliticalSystem().ActivityPirates().CastToInt()]);
-      lblTargetDistance.setText("" + distance);
-      lblTargetOutOfRange.setVisible(!system.DestOk() && system != cmdr.CurrentSystem());
-      btnWarp.setVisible(system.DestOk());
-      btnTrack.setVisible(lblTargetOutOfRange.getVisible() && system != game.TrackedSystem());
-    }
+    mainPresenter.updateTargetSystemInfo();
+  }
+
+  @Override
+  public void renderTargetSystem(TargetSystemViewModel model) {
+    btnNextSystem.setVisible(model.navigationVisible());
+    btnPrevSystem.setVisible(model.navigationVisible());
+    lblTargetName.setText(model.name());
+    lblTargetSize.setText(model.size());
+    lblTargetTech.setText(model.tech());
+    lblTargetPolSys.setText(model.polSys());
+    lblTargetResource.setText(model.resource());
+    lblTargetPolice.setText(model.police());
+    lblTargetPirates.setText(model.pirates());
+    lblTargetDistance.setText(model.distance());
+    lblTargetOutOfRange.setVisible(model.outOfRangeVisible());
+    btnWarp.setVisible(model.warpVisible());
+    btnTrack.setVisible(model.trackVisible());
   }
 
   private void SpaceTrader_Closing(Object sender, CancelEventArgs e) {

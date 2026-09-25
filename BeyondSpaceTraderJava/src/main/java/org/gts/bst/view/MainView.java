@@ -1,0 +1,14 @@
+package org.gts.bst.view;
+
+
+/**
+ * Main window view. The presenter renders each area of the window through these methods;
+ * the front-end only maps them to controls.
+ */
+public interface MainView {
+  void renderStatusBar(MainStatusViewModel model);
+
+  void renderSystemInfo(SystemInfoViewModel model);
+
+  void renderTargetSystem(TargetSystemViewModel model);
+}
