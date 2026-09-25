@@ -73,8 +73,8 @@ public class ShipyardPresenter {
         sizeNames, sizeIndex, templateNames(), templateIndex, name, numerics(),
         "" + yard.UnitsUsed(), Functions.FormatPercent(yard.PercentOfMaxUnits()), percentLevel(),
         Functions.FormatMoney(yard.AdjustedPrice()), Functions.FormatMoney(yard.AdjustedDesignFee()),
-        Functions.FormatMoney(yard.AdjustedPenaltyCost()), Functions.FormatMoney(-yard.TradeIn()),
-        Functions.FormatMoney(yard.TotalCost()), constructEnabled(name), saveEnabled(name),
+        Functions.FormatMoney(yard.AdjustedPenaltyCost()), Functions.FormatMoney(-yard.TradeIn(cmdr)),
+        Functions.FormatMoney(yard.TotalCost(cmdr)), constructEnabled(name), saveEnabled(name),
         imageIndex, customImage(), customImage() ? Strings.ShipNameCustomShip
             : Consts.ShipSpecs[IMAGE_TYPES[imageIndex].CastToInt()].Name()));
   }
@@ -151,7 +151,7 @@ public class ShipyardPresenter {
     if(!constructEnabled(name)) {
       return;
     }
-    if(cmdr.TradeShip(yard.ShipSpec(), yard.TotalCost(), name)) {
+    if(cmdr.TradeShip(yard.ShipSpec(), yard.TotalCost(cmdr), name)) {
       Strings.ShipNames[ShipType.Custom.CastToInt()] = name;
       if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
         game.setQuestStatusScarab(SpecialEvent.StatusScarabNotStarted);

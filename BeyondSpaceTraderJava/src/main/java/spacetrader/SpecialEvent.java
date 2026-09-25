@@ -76,9 +76,8 @@ public class SpecialEvent {
     _messageOnly = messageOnly;
   }
 
-  public StarSystem Location() {
+  public StarSystem Location(StarSystem[] universe) {
     StarSystem location = null;
-    StarSystem[] universe = Game.CurrentGame().Universe();
     for(int i = 0; i < universe.length && location == null; i++) {
       if(universe[i].SpecialEventType() == Type()) {
         location = universe[i];

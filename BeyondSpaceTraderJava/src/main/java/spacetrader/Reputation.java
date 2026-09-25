@@ -13,7 +13,7 @@ public class Reputation {
 
   public static Reputation GetReputationFromScore(int ReputationScore) {
     int i;
-    for(i = 0; i < Consts.Reputations.length && Game.CurrentGame().Commander().getReputationScore() >= Consts.Reputations[i].MinScore(); i++) {
+    for(i = 0; i < Consts.Reputations.length && ReputationScore >= Consts.Reputations[i].MinScore(); i++) {
     }
     return Consts.Reputations[Math.max(0, i - 1)];
   }

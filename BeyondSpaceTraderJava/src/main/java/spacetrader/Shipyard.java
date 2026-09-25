@@ -191,12 +191,12 @@ public class Shipyard {
     return _specialtySize;
   }
 
-  public int TotalCost() {
-    return AdjustedPrice() + AdjustedPenaltyCost() + AdjustedDesignFee() - TradeIn();
+  public int TotalCost(Commander cmdr) {
+    return AdjustedPrice() + AdjustedPenaltyCost() + AdjustedDesignFee() - TradeIn(cmdr);
   }
 
-  public int TradeIn() {
-    return Game.CurrentGame().Commander().getShip().Worth(false);
+  public int TradeIn(Commander cmdr) {
+    return cmdr.getShip().Worth(false);
   }
 
   public int UnitsCrew() {

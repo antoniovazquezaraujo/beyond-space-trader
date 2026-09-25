@@ -37,9 +37,9 @@ public class PoliticalSystem {
     _wanted = wanted;
   }
 
-  public boolean ShipTypeLikely(ShipType shipType, OpponentType oppType) {
+  public boolean ShipTypeLikely(ShipType shipType, OpponentType oppType, Difficulty difficulty) {
     boolean likely = false;
-    int diffMod = Math.max(0, Game.CurrentGame().Difficulty().CastToInt() - Difficulty.Normal.CastToInt());
+    int diffMod = Math.max(0, difficulty.CastToInt() - Difficulty.Normal.CastToInt());
     switch(oppType) {
       case Pirate:
         likely = ActivityPirates().CastToInt() + diffMod >= Consts.ShipSpecs[shipType.CastToInt()].Pirates().CastToInt();

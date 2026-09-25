@@ -31,8 +31,7 @@ public class Functions {
   private static long SeedX = DEFSEEDX;
   private static long SeedY = DEFSEEDY;
 
-  public static int AdjustSkillForDifficulty(int skill) {
-    Difficulty diff = Game.CurrentGame().Difficulty();
+  public static int AdjustSkillForDifficulty(int skill, Difficulty diff) {
     skill = diff.adjustSkill(skill);
     return skill;
   }
