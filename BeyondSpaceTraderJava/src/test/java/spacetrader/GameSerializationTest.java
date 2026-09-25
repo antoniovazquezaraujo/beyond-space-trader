@@ -12,11 +12,11 @@ import org.junit.jupiter.api.Test;
 class GameSerializationTest {
   @Test
   void savedGameCanBeLoaded() {
-    Game game = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null);
+    Game game = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
     game.NewsEvents().add(7);
     game.VeryRareEncounters().remove(VeryRareEncounter.CaptainAhab);
 
-    Game loaded = new Game(game.Serialize(), null);
+    Game loaded = new Game(game.Serialize(), null, new TestDialogService());
 
     assertEquals(game.Commander().getCash(), loaded.Commander().getCash());
     assertEquals(game.Commander().CurrentSystem().Id(), loaded.Commander().CurrentSystem().Id());

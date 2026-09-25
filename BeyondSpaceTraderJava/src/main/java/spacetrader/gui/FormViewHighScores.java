@@ -34,7 +34,7 @@ public class FormViewHighScores extends WinformForm {
     Label[] lblName = new Label[]{lblName0, lblName1, lblName2};
     Label[] lblScore = new Label[]{lblScore0, lblScore1, lblScore2};
     Label[] lblStatus = new Label[]{lblStatus0, lblStatus1, lblStatus2};
-    HighScoreRecord[] highScores = Functions.GetHighScores(this);
+    HighScoreRecord[] highScores = Functions.GetHighScores(new SwingDialogService(this));
     for(int i = highScores.length - 1; i >= 0 && highScores[i] != null; i--) {
       lblName[2 - i].setText(highScores[i].Name());
       lblScore[2 - i].setText(Functions.FormatNumber(highScores[i].Score() / 10) + "." + highScores[i].Score() % 10);

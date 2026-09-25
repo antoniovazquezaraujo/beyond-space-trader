@@ -54,6 +54,7 @@ import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.Shield;
 import org.gts.bst.ship.equip.Weapon;
+import org.gts.bst.view.DialogService;
 import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.CrewMember;
@@ -90,6 +91,7 @@ import spacetrader.gui.FormViewPersonnel;
 import spacetrader.gui.FormViewQuests;
 import spacetrader.gui.FormViewShip;
 import spacetrader.gui.SomeStringsForSwitch;
+import spacetrader.gui.SwingDialogService;
 import spacetrader.stub.Directory;
 import spacetrader.stub.RegistryKey;
 import spacetrader.util.Hashtable;
@@ -332,6 +334,7 @@ public class ApplicationST extends WinformWindow {
   private final int IMG_S_V = 5;
 //  private final int IMG_S_VS = 6;
   private final int IMG_S_W = 7;
+  private final DialogService dialogs = new SwingDialogService(this);
   private Game game = null;
   private Commander cmdr = null;
   private final Pen DEFAULT_PEN = new Pen(Color.black);
@@ -2673,10 +2676,10 @@ public class ApplicationST extends WinformWindow {
   }
 
   private void AddHighScore(HighScoreRecord highScore) {
-    HighScoreRecord[] highScores = Functions.GetHighScores(this);
+    HighScoreRecord[] highScores = Functions.GetHighScores(dialogs);
     highScores[0] = highScore;
     Arrays.sort(highScores);
-    Functions.SaveFile(Consts.HighScoreFile, STSerializableObject.ArrayToArrayList(highScores), this);
+    Functions.SaveFile(Consts.HighScoreFile, STSerializableObject.ArrayToArrayList(highScores), dialogs);
   }
 
   private void CargoBuy(int tradeItem, boolean max) {
@@ -2695,7 +2698,7 @@ public class ApplicationST extends WinformWindow {
 
   private void ClearHighScores() {
     HighScoreRecord[] highScores = new HighScoreRecord[3];
-    Functions.SaveFile(Consts.HighScoreFile, STSerializableObject.ArrayToArrayList(highScores), this);
+    Functions.SaveFile(Consts.HighScoreFile, STSerializableObject.ArrayToArrayList(highScores), dialogs);
   }
 
   private void GameEnd() {
@@ -2717,7 +2720,7 @@ public class ApplicationST extends WinformWindow {
     HighScoreRecord candidate = new HighScoreRecord(
         cmdr.Name(), game.Score(), game.getEndStatus(),
         cmdr.getDays(), cmdr.Worth(), game.Difficulty());
-    if(candidate.CompareTo(Functions.GetHighScores(this)[0]) > 0) {
+    if(candidate.CompareTo(Functions.GetHighScores(dialogs)[0]) > 0) {
       if(game.getCheatEnabled()) {
         FormAlert.Alert(AlertType.GameEndHighScoreCheat, this);
       } else {
@@ -2766,9 +2769,9 @@ public class ApplicationST extends WinformWindow {
 
   private void LoadGame(String fileName) {
     try {
-      Object obj = Functions.LoadFile(fileName, false, this);
+      Object obj = Functions.LoadFile(fileName, false, dialogs);
       if(obj != null) {
-        game = new Game((Hashtable)obj, this);
+        game = new Game((Hashtable)obj, this, dialogs);
         cmdr = game.Commander();
         SaveGameFile = fileName;
         SaveGameDays = cmdr.getDays();
@@ -2781,7 +2784,7 @@ public class ApplicationST extends WinformWindow {
   }
 
   private void SaveGame(String fileName, boolean saveFileName) {
-    if(Functions.SaveFile(fileName, game.Serialize(), this) && saveFileName) {
+    if(Functions.SaveFile(fileName, game.Serialize(), dialogs) && saveFileName) {
       SaveGameFile = fileName;
     }
     SaveGameDays = cmdr.getDays();
@@ -3453,7 +3456,7 @@ public class ApplicationST extends WinformWindow {
         && form.ShowDialog(this) == DialogResult.OK) {
       game = new Game(
           form.CommanderName(), form.Difficulty(), form.Pilot(),
-          form.Fighter(), form.Trader(), form.Engineer(), this);
+          form.Fighter(), form.Trader(), form.Engineer(), this, dialogs);
       cmdr = game.Commander();
       SaveGameFile = null;
       SaveGameDays = 0;

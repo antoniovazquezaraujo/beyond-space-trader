@@ -50,7 +50,7 @@ public class FormOptions extends WinformForm {
     if(game != null) {
       opts.CopyValues(game.Options());
     } else {
-      opts.LoadFromDefaults(false, this);
+      opts.LoadFromDefaults(false, game.Dialogs());
       btnOk.setEnabled(false);
       FormAlert.Alert(AlertType.OptionsNoGame, this);
     }
@@ -417,12 +417,12 @@ public class FormOptions extends WinformForm {
   }
 
   private void btnLoad_Click() {
-    opts.LoadFromDefaults(true, this);
+    opts.LoadFromDefaults(true, game.Dialogs());
     UpdateAll();
   }
 
   private void btnSave_Click() {
-    opts.SaveAsDefaults(this);
+    opts.SaveAsDefaults(game.Dialogs());
   }
 
   private void controlChanged() {

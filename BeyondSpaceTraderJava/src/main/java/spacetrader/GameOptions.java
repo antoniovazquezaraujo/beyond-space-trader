@@ -1,5 +1,5 @@
 package spacetrader;
-import jwinforms.WinformPane;
+import org.gts.bst.view.DialogService;
 import spacetrader.util.Hashtable;
 
 
@@ -134,11 +134,11 @@ public class GameOptions extends STSerializableObject {
     setLeaveEmpty(source.getLeaveEmpty());
   }
   public void LoadFromDefaults(boolean errorIfFileNotFound) {
-    LoadFromDefaults(errorIfFileNotFound, null);
+    LoadFromDefaults(errorIfFileNotFound, DialogService.NONE);
   }
-  public void LoadFromDefaults(boolean errorIfFileNotFound, WinformPane owner) {
+  public void LoadFromDefaults(boolean errorIfFileNotFound, DialogService dialogs) {
     GameOptions defaults = null;
-    Object obj = Functions.LoadFile(Consts.DefaultSettingsFile, !errorIfFileNotFound, owner);
+    Object obj = Functions.LoadFile(Consts.DefaultSettingsFile, !errorIfFileNotFound, dialogs);
     if(obj == null) {
       defaults = new GameOptions(false);
     } else {
@@ -146,8 +146,8 @@ public class GameOptions extends STSerializableObject {
     }
     CopyValues(defaults);
   }
-  public void SaveAsDefaults(WinformPane owner) {
-    Functions.SaveFile(Consts.DefaultSettingsFile, Serialize(), owner);
+  public void SaveAsDefaults(DialogService dialogs) {
+    Functions.SaveFile(Consts.DefaultSettingsFile, Serialize(), dialogs);
   }
   public boolean getAlwaysIgnorePirates() {
     return _alwaysIgnorePirates;
