@@ -20,18 +20,16 @@ import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
-import spacetrader.Commander;
+import org.gts.bst.presenter.ShipListPresenter;
+import org.gts.bst.view.MainWindow;
+import org.gts.bst.view.ShipInfoViewModel;
+import org.gts.bst.view.ShipListView;
+import org.gts.bst.view.ShipListViewModel;
 import spacetrader.Consts;
-import spacetrader.Functions;
 import spacetrader.Game;
-import spacetrader.Ship;
-import spacetrader.ShipSpec;
-import spacetrader.SpecialEvent;
-import spacetrader.Strings;
-import spacetrader.enums.AlertType;
 
 
-public class FormShipList extends WinformForm {
+public class FormShipList extends WinformForm implements ShipListView {
   private Button btnClose;
   private Button btnBuy0;
   private Label lblName0;
@@ -93,43 +91,37 @@ public class FormShipList extends WinformForm {
   private Label lblShield;
   private Label lblGadget;
   private Label lblCrew;
+  private Label[] lblNames;
   private Label[] lblPrice;
   private Button[] btnBuy;
+  private Button[] btnInfo;
   private final Game game = Game.CurrentGame();
-  private final Commander cmdr = game.Commander();
-  private final Ship ship = cmdr.getShip();
-  private int[] prices = new int[Consts.ShipSpecs.length];
+  private final MainWindow mainWindow;
+  private final ShipListPresenter presenter;
 
-  public FormShipList() {
+  public FormShipList(MainWindow mainWindow) {
     InitializeComponent();
+    this.mainWindow = mainWindow;
+    lblNames = new Label[]{
+      lblName0, lblName1, lblName2, lblName3, lblName4,
+      lblName5, lblName6, lblName7, lblName8, lblName9
+    };
     lblPrice = new Label[]{
-      lblPrice0,
-      lblPrice1,
-      lblPrice2,
-      lblPrice3,
-      lblPrice4,
-      lblPrice5,
-      lblPrice6,
-      lblPrice7,
-      lblPrice8,
-      lblPrice9,};
+      lblPrice0, lblPrice1, lblPrice2, lblPrice3, lblPrice4,
+      lblPrice5, lblPrice6, lblPrice7, lblPrice8, lblPrice9
+    };
     btnBuy = new Button[]{
-      btnBuy0,
-      btnBuy1,
-      btnBuy2,
-      btnBuy3,
-      btnBuy4,
-      btnBuy5,
-      btnBuy6,
-      btnBuy7,
-      btnBuy8,
-      btnBuy9,};
-    UpdateAll();
-    Info(ship.Type().CastToInt());
-    if(ship.getTribbles() > 0 && !game.getTribbleMessage()) {
-      FormAlert.Alert(AlertType.TribblesTradeIn, this);
-      game.setTribbleMessage(true);
-    }
+      btnBuy0, btnBuy1, btnBuy2, btnBuy3, btnBuy4,
+      btnBuy5, btnBuy6, btnBuy7, btnBuy8, btnBuy9
+    };
+    btnInfo = new Button[]{
+      btnInfo0, btnInfo1, btnInfo2, btnInfo3, btnInfo4,
+      btnInfo5, btnInfo6, btnInfo7, btnInfo8, btnInfo9
+    };
+    presenter = new ShipListPresenter(game, this);
+    presenter.update();
+    presenter.selectCurrentShip();
+    presenter.notifyTribblesTradeInIfNeeded();
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -824,53 +816,52 @@ public class FormShipList extends WinformForm {
     ResumeLayout(false);
   }
 
-  private void Buy(int id) {
-    Info(id);
-    if(cmdr.TradeShip(Consts.ShipSpecs[id], prices[id])) {
-      if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
-        game.setQuestStatusScarab(SpecialEvent.StatusScarabNotStarted);
-      }
-      UpdateAll();
-      game.getParentWindow().UpdateAll();
+  @Override
+  public void render(ShipListViewModel model) {
+    for(int i = 0; i < lblPrice.length && i < model.rows().size(); i++) {
+      ShipListViewModel.Row row = model.rows().get(i);
+      lblNames[i].setText(row.name());
+      lblPrice[i].setText(row.price());
+      btnBuy[i].setVisible(row.buyVisible());
     }
   }
 
-  private void Info(int id) {
-    ShipSpec spec = Consts.ShipSpecs[id];
-    picShip.setImage(spec.Image());
-    lblName.setText(spec.Name());
-    lblSize.setText(Strings.Sizes[spec.getSize().CastToInt()]);
-    lblBays.setText(Functions.FormatNumber(spec.CargoBays()));
-    lblRange.setText(Functions.Multiples(spec.FuelTanks(), Strings.DistanceUnit));
-    lblHull.setText(Functions.FormatNumber(spec.HullStrength()));
-    lblWeapon.setText(Functions.FormatNumber(spec.getWeaponSlots()));
-    lblShield.setText(Functions.FormatNumber(spec.getShieldSlots()));
-    lblGadget.setText(Functions.FormatNumber(spec.getGadgetSlots()));
-    lblCrew.setText(Functions.FormatNumber(spec.getCrewQuarters()));
-  }
-
-  private void UpdateAll() {
-    for(int i = 0; i < lblPrice.length; i++) {
-      btnBuy[i].setVisible(false);
-      if(Consts.ShipSpecs[i].MinimumTechLevel().ordinal() > cmdr.CurrentSystem().TechLevel().ordinal()) {
-        lblPrice[i].setText("not sold");
-      } else if(Consts.ShipSpecs[i].Type() == ship.Type()) {
-        lblPrice[i].setText(Strings.ShipBuyGotOne);
-      } else {
-        btnBuy[i].setVisible(true);
-        prices[i] = Consts.ShipSpecs[i].getPrice() - ship.Worth(false);
-        lblPrice[i].setText(Functions.FormatMoney(prices[i]));
-      }
-    }
+  @Override
+  public void renderInfo(ShipInfoViewModel info) {
+    picShip.setImage(game.getParentWindow().ShipImages().getImages()[
+        info.imageIndex() * Consts.ImagesPerShip + Consts.ShipImgOffsetNormal]);
+    lblName.setText(info.name());
+    lblSize.setText(info.size());
+    lblBays.setText(info.bays());
+    lblRange.setText(info.range());
+    lblHull.setText(info.hull());
+    lblWeapon.setText(info.weapon());
+    lblShield.setText(info.shield());
+    lblGadget.setText(info.gadget());
+    lblCrew.setText(info.crew());
   }
 
   private void btnBuyInfo_Click(Object sender, EventArgs e) {
-    String name = ((Button)sender).getName();
-    int index = Integer.parseInt(name.substring(name.length() - 1));
-    if(name.indexOf("Buy") < 0) {
-      Info(index);
+    Button button = (Button)sender;
+    int buy = indexOf(btnBuy, button);
+    if(buy >= 0) {
+      if(presenter.buy(buy)) {
+        mainWindow.refresh();
+      }
     } else {
-      Buy(index);
+      int info = indexOf(btnInfo, button);
+      if(info >= 0) {
+        presenter.select(info);
+      }
     }
+  }
+
+  private static int indexOf(Button[] buttons, Button button) {
+    for(int i = 0; i < buttons.length; i++) {
+      if(buttons[i] == button) {
+        return i;
+      }
+    }
+    return -1;
   }
 }
