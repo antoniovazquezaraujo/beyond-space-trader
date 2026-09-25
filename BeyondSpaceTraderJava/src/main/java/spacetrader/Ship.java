@@ -390,6 +390,7 @@ public class Ship extends ShipSpec {
   private void GenerateOpponentShip(OpponentType oppType) {
     Commander cmdr = Game.CurrentGame().Commander();
     PoliticalSystem polSys = Game.CurrentGame().WarpSystem().PoliticalSystem();
+    Difficulty difficulty = Game.CurrentGame().Difficulty();
     if(oppType == OpponentType.Mantis) {
       SetValues(ShipType.Mantis);
     } else {
@@ -399,7 +400,7 @@ public class Ship extends ShipSpec {
         case Pirate:
           // Pirates become better when you get richer
           tries = 1 + cmdr.Worth() / 100000;
-          tries = Math.max(1, tries + Game.CurrentGame().Difficulty().CastToInt() - Difficulty.Normal.CastToInt());
+          tries = Math.max(1, tries + difficulty.CastToInt() - Difficulty.Normal.CastToInt());
           break;
         case Police:
           // The police will try to hunt you down with better ships if you are a villain,
@@ -411,7 +412,7 @@ public class Ship extends ShipSpec {
           } else {
             tries = 1;
           }
-          tries = Math.max(1, tries + Game.CurrentGame().Difficulty().CastToInt() - Difficulty.Normal.CastToInt());
+          tries = Math.max(1, tries + difficulty.CastToInt() - Difficulty.Normal.CastToInt());
           break;
         default:
           break;
@@ -424,7 +425,7 @@ public class Ship extends ShipSpec {
       int total = 0;
       for(int i = 0; i < Consts.MaxShip; i++) {
         ShipSpec spec = Consts.ShipSpecs[i];
-        if(polSys.ShipTypeLikely(spec.Type(), oppType)) {
+        if(polSys.ShipTypeLikely(spec.Type(), oppType, difficulty)) {
           total += spec.Occurrence();
         }
       }
@@ -434,7 +435,7 @@ public class Ship extends ShipSpec {
         int j = -1;
         do {
           j++;
-          if(polSys.ShipTypeLikely(Consts.ShipSpecs[j].Type(), oppType)) {
+          if(polSys.ShipTypeLikely(Consts.ShipSpecs[j].Type(), oppType, difficulty)) {
             if(sum > 0) {
               sum += Consts.ShipSpecs[j].Occurrence();
             } else {
@@ -945,7 +946,7 @@ public class Ship extends ShipSpec {
           max = Crew()[crew].Skills()[skill];
         }
       }
-      skills[skill] = Math.max(1, Functions.AdjustSkillForDifficulty(max));
+      skills[skill] = Math.max(1, Functions.AdjustSkillForDifficulty(max, Game.CurrentGame().Difficulty()));
     }
     // Adjust skills based on any gadgets on board.
     for(int i = 0; i < _gadgets.length; i++) {

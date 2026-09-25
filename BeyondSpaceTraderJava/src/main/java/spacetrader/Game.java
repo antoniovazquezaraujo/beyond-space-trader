@@ -738,7 +738,7 @@ public final class Game extends STSerializableObject {
         EscapeWithPod();
       } else {
         Dialogs().alert(AlertType.ReactorDestroyed);
-        throw new GameEndException(GameEndType.Killed);
+        throw new GameEndException(this, GameEndType.Killed);
       }
     } else {
       // Reactor warnings:
@@ -2240,7 +2240,7 @@ public final class Game extends STSerializableObject {
             EscapeWithPod();
             break;
           case Killed:
-            throw new GameEndException(GameEndType.Killed);
+            throw new GameEndException(this, GameEndType.Killed);
         }
       }
       setClicks(getClicks() - 1);
@@ -2793,7 +2793,7 @@ public final class Game extends STSerializableObject {
         break;
       case MoonRetirement:
         setQuestStatusMoon(SpecialEvent.StatusMoonDone);
-        throw new GameEndException(GameEndType.BoughtMoon);
+        throw new GameEndException(this, GameEndType.BoughtMoon);
       case Princess:
         curSys.SpecialEventType(SpecialEventType.PrincessReturned);
         remove = false;
