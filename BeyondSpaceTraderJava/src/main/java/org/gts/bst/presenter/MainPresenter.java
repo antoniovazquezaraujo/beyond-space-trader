@@ -1,14 +1,19 @@
 package org.gts.bst.presenter;
 
 import java.util.function.Supplier;
+import org.gts.bst.ship.ShipType;
+import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
+import org.gts.bst.view.ShipyardViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
 import spacetrader.Commander;
+import spacetrader.Consts;
 import spacetrader.CrewMember;
 import spacetrader.Functions;
 import spacetrader.Game;
+import spacetrader.Ship;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
 
@@ -69,6 +74,60 @@ public class MainPresenter {
                 mercs.length == 1 ? mercs[0].Name() : mercs.length + Strings.Mercenaries)
             : "",
         specialVisible ? system.SpecialEvent().Title() : ""));
+  }
+
+  public void updateDock() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      view.renderDock(new DockViewModel("", "", false, "", "", false));
+      return;
+    }
+    Ship ship = game.Commander().getShip();
+    int tanksEmpty = ship.FuelTanks() - ship.getFuel();
+    int hullLoss = ship.HullStrength() - ship.getHull();
+    view.renderDock(new DockViewModel(
+        Functions.StringVars("You have fuel to fly ^1.", Functions.Multiples(ship.getFuel(), "parsec")),
+        tanksEmpty > 0
+            ? Functions.StringVars("A full tank costs ^1", Functions.FormatMoney(tanksEmpty * ship.getFuelCost()))
+            : "Your tank is full.",
+        tanksEmpty > 0,
+        Functions.StringVars("Your hull strength is at ^1%.",
+            Functions.FormatNumber((int)Math.floor((double)100 * ship.getHull() / ship.HullStrength()))),
+        hullLoss > 0
+            ? Functions.StringVars("Full repairs will cost ^1", Functions.FormatMoney(hullLoss * ship.getRepairCost()))
+            : "No repairs are needed.",
+        hullLoss > 0));
+  }
+
+  public void updateShipyard() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      view.renderShipyard(new ShipyardViewModel("", false, false, "", false, "", false));
+      return;
+    }
+    StarSystem system = game.Commander().CurrentSystem();
+    boolean noTech = system.TechLevel().ordinal()
+        < Consts.ShipSpecs[ShipType.Flea.CastToInt()].MinimumTechLevel().ordinal();
+    String escapePod;
+    boolean podVisible = false;
+    if(game.Commander().getShip().getEscapePod()) {
+      escapePod = Strings.ShipyardPodInstalled;
+    } else if(noTech) {
+      escapePod = Strings.ShipyardPodNoSale;
+    } else if(game.Commander().getCash() < 2000) {
+      escapePod = Strings.ShipyardPodIF;
+    } else {
+      escapePod = Strings.ShipyardPodCost;
+      podVisible = true;
+    }
+    view.renderShipyard(new ShipyardViewModel(
+        noTech ? Strings.ShipyardShipNoSale : Strings.ShipyardShipForSale,
+        true,
+        system.Shipyard() != null,
+        noTech ? Strings.ShipyardEquipNoSale : Strings.ShipyardEquipForSale,
+        true,
+        escapePod,
+        podVisible));
   }
 
   public void updateTargetSystemInfo() {
