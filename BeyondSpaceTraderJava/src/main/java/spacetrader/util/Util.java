@@ -22,9 +22,11 @@ public class Util {
 
   public static String StringsJoin(String seperator, String[] values) {
     StringBuilder sb = new StringBuilder("");
-    for(String string : values) {
-      sb.append(string);
-      sb.append(seperator);
+    for(int i = 0; i < values.length; i++) {
+      if(i > 0) {
+        sb.append(seperator);
+      }
+      sb.append(values[i]);
     }
     return sb.toString();
   }

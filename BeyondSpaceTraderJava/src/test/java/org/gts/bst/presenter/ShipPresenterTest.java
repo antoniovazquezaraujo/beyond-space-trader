@@ -49,8 +49,7 @@ class ShipPresenterTest {
 
     new ShipPresenter(game, view).update();
 
-    // StringsJoin appends the separator after every element, including the last one.
-    assertEquals("5 cute, furry tribbles." + NL + NL, view.model.specialCargo());
+    assertEquals("5 cute, furry tribbles.", view.model.specialCargo());
   }
 
   private static Game newGame() {

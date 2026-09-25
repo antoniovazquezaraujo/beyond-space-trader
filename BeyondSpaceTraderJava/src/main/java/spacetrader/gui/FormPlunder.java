@@ -11,13 +11,17 @@ import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
 import org.gts.bst.cargo.CargoBuyOffer;
-import org.gts.bst.cargo.CargoBuyOp;
+import org.gts.bst.cargo.CargoSellOffer;
+import org.gts.bst.presenter.CargoTransferPresenter;
+import org.gts.bst.presenter.CargoTransferPresenter.Mode;
+import org.gts.bst.view.CargoTransferView;
+import org.gts.bst.view.CargoTransferViewModel;
 import spacetrader.Game;
-import spacetrader.Ship;
 
 
-public class FormPlunder extends WinformForm {
+public class FormPlunder extends WinformForm implements CargoTransferView {
   private final Game game = Game.CurrentGame();
+  private CargoTransferPresenter presenter;
   private Button btnPlunderAll9;
   private Button btnPlunderQty9;
   private Button btnPlunderAll8;
@@ -65,7 +69,8 @@ public class FormPlunder extends WinformForm {
       btnPlunderAll0, btnPlunderAll1, btnPlunderAll2, btnPlunderAll3, btnPlunderAll4,
       btnPlunderAll5, btnPlunderAll6, btnPlunderAll7, btnPlunderAll8, btnPlunderAll9
     };
-    UpdateAll();
+    presenter = new CargoTransferPresenter(game, this, Mode.Plunder);
+    presenter.update();
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -519,29 +524,24 @@ public class FormPlunder extends WinformForm {
     PerformLayout();
   }
 
-  private void Plunder(int tradeItem, boolean all) {
-    CargoBuyOffer offer = game.CargoBuyOffer(tradeItem, CargoBuyOp.InPlunder);
-    if(offer != null) {
-      Integer qty = all ? Integer.valueOf(offer.maxAmount()) : askQuantity(offer);
-      if(qty != null) {
-        game.CargoBuy(offer, qty);
-      }
+  @Override
+  public void render(CargoTransferViewModel model) {
+    for(int i = 0; i < btnPlunderQty.length; i++) {
+      btnPlunderQty[i].setText(model.quantities().get(i));
     }
-    UpdateAll();
+    lblBays.setText(model.bays());
   }
 
-  private Integer askQuantity(CargoBuyOffer offer) {
-    FormCargoBuy form = new FormCargoBuy(offer.tradeItem(), offer.maxAmount(), offer.op());
+  @Override
+  public Integer askSellQuantity(CargoSellOffer offer) {
+    FormCargoSell form = new FormCargoSell(offer.tradeItem(), offer.maxAmount(), offer.op(), offer.price());
     return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
-  private void UpdateAll() {
-    Ship ship = game.Commander().getShip();
-    Ship opp = game.getOpponent();
-    for(int i = 0; i < btnPlunderQty.length; i++) {
-      btnPlunderQty[i].setText("" + opp.Cargo()[i]);
-    }
-    lblBays.setText(ship.FilledCargoBays() + "/" + ship.CargoBays());
+  @Override
+  public Integer askBuyQuantity(CargoBuyOffer offer) {
+    FormCargoBuy form = new FormCargoBuy(offer.tradeItem(), offer.maxAmount(), offer.op());
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
   private void btnJettison_Click() {
@@ -552,6 +552,6 @@ public class FormPlunder extends WinformForm {
     String name = ((Button)sender).getName();
     boolean all = name.indexOf("Qty") < 0;
     int index = Integer.parseInt(name.substring(name.length() - 1));
-    Plunder(index, all);
+    presenter.transfer(index, all);
   }
 }

@@ -12,14 +12,16 @@ import jwinforms.enums.DialogResult;
 import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
-import spacetrader.Commander;
+import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
-import org.gts.bst.cargo.CargoSellOp;
+import org.gts.bst.presenter.CargoTransferPresenter;
+import org.gts.bst.presenter.CargoTransferPresenter.Mode;
+import org.gts.bst.view.CargoTransferView;
+import org.gts.bst.view.CargoTransferViewModel;
 import spacetrader.Game;
-import spacetrader.Ship;
 
 
-public class FormJettison extends WinformForm {
+public class FormJettison extends WinformForm implements CargoTransferView {
   private Button btnJettisonAll9;
   private Button btnJettisonQty9;
   private Button btnJettisonAll8;
@@ -57,7 +59,7 @@ public class FormJettison extends WinformForm {
   private Button[] btnJettisonQty;
   private Button[] btnJettisonAll;
   private final Game game = Game.CurrentGame();
-  private final Commander cmdr = game.Commander();
+  private CargoTransferPresenter presenter;
 
   public FormJettison() {
     InitializeComponent();
@@ -85,7 +87,8 @@ public class FormJettison extends WinformForm {
       btnJettisonAll8,
       btnJettisonAll9
     };
-    UpdateAll();
+    presenter = new CargoTransferPresenter(game, this, Mode.Jettison);
+    presenter.update();
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -524,34 +527,30 @@ public class FormJettison extends WinformForm {
     ResumeLayout(false);
   }
 
-  private void Jettison(int tradeItem, boolean all) {
-    CargoSellOffer offer = game.CargoSellOffer(tradeItem, CargoSellOp.Jettison);
-    if(offer != null) {
-      Integer qty = all ? Integer.valueOf(offer.maxAmount()) : askQuantity(offer);
-      if(qty != null) {
-        game.CargoSell(offer, qty);
-      }
+  @Override
+  public void render(CargoTransferViewModel model) {
+    for(int i = 0; i < btnJettisonQty.length; i++) {
+      btnJettisonQty[i].setText(model.quantities().get(i));
     }
-    UpdateAll();
+    lblBays.setText(model.bays());
   }
 
-  private Integer askQuantity(CargoSellOffer offer) {
+  @Override
+  public Integer askSellQuantity(CargoSellOffer offer) {
     FormCargoSell form = new FormCargoSell(offer.tradeItem(), offer.maxAmount(), offer.op(), offer.price());
     return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
-  private void UpdateAll() {
-    Ship ship = cmdr.getShip();
-    for(int i = 0; i < btnJettisonQty.length; i++) {
-      btnJettisonQty[i].setText("" + ship.Cargo()[i]);
-    }
-    lblBays.setText(ship.FilledCargoBays() + "/" + ship.CargoBays());
+  @Override
+  public Integer askBuyQuantity(CargoBuyOffer offer) {
+    FormCargoBuy form = new FormCargoBuy(offer.tradeItem(), offer.maxAmount(), offer.op());
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
   private void btnJettison_Click(Object sender, EventArgs e) {
     String name = ((Button)sender).getName();
     boolean all = name.indexOf("Qty") < 0;
     int index = Integer.parseInt(name.substring(name.length() - 1));
-    Jettison(index, all);
+    presenter.transfer(index, all);
   }
 }
