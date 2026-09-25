@@ -45,6 +45,14 @@ java -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
 mvn package                                  # build both modules and the jar
 ```
 
+On non-Windows platforms the default UI fonts are shrunk to 10 pt, because the JWinForms
+layouts were tuned for Microsoft Sans Serif 8.25 and fixed-size labels clip otherwise.
+Override the size with `-Dbst.uiFontSize=<points>` (`0` disables the adjustment):
+
+```bash
+java -Dbst.uiFontSize=11 -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
+```
+
 ## License
 
 GNU General Public License v3.0 or later (`GPL-3.0-or-later`).
