@@ -8,18 +8,24 @@ import spacetrader.enums.AlertType;
 
 
 /**
- * Test double for {@link DialogService} that records every alert shown.
+ * Test double for {@link DialogService} that records every alert shown and returns a
+ * configurable result.
  */
-class TestDialogService implements DialogService {
+public class TestDialogService implements DialogService {
   private final List<AlertType> alerts = new ArrayList<>();
+  private DialogResult result = DialogResult.None;
+
+  public void setResult(DialogResult result) {
+    this.result = result;
+  }
 
   @Override
   public DialogResult alert(AlertType type, String... messageArgs) {
     alerts.add(type);
-    return DialogResult.None;
+    return result;
   }
 
-  List<AlertType> alerts() {
+  public List<AlertType> alerts() {
     return alerts;
   }
 }

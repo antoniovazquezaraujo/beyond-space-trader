@@ -15,15 +15,13 @@ import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
-import spacetrader.Commander;
-import spacetrader.Consts;
-import spacetrader.Functions;
+import org.gts.bst.presenter.BankPresenter;
+import org.gts.bst.view.BankView;
+import org.gts.bst.view.BankViewModel;
 import spacetrader.Game;
-import spacetrader.Strings;
-import spacetrader.enums.AlertType;
 
 
-public class FormViewBank extends WinformForm {
+public class FormViewBank extends WinformForm implements BankView {
   private Button btnGetLoan;
   private Button btnBuyInsurance;
   private Button btnPayBack;
@@ -42,13 +40,12 @@ public class FormViewBank extends WinformForm {
   private Label lblInsAmtLabel;
   private Label lblMaxNoClaim;
   private final Game game = Game.CurrentGame();
-  private final Commander cmdr = game.Commander();
-  private final int MaxLoan = cmdr.getPoliceRecordScore() >= Consts.PoliceRecordScoreClean
-      ? Math.min(25000, Math.max(1000, cmdr.Worth() / 5000 * 500)) : 500;
+  private final BankPresenter presenter;
 
   public FormViewBank() {
     InitializeComponent();
-    UpdateAll();
+    presenter = new BankPresenter(game, this);
+    presenter.update();
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -249,60 +246,44 @@ public class FormViewBank extends WinformForm {
     ResumeLayout(false);
   }
 
-  private void UpdateAll() {
-    // Loan Info
-    lblCurrentDebt.setText(Functions.FormatMoney(cmdr.getDebt()));
-    lblMaxLoan.setText(Functions.FormatMoney(MaxLoan));
-    btnPayBack.setVisible((cmdr.getDebt() > 0));
-    // Insurance Info
-    lblShipValue.setText(Functions.FormatMoney(cmdr.getShip().BaseWorth(true)));
-    lblNoClaim.setText(Functions.FormatPercent(cmdr.NoClaim()));
-    lblMaxNoClaim.setVisible((cmdr.NoClaim() == Consts.MaxNoClaim));
-    lblInsAmt.setText(Functions.StringVars(Strings.MoneyRateSuffix, Functions.FormatMoney(game.InsuranceCosts())));
-    btnBuyInsurance.setText(Functions.StringVars("^1 Insurance", cmdr.getInsurance() ? "Stop" : "Buy"));
+  @Override
+  public void render(BankViewModel model) {
+    lblCurrentDebt.setText(model.currentDebt());
+    lblMaxLoan.setText(model.maxLoan());
+    btnPayBack.setVisible(model.payBackVisible());
+    lblShipValue.setText(model.shipValue());
+    lblNoClaim.setText(model.noClaim());
+    lblMaxNoClaim.setVisible(model.maxNoClaimVisible());
+    lblInsAmt.setText(model.insuranceCost());
+    btnBuyInsurance.setText(model.insuranceButtonText());
+  }
+
+  @Override
+  public Integer askLoanAmount(int maxAmount) {
+    FormGetLoan form = new FormGetLoan(maxAmount);
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
+  }
+
+  @Override
+  public Integer askPayBackAmount() {
+    FormPayBackLoan form = new FormPayBackLoan();
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
   private void btnGetLoan_Click(Object sender, EventArgs e) {
-    if(cmdr.getDebt() >= MaxLoan) {
-      FormAlert.Alert(AlertType.DebtTooLargeLoan, this);
-    } else {
-      FormGetLoan form = new FormGetLoan(MaxLoan - cmdr.getDebt());
-      if(form.ShowDialog(this) == DialogResult.OK) {
-        cmdr.setCash(cmdr.getCash() + form.Amount());
-        cmdr.setDebt(cmdr.getDebt() + form.Amount());
-        UpdateAll();
-        game.getParentWindow().UpdateAll();
-      }
+    if(presenter.getLoan()) {
+      game.getParentWindow().UpdateAll(); // TODO: move to the application navigator (#4)
     }
   }
 
   private void btnPayBack_Click(Object sender, EventArgs e) {
-    if(cmdr.getDebt() == 0) {
-      FormAlert.Alert(AlertType.DebtNone, this);
-    } else {
-      FormPayBackLoan form = new FormPayBackLoan();
-      if(form.ShowDialog(this) == DialogResult.OK) {
-        cmdr.setCash(cmdr.getCash() - form.Amount());
-        cmdr.setDebt(cmdr.getDebt() - form.Amount());
-        UpdateAll();
-        game.getParentWindow().UpdateAll();
-      }
+    if(presenter.payBack()) {
+      game.getParentWindow().UpdateAll(); // TODO: move to the application navigator (#4)
     }
   }
 
   private void btnBuyInsurance_Click(Object sender, EventArgs e) {
-    if(cmdr.getInsurance()) {
-      if(FormAlert.Alert(AlertType.InsuranceStop, this) == DialogResult.Yes) {
-        cmdr.setInsurance(false);
-        cmdr.NoClaim(0);
-      }
-    } else if(!cmdr.getShip().getEscapePod()) {
-      FormAlert.Alert(AlertType.InsuranceNoEscapePod, this);
-    } else {
-      cmdr.setInsurance(true);
-      cmdr.NoClaim(0);
-    }
-    UpdateAll();
-    game.getParentWindow().UpdateAll();
+    presenter.toggleInsurance();
+    game.getParentWindow().UpdateAll(); // TODO: move to the application navigator (#4)
   }
 }
