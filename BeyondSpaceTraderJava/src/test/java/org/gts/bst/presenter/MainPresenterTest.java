@@ -10,6 +10,7 @@ import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
+import org.gts.bst.view.ChartsViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
@@ -40,6 +41,7 @@ class MainPresenterTest {
 
     presenter.updateStatusBar();
     presenter.updateSystemInfo();
+    presenter.updateCharts();
     presenter.updateCargo();
     presenter.updateDock();
     presenter.updateShipyard();
@@ -49,6 +51,8 @@ class MainPresenterTest {
     assertEquals("No Game Loaded.", view.status.extra());
     assertEquals("", view.system.name());
     assertFalse(view.system.newsVisible());
+    assertFalse(view.charts.wormholeVisible());
+    assertFalse(view.charts.findVisible());
     assertEquals(Consts.TradeItems.length, view.cargo.rows().size());
     assertEquals("", view.cargo.rows().get(0).sellPrice());
     assertFalse(view.cargo.rows().get(0).sellVisible());
@@ -78,6 +82,24 @@ class MainPresenterTest {
     assertEquals(system.TechLevel().name, view.system.tech());
     assertTrue(view.system.pressurePreVisible());
     assertTrue(view.system.newsVisible());
+  }
+
+  @Test
+  void showsTheChartControls() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    MainPresenter presenter = new MainPresenter(() -> game, view);
+
+    presenter.updateCharts();
+    assertFalse(view.charts.wormholeVisible());
+    assertTrue(view.charts.findVisible());
+    assertFalse(view.charts.jumpVisible());
+
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    game.TargetWormhole(true);
+    presenter.updateCharts();
+    assertTrue(view.charts.wormholeVisible());
+    assertEquals(game.WarpSystem().Name(), view.charts.wormholeName());
   }
 
   @Test
@@ -186,6 +208,7 @@ class MainPresenterTest {
   private static class FakeView implements MainView {
     private MainStatusViewModel status;
     private SystemInfoViewModel system;
+    private ChartsViewModel charts;
     private CargoViewModel cargo;
     private DockViewModel dock;
     private ShipyardViewModel shipyard;
@@ -199,6 +222,11 @@ class MainPresenterTest {
     @Override
     public void renderSystemInfo(SystemInfoViewModel model) {
       system = model;
+    }
+
+    @Override
+    public void renderCharts(ChartsViewModel model) {
+      charts = model;
     }
 
     @Override

@@ -58,6 +58,7 @@ import org.gts.bst.ship.equip.Weapon;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
+import org.gts.bst.view.ChartsViewModel;
 import org.gts.bst.view.DialogService;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
@@ -2882,25 +2883,18 @@ public class ApplicationST extends WinformWindow implements MainView {
   }
 
   private void UpdateCharts() {
+    mainPresenter.updateCharts();
+  }
+
+  @Override
+  public void renderCharts(ChartsViewModel model) {
     picGalacticChart.Refresh();
     picShortRangeChart.Refresh();
-    if(game == null) {
-      lblWormholeLabel.setVisible(false);
-      lblWormhole.setVisible(false);
-      btnJump.setVisible(false);
-      btnFind.setVisible(false);
-    } else {
-      if(game.TargetWormhole()) {
-        lblWormholeLabel.setVisible(true);
-        lblWormhole.setVisible(true);
-        lblWormhole.setText(game.WarpSystem().Name());
-      } else {
-        lblWormholeLabel.setVisible(false);
-        lblWormhole.setVisible(false);
-      }
-      btnJump.setVisible(game.getCanSuperWarp());
-      btnFind.setVisible(true);
-    }
+    lblWormholeLabel.setVisible(model.wormholeVisible());
+    lblWormhole.setVisible(model.wormholeVisible());
+    lblWormhole.setText(model.wormholeName());
+    btnJump.setVisible(model.jumpVisible());
+    btnFind.setVisible(model.findVisible());
   }
 
   private void UpdateDock() {

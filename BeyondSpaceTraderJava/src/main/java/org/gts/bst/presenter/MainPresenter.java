@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
+import org.gts.bst.view.ChartsViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
@@ -78,6 +79,17 @@ public class MainPresenter {
                 mercs.length == 1 ? mercs[0].Name() : mercs.length + Strings.Mercenaries)
             : "",
         specialVisible ? system.SpecialEvent().Title() : ""));
+  }
+
+  public void updateCharts() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      view.renderCharts(new ChartsViewModel(false, "", false, false));
+      return;
+    }
+    boolean wormhole = game.TargetWormhole();
+    view.renderCharts(new ChartsViewModel(wormhole, wormhole ? game.WarpSystem().Name() : "",
+        game.getCanSuperWarp(), true));
   }
 
   public void updateCargo() {
