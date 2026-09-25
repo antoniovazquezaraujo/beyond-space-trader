@@ -21,3 +21,7 @@ spacetraderjava-code-r69.zip
 *.swp
 .DS_Store
 Thumbs.db
+
+# Runtime directories created next to the working directory
+data/
+custom/
