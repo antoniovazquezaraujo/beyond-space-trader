@@ -2,6 +2,7 @@ package spacetrader.stub;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.List;
+import spacetrader.util.Log;
 import util.Convertor;
 import util.Lisp;
 
@@ -9,7 +10,7 @@ import util.Lisp;
 public class Directory {
   public static String[] GetFiles(String path, String filter) {
     if(!filter.startsWith("*.")) {
-      new Error("unsupported format").printStackTrace();
+      throw new IllegalArgumentException("Unsupported filter: " + filter);
     }
     final String suffix = filter.substring(2);
     File[] files = new File(path).listFiles(new FilenameFilter() {
@@ -19,7 +20,7 @@ public class Directory {
       }
     });
     if(files == null) {
-      System.out.println("getFiles rets null!");
+      Log.write("Directory not found or unreadable: " + path);
       return new String[0];
     }
     List<String> names = Lisp.map(files, new Convertor<String, File>() {
@@ -37,7 +38,7 @@ public class Directory {
 
   public static void CreateDirectory(String path) {
     if(!new File(path).mkdir()) {
-      System.out.println("Couldn't make dir " + path);
+      Log.write("Couldn't create the directory " + path);
     }
   }
 }

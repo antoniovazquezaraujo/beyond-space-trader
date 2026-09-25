@@ -53,15 +53,7 @@ public class Weapon extends Equipment {
 
   @Override
   public boolean TypeEquals(Object type) {
-    boolean equal = false;
-    try {
-      if(_type == (WeaponType)type) {
-        equal = true;
-      }
-    } catch(Exception e) {
-      Log.write("Ignored exception " + e);
-    }
-    return equal;
+    return _type == type;
   }
 
   public WeaponType Type() {

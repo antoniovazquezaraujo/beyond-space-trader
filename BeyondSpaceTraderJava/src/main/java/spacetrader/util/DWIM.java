@@ -28,12 +28,12 @@ public class DWIM {
     } else if(ob instanceof SpaceTraderEnum) {
       intvalue = ((SpaceTraderEnum)ob).CastToInt();
     } else {
-      throw new Error("Unknown value: type is " + ob.getClass() + " tostring is " + ob);
+      throw new IllegalArgumentException("Unknown value: type is " + ob.getClass() + " tostring is " + ob);
     }
     try {
       return (T)getFromInt(cls).invoke(null, intvalue);
     } catch(Exception e) {
-      throw new Error("dwim(" + ob.getClass() + ", " + cls + ") ", e);
+      throw new IllegalStateException("dwim(" + ob.getClass() + ", " + cls + ") ", e);
     }
   }
 
@@ -46,7 +46,7 @@ public class DWIM {
       }
       return arrayVal;
     } catch(Exception e) {
-      throw new Error("dwim[](" + ob.getClass() + ", " + cls + ") ", e);
+      throw new IllegalStateException("dwim[](" + ob.getClass() + ", " + cls + ") ", e);
     }
   }
 

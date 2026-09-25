@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
+import spacetrader.util.Log;
 
 
 public class RegistryKey {
@@ -19,13 +20,13 @@ public class RegistryKey {
       stream = new FileInputStream(regfile);
       properties.load(stream);
     } catch(IOException e) {
-      throw new Error("Can't create/load regfile.");
+      throw new IllegalStateException("Can't create or load the settings file " + regfile, e);
     } finally {
       if(stream != null) {
         try {
           stream.close();
         } catch(IOException e) {
-          e.printStackTrace();
+          Log.error("Couldn't close the settings file " + regfile, e);
         }
       }
     }
@@ -40,19 +41,18 @@ public class RegistryKey {
     try {
       stream = new FileOutputStream(file);
     } catch(FileNotFoundException e) {
-      e.printStackTrace();
+      Log.error("Couldn't save the settings file " + file, e);
       return;
     }
     try {
       properties.store(stream, "");
     } catch(IOException e) {
-      e.printStackTrace();
+      Log.error("Couldn't save the settings file " + file, e);
     } finally {
       try {
         stream.close();
       } catch(IOException e) {
-        e.printStackTrace();
-        return;
+        Log.error("Couldn't close the settings file " + file, e);
       }
     }
   }

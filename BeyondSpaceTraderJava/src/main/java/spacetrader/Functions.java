@@ -203,7 +203,6 @@ public class Functions {
   }
 
   public static boolean SaveFile(String fileName, Object toSerialize, DialogService dialogs) {
-    System.out.println(fileName);
     FileOutputStream outStream = null;
     boolean saveOk = false;
     try {
@@ -218,7 +217,7 @@ public class Functions {
         try {
           outStream.close();
         } catch(IOException e) {
-          e.printStackTrace();
+          Log.error("Couldn't close the save stream for " + fileName, e);
         }
       }
     }
