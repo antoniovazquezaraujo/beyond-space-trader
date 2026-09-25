@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Locale;
+import org.gts.bst.cargo.CargoBuyOffer;
+import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.CargoRowViewModel;
@@ -26,6 +28,7 @@ import spacetrader.Game;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
 import spacetrader.TestDialogService;
+import spacetrader.enums.AlertType;
 import spacetrader.enums.StarSystemId;
 
 
@@ -139,6 +142,91 @@ class MainPresenterTest {
   }
 
   @Test
+  void buysCargoThroughTheDialog() {
+    Game game = newGame();
+    game.PriceCargoBuy()[0] = 10;
+    game.Commander().CurrentSystem().TradeItems()[0] = 5;
+    FakeView view = new FakeView();
+    view.cargoBuyAnswer = 2;
+
+    new MainPresenter(() -> game, view).buyCargo(0, false);
+
+    assertEquals(2, game.Commander().getShip().Cargo()[0]);
+    assertEquals(980, game.Commander().getCash());
+    assertEquals(20, game.Commander().PriceCargo()[0]);
+  }
+
+  @Test
+  void cancellingTheCargoPurchaseChangesNothing() {
+    Game game = newGame();
+    game.PriceCargoBuy()[0] = 10;
+    game.Commander().CurrentSystem().TradeItems()[0] = 5;
+    FakeView view = new FakeView();
+
+    new MainPresenter(() -> game, view).buyCargo(0, false);
+
+    assertEquals(0, game.Commander().getShip().Cargo()[0]);
+    assertEquals(1000, game.Commander().getCash());
+  }
+
+  @Test
+  void buysTheMaximumCargo() {
+    Game game = newGame();
+    game.PriceCargoBuy()[0] = 10;
+    game.Commander().CurrentSystem().TradeItems()[0] = 5;
+    FakeView view = new FakeView();
+
+    new MainPresenter(() -> game, view).buyCargo(0, true);
+
+    assertEquals(5, game.Commander().getShip().Cargo()[0]);
+    assertEquals(950, game.Commander().getCash());
+  }
+
+  @Test
+  void sellsCargo() {
+    Game game = newGame();
+    game.PriceCargoSell()[0] = 10;
+    game.Commander().getShip().Cargo()[0] = 3;
+    game.Commander().PriceCargo()[0] = 30;
+    FakeView view = new FakeView();
+
+    new MainPresenter(() -> game, view).sellCargo(0, true);
+
+    assertEquals(0, game.Commander().getShip().Cargo()[0]);
+    assertEquals(1030, game.Commander().getCash());
+    assertEquals(0, game.Commander().PriceCargo()[0]);
+  }
+
+  @Test
+  void dumpsCargoWhenThereIsNoSalePrice() {
+    Game game = newGame();
+    game.PriceCargoSell()[0] = 0;
+    game.Commander().getShip().Cargo()[0] = 3;
+    game.Commander().PriceCargo()[0] = 30;
+    FakeView view = new FakeView();
+    view.cargoSellAnswer = 2;
+    int unitCost = 5 * (Difficulty.Normal.CastToInt() + 1);
+
+    new MainPresenter(() -> game, view).sellCargo(0, false);
+
+    assertEquals(1, game.Commander().getShip().Cargo()[0]);
+    assertEquals(1000 - 2 * unitCost, game.Commander().getCash());
+  }
+
+  @Test
+  void warnsWhenTheSystemHasNoCargo() {
+    TestDialogService dialogs = new TestDialogService();
+    Game game = newGame(dialogs);
+    game.PriceCargoBuy()[0] = 10;
+    game.Commander().CurrentSystem().TradeItems()[0] = 0;
+    FakeView view = new FakeView();
+
+    new MainPresenter(() -> game, view).buyCargo(0, false);
+
+    assertEquals(List.of(AlertType.CargoNoneAvailable), dialogs.alerts());
+  }
+
+  @Test
   void buysFuel() {
     Game game = newGame();
     game.Commander().getShip().setFuel(0);
@@ -249,7 +337,11 @@ class MainPresenterTest {
   }
 
   private static Game newGame() {
-    return new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+    return newGame(new TestDialogService());
+  }
+
+  private static Game newGame(TestDialogService dialogs) {
+    return new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
   }
 
   private static StarSystem firstSystemWithTech(Game game, boolean atLeast, int tech) {
@@ -271,6 +363,8 @@ class MainPresenterTest {
     private TargetSystemViewModel target;
     private Integer fuelAnswer;
     private Integer repairsAnswer;
+    private Integer cargoBuyAnswer;
+    private Integer cargoSellAnswer;
 
     @Override
     public void renderStatusBar(MainStatusViewModel model) {
@@ -315,6 +409,16 @@ class MainPresenterTest {
     @Override
     public Integer askRepairsAmount(int maxAmount) {
       return repairsAnswer;
+    }
+
+    @Override
+    public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
+      return cargoBuyAnswer;
+    }
+
+    @Override
+    public Integer askCargoSellQuantity(CargoSellOffer offer) {
+      return cargoSellAnswer;
     }
   }
 }

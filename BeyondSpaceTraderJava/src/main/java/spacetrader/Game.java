@@ -4,7 +4,9 @@ import java.util.Iterator;
 import jwinforms.WinformPane;
 import org.gts.bst.view.DialogResult;
 import org.gts.bst.ApplicationST;
+import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoBuyOp;
+import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.cargo.TradeItem;
 import org.gts.bst.cargo.TradeItemType;
@@ -891,7 +893,11 @@ public class Game extends STSerializableObject {
     RecalculateBuyPrices(system);
   }
 
-  private void CargoBuy(int tradeItem, boolean max, WinformPane owner, CargoBuyOp op) {
+  /**
+   * Returns the buy offer for a trade item, showing the blocking alert when the purchase
+   * is not possible. A null result means the purchase must not proceed.
+   */
+  public CargoBuyOffer CargoBuyOffer(int tradeItem, CargoBuyOp op) {
     int freeBays = cmdr.getShip().FreeCargoBays();
     int[] items = null;
     int unitPrice = 0;
@@ -916,37 +922,48 @@ public class Game extends STSerializableObject {
     }
     if(op == CargoBuyOp.BuySystem && cmdr.getDebt() > Consts.DebtTooLarge) {
       Dialogs().alert(AlertType.DebtTooLargeTrade);
-    } else if(op == CargoBuyOp.BuySystem && (items[tradeItem] <= 0 || unitPrice <= 0)) {
-      Dialogs().alert(AlertType.CargoNoneAvailable);
-    } else if(freeBays == 0) {
-      Dialogs().alert(AlertType.CargoNoEmptyBays);
-    } else if(op != CargoBuyOp.InPlunder && cashToSpend < unitPrice) {
-      Dialogs().alert(AlertType.CargoIF);
-    } else {
-      int qty = 0;
-      int maxAmount = Math.min(freeBays, items[tradeItem]);
-      if(op == CargoBuyOp.BuySystem) {
-        maxAmount = Math.min(maxAmount, cmdr.CashToSpend() / unitPrice);
-      }
-      if(max) {
-        qty = maxAmount;
-      } else {
-        FormCargoBuy form = new FormCargoBuy(tradeItem, maxAmount, op);
-        if(form.ShowDialog(owner) == jwinforms.enums.DialogResult.OK) {
-          qty = form.Amount();
-        }
-      }
-      if(qty > 0) {
-        int totalPrice = qty * unitPrice;
-        cmdr.getShip().Cargo()[tradeItem] += qty;
-        items[tradeItem] -= qty;
-        cmdr.setCash(cmdr.getCash() - totalPrice);
-        cmdr.PriceCargo()[tradeItem] += totalPrice;
-      }
+      return null;
     }
+    if(op == CargoBuyOp.BuySystem && (items[tradeItem] <= 0 || unitPrice <= 0)) {
+      Dialogs().alert(AlertType.CargoNoneAvailable);
+      return null;
+    }
+    if(freeBays == 0) {
+      Dialogs().alert(AlertType.CargoNoEmptyBays);
+      return null;
+    }
+    if(op != CargoBuyOp.InPlunder && cashToSpend < unitPrice) {
+      Dialogs().alert(AlertType.CargoIF);
+      return null;
+    }
+    int maxAmount = Math.min(freeBays, items[tradeItem]);
+    if(op == CargoBuyOp.BuySystem) {
+      maxAmount = Math.min(maxAmount, cmdr.CashToSpend() / unitPrice);
+    }
+    return new CargoBuyOffer(tradeItem, op, unitPrice, maxAmount);
   }
 
-  private void CargoSell(int tradeItem, boolean all, WinformPane owner, CargoSellOp op) {
+  /**
+   * Applies a purchase previously quoted by {@link #CargoBuyOffer(int, CargoBuyOp)}.
+   */
+  public void CargoBuy(CargoBuyOffer offer, int qty) {
+    if(qty <= 0) {
+      return;
+    }
+    int tradeItem = offer.tradeItem();
+    int[] items = offer.op() == CargoBuyOp.BuySystem ? cmdr.CurrentSystem().TradeItems() : getOpponent().Cargo();
+    int totalPrice = qty * offer.unitPrice();
+    cmdr.getShip().Cargo()[tradeItem] += qty;
+    items[tradeItem] -= qty;
+    cmdr.setCash(cmdr.getCash() - totalPrice);
+    cmdr.PriceCargo()[tradeItem] += totalPrice;
+  }
+
+  /**
+   * Returns the sell offer for a trade item, showing the blocking alerts (and the
+   * littering confirmation) when the sale must not proceed.
+   */
+  public CargoSellOffer CargoSellOffer(int tradeItem, CargoSellOp op) {
     int qtyInHand = cmdr.getShip().Cargo()[tradeItem];
     int unitPrice;
     switch(op) {
@@ -965,46 +982,77 @@ public class Game extends STSerializableObject {
     }
     if(qtyInHand == 0) {
       Dialogs().alert(AlertType.CargoNoneToSell, Strings.CargoSellOps[op.CastToInt()]);
-    } else if(op == CargoSellOp.SellSystem && unitPrice <= 0) {
+      return null;
+    }
+    if(op == CargoSellOp.SellSystem && unitPrice <= 0) {
       Dialogs().alert(AlertType.CargoNotInterested);
-    } else {
-      if(op != CargoSellOp.Jettison || getLitterWarning() || cmdr.getPoliceRecordScore() <= Consts.PoliceRecordScoreDubious
-          || Dialogs().alert(AlertType.EncounterDumpWarning) == DialogResult.Yes) {
-        int unitCost = 0;
-        int maxAmount = (op == CargoSellOp.SellTrader) ? Math.min(qtyInHand, getOpponent().FreeCargoBays()) : qtyInHand;
-        if(op == CargoSellOp.Dump) {
-          unitCost = 5 * (_difficulty.CastToInt() + 1);
-          maxAmount = Math.min(maxAmount, cmdr.CashToSpend() / unitCost);
-        }
-        int price = unitPrice > 0 ? unitPrice : -unitCost;
-        int qty = 0;
-        if(all) {
-          qty = maxAmount;
-        } else {
-          FormCargoSell form = new FormCargoSell(tradeItem, maxAmount, op, price);
-          if(form.ShowDialog(owner) == jwinforms.enums.DialogResult.OK) {
-            qty = form.Amount();
-          }
-        }
-        if(qty > 0) {
-          int totalPrice = qty * price;
-          cmdr.getShip().Cargo()[tradeItem] -= qty;
-          cmdr.PriceCargo()[tradeItem] = (cmdr.PriceCargo()[tradeItem] * (qtyInHand - qty)) / qtyInHand;
-          cmdr.setCash(cmdr.getCash() + totalPrice);
-          if(op == CargoSellOp.Jettison) {
-            if(Functions.GetRandom(10) < _difficulty.CastToInt() + 1) {
-              if(cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreDubious) {
-                cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreDubious);
-              } else {
-                cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() - 1);
-              }
-              NewsAddEvent(NewsEvent.CaughtLittering);
-            }
-          }
-        }
+      return null;
+    }
+    if(op == CargoSellOp.Jettison && !getLitterWarning() && cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreDubious
+        && Dialogs().alert(AlertType.EncounterDumpWarning) != DialogResult.Yes) {
+      return null;
+    }
+    int unitCost = 0;
+    int maxAmount = op == CargoSellOp.SellTrader ? Math.min(qtyInHand, getOpponent().FreeCargoBays()) : qtyInHand;
+    if(op == CargoSellOp.Dump) {
+      unitCost = 5 * (_difficulty.CastToInt() + 1);
+      maxAmount = Math.min(maxAmount, cmdr.CashToSpend() / unitCost);
+    }
+    int price = unitPrice > 0 ? unitPrice : -unitCost;
+    return new CargoSellOffer(tradeItem, op, price, maxAmount);
+  }
+
+  /**
+   * Applies a sale previously quoted by {@link #CargoSellOffer(int, CargoSellOp)}.
+   */
+  public void CargoSell(CargoSellOffer offer, int qty) {
+    if(qty <= 0) {
+      return;
+    }
+    int tradeItem = offer.tradeItem();
+    int qtyInHand = cmdr.getShip().Cargo()[tradeItem];
+    cmdr.getShip().Cargo()[tradeItem] -= qty;
+    cmdr.PriceCargo()[tradeItem] = (cmdr.PriceCargo()[tradeItem] * (qtyInHand - qty)) / qtyInHand;
+    cmdr.setCash(cmdr.getCash() + qty * offer.price());
+    if(offer.op() == CargoSellOp.Jettison
+        && Functions.GetRandom(10) < _difficulty.CastToInt() + 1) {
+      if(cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreDubious) {
+        cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreDubious);
+      } else {
+        cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() - 1);
       }
+      NewsAddEvent(NewsEvent.CaughtLittering);
     }
   }
+
+  private void legacyCargoBuy(int tradeItem, boolean max, WinformPane owner, CargoBuyOp op) {
+    CargoBuyOffer offer = CargoBuyOffer(tradeItem, op);
+    if(offer == null) {
+      return;
+    }
+    int qty = max ? offer.maxAmount() : promptCargoBuy(offer, owner);
+    CargoBuy(offer, qty);
+  }
+
+  private int promptCargoBuy(CargoBuyOffer offer, WinformPane owner) {
+    FormCargoBuy form = new FormCargoBuy(offer.tradeItem(), offer.maxAmount(), offer.op());
+    return form.ShowDialog(owner) == jwinforms.enums.DialogResult.OK ? form.Amount() : 0;
+  }
+
+  private void legacyCargoSell(int tradeItem, boolean all, WinformPane owner, CargoSellOp op) {
+    CargoSellOffer offer = CargoSellOffer(tradeItem, op);
+    if(offer == null) {
+      return;
+    }
+    int qty = all ? offer.maxAmount() : promptCargoSell(offer, owner);
+    CargoSell(offer, qty);
+  }
+
+  private int promptCargoSell(CargoSellOffer offer, WinformPane owner) {
+    FormCargoSell form = new FormCargoSell(offer.tradeItem(), offer.maxAmount(), offer.op(), offer.price());
+    return form.ShowDialog(owner) == jwinforms.enums.DialogResult.OK ? form.Amount() : 0;
+  }
+
 
   private void CreateShips() {
     // set the details of the Dragonfly...
@@ -2516,32 +2564,20 @@ public class Game extends STSerializableObject {
     IncDays(term);
   }
 
-  public void CargoBuySystem(int tradeItem, boolean max, WinformPane owner) {
-    CargoBuy(tradeItem, max, owner, CargoBuyOp.BuySystem);
-  }
-
   public void CargoBuyTrader(int tradeItem, WinformPane owner) {
-    CargoBuy(tradeItem, false, owner, CargoBuyOp.BuyTrader);
-  }
-
-  public void CargoDump(int tradeItem, WinformPane owner) {
-    CargoSell(tradeItem, false, owner, CargoSellOp.Dump);
+    legacyCargoBuy(tradeItem, false, owner, CargoBuyOp.BuyTrader);
   }
 
   public void CargoJettison(int tradeItem, boolean all, WinformPane owner) {
-    CargoSell(tradeItem, all, owner, CargoSellOp.Jettison);
+    legacyCargoSell(tradeItem, all, owner, CargoSellOp.Jettison);
   }
 
   public void CargoPlunder(int tradeItem, boolean max, WinformPane owner) {
-    CargoBuy(tradeItem, max, owner, CargoBuyOp.InPlunder);
-  }
-
-  public void CargoSellSystem(int tradeItem, boolean all, WinformPane owner) {
-    CargoSell(tradeItem, all, owner, CargoSellOp.SellSystem);
+    legacyCargoBuy(tradeItem, max, owner, CargoBuyOp.InPlunder);
   }
 
   public void CargoSellTrader(int tradeItem, WinformPane owner) {
-    CargoSell(tradeItem, false, owner, CargoSellOp.SellTrader);
+    legacyCargoSell(tradeItem, false, owner, CargoSellOp.SellTrader);
   }
 
   public void CreateFlea() {

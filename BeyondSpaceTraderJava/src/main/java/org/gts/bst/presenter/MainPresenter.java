@@ -3,6 +3,10 @@ package org.gts.bst.presenter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import org.gts.bst.cargo.CargoBuyOffer;
+import org.gts.bst.cargo.CargoBuyOp;
+import org.gts.bst.cargo.CargoSellOffer;
+import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
@@ -45,6 +49,42 @@ public class MainPresenter {
     updateSystemInfo();
     updateTargetSystemInfo();
     updateCharts();
+  }
+
+  /**
+   * Buys cargo for the current system, asking the player for the quantity unless
+   * {@code max} is requested.
+   */
+  public void buyCargo(int tradeItem, boolean max) {
+    Game game = gameSupplier.get();
+    if(game != null) {
+      CargoBuyOffer offer = game.CargoBuyOffer(tradeItem, CargoBuyOp.BuySystem);
+      if(offer != null) {
+        Integer qty = max ? Integer.valueOf(offer.maxAmount()) : view.askCargoBuyQuantity(offer);
+        if(qty != null) {
+          game.CargoBuy(offer, qty);
+        }
+      }
+    }
+    updateAll();
+  }
+
+  /**
+   * Sells or dumps cargo: selling when the system buys the item, dumping otherwise.
+   */
+  public void sellCargo(int tradeItem, boolean all) {
+    Game game = gameSupplier.get();
+    if(game != null) {
+      boolean sellable = game.PriceCargoSell()[tradeItem] > 0;
+      CargoSellOffer offer = game.CargoSellOffer(tradeItem, sellable ? CargoSellOp.SellSystem : CargoSellOp.Dump);
+      if(offer != null) {
+        Integer qty = sellable && all ? Integer.valueOf(offer.maxAmount()) : view.askCargoSellQuantity(offer);
+        if(qty != null) {
+          game.CargoSell(offer, qty);
+        }
+      }
+    }
+    updateAll();
   }
 
   /**
