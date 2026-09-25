@@ -22,6 +22,6 @@ public enum GadgetType implements EquipmentSubType, SpaceTraderEnum {
 
   @Override
   public int CastToInt() {
-    throw new UnsupportedOperationException("Not supported yet.");
+    return ordinal();
   }
 }

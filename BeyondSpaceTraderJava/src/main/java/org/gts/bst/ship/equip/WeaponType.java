@@ -36,11 +36,11 @@ public enum WeaponType implements SpaceTraderEnum, EquipmentSubType {
 
   @Override
   public int CastToInt() {
-    throw new UnsupportedOperationException("Not supported yet.");
+    return id;
   }
 
   @Override
   public int asInteger() {
-    throw new UnsupportedOperationException("Not supported yet.");
+    return id;
   }
 }

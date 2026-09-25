@@ -11,9 +11,9 @@ This repository starts from the upstream snapshot `spacetraderjava-code-r69`
 
 ## Status
 
-Work in progress. The game now builds and runs; the remaining known issue carried over
-from the imported snapshot is a leftover debug cheat in the `Game` constructor that
-gives every new game 1,000,000 credits, easy encounters and super warp.
+Work in progress. The game builds and runs, and the first round of import bugs is fixed:
+startup, the leftover debug cheat and save/load serialization. The model has headless
+tests that run in CI.
 
 Roadmap:
 

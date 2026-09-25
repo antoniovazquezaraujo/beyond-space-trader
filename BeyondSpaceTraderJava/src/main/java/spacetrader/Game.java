@@ -185,8 +185,11 @@ public class Game extends STSerializableObject {
     _justLootedMarie = GetValueFromHash(hash, "_justLootedMarie", _justLootedMarie);
     _canSuperWarp = GetValueFromHash(hash, "_canSuperWarp", _canSuperWarp);
     _chanceOfVeryRareEncounter = GetValueFromHash(hash, "_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
-    _veryRareEncounters = new ArrayList(
-        Arrays.asList(GetValueFromHash(hash, "_veryRareEncounters", _veryRareEncounters.ToArray(new Integer[0]))));
+    Integer[] veryRareIds = GetValueFromHash(hash, "_veryRareEncounters", new Integer[0]);
+    _veryRareEncounters = new ArrayList<>(veryRareIds.length);
+    for(Integer id : veryRareIds) {
+      _veryRareEncounters.add(VeryRareEncounter.FromInt(id));
+    }
     _options = new GameOptions(GetValueFromHash(hash, "_options", _options.Serialize(), Hashtable.class));
   }
 
@@ -211,7 +214,7 @@ public class Game extends STSerializableObject {
     ht.add("_arrivedViaWormhole", _arrivedViaWormhole);
     ht.add("_paidForNewspaper", _paidForNewspaper);
     ht.add("_litterWarning", _litterWarning);
-    ht.add("_newsEvents", _newsEvents);
+    ht.add("_newsEvents", _newsEvents.toArray(new Integer[0]));
     ht.add("_difficulty", _difficulty.CastToInt());
     ht.add("_cheatEnabled", _cheatEnabled);
     ht.add("_autoSave", _autoSave);
