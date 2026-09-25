@@ -12,6 +12,7 @@ import jwinforms.enums.DialogResult;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
 import org.gts.bst.presenter.QuestsPresenter;
+import org.gts.bst.view.MainWindow;
 import org.gts.bst.view.QuestsView;
 import org.gts.bst.view.QuestsViewModel;
 import spacetrader.Game;
@@ -20,12 +21,14 @@ import spacetrader.Strings;
 
 public class FormViewQuests extends WinformForm implements QuestsView {
   private final Game game = Game.CurrentGame();
+  private final MainWindow mainWindow;
   private final QuestsPresenter presenter;
   private Button btnClose;
   private LinkLabel lblQuests;
 
-  public FormViewQuests() {
+  public FormViewQuests(MainWindow mainWindow) {
     InitializeComponent();
+    this.mainWindow = mainWindow;
     presenter = new QuestsPresenter(game, this);
     presenter.update();
   }
@@ -100,7 +103,7 @@ public class FormViewQuests extends WinformForm implements QuestsView {
 
   private void lblQuests_LinkClicked(Object sender, LinkLabelLinkClickedEventArgs e) {
     presenter.selectSystem(e.Link.LinkData.toString());
-    game.getParentWindow().UpdateAll(); // TODO: move to the application navigator (#4)
+    mainWindow.refresh();
     Close();
   }
 }
