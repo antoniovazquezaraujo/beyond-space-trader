@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!--
+    Naming conventions are deliberately deferred: the ported code uses the C#
+    PascalCase style and a mass rename is not worth the churn before the
+    Lanterna port (see the Cleanup milestone).
+  -->
+  <Match>
+    <Bug pattern="NM_METHOD_NAMING_CONVENTION" />
+  </Match>
+  <Match>
+    <Bug pattern="NM_FIELD_NAMING_CONVENTION" />
+  </Match>
+  <Match>
+    <Bug pattern="NM_CLASS_NAMING_CONVENTION" />
+  </Match>
+  <Match>
+    <Bug pattern="NM_SAME_SIMPLE_NAME_AS_SUPERCLASS" />
+  </Match>
+</FindBugsFilter>
