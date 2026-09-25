@@ -23,7 +23,12 @@ import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
+import java.util.Set;
 import org.gts.bst.events.EncounterResult;
+import org.gts.bst.presenter.EncounterPresenter;
+import org.gts.bst.view.EncounterAction;
+import org.gts.bst.view.EncounterView;
+import org.gts.bst.view.EncounterViewModel;
 import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.Functions;
@@ -32,7 +37,7 @@ import spacetrader.Ship;
 import spacetrader.enums.AlertType;
 
 
-public class FormEncounter extends WinformForm {
+public class FormEncounter extends WinformForm implements EncounterView {
   private Button btnAttack;
   private Button btnFlee;
   private Button btnSubmit;
@@ -102,30 +107,20 @@ public class FormEncounter extends WinformForm {
   private PictureBox picTrib55;
   private Timer tmrTick;
   private IContainer components;
-  private final int ATTACK = 0;
-  private final int BOARD = 1;
-  private final int BRIBE = 2;
-  private final int DRINK = 3;
-  private final int FLEE = 4;
-  private final int IGNORE = 5;
-  private final int INT = 6;
-  private final int MEET = 7;
-  private final int PLUNDER = 8;
-  private final int SUBMIT = 9;
-  private final int SURRENDER = 10;
-  private final int TRADE = 11;
-  private final int YIELD = 12;
+  private static final EncounterAction[] ACTIONS = new EncounterAction[]{
+    EncounterAction.Attack, EncounterAction.Board, EncounterAction.Bribe, EncounterAction.Drink, EncounterAction.Flee,
+    EncounterAction.Ignore, EncounterAction.Interrupt, EncounterAction.Meet, EncounterAction.Plunder, EncounterAction.Submit,
+    EncounterAction.Surrender, EncounterAction.Trade, EncounterAction.Yield
+  };
   private final Game game = Game.CurrentGame();
   private final Commander cmdr = game.Commander();
   private final Ship cmdrship = cmdr.getShip();
   private final Ship opponent = game.getOpponent();
+  private EncounterPresenter presenter;
   private int contImg = 1;
-  private EncounterResult _result = EncounterResult.Continue;
 
   public FormEncounter() {
     InitializeComponent();
-    // Set up the Game encounter variables.
-    game.EncounterBegin();
     // Enable the control box (the X button) if cheats are enabled.
     if(game.getEasyEncounters()) {
       setControlBox(true);
@@ -133,16 +128,9 @@ public class FormEncounter extends WinformForm {
     buttons = new Button[]{
       btnAttack, btnBoard, btnBribe, btnDrink, btnFlee, btnIgnore, btnInt, btnMeet, btnPlunder, btnSubmit, btnSurrender, btnTrade, btnYield
     };
-    UpdateShipInfo();
+    presenter = new EncounterPresenter(game, this, this);
+    presenter.start();
     UpdateTribbles();
-    UpdateButtons();
-    if(game.EncounterImageIndex() >= 0) {
-      picEncounterType.setImage(ilEncounterType.getImages()[game.EncounterImageIndex()]);
-    } else {
-      picEncounterType.setVisible(false);
-    }
-    lblEncounter.setText(game.EncounterTextInitial());
-    lblAction.setText(game.EncounterActionInitial());
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -1105,144 +1093,65 @@ public class FormEncounter extends WinformForm {
     ResumeLayout(false);
   }
 
-  private void DisableAuto() {
-    tmrTick.Stop();
-    game.setEncounterContinueFleeing(false);
-    game.setEncounterContinueAttacking(false);
-    btnInt.setVisible(false);
-    picContinuous.setVisible(false);
-  }
-
-  private void ExecuteAction() {
-    _result = game.EncounterExecuteAction(this);
-    if(_result == EncounterResult.Continue) {
-      UpdateButtons();
-      UpdateShipStats();
-      lblEncounter.setText(game.EncounterText());
-      lblAction.setText(game.EncounterAction());
-      if(game.getEncounterContinueFleeing() || game.getEncounterContinueAttacking()) {
-        tmrTick.Start();
-      }
+  @Override
+  public void render(EncounterViewModel model) {
+    lblEncounter.setText(model.encounterText());
+    lblAction.setText(model.actionText());
+    lblYouShip.setText(model.youShip());
+    lblYouHull.setText(model.youHull());
+    lblYouShields.setText(model.youShields());
+    lblOpponentShip.setText(model.opponentShip());
+    lblOpponentHull.setText(model.opponentHull());
+    lblOpponentShields.setText(model.opponentShields());
+    picShipYou.Refresh();
+    picShipOpponent.Refresh();
+    if(model.imageIndex() >= 0) {
+      picEncounterType.setVisible(true);
+      picEncounterType.setImage(ilEncounterType.getImages()[model.imageIndex()]);
     } else {
-      Close();
+      picEncounterType.setVisible(false);
     }
-  }
-
-  private void Exit(EncounterResult result) {
-    _result = result;
-    Close();
-  }
-
-  private void UpdateButtons() {
-    boolean[] visible = new boolean[buttons.length];
-    switch(game.getEncounterType()) {
-      case BottleGood:
-      case BottleOld:
-        visible[DRINK] = true;
-        visible[IGNORE] = true;
-        btnIgnore.setLeft(btnDrink.getLeft() + btnDrink.getWidth() + 8);
-        break;
-      case CaptainAhab:
-      case CaptainConrad:
-      case CaptainHuie:
-        visible[ATTACK] = true;
-        visible[IGNORE] = true;
-        visible[MEET] = true;
-        break;
-      case DragonflyAttack:
-      case FamousCaptainAttack:
-      case ScorpionAttack:
-      case SpaceMonsterAttack:
-      case TraderAttack:
-        visible[ATTACK] = true;
-        visible[FLEE] = true;
-        btnInt.setLeft(btnFlee.getLeft() + btnFlee.getWidth() + 8);
-        break;
-      case DragonflyIgnore:
-      case FamousCaptDisabled:
-      case PoliceDisabled:
-      case PoliceFlee:
-      case PoliceIgnore:
-      case PirateFlee:
-      case PirateIgnore:
-      case ScarabIgnore:
-      case ScorpionIgnore:
-      case SpaceMonsterIgnore:
-      case TraderFlee:
-      case TraderIgnore:
-        visible[ATTACK] = true;
-        visible[IGNORE] = true;
-        break;
-      case MarieCeleste:
-        visible[BOARD] = true;
-        visible[IGNORE] = true;
-        btnIgnore.setLeft(btnBoard.getLeft() + btnBoard.getWidth() + 8);
-        break;
-      case MarieCelestePolice:
-        visible[ATTACK] = true;
-        visible[FLEE] = true;
-        visible[YIELD] = true;
-        visible[BRIBE] = true;
-        btnBribe.setLeft(btnYield.getLeft() + btnYield.getWidth() + 8);
-        break;
-      case PirateAttack:
-      case PoliceAttack:
-      case PoliceSurrender:
-      case ScarabAttack:
-        visible[ATTACK] = true;
-        visible[FLEE] = true;
-        visible[SURRENDER] = true;
-        btnInt.setLeft(btnSurrender.getLeft() + btnSurrender.getWidth() + 8);
-        break;
-      case PirateDisabled:
-      case PirateSurrender:
-      case TraderDisabled:
-      case TraderSurrender:
-        visible[ATTACK] = true;
-        visible[PLUNDER] = true;
-        break;
-      case PoliceInspect:
-        visible[ATTACK] = true;
-        visible[FLEE] = true;
-        visible[SUBMIT] = true;
-        visible[BRIBE] = true;
-        break;
-      case TraderBuy:
-      case TraderSell:
-        visible[ATTACK] = true;
-        visible[IGNORE] = true;
-        visible[TRADE] = true;
-        break;
-    }
-    if(game.getEncounterContinueAttacking() || game.getEncounterContinueFleeing()) {
-      visible[INT] = true;
-    }
-    for(int i = 0; i < visible.length; i++) {
-      if(visible[i] != buttons[i].getVisible()) {
-        buttons[i].setVisible(visible[i]);
-        if(i == INT) {
-          picContinuous.setVisible(visible[i]);
-        }
-      }
-    }
-    if(picContinuous.getVisible()) {
+    applyActions(model.actions());
+    picContinuous.setVisible(model.continueVisible());
+    if(model.continueVisible()) {
       picContinuous.setImage(ilContinuous.getImages()[contImg = (contImg + 1) % 2]);
     }
   }
 
-  private void UpdateShipInfo() {
-    lblYouShip.setText(cmdrship.Name());
-    lblOpponentShip.setText(opponent.Name());
-    UpdateShipStats();
+  @Override
+  public void close() {
+    Close();
   }
 
-  private void UpdateShipStats() {
-    lblYouHull.setText(cmdrship.HullText());
-    lblYouShields.setText(cmdrship.ShieldText());
-    lblOpponentHull.setText(opponent.HullText());
-    lblOpponentShields.setText(opponent.ShieldText());
-    picShipYou.Refresh();
-    picShipOpponent.Refresh();
+  @Override
+  public void startTimer() {
+    tmrTick.Start();
+  }
+
+  @Override
+  public void stopTimer() {
+    tmrTick.Stop();
+  }
+
+  private void applyActions(Set<EncounterAction> actions) {
+    for(int i = 0; i < ACTIONS.length; i++) {
+      buttons[i].setVisible(actions.contains(ACTIONS[i]));
+    }
+    if(actions.contains(EncounterAction.Ignore)) {
+      if(actions.contains(EncounterAction.Drink)) {
+        btnIgnore.setLeft(btnDrink.getLeft() + btnDrink.getWidth() + 8);
+      } else if(actions.contains(EncounterAction.Board)) {
+        btnIgnore.setLeft(btnBoard.getLeft() + btnBoard.getWidth() + 8);
+      }
+    }
+    if(actions.contains(EncounterAction.Interrupt)) {
+      btnInt.setLeft(actions.contains(EncounterAction.Flee)
+          ? btnFlee.getLeft() + btnFlee.getWidth() + 8
+          : btnSurrender.getLeft() + btnSurrender.getWidth() + 8);
+    }
+    if(actions.contains(EncounterAction.Bribe)) {
+      btnBribe.setLeft(btnYield.getLeft() + btnYield.getWidth() + 8);
+    }
   }
 
   private void UpdateTribbles() {
@@ -1266,100 +1175,74 @@ public class FormEncounter extends WinformForm {
   }
 
   private void btnAttack_Click(Object sender, EventArgs e) {
-    DisableAuto();
-    if(game.EncounterVerifyAttack(this)) {
-      ExecuteAction();
-    }
+    presenter.attack();
   }
 
   private void btnBoard_Click(Object sender, EventArgs e) {
-    if(game.EncounterVerifyBoard(this)) {
-      Exit(EncounterResult.Normal);
-    }
+    presenter.board();
   }
 
   private void btnBribe_Click(Object sender, EventArgs e) {
-    if(game.EncounterVerifyBribe(this)) {
-      Exit(EncounterResult.Normal);
-    }
+    presenter.bribe();
   }
 
   private void btnDrink_Click(Object sender, EventArgs e) {
-    game.EncounterDrink(this);
-    Exit(EncounterResult.Normal);
+    presenter.drink();
   }
 
   private void btnFlee_Click(Object sender, EventArgs e) {
-    DisableAuto();
-    if(game.EncounterVerifyFlee(this)) {
-      ExecuteAction();
-    }
+    presenter.flee();
   }
 
   private void btnIgnore_Click(Object sender, EventArgs e) {
-    DisableAuto();
-    Exit(EncounterResult.Normal);
+    presenter.ignore();
   }
 
   private void btnInt_Click(Object sender, EventArgs e) {
-    DisableAuto();
+    presenter.interest();
   }
 
   private void btnMeet_Click(Object sender, EventArgs e) {
-    game.EncounterMeet(this);
-    Exit(EncounterResult.Normal);
+    presenter.meet();
   }
 
   private void btnPlunder_Click(Object sender, EventArgs e) {
-    DisableAuto();
-    game.EncounterPlunder(this);
-    Exit(EncounterResult.Normal);
+    presenter.plunder();
   }
 
   private void btnSubmit_Click(Object sender, EventArgs e) {
-    if(game.EncounterVerifySubmit(this)) {
-      Exit(cmdrship.IllegalSpecialCargo() ? EncounterResult.Arrested : EncounterResult.Normal);
-    }
+    presenter.submit();
   }
 
   private void btnSurrender_Click(Object sender, EventArgs e) {
-    DisableAuto();
-    _result = game.EncounterVerifySurrender(this);
-    if(_result != EncounterResult.Continue) {
-      Close();
-    }
+    presenter.surrender();
   }
 
   private void btnTrade_Click(Object sender, EventArgs e) {
-    game.EncounterTrade(this);
-    Exit(EncounterResult.Normal);
+    presenter.trade();
   }
 
   private void btnYield_Click(Object sender, EventArgs e) {
-    _result = game.EncounterVerifyYield(this);
-    if(_result != EncounterResult.Continue) {
-      Close();
-    }
+    presenter.yield();
   }
 
   private void picShipOpponent_Paint(Object sender, PaintEventArgs e) {
-    Functions.PaintShipImage(opponent, e.Graphics, picShipOpponent.getBackColor());
+    Functions.PaintShipImage(opponent, e.Graphics, Color.black);
   }
 
   private void picShipYou_Paint(Object sender, PaintEventArgs e) {
-    Functions.PaintShipImage(cmdrship, e.Graphics, picShipYou.getBackColor());
+    Functions.PaintShipImage(cmdrship, e.Graphics, Color.black);
   }
 
   private void picTrib_Click(Object sender, EventArgs e) {
-    FormAlert.Alert(AlertType.TribblesSqueek, this);
+    // No action.
   }
 
   private void tmrTick_Tick(Object sender, EventArgs e) {
-    DisableAuto();
-    ExecuteAction();
+    presenter.tick();
   }
 
   public EncounterResult Result() {
-    return _result;
+    return presenter.result();
   }
 }
