@@ -18,7 +18,7 @@ gives every new game 1,000,000 credits, easy encounters and super warp.
 Roadmap:
 
 - [x] Fix startup issues (singleton, look & feel, resource paths)
-- [ ] Remove the debug cheat from the `Game` constructor
+- [x] Remove the debug cheat from the `Game` constructor
 - [x] Replace the NetBeans/Ant build with Maven and drop JNLP/WebStart
 - [ ] Refactor towards Model-View-Presenter
 - [ ] Port the UI to Lanterna

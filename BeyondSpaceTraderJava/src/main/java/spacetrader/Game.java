@@ -127,15 +127,6 @@ public class Game extends STSerializableObject {
     if(_difficulty.CastToInt() < Difficulty.Normal.CastToInt()) {
       cmdr.CurrentSystem().SpecialEventType(SpecialEventType.Lottery);
     }
-    //TODO: The following code block is run if the commander name is left blank
-    // You get $1M, cheat mode on, easy encounters, can super-warp...
-    {
-      // TODO: JAF - DEBUG
-      cmdr.setCash(1000000);
-      _cheatEnabled = true;
-      _easyEncounters = true;
-      _canSuperWarp = true;
-    }
   }
 
   @SuppressWarnings("unchecked")
