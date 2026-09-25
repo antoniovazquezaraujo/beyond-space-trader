@@ -5,8 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import java.util.List;
 import org.gts.bst.difficulty.Difficulty;
 import org.junit.jupiter.api.Test;
+import spacetrader.enums.AlertType;
 
 
 class GameTest {
@@ -65,5 +67,14 @@ class GameTest {
     Game game = newGame(Difficulty.Normal);
 
     assertSame(dialogs, game.Dialogs());
+  }
+
+  @Test
+  void gameAlertsGoThroughTheDialogService() {
+    Game game = newGame(Difficulty.Normal);
+
+    game.CargoSellSystem(0, false, null);
+
+    assertEquals(List.of(AlertType.CargoNoneToSell), dialogs.alerts());
   }
 }
