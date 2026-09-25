@@ -111,9 +111,8 @@ import spacetrader.gui.FormViewQuests;
 import spacetrader.gui.FormViewShip;
 import spacetrader.gui.SomeStringsForSwitch;
 import spacetrader.gui.SwingDialogService;
-import spacetrader.stub.Directory;
-import spacetrader.stub.RegistryKey;
 import spacetrader.util.Hashtable;
+import spacetrader.util.SettingsFile;
 import spacetrader.util.Util;
 
 
@@ -2767,15 +2766,15 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
     game = null;
   }
 
-  private String GetRegistrySetting(String settingName, String defaultValue) {
+  private String GetSetting(String settingName, String defaultValue) {
     String settingValue = defaultValue;
     try {
-      RegistryKey key = Functions.GetRegistryKey();
-      Object ObjectValue = key.GetValue(settingName);
-      if(ObjectValue != null) {
-        settingValue = ObjectValue.toString();
+      SettingsFile settings = Functions.GetSettingsFile();
+      Object setting = settings.getValue(settingName);
+      if(setting != null) {
+        settingValue = setting.toString();
       }
-      key.Close();
+      settings.close();
     } catch(NullPointerException ex) {
       FormAlert.Alert(AlertType.RegistryError, this, ex.getMessage());
     }
@@ -2792,9 +2791,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
       Consts.SaveDirectory
     };
     for(String path : paths) {
-      if(!Directory.Exists(path)) {
-        Directory.CreateDirectory(path);
-      }
+      Util.CreateDirectory(path);
     }
     dlgOpen.setInitialDirectory(Consts.SaveDirectory);
     dlgSave.setInitialDirectory(Consts.SaveDirectory);
@@ -2834,11 +2831,11 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
     mnuViewBank.setEnabled(enabled);
   }
 
-  private void SetRegistrySetting(String settingName, String settingValue) {
+  private void SetSetting(String settingName, String settingValue) {
     try {
-      RegistryKey key = Functions.GetRegistryKey();
-      key.SetValue(settingName, settingValue);
-      key.Close();
+      SettingsFile settings = Functions.GetSettingsFile();
+      settings.setValue(settingName, settingValue);
+      settings.close();
     } catch(NullPointerException ex) {
       FormAlert.Alert(AlertType.RegistryError, this, ex.getMessage());
     }
@@ -2995,8 +2992,8 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
     if(game == null || cmdr.getDays() == SaveGameDays
         || FormAlert.Alert(AlertType.GameAbandonConfirm, this) == DialogResult.Yes) {
       if(WindowState == FormWindowState.Normal) {
-        SetRegistrySetting("X", Left.toString());
-        SetRegistrySetting("Y", Top.toString());
+        SetSetting("X", Left.toString());
+        SetSetting("Y", Top.toString());
       }
     } else {
       e.Cancel = true;
@@ -3004,8 +3001,8 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   }
 
   private void SpaceTrader_Load(Object sender, EventArgs e) {
-    Left = Integer.parseInt(GetRegistrySetting("X", "0"));
-    Top = Integer.parseInt(GetRegistrySetting("Y", "0"));
+    Left = Integer.parseInt(GetSetting("X", "0"));
+    Top = Integer.parseInt(GetSetting("Y", "0"));
     FormAlert.Alert(AlertType.AppStart, this);
   }
 

@@ -4,7 +4,7 @@ import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
 import spacetrader.enums.SkillType;
 import spacetrader.enums.StarSystemId;
-import spacetrader.stub.ArrayList;
+import java.util.ArrayList;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 

@@ -17,7 +17,7 @@ import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.SpecialEvent;
 import spacetrader.Strings;
-import spacetrader.stub.ArrayList;
+import java.util.ArrayList;
 import spacetrader.util.Util;
 
 

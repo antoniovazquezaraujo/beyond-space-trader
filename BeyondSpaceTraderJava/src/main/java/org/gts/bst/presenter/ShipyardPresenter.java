@@ -19,7 +19,7 @@ import spacetrader.Shipyard;
 import spacetrader.SpecialEvent;
 import spacetrader.Strings;
 import spacetrader.enums.AlertType;
-import spacetrader.stub.Directory;
+import spacetrader.util.Util;
 import spacetrader.util.Hashtable;
 
 
@@ -190,7 +190,7 @@ public class ShipyardPresenter {
     }
     templates.add(Consts.ShipTemplateSeparator);
     List<ShipTemplate> userTemplates = new ArrayList<>();
-    for(String fileName : Directory.GetFiles(Consts.CustomTemplatesDirectory, "*.sst")) {
+    for(String fileName : Util.GetFiles(Consts.CustomTemplatesDirectory, ".sst")) {
       ShipTemplate template = new ShipTemplate((Hashtable)Functions.LoadFile(fileName, true, game.Dialogs()));
       if(sizes.contains(template.Size())) {
         userTemplates.add(template);
