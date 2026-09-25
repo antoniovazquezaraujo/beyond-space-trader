@@ -70,8 +70,8 @@
             <artifactId>spotbugs-maven-plugin</artifactId>
             <version>${spotbugs.plugin.version}</version>
             <configuration>
-              <!-- Report-only for now; flip failOnError once the findings are fixed. -->
-              <failOnError>false</failOnError>
+              <!-- Findings are fixed or explicitly excluded in config/spotbugs-exclude.xml. -->
+              <failOnError>true</failOnError>
               <effort>Max</effort>
               <threshold>Medium</threshold>
               <excludeFilterFile>${maven.multiModuleProjectDirectory}/config/spotbugs-exclude.xml</excludeFilterFile>

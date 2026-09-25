@@ -1,6 +1,5 @@
 package spacetrader;
 import java.util.Arrays;
-import java.util.Iterator;
 import org.gts.bst.view.DialogResult;
 import org.gts.bst.ApplicationST;
 import org.gts.bst.cargo.CargoBuyOffer;
@@ -39,7 +38,7 @@ import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
 
-public class Game extends STSerializableObject {
+public final class Game extends STSerializableObject {
   public static final int GalaxyHeight = 110;
   public static final int GalaxyWidth = 154;
   public static final int MinDistance = 7;
@@ -333,7 +332,6 @@ public class Game extends STSerializableObject {
             || Functions.GetRandom(Consts.ReputationScoreElite) > (cmdr.getReputationScore() / (1 + getOpponent().Type().CastToInt())))
             || getOpponent().Type().CastToInt() > cmdr.getShip().Type().CastToInt()) {
           if(cmdr.getPoliceRecordScore() >= Consts.PoliceRecordScoreCriminal) {
-            getEncounterType();
             setEncounterType(EncounterType.PoliceSurrender);
           } else {
             setEncounterType(EncounterType.PoliceAttack);
@@ -468,7 +466,6 @@ public class Game extends STSerializableObject {
         if(cmdr.getShip().HasShield(ShieldType.Reflective) && cmdr.Pilot() < 10
             && cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
           _veryRareEncounters.remove(VeryRareEncounter.CaptainAhab);
-          getEncounterType();
           setEncounterType(EncounterType.CaptainAhab);
           GenerateOpponent(OpponentType.FamousCaptain);
           showEncounter = true;
@@ -478,7 +475,6 @@ public class Game extends STSerializableObject {
         if(cmdr.getShip().HasWeapon(WeaponType.MilitaryLaser, true) && cmdr.Engineer() < 10
             && cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
           _veryRareEncounters.remove(VeryRareEncounter.CaptainConrad);
-          getEncounterType();
           setEncounterType(EncounterType.CaptainConrad);
           GenerateOpponent(OpponentType.FamousCaptain);
 
@@ -489,7 +485,6 @@ public class Game extends STSerializableObject {
         if(cmdr.getShip().HasWeapon(WeaponType.MilitaryLaser, true) && cmdr.Trader() < 10
             && cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
           _veryRareEncounters.remove(VeryRareEncounter.CaptainHuie);
-          getEncounterType();
           setEncounterType(EncounterType.CaptainHuie);
           GenerateOpponent(OpponentType.FamousCaptain);
           showEncounter = true;
@@ -1108,7 +1103,6 @@ public class Game extends STSerializableObject {
           } else if(getOpponent().getHull() < (prevOppHull * 2) / 3) {
             if(cmdr.getShip().getHull() < (prevCmdrHull * 2) / 3) {
               if(chance < 60) {
-                getEncounterType();
                 setEncounterType(EncounterType.PirateFlee);
               }
             } else {
@@ -1438,6 +1432,8 @@ public class Game extends STSerializableObject {
           case Scorpion:
             str2 = Strings.EncounterPrincessRescued;
             EncounterDefeatScorpion();
+            break;
+          default:
             break;
         }
         Dialogs().alert(AlertType.EncounterDisabledOpponent, EncounterShipText(), str2);
@@ -1881,8 +1877,8 @@ public class Game extends STSerializableObject {
     ArrayList<String> items = new ArrayList<>();
     // We're using the GetRandom2 function so that the same number is generated each time for the same "version" of the newspaper. -JAF
     Functions.RandSeed(curSys.Id().CastToInt(), cmdr.getDays());
-    for(Iterator<?> en = _newsEvents.iterator(); en.hasNext();) {
-      items.add(Functions.StringVars(Strings.NewsEvent[((NewsEvent)en.next()).CastToInt()], new String[]{
+    for(Integer event : _newsEvents) {
+      items.add(Functions.StringVars(Strings.NewsEvent[event], new String[]{
             cmdr.Name(), cmdr.CurrentSystem().Name(), cmdr.getShip().Name()}));
     }
     if(curSys.SystemPressure() != SystemPressure.None) {
@@ -2024,11 +2020,15 @@ public class Game extends STSerializableObject {
               case CaptainHuie:
                 NewsAddEvent(NewsEvent.CaptHuieAttacked);
                 break;
+              default:
+                break;
             }
             setEncounterType(EncounterType.FamousCaptainAttack);
           } else {
             attack = false;
           }
+          break;
+        default:
           break;
       }
       // Make sure the fleeing flag isn't set if we're attacking.
@@ -2415,6 +2415,8 @@ public class Game extends STSerializableObject {
         daysMoon = Math.max(0, (_difficulty.CastToInt() + 1) * 100 - cmdr.getDays());
         modifier = 100;
         break;
+      default:
+        break;
     }
     return (_difficulty.CastToInt() + 1) * modifier * (daysMoon * 1000 + worth) / 250000;
   }
@@ -2583,6 +2585,8 @@ public class Game extends STSerializableObject {
         equipType = EquipmentType.Weapon;
         equipSubType = WeaponType.MilitaryLaser;
         skill = SkillType.Trader.CastToInt();
+        break;
+      default:
         break;
     }
     if(Dialogs().alert(initialAlert) == DialogResult.Yes) {
@@ -2946,6 +2950,8 @@ public class Game extends STSerializableObject {
         ship.Fire(CrewMemberId.Wild);
         RecalculateSellPrices(curSys);
         break;
+      default:
+        break;
     }
     if(curSys.SpecialEvent().Price() != 0) {
       cmdr.setCash(cmdr.getCash() - curSys.SpecialEvent().Price());
@@ -3164,6 +3170,8 @@ public class Game extends STSerializableObject {
           if(cmdr.getShip().WildOnBoard()) {
             NewsAddEvent(NewsEvent.WildGetsOut);
           }
+          break;
+        default:
           break;
       }
     }

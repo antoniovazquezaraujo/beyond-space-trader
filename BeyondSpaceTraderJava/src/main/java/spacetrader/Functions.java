@@ -125,11 +125,8 @@ public class Functions {
   }
 
   public static Object LoadFile(String fileName, boolean ignoreMissingFile, DialogService dialogs) {
-    Object obj = null;
-    FileInputStream inStream = null;
-    try {
-      inStream = new FileInputStream(fileName/* , FileMode.Open */);
-      obj = new ObjectInputStream(inStream).readObject();
+    try(ObjectInputStream inStream = new ObjectInputStream(new FileInputStream(fileName))) {
+      return inStream.readObject();
     } catch(FileNotFoundException e) {
       if(!ignoreMissingFile) {
         dialogs.alert(AlertType.FileErrorOpen, fileName, e.getMessage());
@@ -138,16 +135,8 @@ public class Functions {
       dialogs.alert(AlertType.FileErrorOpen, fileName, Strings.FileFormatBad);
     } catch(IOException ex) {
       dialogs.alert(AlertType.FileErrorOpen, fileName, ex.getMessage());
-    } finally {
-      if(inStream != null) {
-        try {
-          inStream.close();
-        } catch(IOException e) {
-          Log.write("Can't close instream... 231");
-        }
-      }
     }
-    return obj;
+    return null;
   }
 
   public static String Multiples(int num, String unit) {
@@ -202,25 +191,13 @@ public class Functions {
   }
 
   public static boolean SaveFile(String fileName, Object toSerialize, DialogService dialogs) {
-    FileOutputStream outStream = null;
-    boolean saveOk = false;
-    try {
-      new File(fileName).createNewFile();
-      outStream = new FileOutputStream(fileName, false);
-      new ObjectOutputStream(outStream).writeObject(toSerialize);
-      saveOk = true;
+    try(ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(fileName, false))) {
+      outStream.writeObject(toSerialize);
+      return true;
     } catch(IOException ex) {
       dialogs.alert(AlertType.FileErrorSave, fileName, ex.getMessage());
-    } finally {
-      if(outStream != null) {
-        try {
-          outStream.close();
-        } catch(IOException e) {
-          Log.error("Couldn't close the save stream for " + fileName, e);
-        }
-      }
+      return false;
     }
-    return saveOk;
   }
 
   //TODO replace w/String.format?

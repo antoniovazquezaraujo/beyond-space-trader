@@ -50,6 +50,8 @@ public class PoliticalSystem {
       case Trader:
         likely = ActivityTraders().CastToInt() + diffMod >= Consts.ShipSpecs[shipType.CastToInt()].Traders().CastToInt();
         break;
+      default:
+        break;
     }
     return likely;
   }

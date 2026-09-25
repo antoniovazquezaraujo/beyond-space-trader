@@ -339,17 +339,17 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   private final Button[] btnSellAll;
   private final Button[] btnBuyQty;
   private final Button[] btnBuyMax;
-  private final String SAVE_ARRIVAL = "autosave_arrival.sav";
-  private final String SAVE_DEPARTURE = "autosave_departure.sav";
-  private final int OFF_X = 3;
-  private final int OFF_Y = 3;
-  private final int OFF_X_WORM = OFF_X + 1;
-  private final int IMG_G_N = 0;
-  private final int IMG_G_V = 1;
-  private final int IMG_G_W = 2;
-  private final int IMG_S_N = 3;
-  private final int IMG_S_V = 5;
-  private final int IMG_S_W = 7;
+  private static final String SAVE_ARRIVAL = "autosave_arrival.sav";
+  private static final String SAVE_DEPARTURE = "autosave_departure.sav";
+  private static final int OFF_X = 3;
+  private static final int OFF_Y = 3;
+  private static final int OFF_X_WORM = OFF_X + 1;
+  private static final int IMG_G_N = 0;
+  private static final int IMG_G_V = 1;
+  private static final int IMG_G_W = 2;
+  private static final int IMG_S_N = 3;
+  private static final int IMG_S_V = 5;
+  private static final int IMG_S_W = 7;
   private final DialogService dialogs = new SwingDialogService(this);
   private Game game = null;
   private Commander cmdr = null;
@@ -2746,6 +2746,8 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
       case BoughtMoon:
         alertType = AlertType.GameEndBoughtMoon;
         break;
+      default:
+        break;
     }
     FormAlert.Alert(alertType, this);
     FormAlert.Alert(AlertType.GameEndScore, this, Functions.FormatNumber(game.Score() / 10), Functions.FormatNumber(game.Score() % 10));
@@ -2775,7 +2777,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
         settingValue = setting.toString();
       }
       settings.close();
-    } catch(NullPointerException ex) {
+    } catch(RuntimeException ex) {
       FormAlert.Alert(AlertType.RegistryError, this, ex.getMessage());
     }
     return settingValue;
@@ -2836,7 +2838,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
       SettingsFile settings = Functions.GetSettingsFile();
       settings.setValue(settingName, settingValue);
       settings.close();
-    } catch(NullPointerException ex) {
+    } catch(RuntimeException ex) {
       FormAlert.Alert(AlertType.RegistryError, this, ex.getMessage());
     }
   }
@@ -3066,12 +3068,11 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
             if(second.equals("Reset")) {
               game.ResetVeryRareEncounters();
             } else {
-              String text = "";
+              StringBuilder text = new StringBuilder();
               for(Iterator<VeryRareEncounter> list = game.VeryRareEncounters().iterator(); list.hasNext();) {
-                text += Strings.VeryRareEncounters[list.next().CastToInt()] + Strings.newline;
+                text.append(Strings.VeryRareEncounters[list.next().CastToInt()]).append(Strings.newline);
               }
-              text = text.trim();
-              FormAlert.Alert(AlertType.Alert, this, "Remaining Very Rare Encounters", text);
+              FormAlert.Alert(AlertType.Alert, this, "Remaining Very Rare Encounters", text.toString().trim());
             }
             break;
           case Fame:
@@ -3099,6 +3100,8 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
                 break;
               case Trader:
                 cmdr.setKillsTrader(Math.max(0, num2));
+                break;
+              default:
                 break;
             }
           }

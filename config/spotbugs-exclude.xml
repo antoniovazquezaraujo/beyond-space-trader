@@ -17,4 +17,37 @@
   <Match>
     <Bug pattern="NM_SAME_SIMPLE_NAME_AS_SUPERCLASS" />
   </Match>
+
+  <!--
+    The Swing views and the JWinForms widget layer are retired in #11 (the
+    Lanterna UI replaces them), so reviewing their internals now has no value.
+  -->
+  <Match>
+    <Class name="~jwinforms\..*" />
+  </Match>
+  <Match>
+    <Class name="~spacetrader\.gui\..*" />
+  </Match>
+
+  <!--
+    The model objects are shared with the views by design (the MVP presenters
+    hand the game objects to the views), so defensive copies are not wanted.
+    The public game data tables are immutable by convention; the remaining
+    mutable static state is revised in #42.
+  -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2,EI_EXPOSE_STATIC_REP2,MS_EXPOSE_REP" />
+  </Match>
+  <Match>
+    <Bug pattern="MS_MUTABLE_ARRAY,MS_PKGPROTECT,MS_OOI_PKGPROTECT,MS_FINAL_PKGPROTECT,MS_SHOULD_BE_FINAL" />
+  </Match>
+
+  <!--
+    These types are sorted with compareTo but compared by identity elsewhere
+    (trade items and ship templates are singletons); defining equals from the
+    sort order would change game behaviour.
+  -->
+  <Match>
+    <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS" />
+  </Match>
 </FindBugsFilter>

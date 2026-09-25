@@ -30,7 +30,7 @@ public class ShipTemplate extends STSerializableObject implements Comparable<Shi
     _crewQuarters = GetValueFromHash(ht, "_crewQuarters", _crewQuarters);
     _fuelTanks = GetValueFromHash(ht, "_fuelTanks", _fuelTanks);
     _hullStrength = GetValueFromHash(ht, "_hullStrength", _hullStrength);
-    _images = GetValueFromHash(ht, "_images", _images);
+    _images = GetValueFromHash(ht, "_images", _images, WfImage[].class);
   }
 
   public ShipTemplate(ShipSize s, String t) {

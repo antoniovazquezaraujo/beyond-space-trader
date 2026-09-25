@@ -44,14 +44,13 @@ public class TradeItem implements Comparable<TradeItem> {
   }
 
   public int CompareTo(Object value) {
-    int compared = 0;
     if(value == null) {
-      compared = 1;
-    } else {
-      compared = ((Integer)_piceLowTech).compareTo(((TradeItem)value)._piceLowTech);
-      if(compared == 0) {
-        compared = -((Integer)_priceInc).compareTo(((TradeItem)value)._priceInc);
-      }
+      return 1;
+    }
+    TradeItem other = (TradeItem)value;
+    int compared = Integer.compare(_piceLowTech, other._piceLowTech);
+    if(compared == 0) {
+      compared = Integer.compare(other._priceInc, _priceInc);
     }
     return compared;
   }
