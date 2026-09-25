@@ -23,7 +23,6 @@ import spacetrader.Strings;
 
 
 class QuestsPresenterTest {
-  private static final String NL = Strings.newline;
 
   @Test
   void showsNoQuestsWhenNothingIsActive() {
@@ -43,8 +42,7 @@ class QuestsPresenterTest {
 
     new QuestsPresenter(game, view).update();
 
-    // StringsJoin appends the separator after the last element.
-    assertEquals(Strings.QuestMoon + NL + NL, view.model.text());
+    assertEquals(Strings.QuestMoon, view.model.text());
     assertTrue(view.model.hasQuests());
   }
 
@@ -56,7 +54,7 @@ class QuestsPresenterTest {
 
     new QuestsPresenter(game, view).update();
 
-    assertEquals(Strings.QuestTribbles + NL + NL, view.model.text());
+    assertEquals(Strings.QuestTribbles, view.model.text());
   }
 
   private static Game newGame() {
