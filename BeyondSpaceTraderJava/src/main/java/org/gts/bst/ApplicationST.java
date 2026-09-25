@@ -3070,7 +3070,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
             } else {
               StringBuilder text = new StringBuilder();
               for(Iterator<VeryRareEncounter> list = game.VeryRareEncounters().iterator(); list.hasNext();) {
-                text.append(Strings.VeryRareEncounters[list.next().CastToInt()]).append(Strings.newline);
+                text.append(Strings.VeryRareEncounters.get(list.next().CastToInt())).append(Strings.newline);
               }
               FormAlert.Alert(AlertType.Alert, this, "Remaining Very Rare Encounters", text.toString().trim());
             }

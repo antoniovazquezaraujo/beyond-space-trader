@@ -37,17 +37,6 @@
     <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2,EI_EXPOSE_STATIC_REP2,MS_EXPOSE_REP" />
   </Match>
 
-  <!--
-    Strings is an interface with the lookup tables as arrays indexed by enum
-    ordinal, and a few entries are written at runtime from the save (commander
-    and custom ship names), so the tables cannot be plain unmodifiable lists
-    while Strings is an interface. Encapsulating it is the remaining part
-    of #42.
-  -->
-  <Match>
-    <Class name="spacetrader.Strings" />
-    <Bug pattern="MS_MUTABLE_ARRAY,MS_OOI_PKGPROTECT,MS_FINAL_PKGPROTECT,MS_PKGPROTECT,MS_SHOULD_BE_FINAL" />
-  </Match>
 
   <!--
     These types are sorted with compareTo but compared by identity elsewhere

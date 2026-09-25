@@ -69,7 +69,7 @@ public class ShipListPresenter {
     ShipSpec spec = Consts.ShipSpecs.get(id);
     view.renderInfo(new ShipInfoViewModel(
         spec.Name(),
-        Strings.Sizes[spec.getSize().CastToInt()],
+        Strings.Sizes.get(spec.getSize().CastToInt()),
         Functions.FormatNumber(spec.CargoBays()),
         Functions.Multiples(spec.FuelTanks(), Strings.DistanceUnit),
         Functions.FormatNumber(spec.HullStrength()),

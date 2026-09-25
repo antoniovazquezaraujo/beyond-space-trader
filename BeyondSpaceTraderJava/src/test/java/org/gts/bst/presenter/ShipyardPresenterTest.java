@@ -117,7 +117,7 @@ class ShipyardPresenterTest {
     presenter.construct("My Ship");
 
     assertEquals(ShipType.Custom, game.Commander().getShip().Type());
-    assertEquals("My Ship", Strings.ShipNames[ShipType.Custom.CastToInt()]);
+    assertEquals("My Ship", Strings.ShipNames.get(ShipType.Custom.CastToInt()));
     assertTrue(view.customShipImagesApplied);
     assertTrue(view.closed);
   }

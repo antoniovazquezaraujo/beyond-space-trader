@@ -1,9 +1,26 @@
 package spacetrader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.events.VeryRareEncounter;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.WeaponType;
 
 
-public interface Strings {
+public final class Strings {
+  private Strings() {
+  }
+
+  private static List<List<String>> table(String[]... rows) {
+    List<List<String>> table = new ArrayList<>(rows.length);
+    for(String[] row : rows) {
+      table.add(Collections.unmodifiableList(Arrays.asList(row)));
+    }
+    return Collections.unmodifiableList(table);
+  }
+
   public static final String newline = "\n";
   public static final String CargoSellStatementDump = "You can ^1 up to ^2.";
   public static final String CargoTitle = "^1 ^2";
@@ -149,10 +166,10 @@ public interface Strings {
   public static final String TimeUnit = "day";
   public static final String TribbleDangerousNumber = "a dangerous number of";
   public static final String Unknown = "Unknown";
-  public static final String[] ActivityLevels = new String[]{"Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"};
-  public static final String[] CargoBuyOps = new String[]{"Buy", "Buy", "Steal"};
-  public static final String[] CargoSellOps = new String[]{"Sell", "Sell", "Dump", "Jettison"};
-  public static final String[] CrewMemberNames = new String[]{"Commander",
+  public static final List<String> ActivityLevels = Collections.unmodifiableList(Arrays.asList(new String[]{"Absent", "Minimal", "Few", "Some", "Moderate", "Many", "Abundant", "Swarms"}));
+  public static final List<String> CargoBuyOps = Collections.unmodifiableList(Arrays.asList(new String[]{"Buy", "Buy", "Steal"}));
+  public static final List<String> CargoSellOps = Collections.unmodifiableList(Arrays.asList(new String[]{"Sell", "Sell", "Dump", "Jettison"}));
+  private static final List<String> MUTABLE_CREW_MEMBER_NAMES = new ArrayList<>(Arrays.asList(new String[]{"Commander",
     "Alyssa", "Armatur", "Bentos", "C2U2", "Chi'Ti", "Crystal", "Dane",
     "Deirdre", "Doc", "Draco", "Iranda", "Jeremiah", "Jujubal",
     "Krydon", "Luis", "Mercedez", "Milete", "Muri-L", "Mystyc",
@@ -183,10 +200,15 @@ public interface Strings {
     "Xizor", // From Star Wars: Shadows of the Empire
     "Ziyal", // From ST: Deep Space 9
     "Scorpion" // dummy crew member used in opponent ship
-  };
-  public static final String[] DifficultyLevels = new String[]{"Beginner",
-    "Easy", "Normal", "Hard", "Impossible"};
-  public static final String[][] EquipmentDescriptions = new String[][]{
+  }));
+  public static final List<String> CrewMemberNames = Collections.unmodifiableList(MUTABLE_CREW_MEMBER_NAMES);
+
+  public static void SetCrewMemberName(CrewMemberId id, String name) {
+    MUTABLE_CREW_MEMBER_NAMES.set(id.CastToInt(), name);
+  }
+  public static final List<String> DifficultyLevels = Collections.unmodifiableList(Arrays.asList(new String[]{"Beginner",
+    "Easy", "Normal", "Hard", "Impossible"}));
+  public static final List<List<String>> EquipmentDescriptions = table(
     new String[]{
       "The Pulse Laser is the weakest weapon available. It's small size allows only enough energy to build up to emit pulses of light.",
       "The Beam Laser is larger than the Pulse Laser, so can build up enough charge to power what are essentially two Pulse Lasers. The resulting effect appears more like a constant beam.",
@@ -205,20 +227,20 @@ public interface Strings {
       "The Targeting System increases the overall Fighter skill of the ship, which increases the amount of damage done to an opponent in battle.",
       "The Cloaking Device can enable your ship to evade detection by an opponent, but only if the Engineer skill of your ship is greater than that of your opponent. It also makes your ship harder to hit in battle.",
       "The Fuel Compactor that you got as a reward for warning Gemulon of the invasion will increase the range of your ship by 3 parsecs.",
-      "These extra bays will not be detected during routine police searches. They may be detected if you are arrested and the police perform a more thorough search."}};
-  public static final String[] EquipmentTypes = new String[]{"Weapon", "Shield", "Gadget"};
-  public static final String[] GadgetNames = new String[]{"5 Extra Cargo Bays",
+      "These extra bays will not be detected during routine police searches. They may be detected if you are arrested and the police perform a more thorough search."});
+  public static final List<String> EquipmentTypes = Collections.unmodifiableList(Arrays.asList(new String[]{"Weapon", "Shield", "Gadget"}));
+  public static final List<String> GadgetNames = Collections.unmodifiableList(Arrays.asList(new String[]{"5 Extra Cargo Bays",
     "Auto-Repair System", "Navigating System", "Targeting System",
-    "Cloaking Device", "Fuel Compactor", "5 Hidden Cargo Bays"};
-  public static final String[] GameCompletionTypes = new String[]{"Was killed",
-    "Retired", "Claimed moon"};
-  public static final String[] ListStrings = new String[]{"", "^1", "^1 and ^2",
-    "^1, ^2, and ^3", "^1, ^2, ^3, and ^4"};
+    "Cloaking Device", "Fuel Compactor", "5 Hidden Cargo Bays"}));
+  public static final List<String> GameCompletionTypes = Collections.unmodifiableList(Arrays.asList(new String[]{"Was killed",
+    "Retired", "Claimed moon"}));
+  public static final List<String> ListStrings = Collections.unmodifiableList(Arrays.asList(new String[]{"", "^1", "^1 and ^2",
+    "^1, ^2, and ^3", "^1, ^2, ^3, and ^4"}));
   /*
    * In News Events, the following variables can be used: ^1 Commander Name ^2
    * Current System ^3 Commander's Ship Type
    */
-  public static final String[] NewsEvent = new String[]{
+  public static final List<String> NewsEvent = Collections.unmodifiableList(Arrays.asList(new String[]{
     "Scientist Adds Alien Artifact to Museum Collection.",
     "Police Trace Orbiting Space Litter to ^1.",
     "Experimental Craft Stolen! Critics Demand Security Review.",
@@ -257,8 +279,8 @@ public interface Strings {
     "Dangerous Scorpion Damages Several Other Ships Near Inthara",
     "Kidnappers Holding Out at Qonos",
     "Scorpion Defeated! Kidnapped Member of Galvon Royal Family Freed!",
-    "Beloved Royal Returns Home!"};
-  public static final String[][] NewsHeadlines = new String[][]{
+    "Beloved Royal Returns Home!"}));
+  public static final List<List<String>> NewsHeadlines = table(
     new String[]{"Riots, Looting Mar Factional Negotiations.",
       "Communities Seek Consensus.",
       "Successful Bakunin Day Rally!",
@@ -325,8 +347,8 @@ public interface Strings {
     new String[]{"High Priest to Hold Special Services.",
       "Temple Restoration Fund at 81%.",
       "Sacred Texts on Public Display.",
-      "Dozen Blasphemers Excommunicated!"}};
-  public static final String[][] NewsMastheads = new String[][]{
+      "Dozen Blasphemers Excommunicated!"});
+  public static final List<List<String>> NewsMastheads = table(
     new String[]{"The ^1 Arsenal", "The Grassroot", "Kick It!"},
     new String[]{"The Objectivist", "The ^1 Market", "The Invisible Hand"},
     new String[]{"The Daily Worker", "The People's Voice", "The ^1 Proletariat"},
@@ -344,63 +366,68 @@ public interface Strings {
     new String[]{"The Daily Koan", "Haiku", "One Hand Clapping"},
     new String[]{"The Future", "Hardware Dispatch", "TechNews"},
     new String[]{"The Spiritual Advisor", "Church Tidings", "The Temple Tribune"}
-  };
-  public static final String[] NewsPoliceRecordHero = new String[]{
+  );
+  public static final List<String> NewsPoliceRecordHero = Collections.unmodifiableList(Arrays.asList(new String[]{
     "Locals Welcome Visiting Hero ^1!",
     "Famed Hero ^1 to Visit System!",
-    "Large Turnout At Spaceport to Welcome ^1!"};
-  public static final String[] NewsPoliceRecordPsychopath = new String[]{
+    "Large Turnout At Spaceport to Welcome ^1!"}));
+  public static final List<String> NewsPoliceRecordPsychopath = Collections.unmodifiableList(Arrays.asList(new String[]{
     "Police Warning: ^1 Will Dock At ^2!",
     "Notorious Criminal ^1 Sighted in ^2!",
     "Locals Rally to Deny Spaceport Access to ^1!",
-    "Terror Strikes Locals on Arrival of ^1!"};
-  public static final String[] NewsPressureExternal = new String[]{
+    "Terror Strikes Locals on Arrival of ^1!"}));
+  public static final List<String> NewsPressureExternal = Collections.unmodifiableList(Arrays.asList(new String[]{
     "Reports of ^1 in the ^2 System.", "News of ^1 in the ^2 System.",
     "New Rumors of ^1 in the ^2 System.",
     "Sources report ^1 in the ^2 System.",
     "Notice: ^1 in the ^2 System.",
-    "Evidence Suggests ^1 in the ^2 System."};
-  public static final String[] NewsPressureExternalPressures = new String[]{"",
+    "Evidence Suggests ^1 in the ^2 System."}));
+  public static final List<String> NewsPressureExternalPressures = Collections.unmodifiableList(Arrays.asList(new String[]{"",
     "Strife and War", "Plague Outbreaks", "Severe Drought",
     "Terrible Boredom", "Cold Weather", "Crop Failures",
-    "Labor Shortages"};
-  public static final String[] NewsPressureInternal = new String[]{"",
+    "Labor Shortages"}));
+  public static final List<String> NewsPressureInternal = Collections.unmodifiableList(Arrays.asList(new String[]{"",
     "War News: Offensives Continue!", "Plague Spreads! Outlook Grim.",
     "No Rain in Sight!", "Editors: Won't Someone Entertain Us?",
     "Cold Snap Continues!", "Serious Crop Failure! Must We Ration?",
-    "Jobless Rate at All-Time Low!"};
-  public static final String[] PoliceRecordNames = new String[]{"Psychopath",
+    "Jobless Rate at All-Time Low!"}));
+  public static final List<String> PoliceRecordNames = Collections.unmodifiableList(Arrays.asList(new String[]{"Psychopath",
     "Villain", "Criminal", "Crook", "Dubious", "Clean", "Lawful",
-    "Trusted", "Liked", "Hero"};
-  public static final String[] PoliticalSystemNames = new String[]{"Anarchy",
+    "Trusted", "Liked", "Hero"}));
+  public static final List<String> PoliticalSystemNames = Collections.unmodifiableList(Arrays.asList(new String[]{"Anarchy",
     "Capitalist State", "Communist State", "Confederacy",
     "Corporate State", "Cybernetic State", "Democracy", "Dictatorship",
     "Fascist State", "Feudal State", "Military State", "Monarchy",
     "Pacifist State", "Socialist State", "State of Satori",
-    "Technocracy", "Theocracy"};
-  public static final String[] ReputationNames = new String[]{"Harmless",
+    "Technocracy", "Theocracy"}));
+  public static final List<String> ReputationNames = Collections.unmodifiableList(Arrays.asList(new String[]{"Harmless",
     "Mostly harmless", "Poor", "Average", "Above average", "Competent",
-    "Dangerous", "Deadly", "Elite"};
-  public static final String[] ShieldNames = new String[]{"Energy Shield",
-    "Reflective Shield", "Lightning Shield"};
-  public static final String[] ShipNames = new String[]{"Flea", "Gnat",
+    "Dangerous", "Deadly", "Elite"}));
+  public static final List<String> ShieldNames = Collections.unmodifiableList(Arrays.asList(new String[]{"Energy Shield",
+    "Reflective Shield", "Lightning Shield"}));
+  private static final List<String> MUTABLE_SHIP_NAMES = new ArrayList<>(Arrays.asList(new String[]{"Flea", "Gnat",
     "Firefly", "Mosquito", "Bumblebee", "Beetle", "Hornet",
     "Grasshopper", "Termite", "Wasp", "Space Monster", "Dragonfly",
-    "Mantis", "Scarab", "Bottle", ShipNameCustomShip, "Scorpion"};
-  public static final String[] ShipyardEngineers = new String[]{"Wedge", "Luke",
-    "Lando", "Mara", "Obi-Wan"};
-  public static final String[] ShipyardNames = new String[]{
+    "Mantis", "Scarab", "Bottle", ShipNameCustomShip, "Scorpion"}));
+  public static final List<String> ShipNames = Collections.unmodifiableList(MUTABLE_SHIP_NAMES);
+
+  public static void SetShipName(ShipType type, String name) {
+    MUTABLE_SHIP_NAMES.set(type.CastToInt(), name);
+  }
+  public static final List<String> ShipyardEngineers = Collections.unmodifiableList(Arrays.asList(new String[]{"Wedge", "Luke",
+    "Lando", "Mara", "Obi-Wan"}));
+  public static final List<String> ShipyardNames = Collections.unmodifiableList(Arrays.asList(new String[]{
     "Corellian Engineering", "Incom Corporation", "Kuat Drive Yards",
-    "Sienar Fleet Systems", "Sorosuub Engineering"};
-  public static final String[] ShipyardSkillDescriptions = new String[]{
+    "Sienar Fleet Systems", "Sorosuub Engineering"}));
+  public static final List<String> ShipyardSkillDescriptions = Collections.unmodifiableList(Arrays.asList(new String[]{
     "All ships constructed at this shipyard use 2 fewer units per crew quarter.",
     "All ships constructed at this shipyard have 2 extra base fuel tanks.",
     "All ships constructed at this shipyard have the hull points increment by 5 more than usual.",
     "All ships constructed at this shipyard get shield slots for 2 fewer units.",
-    "All ships constructed at this shipyard get weapon slots for 2 fewer units."};
-  public static final String[] ShipyardSkills = new String[]{"Crew Quartering", "Fuel Efficienty", "Hull Strength", "Shielding", "Weaponry"};
-  public static final String[] Sizes = new String[]{"Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"};
-  public static final String[] SpecialEventStrings = new String[]{
+    "All ships constructed at this shipyard get weapon slots for 2 fewer units."}));
+  public static final List<String> ShipyardSkills = Collections.unmodifiableList(Arrays.asList(new String[]{"Crew Quartering", "Fuel Efficienty", "Hull Strength", "Shielding", "Weaponry"}));
+  public static final List<String> Sizes = Collections.unmodifiableList(Arrays.asList(new String[]{"Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"}));
+  public static final List<String> SpecialEventStrings = Collections.unmodifiableList(Arrays.asList(new String[]{
     "This alien artifact should be delivered to professor Berger, who is currently traveling. You can probably find him at a hi-tech solar system. The alien race which produced this artifact seems keen on getting it back, however, and may hinder the carrier. Are you, for a price, willing to deliver it?",
     "This is professor Berger. I thank you for delivering the alien artifact to me. I hope the aliens weren't too much of a nuisance. I have transferred 20000 credits to your account, which I assume compensates for your troubles.",
     "A trader in second-hand goods offers you 3 sealed cargo canisters for the sum of 1000 credits. It could be a good deal: they could contain robots. Then again, it might just be water. Do you want the canisters?",
@@ -447,8 +474,8 @@ public interface Strings {
     "The Galvonian Ambassador to Qonos approaches you. The Princess needs a ride home. Will you take her? I don't think she'll feel safe with anyone else.",
     "His Majesty's Shipyard: Do you want us to install a quantum disruptor on your current ship?",
     "The King and Queen are extremely grateful to you for returning their daughter to them. The King says, \"Ziyal is priceless to us, but we feel we must offer you something as a reward. Visit my shipyard captain and he'll install one of our new Quantum Disruptors.\""
-  };
-  public static final String[] SpecialEventTitles = new String[]{
+  }));
+  public static final List<String> SpecialEventTitles = Collections.unmodifiableList(Arrays.asList(new String[]{
     "Alien Artifact", "Artifact Delivery", "Cargo For Sale", "Dragonfly", "Dragonfly Destroyed", "Weird Ship", "Lightning Ship",
     "Lightning Shield", "Strange Ship", "Erase Record", "Dangerous Experiment", "Experiment Failed", "Disaster Averted",
     "Alien Invasion", "Fuel Compactor", "Gemulon Invaded", "Gemulon Rescued", "Japori Disease", "Medicine Delivery",
@@ -457,10 +484,10 @@ public interface Strings {
     "Space Monster", "Monster Killed", "Merchant Prince", "Tribble Buyer", "Jonathan Wild", "Wild Gets Out",
     "Stolen Sculpture", "Sculpture Delivered", "Install Hidden Compartments", "Kidnapped", "Aggressive Ship",
     "Dangerous Scorpion", "Royal Rescue", "Quantum Disruptor", "Royal Return"
-  };
+  }));
   // Many of these names are from Star Trek: The Next Generation, or are small changes to names of this series. A few have different origins.
   // JAF - Except where noted these comments are the previous author's.
-  public static final String[] SystemNames = new String[]{
+  public static final List<String> SystemNames = Collections.unmodifiableList(Arrays.asList(new String[]{
     "Acamar", // JAF - TNG "The Vengeance Factor (Acamar III)"
     "Adahn", // The alternate personality for The Nameless One in "Planescape: Torment"
     "Aldea", // JAF - TNG "When the Bough Breaks"
@@ -575,17 +602,17 @@ public interface Strings {
     "Rae", // My wife's middle name
     "Weytahn", // Star Trek: Enterprise "Cease Fire"
     "Zonama" // From the Star Wars: New Jedi Order series (and Rogue Planet)
-  };
-  public static final String[] VeryRareEncounters = new String[]{
+  }));
+  public static final List<String> VeryRareEncounters = Collections.unmodifiableList(Arrays.asList(new String[]{
     //TODO: Only used in SpaceTrader.btnFind_Click(Object,EventArgs)
     VeryRareEncounter.MarieCeleste.name, VeryRareEncounter.CaptainAhab.name, VeryRareEncounter.CaptainConrad.name,
     VeryRareEncounter.CaptainHuie.name, VeryRareEncounter.BottleOld.name, VeryRareEncounter.BottleGood.name
-  };
-  public static final String[] WeaponNames = new String[]{
+  }));
+  public static final List<String> WeaponNames = Collections.unmodifiableList(Arrays.asList(new String[]{
     //TODO: Only used in Equipment.BaseImageIndex()
     WeaponType.PulseLaser.name, WeaponType.BeamLaser.name, WeaponType.MilitaryLaser.name,
     WeaponType.MorgansLaser.name, WeaponType.PhotonDisruptor.name, WeaponType.QuantumDistruptor.name
-  };
+  }));
   public static final String StatusBarCash = "Cash: ^1";
   public static final String StatusBarBays = "Bays: ^1";
   public static final String StatusBarCosts = "Current Costs: ^1";

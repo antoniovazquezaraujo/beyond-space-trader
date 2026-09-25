@@ -152,7 +152,7 @@ public class CrewMember extends STSerializableObject {
   }
 
   public String Name() {
-    return Strings.CrewMemberNames[_id.CastToInt()];
+    return Strings.CrewMemberNames.get(_id.CastToInt());
   }
 
   public int Pilot() {

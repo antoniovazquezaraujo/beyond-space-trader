@@ -36,7 +36,7 @@ public class CommanderPresenter {
     Commander cmdr = game.Commander();
     view.render(new CommanderViewModel(
         cmdr.Name(),
-        Strings.DifficultyLevels[game.Difficulty().CastToInt()],
+        Strings.DifficultyLevels.get(game.Difficulty().CastToInt()),
         Functions.Multiples(cmdr.getDays(), Strings.TimeUnit),
         skill(cmdr.Pilot(), cmdr.getShip().Pilot()),
         skill(cmdr.Fighter(), cmdr.getShip().Fighter()),

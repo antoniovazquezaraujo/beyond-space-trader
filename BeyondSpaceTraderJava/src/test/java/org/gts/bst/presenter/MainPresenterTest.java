@@ -90,7 +90,7 @@ class MainPresenterTest {
     assertEquals("Current Costs: 0 cr.", view.status.costs());
     StarSystem system = game.Commander().CurrentSystem();
     assertEquals(system.Name(), view.system.name());
-    assertEquals(Strings.Sizes[system.Size().CastToInt()], view.system.size());
+    assertEquals(Strings.Sizes.get(system.Size().CastToInt()), view.system.size());
     assertEquals(system.TechLevel().name, view.system.tech());
     assertTrue(view.system.pressurePreVisible());
     assertTrue(view.system.newsVisible());

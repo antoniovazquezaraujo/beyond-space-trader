@@ -138,7 +138,7 @@ public class Shipyard {
   }
 
   public String Engineer() {
-    return Strings.ShipyardEngineers[_id.CastToInt()];
+    return Strings.ShipyardEngineers.get(_id.CastToInt());
   }
 
   public ShipyardId Id() {
@@ -150,7 +150,7 @@ public class Shipyard {
   }
 
   public String Name() {
-    return Strings.ShipyardNames[_id.CastToInt()];
+    return Strings.ShipyardNames.get(_id.CastToInt());
   }
 
   public int PenaltyCost() {

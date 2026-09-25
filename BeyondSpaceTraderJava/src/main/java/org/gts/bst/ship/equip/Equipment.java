@@ -48,10 +48,10 @@ abstract public class Equipment extends STSerializableObject implements Cloneabl
     int baseImageIndex = 0;
     switch(EquipmentType()) {
       case Gadget:
-        baseImageIndex = Strings.WeaponNames.length + Strings.ShieldNames.length;
+        baseImageIndex = Strings.WeaponNames.size() + Strings.ShieldNames.size();
         break;
       case Shield:
-        baseImageIndex = Strings.WeaponNames.length;
+        baseImageIndex = Strings.WeaponNames.size();
         break;
       case Weapon:
         // baseImageIndex should be 0
