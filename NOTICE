@@ -1,0 +1,41 @@
+Beyond Space Trader - copyright and provenance
+==============================================
+
+This repository is a derivative work of the following free software projects:
+
+1. Space Trader (Palm OS, 2002)
+   Copyright (C) 2000-2005 Pieter Spronck
+   Homepage: https://www.spronck.net/spacetrader/
+   Published under the GNU General Public License (GPLv2 or later).
+   In-game artwork is copyright (C) 2000 Alexander Lawrence.
+
+2. Space Trader for Windows 2.01 (C#, WinForms, 2008)
+   Copyright (C) 2008 Jay French. Additional coding by David Pierron.
+   Original coding by Pieter Spronck, Sam Anderson, Samuel Goldstein and Matt Lee.
+   Project: https://sourceforge.net/projects/spacetraderwin/
+   Licensed under the GNU General Public License, version 2 or later.
+
+3. SpaceTrader for Java
+   A Java port based on Space Trader for Windows.
+   Project: https://sourceforge.net/projects/spacetraderjava/
+   Licensed under the GNU General Public License, version 2 or later.
+
+4. Beyond SpaceTraderJava / Beyond Space Trader (this repository)
+   Copyright (C) 2011-2012 Gregory and other contributors.
+   Imported from the upstream snapshot "spacetraderjava-code-r69".
+   New contributions are licensed under GPL-3.0-or-later.
+
+Combined licensing
+------------------
+The upstream licenses permit use of "version 2 of the License, or (at your
+option) any later version". This project exercises that option and distributes
+the combined work under the GNU General Public License, version 3 or later.
+See the LICENSE file for the full license text.
+
+Artwork
+-------
+The images under BeyondSpaceTraderJava/src/images are derived from the original
+game artwork, whose copyright is held by Alexander Lawrence (see also the credits
+in BeyondSpaceTraderJava/src/spacetrader/gui/FormAbout.properties). They are not
+covered by the code license above and may require separate permission for
+redistribution.
