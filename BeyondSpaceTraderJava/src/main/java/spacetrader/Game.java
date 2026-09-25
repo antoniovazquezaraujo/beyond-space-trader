@@ -1531,7 +1531,7 @@ public class Game extends STSerializableObject {
     return result;
   }
 
-  public EncounterResult EncounterVerifySurrender(WinformPane owner) {
+  public EncounterResult EncounterVerifySurrender() {
     EncounterResult result = EncounterResult.Continue;
     if(getOpponent().Type() == ShipType.Mantis) {
       if(cmdr.getShip().ArtifactOnBoard()) {
@@ -1604,7 +1604,7 @@ public class Game extends STSerializableObject {
     return result;
   }
 
-  public EncounterResult EncounterVerifyYield(WinformPane owner) {
+  public EncounterResult EncounterVerifyYield() {
     EncounterResult result = EncounterResult.Continue;
     if(cmdr.getShip().IllegalSpecialCargo()) {
       if(Dialogs().alert(AlertType.EncounterPoliceSurrender, new String[]{
@@ -1974,7 +1974,7 @@ public class Game extends STSerializableObject {
   }
 
   @SuppressWarnings("fallthrough")
-  public boolean EncounterVerifyAttack(WinformPane owner) {
+  public boolean EncounterVerifyAttack() {
     boolean attack = true;
     if(cmdr.getShip().WeaponStrength() == 0) {
       Dialogs().alert(AlertType.EncounterAttackNoWeapons);
@@ -2087,7 +2087,7 @@ public class Game extends STSerializableObject {
     return board;
   }
 
-  public boolean EncounterVerifyBribe(WinformPane owner) {
+  public boolean EncounterVerifyBribe() {
     boolean bribed = false;
     if(getEncounterType() == EncounterType.MarieCelestePolice) {
       Dialogs().alert(AlertType.EncounterMarieCelesteNoBribe);
@@ -2110,7 +2110,7 @@ public class Game extends STSerializableObject {
     return bribed;
   }
 
-  public boolean EncounterVerifyFlee(WinformPane owner) {
+  public boolean EncounterVerifyFlee() {
     setEncounterCmdrFleeing(false);
     if(getEncounterType() != EncounterType.PoliceInspect || cmdr.getShip().DetectableIllegalCargoOrPassengers()
         || Dialogs().alert(AlertType.EncounterPoliceNothingIllegal) == DialogResult.Yes) {
@@ -2128,7 +2128,7 @@ public class Game extends STSerializableObject {
     return getEncounterCmdrFleeing();
   }
 
-  public boolean EncounterVerifySubmit(WinformPane owner) {
+  public boolean EncounterVerifySubmit() {
     boolean submit = false;
     if(cmdr.getShip().DetectableIllegalCargoOrPassengers()) {
       String str1 = cmdr.getShip().IllegalSpecialCargoDescription("", true, true);
@@ -2592,7 +2592,7 @@ public class Game extends STSerializableObject {
     setEncounterContinueFleeing(setEncounterContinueAttacking(setOpponentDisabled(false)));
   }
 
-  public void EncounterDrink(WinformPane owner) {
+  public void EncounterDrink() {
     if(Dialogs().alert(AlertType.EncounterDrinkContents) == DialogResult.Yes) {
       if(getEncounterType() == EncounterType.BottleGood) {
         // two points if you're on beginner-normal, one otherwise
@@ -2608,7 +2608,7 @@ public class Game extends STSerializableObject {
     }
   }
 
-  public void EncounterMeet(WinformPane owner) {
+  public void EncounterMeet() {
     AlertType initialAlert = AlertType.Alert;
     int skill = 0;
     EquipmentType equipType = EquipmentType.Gadget;
