@@ -9,12 +9,13 @@ import jwinforms.enums.ContentAlignment;
 import jwinforms.enums.DialogResult;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
+import org.gts.bst.presenter.HighScoresPresenter;
+import org.gts.bst.view.HighScoresView;
+import org.gts.bst.view.HighScoresViewModel;
 import spacetrader.Functions;
-import spacetrader.HighScoreRecord;
-import spacetrader.Strings;
 
 
-public class FormViewHighScores extends WinformForm {
+public class FormViewHighScores extends WinformForm implements HighScoresView {
   private Button btnClose;
   private Label lblRank0;
   private Label lblRank2;
@@ -31,21 +32,23 @@ public class FormViewHighScores extends WinformForm {
 
   public FormViewHighScores() {
     InitializeComponent();
+    new HighScoresPresenter(Functions.GetHighScores(new SwingDialogService(this)), this).update();
+  }
+
+  @Override
+  public void render(HighScoresViewModel model) {
     Label[] lblName = new Label[]{lblName0, lblName1, lblName2};
     Label[] lblScore = new Label[]{lblScore0, lblScore1, lblScore2};
     Label[] lblStatus = new Label[]{lblStatus0, lblStatus1, lblStatus2};
-    HighScoreRecord[] highScores = Functions.GetHighScores(new SwingDialogService(this));
-    for(int i = highScores.length - 1; i >= 0 && highScores[i] != null; i--) {
-      lblName[2 - i].setText(highScores[i].Name());
-      lblScore[2 - i].setText(Functions.FormatNumber(highScores[i].Score() / 10) + "." + highScores[i].Score() % 10);
-      lblStatus[2 - i].setText(Functions.StringVars(Strings.HighScoreStatus, new String[]{
-            Strings.GameCompletionTypes[highScores[i].Type().CastToInt()],
-            Functions.Multiples(highScores[i].Days(), Strings.TimeUnit),
-            Functions.Multiples(highScores[i].Worth(), Strings.MoneyUnit),
-            Strings.DifficultyLevels[highScores[i].Difficulty().CastToInt()].toLowerCase()
-          }));
-      lblScore[2 - i].setVisible(true);
-      lblStatus[2 - i].setVisible(true);
+    for(int i = 0; i < model.rows().size(); i++) {
+      HighScoresViewModel.Row row = model.rows().get(i);
+      if(row.filled()) {
+        lblName[i].setText(row.name());
+        lblScore[i].setText(row.score());
+        lblScore[i].setVisible(true);
+        lblStatus[i].setText(row.status());
+        lblStatus[i].setVisible(true);
+      }
     }
   }
 
