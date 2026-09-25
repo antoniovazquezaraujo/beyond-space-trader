@@ -49,6 +49,8 @@ import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormStartPosition;
 import jwinforms.enums.StatusBarPanelAutoSize;
+import org.gts.bst.cargo.CargoBuyOffer;
+import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.events.VeryRareEncounter;
 import org.gts.bst.ship.ShipType;
@@ -87,6 +89,8 @@ import spacetrader.gui.FormAbout;
 import spacetrader.gui.FormAlert;
 import spacetrader.gui.FormBuyFuel;
 import spacetrader.gui.FormBuyRepairs;
+import spacetrader.gui.FormCargoBuy;
+import spacetrader.gui.FormCargoSell;
 import spacetrader.gui.FormCosts;
 import spacetrader.gui.FormEquipment;
 import spacetrader.gui.FormFind;
@@ -2717,17 +2721,11 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   }
 
   private void CargoBuy(int tradeItem, boolean max) {
-    game.CargoBuySystem(tradeItem, max, this);
-    UpdateAll();
+    mainPresenter.buyCargo(tradeItem, max);
   }
 
   private void CargoSell(int tradeItem, boolean all) {
-    if(game.PriceCargoSell()[tradeItem] > 0) {
-      game.CargoSellSystem(tradeItem, all, this);
-    } else {
-      game.CargoDump(tradeItem, this);
-    }
-    UpdateAll();
+    mainPresenter.sellCargo(tradeItem, all);
   }
 
   private void ClearHighScores() {
@@ -2898,6 +2896,18 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   @Override
   public Integer askRepairsAmount(int maxAmount) {
     FormBuyRepairs form = new FormBuyRepairs(maxAmount);
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
+  }
+
+  @Override
+  public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
+    FormCargoBuy form = new FormCargoBuy(offer.tradeItem(), offer.maxAmount(), offer.op());
+    return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
+  }
+
+  @Override
+  public Integer askCargoSellQuantity(CargoSellOffer offer) {
+    FormCargoSell form = new FormCargoSell(offer.tradeItem(), offer.maxAmount(), offer.op(), offer.price());
     return form.ShowDialog(this) == DialogResult.OK ? form.Amount() : null;
   }
 
