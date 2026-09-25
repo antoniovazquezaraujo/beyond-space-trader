@@ -27,7 +27,7 @@ Roadmap:
 
 - [ ] Fix startup issues (singleton, look & feel, resource paths)
 - [ ] Remove the debug cheat from the `Game` constructor
-- [ ] Replace the NetBeans/Ant build with Gradle and drop JNLP/WebStart
+- [ ] Replace the NetBeans/Ant build with Maven and drop JNLP/WebStart
 - [ ] Refactor towards Model-View-Presenter
 - [ ] Port the UI to Lanterna
 
