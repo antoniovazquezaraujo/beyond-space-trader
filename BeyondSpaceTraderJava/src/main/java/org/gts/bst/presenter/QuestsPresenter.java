@@ -50,7 +50,7 @@ public class QuestsPresenter {
       if(game.getQuestStatusGemulon() == SpecialEvent.StatusGemulonDate - 1) {
         quests.add(Strings.QuestGemulonInformTomorrow);
       } else {
-        quests.add(Functions.StringVars(Strings.QuestGemulonInformDays, Functions.Multiples(SpecialEvent.StatusGemulonDate - game.getQuestStatusGemulon(), "day")));
+        quests.add(Functions.StringVars(Strings.QuestGemulonInformDays, Functions.Multiples(SpecialEvent.StatusGemulonDate - game.getQuestStatusGemulon(), Strings.TimeUnit)));
       }
     } else if(game.getQuestStatusGemulon() == SpecialEvent.StatusGemulonFuel) {
       quests.add(Strings.QuestGemulonFuel);
@@ -59,7 +59,7 @@ public class QuestsPresenter {
       if(game.getQuestStatusExperiment() == SpecialEvent.StatusExperimentDate - 1) {
         quests.add(Strings.QuestExperimentInformTomorrow);
       } else {
-        quests.add(Functions.StringVars(Strings.QuestExperimentInformDays, Functions.Multiples(SpecialEvent.StatusExperimentDate - game.getQuestStatusExperiment(), "day")));
+        quests.add(Functions.StringVars(Strings.QuestExperimentInformDays, Functions.Multiples(SpecialEvent.StatusExperimentDate - game.getQuestStatusExperiment(), Strings.TimeUnit)));
       }
     }
     if(game.Commander().getShip().ReactorOnBoard()) {

@@ -46,7 +46,7 @@ public class BankPresenter {
         Functions.FormatPercent(cmdr.NoClaim()),
         cmdr.NoClaim() == Consts.MaxNoClaim,
         Functions.StringVars(Strings.MoneyRateSuffix, Functions.FormatMoney(game.InsuranceCosts())),
-        Functions.StringVars("^1 Insurance", cmdr.getInsurance() ? "Stop" : "Buy")));
+        Functions.StringVars(Strings.InsuranceButton, cmdr.getInsurance() ? Strings.InsuranceStop : Strings.InsuranceBuy)));
   }
 
   /**
