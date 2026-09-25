@@ -1,0 +1,60 @@
+package spacetrader;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
+import org.gts.bst.difficulty.Difficulty;
+import org.junit.jupiter.api.Test;
+
+
+class GameTest {
+  private static Game newGame(Difficulty difficulty) {
+    return new Game("Test", difficulty, 4, 4, 4, 4, null);
+  }
+
+  @Test
+  void newGameStartsWithDefaultCash() {
+    Game game = newGame(Difficulty.Normal);
+
+    assertEquals(1000, game.Commander().getCash());
+  }
+
+  @Test
+  void currentGameIsAssignedOnConstruction() {
+    Game game = newGame(Difficulty.Normal);
+
+    assertSame(game, Game.CurrentGame());
+  }
+
+  @Test
+  void newGameIsNotInCheatMode() {
+    Game game = newGame(Difficulty.Normal);
+
+    assertFalse(game.getCheatEnabled());
+    assertFalse(game.getEasyEncounters());
+    assertFalse(game.getCanSuperWarp());
+  }
+
+  @Test
+  void universeContainsEveryNamedSystem() {
+    Game game = newGame(Difficulty.Normal);
+
+    assertEquals(Strings.SystemNames.length, game.Universe().length);
+  }
+
+  @Test
+  void commanderStartsInAValidSystem() {
+    Game game = newGame(Difficulty.Normal);
+
+    assertNotNull(game.Commander().CurrentSystem());
+  }
+
+  @Test
+  void difficultyIsKept() {
+    Game game = newGame(Difficulty.Hard);
+
+    assertEquals(Difficulty.Hard, game.Difficulty());
+  }
+}

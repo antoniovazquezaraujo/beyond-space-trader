@@ -4,7 +4,7 @@ This project follows **GitHub Flow**:
 
 - `main` is always buildable; do not commit to it directly.
 - Create a short-lived branch per change, with a prefix:
-  `feature/…`, `fix/…`, `refactor/…`, `docs/…`, `build/…`.
+  `feature/…`, `fix/…`, `refactor/…`, `docs/…`, `build/…`, `test/…`.
 - Open a pull request. Keep it small and focused on one change.
 - CI (`mvn -B verify`) must pass.
 - Merge with **squash** and let the branch be deleted.
