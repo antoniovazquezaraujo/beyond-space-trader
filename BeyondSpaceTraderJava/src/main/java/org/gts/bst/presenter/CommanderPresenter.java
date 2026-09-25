@@ -52,15 +52,15 @@ public class CommanderPresenter {
   }
 
   private static String skill(int commander, int ship) {
-    return commander + " (" + ship + ")";
+    return Functions.StringVars(Strings.SkillWithShipBonus, "" + commander, "" + ship);
   }
 
   private static Bounty bounty(int score) {
     if(score <= Consts.PoliceRecordScoreCrook) {
-      return new Bounty(true, "Bounty offered:", Functions.FormatMoney(-1000 * score));
+      return new Bounty(true, Strings.CommanderBountyOffered, Functions.FormatMoney(-1000 * score));
     }
     if(score >= Consts.PoliceRecordScoreTrusted) {
-      return new Bounty(true, "Angry kingpins:", Functions.FormatNumber(score / 5));
+      return new Bounty(true, Strings.CommanderAngryKingpins, Functions.FormatNumber(score / 5));
     }
     return new Bounty(false, "", "");
   }

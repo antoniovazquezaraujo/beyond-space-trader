@@ -586,4 +586,35 @@ public interface Strings {
     WeaponType.PulseLaser.name, WeaponType.BeamLaser.name, WeaponType.MilitaryLaser.name,
     WeaponType.MorgansLaser.name, WeaponType.PhotonDisruptor.name, WeaponType.QuantumDistruptor.name
   };
+  public static final String StatusBarCash = "Cash: ^1";
+  public static final String StatusBarBays = "Bays: ^1";
+  public static final String StatusBarCosts = "Current Costs: ^1";
+  public static final String StatusBarNoGame = "No Game Loaded.";
+  public static final String CommanderBountyOffered = "Bounty offered:";
+  public static final String CommanderAngryKingpins = "Angry kingpins:";
+  public static final String SkillWithShipBonus = "^1 (^2)";
+  public static final String NoTrade = "no trade";
+  public static final String NotSold = "not sold";
+  public static final String CargoSellAll = "All";
+  public static final String CargoDumpButton = "Dump";
+  public static final String CargoTargetPriceUnknown = "-----------";
+  public static final String CargoTargetDiffUnknown = "------------";
+  public static final String CargoTargetPctUnknown = "--------";
+  public static final String DockFuelStatus = "You have fuel to fly ^1.";
+  public static final String DockFuelCost = "A full tank costs ^1";
+  public static final String DockTankFull = "Your tank is full.";
+  public static final String DockHullStatus = "Your hull strength is at ^1%.";
+  public static final String DockRepairCost = "Full repairs will cost ^1";
+  public static final String DockNoRepairs = "No repairs are needed.";
+  public static final String InsuranceButton = "^1 Insurance";
+  public static final String InsuranceBuy = "Buy";
+  public static final String InsuranceStop = "Stop";
+  public static final String ShipHullLabel = "Hull:";
+  public static final String ShipHullHardened = "Hardened";
+  public static final String ShipEquipmentLabel = "Equipment:";
+  public static final String ShipUnfilledLabel = "Unfilled:";
+  public static final String ShipWeaponSlot = "weapon slot";
+  public static final String ShipShieldSlot = "shield slot";
+  public static final String ShipGadgetSlot = "gadget slot";
+  public static final String ShipBayUnit = "bay";
 }

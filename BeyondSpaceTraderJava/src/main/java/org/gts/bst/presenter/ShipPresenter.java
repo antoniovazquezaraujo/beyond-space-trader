@@ -44,13 +44,13 @@ public class ShipPresenter {
     StringBuilder values = new StringBuilder();
     boolean equipPrinted = false;
     if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
-      labels.append("Hull:").append(Strings.newline).append(Strings.newline);
-      values.append("Hardened").append(Strings.newline).append(Strings.newline);
+      labels.append(Strings.ShipHullLabel).append(Strings.newline).append(Strings.newline);
+      values.append(Strings.ShipHullHardened).append(Strings.newline).append(Strings.newline);
     }
     for(int i = 0; i < Consts.WeapObjs.length; i++) {
       int count = countWeapons(ship, i);
       if(count > 0) {
-        labels.append(equipPrinted ? Strings.newline : "Equipment:" + Strings.newline);
+        labels.append(equipPrinted ? Strings.newline : Strings.ShipEquipmentLabel + Strings.newline);
         values.append(Functions.Multiples(count, Consts.WeapObjs[i].Name())).append(Strings.newline);
         equipPrinted = true;
       }
@@ -58,7 +58,7 @@ public class ShipPresenter {
     for(int i = 0; i < Consts.Shields.length; i++) {
       int count = countShields(ship, i);
       if(count > 0) {
-        labels.append(equipPrinted ? Strings.newline : "Equipment:" + Strings.newline);
+        labels.append(equipPrinted ? Strings.newline : Strings.ShipEquipmentLabel + Strings.newline);
         values.append(Functions.Multiples(count, Consts.Shields[i].Name())).append(Strings.newline);
         equipPrinted = true;
       }
@@ -66,7 +66,7 @@ public class ShipPresenter {
     for(int i = 0; i < Consts.Gadgets.length; i++) {
       int count = countGadgets(ship, i);
       if(count > 0) {
-        labels.append(equipPrinted ? Strings.newline : "Equipment:" + Strings.newline);
+        labels.append(equipPrinted ? Strings.newline : Strings.ShipEquipmentLabel + Strings.newline);
         if(i == GadgetType.ExtraCargoBays.asInteger() || i == GadgetType.HiddenCargoBays.asInteger()) {
           values.append(Functions.FormatNumber(count * 5)).append(Consts.Gadgets[i].Name().substring(1)).append(Strings.newline);
         } else {
@@ -76,21 +76,21 @@ public class ShipPresenter {
       }
     }
     if(ship.getEscapePod()) {
-      labels.append(equipPrinted ? Strings.newline : "Equipment:" + Strings.newline);
+      labels.append(equipPrinted ? Strings.newline : Strings.ShipEquipmentLabel + Strings.newline);
       values.append("1 ").append(Strings.ShipInfoEscapePod).append(Strings.newline);
       equipPrinted = true;
     }
     if(ship.FreeSlots() > 0) {
-      labels.append(equipPrinted ? Strings.newline : "").append("Unfilled:");
+      labels.append(equipPrinted ? Strings.newline : "").append(Strings.ShipUnfilledLabel);
       values.append(equipPrinted ? Strings.newline : "");
       if(ship.FreeSlotsWeapon() > 0) {
-        values.append(Functions.Multiples(ship.FreeSlotsWeapon(), "weapon slot")).append(Strings.newline);
+        values.append(Functions.Multiples(ship.FreeSlotsWeapon(), Strings.ShipWeaponSlot)).append(Strings.newline);
       }
       if(ship.FreeSlotsShield() > 0) {
-        values.append(Functions.Multiples(ship.FreeSlotsShield(), "shield slot")).append(Strings.newline);
+        values.append(Functions.Multiples(ship.FreeSlotsShield(), Strings.ShipShieldSlot)).append(Strings.newline);
       }
       if(ship.FreeSlotsGadget() > 0) {
-        values.append(Functions.Multiples(ship.FreeSlotsGadget(), "gadget slot")).append(Strings.newline);
+        values.append(Functions.Multiples(ship.FreeSlotsGadget(), Strings.ShipGadgetSlot)).append(Strings.newline);
       }
     }
     return new EquipmentText(labels.toString(), values.toString());
@@ -146,7 +146,7 @@ public class ShipPresenter {
     }
     if(ship.ReactorOnBoard()) {
       specialCargo.add(Strings.SpecialCargoReactor);
-      specialCargo.add(Functions.Multiples(10 - ((game.getQuestStatusReactor() - 1) / 2), "bay") + Strings.SpecialCargoReactorBays);
+      specialCargo.add(Functions.Multiples(10 - ((game.getQuestStatusReactor() - 1) / 2), Strings.ShipBayUnit) + Strings.SpecialCargoReactorBays);
     }
     if(ship.SculptureOnBoard()) {
       specialCargo.add(Strings.SpecialCargoSculpture);

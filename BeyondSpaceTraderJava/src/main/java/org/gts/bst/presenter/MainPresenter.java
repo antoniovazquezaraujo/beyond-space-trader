@@ -142,14 +142,14 @@ public class MainPresenter {
   public void updateStatusBar() {
     Game game = gameSupplier.get();
     if(game == null) {
-      view.renderStatusBar(new MainStatusViewModel("", "", "", "No Game Loaded."));
+      view.renderStatusBar(new MainStatusViewModel("", "", "", Strings.StatusBarNoGame));
       return;
     }
     Commander cmdr = game.Commander();
     view.renderStatusBar(new MainStatusViewModel(
-        "Cash: " + Functions.FormatMoney(cmdr.getCash()),
-        "Bays: " + cmdr.getShip().FilledCargoBays() + "/" + cmdr.getShip().CargoBays(),
-        "Current Costs: " + Functions.FormatMoney(game.CurrentCosts()),
+        Functions.StringVars(Strings.StatusBarCash, Functions.FormatMoney(cmdr.getCash())),
+        Functions.StringVars(Strings.StatusBarBays, cmdr.getShip().FilledCargoBays() + "/" + cmdr.getShip().CargoBays()),
+        Functions.StringVars(Strings.StatusBarCosts, Functions.FormatMoney(game.CurrentCosts())),
         ""));
   }
 
@@ -217,16 +217,16 @@ public class MainPresenter {
       int stock = cmdr.CurrentSystem().TradeItems()[i];
       int diff = price - buy[i];
       rows.add(new CargoRowViewModel(
-          sell[i] > 0 ? Functions.FormatMoney(sell[i]) : "no trade",
+          sell[i] > 0 ? Functions.FormatMoney(sell[i]) : Strings.NoTrade,
           "" + cargo,
-          sell[i] > 0 ? "All" : "Dump",
+          sell[i] > 0 ? Strings.CargoSellAll : Strings.CargoDumpButton,
           true,
-          buy[i] > 0 ? Functions.FormatMoney(buy[i]) : "not sold",
+          buy[i] > 0 ? Functions.FormatMoney(buy[i]) : Strings.NotSold,
           "" + stock,
           buy[i] > 0,
-          targetKnown ? Functions.FormatMoney(price) : "-----------",
-          targetKnown && buy[i] > 0 ? (diff > 0 ? "+" : "") + Functions.FormatMoney(diff) : "------------",
-          targetKnown && buy[i] > 0 ? (diff > 0 ? "+" : "") + Functions.FormatNumber(100 * diff / buy[i]) + "%" : "--------",
+          targetKnown ? Functions.FormatMoney(price) : Strings.CargoTargetPriceUnknown,
+          targetKnown && buy[i] > 0 ? (diff > 0 ? "+" : "") + Functions.FormatMoney(diff) : Strings.CargoTargetDiffUnknown,
+          targetKnown && buy[i] > 0 ? (diff > 0 ? "+" : "") + Functions.FormatNumber(100 * diff / buy[i]) + "%" : Strings.CargoTargetPctUnknown,
           sell[i] * cargo > cmdr.PriceCargo()[i],
           targetKnown && buy[i] > 0 && diff > 0 && stock > 0));
     }
@@ -243,16 +243,16 @@ public class MainPresenter {
     int tanksEmpty = ship.FuelTanks() - ship.getFuel();
     int hullLoss = ship.HullStrength() - ship.getHull();
     view.renderDock(new DockViewModel(
-        Functions.StringVars("You have fuel to fly ^1.", Functions.Multiples(ship.getFuel(), "parsec")),
+        Functions.StringVars(Strings.DockFuelStatus, Functions.Multiples(ship.getFuel(), Strings.DistanceUnit)),
         tanksEmpty > 0
-            ? Functions.StringVars("A full tank costs ^1", Functions.FormatMoney(tanksEmpty * ship.getFuelCost()))
-            : "Your tank is full.",
+            ? Functions.StringVars(Strings.DockFuelCost, Functions.FormatMoney(tanksEmpty * ship.getFuelCost()))
+            : Strings.DockTankFull,
         tanksEmpty > 0,
-        Functions.StringVars("Your hull strength is at ^1%.",
+        Functions.StringVars(Strings.DockHullStatus,
             Functions.FormatNumber((int)Math.floor((double)100 * ship.getHull() / ship.HullStrength()))),
         hullLoss > 0
-            ? Functions.StringVars("Full repairs will cost ^1", Functions.FormatMoney(hullLoss * ship.getRepairCost()))
-            : "No repairs are needed.",
+            ? Functions.StringVars(Strings.DockRepairCost, Functions.FormatMoney(hullLoss * ship.getRepairCost()))
+            : Strings.DockNoRepairs,
         hullLoss > 0));
   }
 

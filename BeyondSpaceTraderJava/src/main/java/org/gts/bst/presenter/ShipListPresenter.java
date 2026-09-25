@@ -48,7 +48,7 @@ public class ShipListPresenter {
       boolean buyVisible = false;
       String price;
       if(spec.MinimumTechLevel().ordinal() > cmdr.CurrentSystem().TechLevel().ordinal()) {
-        price = "not sold";
+        price = Strings.NotSold;
       } else if(spec.Type() == ship.Type()) {
         price = Strings.ShipBuyGotOne;
       } else {
