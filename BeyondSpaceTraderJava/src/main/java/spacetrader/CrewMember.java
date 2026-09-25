@@ -164,7 +164,7 @@ public class CrewMember extends STSerializableObject {
   }
 
   public int Rate() {
-    return Util.ArrayContains(Consts.SpecialCrewMemberIds, Id()) || Id() == CrewMemberId.Zeethibal
+    return Consts.SpecialCrewMemberIds.contains(Id()) || Id() == CrewMemberId.Zeethibal
         ? 0 : (Pilot() + Fighter() + Trader() + Engineer()) * 3;
   }
 

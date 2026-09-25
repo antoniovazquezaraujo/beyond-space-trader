@@ -32,7 +32,7 @@ public class ShipListPresenter {
   private final Commander cmdr;
   private final Ship ship;
   private final ShipListView view;
-  private final int[] prices = new int[Consts.ShipSpecs.length];
+  private final int[] prices = new int[Consts.ShipSpecs.size()];
 
   public ShipListPresenter(Game game, ShipListView view) {
     this.game = game;
@@ -42,9 +42,9 @@ public class ShipListPresenter {
   }
 
   public void update() {
-    List<ShipListViewModel.Row> rows = new ArrayList<>(Consts.ShipSpecs.length);
-    for(int i = 0; i < Consts.ShipSpecs.length; i++) {
-      ShipSpec spec = Consts.ShipSpecs[i];
+    List<ShipListViewModel.Row> rows = new ArrayList<>(Consts.ShipSpecs.size());
+    for(int i = 0; i < Consts.ShipSpecs.size(); i++) {
+      ShipSpec spec = Consts.ShipSpecs.get(i);
       boolean buyVisible = false;
       String price;
       if(spec.MinimumTechLevel().ordinal() > cmdr.CurrentSystem().TechLevel().ordinal()) {
@@ -66,7 +66,7 @@ public class ShipListPresenter {
   }
 
   public void select(int id) {
-    ShipSpec spec = Consts.ShipSpecs[id];
+    ShipSpec spec = Consts.ShipSpecs.get(id);
     view.renderInfo(new ShipInfoViewModel(
         spec.Name(),
         Strings.Sizes[spec.getSize().CastToInt()],
@@ -92,7 +92,7 @@ public class ShipListPresenter {
    */
   public boolean buy(int id) {
     select(id);
-    if(cmdr.TradeShip(Consts.ShipSpecs[id], prices[id])) {
+    if(cmdr.TradeShip(Consts.ShipSpecs.get(id), prices[id])) {
       if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
         game.setQuestStatusScarab(SpecialEvent.StatusScarabNotStarted);
       }

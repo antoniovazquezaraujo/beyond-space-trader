@@ -45,8 +45,8 @@ public class CargoTransferPresenter {
 
   public void update() {
     Ship source = mode == Mode.Plunder ? game.getOpponent() : ship;
-    List<String> quantities = new ArrayList<>(Consts.TradeItems.length);
-    for(int i = 0; i < Consts.TradeItems.length; i++) {
+    List<String> quantities = new ArrayList<>(Consts.TradeItems.size());
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
       quantities.add("" + source.Cargo()[i]);
     }
     view.render(new CargoTransferViewModel(quantities, ship.FilledCargoBays() + "/" + ship.CargoBays()));

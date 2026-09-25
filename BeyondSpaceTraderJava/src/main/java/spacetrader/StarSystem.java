@@ -59,23 +59,23 @@ public class StarSystem extends STSerializableObject {
   }
 
   public void InitializeTradeItems() {
-    for(int i = 0; i < Consts.TradeItems.length; i++) {
-      if(!ItemTraded(Consts.TradeItems[i])) {
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      if(!ItemTraded(Consts.TradeItems.get(i))) {
         _tradeItems[i] = 0;
       } else {
         _tradeItems[i] = (this.Size().CastToInt() + 1)
-            * (Functions.GetRandom(9, 14) - Math.abs(Consts.TradeItems[i].TechTopProduction().ordinal() - this.TechLevel().ordinal()));
+            * (Functions.GetRandom(9, 14) - Math.abs(Consts.TradeItems.get(i).TechTopProduction().ordinal() - this.TechLevel().ordinal()));
         // Because of the enormous profits possible, there shouldn't be too many robots or narcotics available.
         if(i >= TradeItemType.Narcotics.CastToInt()) {
           _tradeItems[i] = ((_tradeItems[i] * (5 - Game.CurrentGame().Difficulty().CastToInt())) / (6 - Game.CurrentGame().Difficulty().CastToInt())) + 1;
         }
-        if(this.SpecialResource() == Consts.TradeItems[i].ResourceLowPrice()) {
+        if(this.SpecialResource() == Consts.TradeItems.get(i).ResourceLowPrice()) {
           _tradeItems[i] = _tradeItems[i] * 4 / 3;
         }
-        if(this.SpecialResource() == Consts.TradeItems[i].ResourceHighPrice()) {
+        if(this.SpecialResource() == Consts.TradeItems.get(i).ResourceHighPrice()) {
           _tradeItems[i] = _tradeItems[i] * 3 / 4;
         }
-        if(this.SystemPressure() == Consts.TradeItems[i].PressurePriceHike()) {
+        if(this.SystemPressure() == Consts.TradeItems.get(i).PressurePriceHike()) {
           _tradeItems[i] /= 5;
         }
         _tradeItems[i] = _tradeItems[i] - Functions.GetRandom(10) + Functions.GetRandom(10);
@@ -285,7 +285,7 @@ public class StarSystem extends STSerializableObject {
   }
 
   public PoliticalSystem PoliticalSystem() {
-    return Consts.PoliticalSystems[_politicalSystemType.CastToInt()];
+    return Consts.PoliticalSystems.get(_politicalSystemType.CastToInt());
   }
 
   public PoliticalSystemType PoliticalSystemType() {
@@ -297,7 +297,7 @@ public class StarSystem extends STSerializableObject {
   }
 
   public Shipyard Shipyard() {
-    return (_shipyardId == ShipyardId.NA ? null : Consts.Shipyards[_shipyardId.CastToInt()]);
+    return (_shipyardId == ShipyardId.NA ? null : Consts.Shipyards.get(_shipyardId.CastToInt()));
   }
 
   public ShipyardId ShipyardId() {
@@ -313,7 +313,7 @@ public class StarSystem extends STSerializableObject {
   }
 
   public SpecialEvent SpecialEvent() {
-    return (_specialEventType == SpecialEventType.NA ? null : Consts.SpecialEvents[_specialEventType.CastToInt()]);
+    return (_specialEventType == SpecialEventType.NA ? null : Consts.SpecialEvents.get(_specialEventType.CastToInt()));
   }
 
   public SpecialEventType SpecialEventType() {

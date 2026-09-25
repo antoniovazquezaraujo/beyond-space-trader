@@ -930,7 +930,7 @@ public class FormShipyard extends WinformForm implements ShipyardView {
       btnConstruct.setForeColor(model.constructEnabled() ? Color.black : Color.gray);
       btnSave.setForeColor(model.saveEnabled() ? Color.black : Color.gray);
       picShip.setImage(model.customImage() ? customImages[0]
-          : Consts.ShipSpecs[imgTypes[model.imageIndex()].CastToInt()].Image());
+          : Consts.ShipSpecs.get(imgTypes[model.imageIndex()].CastToInt()).Image());
       lblImage.setText(model.imageName());
     } finally {
       rendering = false;

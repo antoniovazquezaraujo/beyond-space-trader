@@ -65,7 +65,7 @@ class MainPresenterTest {
     assertFalse(view.system.newsVisible());
     assertFalse(view.charts.wormholeVisible());
     assertFalse(view.charts.findVisible());
-    assertEquals(Consts.TradeItems.length, view.cargo.rows().size());
+    assertEquals(Consts.TradeItems.size(), view.cargo.rows().size());
     assertEquals("", view.cargo.rows().get(0).sellPrice());
     assertFalse(view.cargo.rows().get(0).sellVisible());
     assertEquals("", view.dock.fuelStatus());
@@ -123,7 +123,7 @@ class MainPresenterTest {
     presenter.updateCargo();
 
     List<CargoRowViewModel> rows = view.cargo.rows();
-    assertEquals(Consts.TradeItems.length, rows.size());
+    assertEquals(Consts.TradeItems.size(), rows.size());
     for(CargoRowViewModel row : rows) {
       assertEquals("0", row.sellQty());
       assertTrue(row.sellVisible());
@@ -310,7 +310,7 @@ class MainPresenterTest {
     Game game = newGame();
     FakeView view = new FakeView();
     MainPresenter presenter = new MainPresenter(() -> game, view);
-    int minTech = Consts.ShipSpecs[ShipType.Flea.CastToInt()].MinimumTechLevel().ordinal();
+    int minTech = Consts.ShipSpecs.get(ShipType.Flea.CastToInt()).MinimumTechLevel().ordinal();
 
     game.Commander().CurrentSystem(firstSystemWithTech(game, true, minTech));
     presenter.updateShipyard();

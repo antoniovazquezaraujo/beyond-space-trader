@@ -126,12 +126,12 @@ public class QuestsPresenter {
     if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabHunting) {
       quests.add(Strings.QuestScarabFind);
     } else if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDestroyed) {
-      if(Consts.SpecialEvents[SpecialEventType.ScarabUpgradeHull.CastToInt()].Location(game.Universe()) == null) {
+      if(Consts.SpecialEvents.get(SpecialEventType.ScarabUpgradeHull.CastToInt()).Location(game.Universe()) == null) {
         quests.add(Functions.StringVars(Strings.QuestScarabNotify,
-            Consts.SpecialEvents[SpecialEventType.ScarabDestroyed.CastToInt()].Location(game.Universe()).Name()));
+            Consts.SpecialEvents.get(SpecialEventType.ScarabDestroyed.CastToInt()).Location(game.Universe()).Name()));
       } else {
         quests.add(Functions.StringVars(Strings.QuestScarabHull,
-            Consts.SpecialEvents[SpecialEventType.ScarabUpgradeHull.CastToInt()].Location(game.Universe()).Name()));
+            Consts.SpecialEvents.get(SpecialEventType.ScarabUpgradeHull.CastToInt()).Location(game.Universe()).Name()));
       }
     }
     if(game.Commander().getShip().SculptureOnBoard()) {

@@ -76,7 +76,7 @@ public class ShipyardPresenter {
         Functions.FormatMoney(yard.AdjustedPenaltyCost()), Functions.FormatMoney(-yard.TradeIn(cmdr)),
         Functions.FormatMoney(yard.TotalCost(cmdr)), constructEnabled(name), saveEnabled(name),
         imageIndex, customImage(), customImage() ? Strings.ShipNameCustomShip
-            : Consts.ShipSpecs[IMAGE_TYPES[imageIndex].CastToInt()].Name()));
+            : Consts.ShipSpecs.get(IMAGE_TYPES[imageIndex].CastToInt()).Name()));
   }
 
   public void onSizeChanged(int index) {
@@ -171,7 +171,7 @@ public class ShipyardPresenter {
     for(ShipSize size : yard.AvailableSizes()) {
       sizes.add(size);
       sizeNames.add(Functions.StringVars(Strings.ShipyardSizeItem, Strings.Sizes[size.CastToInt()],
-          Functions.Multiples(Shipyard.MAX_UNITS[size.CastToInt()], Strings.ShipyardUnit)));
+          Functions.Multiples(Shipyard.MaxUnits(size), Strings.ShipyardUnit)));
     }
   }
 

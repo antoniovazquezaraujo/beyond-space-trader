@@ -3051,8 +3051,8 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
             game.setChanceOfTradeInOrbit(Math.max(0, Math.min(1000, num1)));
             break;
           case Cover:
-            if(num1 >= 0 && num1 < ship.Shields().length && num2 >= 0 && num2 < Consts.Shields.length) {
-              ship.Shields()[num1] = (Shield)Consts.Shields[num2].Clone();
+            if(num1 >= 0 && num1 < ship.Shields().length && num2 >= 0 && num2 < Consts.Shields.size()) {
+              ship.Shields()[num1] = (Shield)Consts.Shields.get(num2).Clone();
             }
             break;
           case DeLorean:
@@ -3113,8 +3113,8 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
             cmdr.setDebt(Math.max(0, num1));
             break;
           case Iron:
-            if(num1 >= 0 && num1 < ship.Weapons().length && num2 >= 0 && num2 < Consts.WeapObjs.length) {
-              ship.Weapons()[num1] = (Weapon)Consts.WeapObjs[num2].Clone();
+            if(num1 >= 0 && num1 < ship.Weapons().length && num2 >= 0 && num2 < Consts.WeapObjs.size()) {
+              ship.Weapons()[num1] = (Weapon)Consts.WeapObjs.get(num2).Clone();
             }
             break;
           case Juice:
@@ -3145,7 +3145,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
             break;
           case Posse:
             if(num1 > 0 && num1 < ship.Crew().length && num2 > 0 && num2 < game.Mercenaries().length
-                && !Util.ArrayContains(Consts.SpecialCrewMemberIds, (CrewMemberId.FromInt(num2)))) {
+                && !Consts.SpecialCrewMemberIds.contains((CrewMemberId.FromInt(num2)))) {
               int skill = ship.Trader();
               ship.Crew()[num1] = game.Mercenaries()[num2];
               if(ship.Trader() != skill) {
@@ -3234,8 +3234,8 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
             (new FormTest()).ShowDialog(this);
             break;
           case Tool:
-            if(num1 >= 0 && num1 < ship.Gadgets().length && num2 >= 0 && num2 < Consts.Gadgets.length) {
-              ship.Gadgets()[num1] = (Gadget)Consts.Gadgets[num2].Clone();
+            if(num1 >= 0 && num1 < ship.Gadgets().length && num2 >= 0 && num2 < Consts.Gadgets.size()) {
+              ship.Gadgets()[num1] = (Gadget)Consts.Gadgets.get(num2).Clone();
             }
             break;
           case Varmints:

@@ -143,8 +143,8 @@ public class Functions {
   }
 
   public static void PaintShipImage(Ship ship, Graphics graphics, Color backgroundColor) {
-    int x = Consts.ShipImageOffsets[ship.Type().CastToInt()].X;
-    int width = Consts.ShipImageOffsets[ship.Type().CastToInt()].Width;
+    int x = Consts.ShipImageOffsets.get(ship.Type().CastToInt()).x();
+    int width = Consts.ShipImageOffsets.get(ship.Type().CastToInt()).width();
     int startDamage = x + width - ship.getHull() * width / ship.HullStrength();
     int startShield = x + width + 2 - (ship.ShieldStrength() > 0 ? ship.ShieldCharge() * (width + 4) / ship.ShieldStrength() : 0);
     graphics.clear(backgroundColor);

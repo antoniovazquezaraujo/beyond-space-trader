@@ -29,7 +29,7 @@ public class Commander extends CrewMember {
     super(cm);
     // Start off with a crew of only the commander and a Pulse Laser.
     _ship.Crew()[0] = this;
-    _ship.AddEquipment(Consts.WeapObjs[WeaponType.PulseLaser.id]);
+    _ship.AddEquipment(Consts.WeapObjs.get(WeaponType.PulseLaser.id));
   }
 
   public Commander(Hashtable hash) {
@@ -107,11 +107,11 @@ public class Commander extends CrewMember {
       dialogs().alert(AlertType.ShipBuyReactor);
     } else {
       Equipment[] special = new Equipment[] {
-        Consts.WeapObjs[WeaponType.MorgansLaser.id],
-        Consts.WeapObjs[WeaponType.QuantumDistruptor.id],
-        Consts.Shields[ShieldType.Lightning.id],
-        Consts.Gadgets[GadgetType.FuelCompactor.asInteger()],
-        Consts.Gadgets[GadgetType.HiddenCargoBays.asInteger()]
+        Consts.WeapObjs.get(WeaponType.MorgansLaser.id),
+        Consts.WeapObjs.get(WeaponType.QuantumDistruptor.id),
+        Consts.Shields.get(ShieldType.Lightning.id),
+        Consts.Gadgets.get(GadgetType.FuelCompactor.asInteger()),
+        Consts.Gadgets.get(GadgetType.HiddenCargoBays.asInteger())
       };
       boolean[] add = new boolean[special.length];
       boolean addPod = false;

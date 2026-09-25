@@ -82,9 +82,9 @@ public class ShipSpec extends STSerializableObject {
     // Get the name if the ship is a custom design.
     if(_type == ShipType.Custom) {
       Strings.ShipNames[ShipType.Custom.CastToInt()] = GetValueFromHash(hash, "_name", Strings.ShipNames[ShipType.Custom.CastToInt()]);
-      Consts.ShipSpecs[ShipType.Custom.CastToInt()] = new ShipSpec(
+      Consts.SetCustomShipSpec(new ShipSpec(
           _type, _size, _cargoBays, _weaponSlots, _shieldSlots, _gadgetSlots, _crewQuarters, _fuelTanks,
-          _fuelCost, _hullStrength, _repairCost, _price, _occurrence, _police, _pirates, _traders, _minTech);
+          _fuelCost, _hullStrength, _repairCost, _price, _occurrence, _police, _pirates, _traders, _minTech));
       UpdateCustomImageOffsetConstants();
     }
   }
@@ -128,24 +128,24 @@ public class ShipSpec extends STSerializableObject {
   protected void SetValues(ShipType type) {
     int typeInt = type.CastToInt();
     _type = type;
-    _size = Consts.ShipSpecs[typeInt]._size;
-    _cargoBays = Consts.ShipSpecs[typeInt]._cargoBays;
-    _weaponSlots = Consts.ShipSpecs[typeInt]._weaponSlots;
-    _shieldSlots = Consts.ShipSpecs[typeInt]._shieldSlots;
-    _gadgetSlots = Consts.ShipSpecs[typeInt]._gadgetSlots;
-    _crewQuarters = Consts.ShipSpecs[typeInt]._crewQuarters;
-    _fuelTanks = Consts.ShipSpecs[typeInt]._fuelTanks;
-    _fuelCost = Consts.ShipSpecs[typeInt]._fuelCost;
-    _hullStrength = Consts.ShipSpecs[typeInt]._hullStrength;
-    _repairCost = Consts.ShipSpecs[typeInt]._repairCost;
-    _price = Consts.ShipSpecs[typeInt]._price;
-    _occurrence = Consts.ShipSpecs[typeInt]._occurrence;
-    _police = Consts.ShipSpecs[typeInt]._police;
-    _pirates = Consts.ShipSpecs[typeInt]._pirates;
-    _traders = Consts.ShipSpecs[typeInt]._traders;
-    _minTech = Consts.ShipSpecs[typeInt]._minTech;
-    _hullUpgraded = Consts.ShipSpecs[typeInt]._hullUpgraded;
-    _imageIndex = Consts.ShipSpecs[typeInt]._imageIndex;
+    _size = Consts.ShipSpecs.get(typeInt)._size;
+    _cargoBays = Consts.ShipSpecs.get(typeInt)._cargoBays;
+    _weaponSlots = Consts.ShipSpecs.get(typeInt)._weaponSlots;
+    _shieldSlots = Consts.ShipSpecs.get(typeInt)._shieldSlots;
+    _gadgetSlots = Consts.ShipSpecs.get(typeInt)._gadgetSlots;
+    _crewQuarters = Consts.ShipSpecs.get(typeInt)._crewQuarters;
+    _fuelTanks = Consts.ShipSpecs.get(typeInt)._fuelTanks;
+    _fuelCost = Consts.ShipSpecs.get(typeInt)._fuelCost;
+    _hullStrength = Consts.ShipSpecs.get(typeInt)._hullStrength;
+    _repairCost = Consts.ShipSpecs.get(typeInt)._repairCost;
+    _price = Consts.ShipSpecs.get(typeInt)._price;
+    _occurrence = Consts.ShipSpecs.get(typeInt)._occurrence;
+    _police = Consts.ShipSpecs.get(typeInt)._police;
+    _pirates = Consts.ShipSpecs.get(typeInt)._pirates;
+    _traders = Consts.ShipSpecs.get(typeInt)._traders;
+    _minTech = Consts.ShipSpecs.get(typeInt)._minTech;
+    _hullUpgraded = Consts.ShipSpecs.get(typeInt)._hullUpgraded;
+    _imageIndex = Consts.ShipSpecs.get(typeInt)._imageIndex;
   }
 
   public int Slots(EquipmentType type) {
@@ -170,12 +170,10 @@ public class ShipSpec extends STSerializableObject {
       return;
     }
     WfImage image = parent.CustomShipImages()[0];
-    int custIndex = ShipType.Custom.CastToInt();
     // Find the first column of pixels that has a non-white pixel for the X value, and the last column for the width.
     int x = Functions.GetColumnOfFirstNonWhitePixel(image, 1);
     int width = Functions.GetColumnOfFirstNonWhitePixel(image, -1) - x + 1;
-    Consts.ShipImageOffsets[custIndex].X = Math.max(2, x);
-    Consts.ShipImageOffsets[custIndex].Width = Math.min(62 - Consts.ShipImageOffsets[custIndex].X, width);
+    Consts.SetCustomShipImageOffset(x, width);
   }
 
   public int CargoBays() {
