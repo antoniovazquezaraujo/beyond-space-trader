@@ -43,6 +43,7 @@ Requires JDK 17 and Maven 3.9+.
 java -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
 
 mvn package                                  # build both modules and the jar
+mvn -Pquality verify                         # also run SpotBugs (report-only for now)
 ```
 
 On non-Windows platforms the default UI fonts are shrunk to 10 pt, because the JWinForms
