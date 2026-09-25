@@ -385,7 +385,11 @@ public class ApplicationST extends WinformWindow {
   }
 
   public static void main(String[] s) throws Exception {
-    UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+    try {
+      UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+    } catch(Exception ex) {
+      // Fall back to the default look and feel.
+    }
     UIManager.put("swing.boldMetal", Boolean.FALSE);
     ApplicationST st = new ApplicationST(s.length > 0 ? s[0] : null);
     st.ShowWindow();

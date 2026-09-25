@@ -25,7 +25,7 @@ known blockers:
 
 Roadmap:
 
-- [ ] Fix startup issues (singleton, look & feel, resource paths)
+- [x] Fix startup issues (singleton, look & feel, resource paths)
 - [ ] Remove the debug cheat from the `Game` constructor
 - [ ] Replace the NetBeans/Ant build with Maven and drop JNLP/WebStart
 - [ ] Refactor towards Model-View-Presenter
@@ -43,9 +43,6 @@ Roadmap:
 The original build is a NetBeans Ant project and requires JDK 8-17: the project sets
 `javac.source=1.7`, which JDK 21 and later reject. `JWinForms` must be built first,
 because `BeyondSpaceTraderJava` references `../JWinForms/dist/JWinForms.jar`.
-
-Until the startup fixes land, running the game requires workarounds (a launcher with a
-portable look & feel and a copy of the image-list properties under `org/gts/bst/`).
 
 ## License
 

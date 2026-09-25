@@ -112,7 +112,7 @@ public class Game extends STSerializableObject {
   private boolean _encounterOppHit = false;
 
   public Game(String name, Difficulty difficulty, int pilot, int fighter, int trader, int engineer, ApplicationST parentWin) {
-    game = Game.CurrentGame();
+    Game.CurrentGame(this);
     _parentWin = parentWin;
     _difficulty = difficulty;
     // Keep Generating a new universe until PlaceSpecialEvents and PlaceShipyards return true, indicating all special events and shipyards were placed.
@@ -141,7 +141,7 @@ public class Game extends STSerializableObject {
   @SuppressWarnings("unchecked")
   public Game(Hashtable hash, ApplicationST parentWin) {
     super(hash);
-    game = Game.CurrentGame();
+    Game.CurrentGame(this);
     _parentWin = parentWin;
     String version = GetValueFromHash(hash, "_version", String.class);
     if(version.compareTo(Consts.CurrentVersion) > 0) {
