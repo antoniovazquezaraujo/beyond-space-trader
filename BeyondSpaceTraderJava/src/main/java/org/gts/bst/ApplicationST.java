@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.util.Arrays;
 import java.util.Iterator;
 import javax.swing.UIManager;
+import javax.swing.plaf.FontUIResource;
 import jwinforms.Brush;
 import jwinforms.Button;
 import jwinforms.CancelEventArgs;
@@ -393,9 +394,30 @@ public class ApplicationST extends WinformWindow {
     } catch(Exception ex) {
       // Fall back to the default look and feel.
     }
+    installCompactUiFonts();
     UIManager.put("swing.boldMetal", Boolean.FALSE);
     ApplicationST st = new ApplicationST(s.length > 0 ? s[0] : null);
     st.ShowWindow();
+  }
+
+  /**
+   * The WinForms layouts were tuned for Microsoft Sans Serif 8.25 on Windows. On other
+   * platforms the default Swing fonts are wider and many fixed-size labels clip, so shrink
+   * all default UI fonts. Windows is left untouched; the size can be overridden with
+   * {@code -Dbst.uiFontSize=<points>} and 0 disables the adjustment.
+   */
+  private static void installCompactUiFonts() {
+    int size = Integer.getInteger("bst.uiFontSize", 10);
+    if(size <= 0 || System.getProperty("os.name", "").toLowerCase().startsWith("win")) {
+      return;
+    }
+    for(Object key : new java.util.ArrayList<Object>(UIManager.getDefaults().keySet())) {
+      Object value = UIManager.get(key);
+      if(value instanceof FontUIResource) {
+        java.awt.Font font = (java.awt.Font)value;
+        UIManager.put(key, new FontUIResource(font.getFamily(), font.getStyle(), size));
+      }
+    }
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
