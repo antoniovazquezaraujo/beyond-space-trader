@@ -18,6 +18,7 @@ import org.gts.bst.view.CargoTransferView;
 import org.gts.bst.view.CargoTransferViewModel;
 import spacetrader.Consts;
 import spacetrader.Game;
+import spacetrader.Trade;
 import spacetrader.Ship;
 
 
@@ -57,19 +58,19 @@ public class CargoTransferPresenter {
    */
   public void transfer(int tradeItem, boolean all) {
     if(mode == Mode.Jettison) {
-      CargoSellOffer offer = game.CargoSellOffer(tradeItem, CargoSellOp.Jettison);
+      CargoSellOffer offer = Trade.CargoSellOffer(game, tradeItem, CargoSellOp.Jettison);
       if(offer != null) {
         Integer qty = all ? Integer.valueOf(offer.maxAmount()) : view.askSellQuantity(offer);
         if(qty != null) {
-          game.CargoSell(offer, qty);
+          Trade.CargoSell(game, offer, qty);
         }
       }
     } else {
-      CargoBuyOffer offer = game.CargoBuyOffer(tradeItem, CargoBuyOp.InPlunder);
+      CargoBuyOffer offer = Trade.CargoBuyOffer(game, tradeItem, CargoBuyOp.InPlunder);
       if(offer != null) {
         Integer qty = all ? Integer.valueOf(offer.maxAmount()) : view.askBuyQuantity(offer);
         if(qty != null) {
-          game.CargoBuy(offer, qty);
+          Trade.CargoBuy(game, offer, qty);
         }
       }
     }

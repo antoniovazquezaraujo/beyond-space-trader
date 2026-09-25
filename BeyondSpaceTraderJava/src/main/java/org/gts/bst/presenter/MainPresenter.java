@@ -30,6 +30,7 @@ import spacetrader.Consts;
 import spacetrader.CrewMember;
 import spacetrader.Functions;
 import spacetrader.Game;
+import spacetrader.Trade;
 import spacetrader.Ship;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
@@ -66,11 +67,11 @@ public class MainPresenter {
   public void buyCargo(int tradeItem, boolean max) {
     Game game = gameSupplier.get();
     if(game != null) {
-      CargoBuyOffer offer = game.CargoBuyOffer(tradeItem, CargoBuyOp.BuySystem);
+      CargoBuyOffer offer = Trade.CargoBuyOffer(game, tradeItem, CargoBuyOp.BuySystem);
       if(offer != null) {
         Integer qty = max ? Integer.valueOf(offer.maxAmount()) : view.askCargoBuyQuantity(offer);
         if(qty != null) {
-          game.CargoBuy(offer, qty);
+          Trade.CargoBuy(game, offer, qty);
         }
       }
     }
@@ -84,11 +85,11 @@ public class MainPresenter {
     Game game = gameSupplier.get();
     if(game != null) {
       boolean sellable = game.PriceCargoSell()[tradeItem] > 0;
-      CargoSellOffer offer = game.CargoSellOffer(tradeItem, sellable ? CargoSellOp.SellSystem : CargoSellOp.Dump);
+      CargoSellOffer offer = Trade.CargoSellOffer(game, tradeItem, sellable ? CargoSellOp.SellSystem : CargoSellOp.Dump);
       if(offer != null) {
         Integer qty = sellable && all ? Integer.valueOf(offer.maxAmount()) : view.askCargoSellQuantity(offer);
         if(qty != null) {
-          game.CargoSell(offer, qty);
+          Trade.CargoSell(game, offer, qty);
         }
       }
     }

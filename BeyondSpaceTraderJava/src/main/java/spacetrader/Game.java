@@ -2,10 +2,6 @@ package spacetrader;
 import java.util.Arrays;
 import org.gts.bst.view.DialogResult;
 import org.gts.bst.ApplicationST;
-import org.gts.bst.cargo.CargoBuyOffer;
-import org.gts.bst.cargo.CargoBuyOp;
-import org.gts.bst.cargo.CargoSellOffer;
-import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.cargo.TradeItem;
 import org.gts.bst.cargo.TradeItemType;
 import org.gts.bst.crew.CrewMemberId;
@@ -758,156 +754,8 @@ public final class Game extends STSerializableObject {
   }
 
   private void CalculatePrices(StarSystem system) {
-    for(int i = 0; i < Consts.TradeItems.size(); i++) {
-      int price = Consts.TradeItems.get(i).StandardPrice(system);
-      if(price > 0) {
-        // In case of a special status, adapt price accordingly
-        if(Consts.TradeItems.get(i).PressurePriceHike() == system.SystemPressure()) {
-          price = price * 3 / 2;
-        }
-        // Randomize price a bit
-        int variance = Math.min(Consts.TradeItems.get(i).PriceVariance(), price - 1);
-        price += Functions.GetRandom(-variance, variance + 1);
-        // Criminals have to pay off an intermediary
-        if(cmdr.getPoliceRecordScore() < Consts.PoliceRecordScoreDubious) {
-          price = price * 90 / 100;
-        }
-      }
-      _priceCargoSell[i] = price;
-    }
+    _priceCargoSell = TradeCalculator.CalculateSellPrices(system, cmdr.getPoliceRecordScore());
     RecalculateBuyPrices(system);
-  }
-
-  /**
-   * Returns the buy offer for a trade item, showing the blocking alert when the purchase
-   * is not possible. A null result means the purchase must not proceed.
-   */
-  public CargoBuyOffer CargoBuyOffer(int tradeItem, CargoBuyOp op) {
-    int freeBays = cmdr.getShip().FreeCargoBays();
-    int[] items = null;
-    int unitPrice = 0;
-    int cashToSpend = cmdr.getCash();
-    switch(op) {
-      case BuySystem:
-        freeBays = Math.max(0, cmdr.getShip().FreeCargoBays() - _options.getLeaveEmpty());
-        items = cmdr.CurrentSystem().TradeItems();
-        unitPrice = _priceCargoBuy[tradeItem];
-        cashToSpend = cmdr.CashToSpend();
-        break;
-      case BuyTrader:
-        items = getOpponent().Cargo();
-        TradeItem item = Consts.TradeItems.get(tradeItem);
-        int chance = item.Illegal() ? 45 : 10;
-        double adj = Functions.GetRandom(100) < chance ? 1.1 : (item.Illegal() ? 0.8 : 0.9);
-        unitPrice = Math.min(item.MaxTradePrice(), Math.max(item.MinTradePrice(), (int)Math.round(_priceCargoBuy[tradeItem] * adj / item.RoundOff()) * item.RoundOff()));
-        break;
-      case InPlunder:
-        items = getOpponent().Cargo();
-        break;
-    }
-    if(op == CargoBuyOp.BuySystem && cmdr.getDebt() > Consts.DebtTooLarge) {
-      Dialogs().alert(AlertType.DebtTooLargeTrade);
-      return null;
-    }
-    if(op == CargoBuyOp.BuySystem && (items[tradeItem] <= 0 || unitPrice <= 0)) {
-      Dialogs().alert(AlertType.CargoNoneAvailable);
-      return null;
-    }
-    if(freeBays == 0) {
-      Dialogs().alert(AlertType.CargoNoEmptyBays);
-      return null;
-    }
-    if(op != CargoBuyOp.InPlunder && cashToSpend < unitPrice) {
-      Dialogs().alert(AlertType.CargoIF);
-      return null;
-    }
-    int maxAmount = Math.min(freeBays, items[tradeItem]);
-    if(op == CargoBuyOp.BuySystem) {
-      maxAmount = Math.min(maxAmount, cmdr.CashToSpend() / unitPrice);
-    }
-    return new CargoBuyOffer(tradeItem, op, unitPrice, maxAmount);
-  }
-
-  /**
-   * Applies a purchase previously quoted by {@link #CargoBuyOffer(int, CargoBuyOp)}.
-   */
-  public void CargoBuy(CargoBuyOffer offer, int qty) {
-    if(qty <= 0) {
-      return;
-    }
-    int tradeItem = offer.tradeItem();
-    int[] items = offer.op() == CargoBuyOp.BuySystem ? cmdr.CurrentSystem().TradeItems() : getOpponent().Cargo();
-    int totalPrice = qty * offer.unitPrice();
-    cmdr.getShip().Cargo()[tradeItem] += qty;
-    items[tradeItem] -= qty;
-    cmdr.setCash(cmdr.getCash() - totalPrice);
-    cmdr.PriceCargo()[tradeItem] += totalPrice;
-  }
-
-  /**
-   * Returns the sell offer for a trade item, showing the blocking alerts (and the
-   * littering confirmation) when the sale must not proceed.
-   */
-  public CargoSellOffer CargoSellOffer(int tradeItem, CargoSellOp op) {
-    int qtyInHand = cmdr.getShip().Cargo()[tradeItem];
-    int unitPrice;
-    switch(op) {
-      case SellSystem:
-        unitPrice = _priceCargoSell[tradeItem];
-        break;
-      case SellTrader:
-        TradeItem item = Consts.TradeItems.get(tradeItem);
-        int chance = item.Illegal() ? 45 : 10;
-        double adj = Functions.GetRandom(100) < chance ? (item.Illegal() ? 0.8 : 0.9) : 1.1;
-        unitPrice = Math.min(item.MaxTradePrice(), Math.max(item.MinTradePrice(), (int)Math.round(_priceCargoSell[tradeItem] * adj / item.RoundOff()) * item.RoundOff()));
-        break;
-      default:
-        unitPrice = 0;
-        break;
-    }
-    if(qtyInHand == 0) {
-      Dialogs().alert(AlertType.CargoNoneToSell, Strings.CargoSellOps.get(op.CastToInt()));
-      return null;
-    }
-    if(op == CargoSellOp.SellSystem && unitPrice <= 0) {
-      Dialogs().alert(AlertType.CargoNotInterested);
-      return null;
-    }
-    if(op == CargoSellOp.Jettison && !getLitterWarning() && cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreDubious
-        && Dialogs().alert(AlertType.EncounterDumpWarning) != DialogResult.Yes) {
-      return null;
-    }
-    int unitCost = 0;
-    int maxAmount = op == CargoSellOp.SellTrader ? Math.min(qtyInHand, getOpponent().FreeCargoBays()) : qtyInHand;
-    if(op == CargoSellOp.Dump) {
-      unitCost = 5 * (_difficulty.CastToInt() + 1);
-      maxAmount = Math.min(maxAmount, cmdr.CashToSpend() / unitCost);
-    }
-    int price = unitPrice > 0 ? unitPrice : -unitCost;
-    return new CargoSellOffer(tradeItem, op, price, maxAmount);
-  }
-
-  /**
-   * Applies a sale previously quoted by {@link #CargoSellOffer(int, CargoSellOp)}.
-   */
-  public void CargoSell(CargoSellOffer offer, int qty) {
-    if(qty <= 0) {
-      return;
-    }
-    int tradeItem = offer.tradeItem();
-    int qtyInHand = cmdr.getShip().Cargo()[tradeItem];
-    cmdr.getShip().Cargo()[tradeItem] -= qty;
-    cmdr.PriceCargo()[tradeItem] = (cmdr.PriceCargo()[tradeItem] * (qtyInHand - qty)) / qtyInHand;
-    cmdr.setCash(cmdr.getCash() + qty * offer.price());
-    if(offer.op() == CargoSellOp.Jettison
-        && Functions.GetRandom(10) < _difficulty.CastToInt() + 1) {
-      if(cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreDubious) {
-        cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreDubious);
-      } else {
-        cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() - 1);
-      }
-      NewsAddEvent(NewsEvent.CaughtLittering);
-    }
   }
 
   private void EncounterDefeatDragonfly() {
@@ -2917,21 +2765,7 @@ public final class Game extends STSerializableObject {
   }
 
   public void RecalculateBuyPrices(StarSystem system) {
-    for(int i = 0; i < Consts.TradeItems.size(); i++) {
-      if(!system.ItemTraded(Consts.TradeItems.get(i))) {
-        _priceCargoBuy[i] = 0;
-      } else {
-        _priceCargoBuy[i] = _priceCargoSell[i];
-        if(cmdr.getPoliceRecordScore() < Consts.PoliceRecordScoreDubious) {
-          _priceCargoBuy[i] = _priceCargoBuy[i] * 100 / 90;
-        }
-        // BuyPrice = SellPrice + 1 to 12% (depending on trader skill (minimum is 1, max 12))
-        _priceCargoBuy[i] = _priceCargoBuy[i] * (103 + Consts.MaxSkill - cmdr.getShip().Trader()) / 100;
-        if(_priceCargoBuy[i] <= _priceCargoSell[i]) {
-          _priceCargoBuy[i] = _priceCargoSell[i] + 1;
-        }
-      }
-    }
+    _priceCargoBuy = TradeCalculator.CalculateBuyPrices(system, _priceCargoSell, cmdr.getPoliceRecordScore(), cmdr.getShip().Trader());
   }
 
   public void RecalculateSellPrices(StarSystem system) { // After erasure of police record, selling prices must be recalculated

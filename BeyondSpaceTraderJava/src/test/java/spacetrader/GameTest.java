@@ -82,7 +82,7 @@ class GameTest {
   void gameAlertsGoThroughTheDialogService() {
     Game game = newGame(Difficulty.Normal);
 
-    game.CargoSellOffer(0, CargoSellOp.SellSystem);
+    Trade.CargoSellOffer(game, 0, CargoSellOp.SellSystem);
 
     assertEquals(List.of(AlertType.CargoNoneToSell), dialogs.alerts());
   }
