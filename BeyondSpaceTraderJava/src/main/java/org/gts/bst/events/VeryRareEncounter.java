@@ -21,4 +21,8 @@ public enum VeryRareEncounter implements SpaceTraderEnum {
   public int CastToInt() {
     return ordinal();
   }
+
+  public static VeryRareEncounter FromInt(int i) {
+    return values()[i];
+  }
 }
