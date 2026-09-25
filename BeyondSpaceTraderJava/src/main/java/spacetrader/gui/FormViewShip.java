@@ -13,18 +13,13 @@ import jwinforms.enums.DialogResult;
 import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
-import org.gts.bst.ship.equip.GadgetType;
-import spacetrader.Consts;
-import spacetrader.Functions;
+import org.gts.bst.presenter.ShipPresenter;
+import org.gts.bst.view.ShipView;
+import org.gts.bst.view.ShipViewModel;
 import spacetrader.Game;
-import spacetrader.Ship;
-import spacetrader.SpecialEvent;
-import spacetrader.Strings;
-import spacetrader.stub.ArrayList;
-import spacetrader.util.Util;
 
 
-public class FormViewShip extends WinformForm {
+public class FormViewShip extends WinformForm implements ShipView {
   private Button btnClose;
   private GroupBox boxSpecialCargo;
   private Label lblTypeLabel;
@@ -33,15 +28,10 @@ public class FormViewShip extends WinformForm {
   private Label lblEquipLabel;
   private Label lblEquip;
   private Game game = Game.CurrentGame();
-  private Ship ship = game.Commander().getShip();
 
   public FormViewShip() {
     InitializeComponent();
-    lblType.setText(ship.Name());
-    lblEquipLabel.setText("");
-    lblEquip.setText("");
-    DisplayEquipment();
-    DisplaySpecialCargo();
+    new ShipPresenter(game, this).update();
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -114,106 +104,11 @@ public class FormViewShip extends WinformForm {
     ResumeLayout(false);
   }
 
-  private void DisplayEquipment() {
-    if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
-      lblEquipLabel.setText(lblEquipLabel.getText() + ("Hull:" + Strings.newline + Strings.newline));
-      lblEquip.setText(lblEquip.getText() + ("Hardened" + Strings.newline + Strings.newline));
-    }
-    boolean equipPrinted = false;
-    for(int i = 0; i < Consts.WeapObjs.length; i++) {
-      int count = 0;
-      for(int j = 0; j < ship.Weapons().length; j++) {
-        if(ship.Weapons()[j] != null && ship.Weapons()[j].Type() == Consts.WeapObjs[i].Type()) {
-          count++;
-        }
-      }
-      if(count > 0) {
-        lblEquipLabel.setText(lblEquipLabel.getText() + (equipPrinted ? Strings.newline : "Equipment:" + Strings.newline));
-        lblEquip.setText(lblEquip.getText() + (Functions.Multiples(count, Consts.WeapObjs[i].Name()) + Strings.newline));
-        equipPrinted = true;
-      }
-    }
-    for(int i = 0; i < Consts.Shields.length; i++) {
-      int count = 0;
-      for(int j = 0; j < ship.Shields().length; j++) {
-        if(ship.Shields()[j] != null && ship.Shields()[j].Type() == Consts.Shields[i].Type()) {
-          count++;
-        }
-      }
-      if(count > 0) {
-        lblEquipLabel.setText(lblEquipLabel.getText() + (equipPrinted ? Strings.newline : "Equipment:" + Strings.newline));
-        lblEquip.setText(lblEquip.getText() + (Functions.Multiples(count, Consts.Shields[i].Name()) + Strings.newline));
-        equipPrinted = true;
-      }
-    }
-    for(int i = 0; i < Consts.Gadgets.length; i++) {
-      int count = 0;
-      for(int j = 0; j < ship.Gadgets().length; j++) {
-        if(ship.Gadgets()[j] != null && ship.Gadgets()[j].Type() == Consts.Gadgets[i].Type()) {
-          count++;
-        }
-      }
-      if(count > 0) {
-        lblEquipLabel.setText(lblEquipLabel.getText() + (equipPrinted ? Strings.newline : "Equipment:" + Strings.newline));
-        if(i == GadgetType.ExtraCargoBays.asInteger() || i == GadgetType.HiddenCargoBays.asInteger()) {
-          count *= 5;
-          lblEquip.setText(lblEquip.getText() + (Functions.FormatNumber(count) + Consts.Gadgets[i].Name().substring(1) + Strings.newline));
-        } else {
-          lblEquip.setText(lblEquip.getText() + (Functions.Multiples(count, Consts.Gadgets[i].Name()) + Strings.newline));
-        }
-        equipPrinted = true;
-      }
-    }
-    if(ship.getEscapePod()) {
-      lblEquipLabel.setText(lblEquipLabel.getText() + (equipPrinted ? Strings.newline : "Equipment:" + Strings.newline));
-      lblEquip.setText(lblEquip.getText() + ("1 " + Strings.ShipInfoEscapePod + Strings.newline));
-      equipPrinted = true;
-    }
-    if(ship.FreeSlots() > 0) {
-      lblEquipLabel.setText(lblEquipLabel.getText() + ((equipPrinted ? Strings.newline : "") + "Unfilled:"));
-      lblEquip.setText(lblEquip.getText() + (equipPrinted ? Strings.newline : ""));
-      if(ship.FreeSlotsWeapon() > 0) {
-        lblEquip.setText(lblEquip.getText() + (Functions.Multiples(ship.FreeSlotsWeapon(), "weapon slot") + Strings.newline));
-      }
-      if(ship.FreeSlotsShield() > 0) {
-        lblEquip.setText(lblEquip.getText() + (Functions.Multiples(ship.FreeSlotsShield(), "shield slot") + Strings.newline));
-      }
-      if(ship.FreeSlotsGadget() > 0) {
-        lblEquip.setText(lblEquip.getText() + (Functions.Multiples(ship.FreeSlotsGadget(), "gadget slot") + Strings.newline));
-      }
-    }
-  }
-
-  private void DisplaySpecialCargo() {
-    ArrayList<String> specialCargo = new ArrayList<>(12);
-    if(ship.getTribbles() > 0) {
-      if(ship.getTribbles() == Consts.MaxTribbles) {
-        specialCargo.add(Strings.SpecialCargoTribblesInfest);
-      } else {
-        specialCargo.add(Functions.Multiples(ship.getTribbles(), Strings.SpecialCargoTribblesCute) + ".");
-      }
-    }
-    if(game.getQuestStatusJapori() == SpecialEvent.StatusJaporiInTransit) {
-      specialCargo.add(Strings.SpecialCargoJapori);
-    }
-    if(ship.ArtifactOnBoard()) {
-      specialCargo.add(Strings.SpecialCargoArtifact);
-    }
-    if(game.getQuestStatusJarek() == SpecialEvent.StatusJarekDone) {
-      specialCargo.add(Strings.SpecialCargoJarek);
-    }
-    if(ship.ReactorOnBoard()) {
-      specialCargo.add(Strings.SpecialCargoReactor);
-      specialCargo.add(Functions.Multiples(10 - ((game.getQuestStatusReactor() - 1) / 2), "bay") + Strings.SpecialCargoReactorBays);
-    }
-    if(ship.SculptureOnBoard()) {
-      specialCargo.add(Strings.SpecialCargoSculpture);
-    }
-    if(game.getCanSuperWarp()) {
-      specialCargo.add(Strings.SpecialCargoExperiment);
-    }
-    lblSpecialCargo.setText(specialCargo.size() == 0
-        ? Strings.SpecialCargoNone
-        : Util.StringsJoin(Strings.newline + Strings.newline, Functions.ArrayListtoStringArray(specialCargo)));
+  @Override
+  public void render(ShipViewModel model) {
+    lblType.setText(model.type());
+    lblEquipLabel.setText(model.equipmentLabels());
+    lblEquip.setText(model.equipmentValues());
+    lblSpecialCargo.setText(model.specialCargo());
   }
 }
