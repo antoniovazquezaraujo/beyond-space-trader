@@ -1,0 +1,24 @@
+# Build output (NetBeans / Ant)
+build/
+dist/
+nbproject/private/
+
+# Compiled classes and archives
+*.class
+*.jar
+
+# Runtime data
+save/
+autosave_*.sav
+*.log
+
+# Original upstream snapshot, if present in the parent directory
+spacetraderjava-code-r69.zip
+
+# Editors and OS
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
