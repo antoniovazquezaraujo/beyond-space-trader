@@ -197,8 +197,8 @@ public class MainPresenter {
   public void updateCargo() {
     Game game = gameSupplier.get();
     if(game == null || game.Commander().CurrentSystem() == null) {
-      List<CargoRowViewModel> emptyRows = new ArrayList<>(Consts.TradeItems.length);
-      for(int i = 0; i < Consts.TradeItems.length; i++) {
+      List<CargoRowViewModel> emptyRows = new ArrayList<>(Consts.TradeItems.size());
+      for(int i = 0; i < Consts.TradeItems.size(); i++) {
         emptyRows.add(CargoRowViewModel.empty());
       }
       view.renderCargo(new CargoViewModel(emptyRows));
@@ -209,9 +209,9 @@ public class MainPresenter {
     int[] buy = game.PriceCargoBuy();
     int[] sell = game.PriceCargoSell();
     StarSystem warpSys = game.WarpSystem();
-    List<CargoRowViewModel> rows = new ArrayList<>(Consts.TradeItems.length);
-    for(int i = 0; i < Consts.TradeItems.length; i++) {
-      int price = warpSys == null ? 0 : Consts.TradeItems[i].StandardPrice(warpSys);
+    List<CargoRowViewModel> rows = new ArrayList<>(Consts.TradeItems.size());
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      int price = warpSys == null ? 0 : Consts.TradeItems.get(i).StandardPrice(warpSys);
       boolean targetKnown = warpSys != null && warpSys.DestOk() && price > 0;
       int cargo = ship.Cargo()[i];
       int stock = cmdr.CurrentSystem().TradeItems()[i];
@@ -264,7 +264,7 @@ public class MainPresenter {
     }
     StarSystem system = game.Commander().CurrentSystem();
     boolean noTech = system.TechLevel().ordinal()
-        < Consts.ShipSpecs[ShipType.Flea.CastToInt()].MinimumTechLevel().ordinal();
+        < Consts.ShipSpecs.get(ShipType.Flea.CastToInt()).MinimumTechLevel().ordinal();
     String escapePod;
     boolean podVisible = false;
     if(game.Commander().getShip().getEscapePod()) {

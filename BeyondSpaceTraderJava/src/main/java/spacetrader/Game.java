@@ -602,11 +602,11 @@ public final class Game extends STSerializableObject {
         systemIdList.add(system);
       }
     }
-    if(systemIdList.size() < Consts.Shipyards.length) {
+    if(systemIdList.size() < Consts.Shipyards.size()) {
       goodUniverse = false;
     } else {
       // Assign the shipyards to High-Tech systems.
-      for(int shipyard = 0; shipyard < Consts.Shipyards.length; shipyard++) {
+      for(int shipyard = 0; shipyard < Consts.Shipyards.size(); shipyard++) {
         _universe[systemIdList.get(Functions.GetRandom(systemIdList.size()))].ShipyardId(ShipyardId.FromInt(shipyard));
       }
     }
@@ -669,12 +669,12 @@ public final class Game extends STSerializableObject {
     }
     // Assign the rest of the events randomly.
     if(goodUniverse) {
-      for(int i = 0; i < Consts.SpecialEvents.length; i++) {
-        for(int j = 0; j < Consts.SpecialEvents[i].Occurrence(); j++) {
+      for(int i = 0; i < Consts.SpecialEvents.size(); i++) {
+        for(int j = 0; j < Consts.SpecialEvents.get(i).Occurrence(); j++) {
           do {
             system = Functions.GetRandom(_universe.length);
           } while(_universe[system].SpecialEventType() != SpecialEventType.NA);
-          _universe[system].SpecialEventType(Consts.SpecialEvents[i].Type());
+          _universe[system].SpecialEventType(Consts.SpecialEvents.get(i).Type());
         }
       }
     }
@@ -721,7 +721,7 @@ public final class Game extends STSerializableObject {
       }
       if(egg && cmdr.getShip().FreeSlotsShield() > 0) {
         Dialogs().alert(AlertType.Egg);
-        cmdr.getShip().AddEquipment(Consts.Shields[ShieldType.Lightning.id]);
+        cmdr.getShip().AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
         for(int i = 0; i < cmdr.getShip().Cargo().length; i++) {
           cmdr.getShip().Cargo()[i] = 0;
           cmdr.PriceCargo()[i] = 0;
@@ -852,8 +852,8 @@ public final class Game extends STSerializableObject {
         } else if(_universe[i].CountDown() <= 0) {
           _universe[i].InitializeTradeItems();
         } else {
-          for(int j = 0; j < Consts.TradeItems.length; j++) {
-            if(WarpSystem().ItemTraded(Consts.TradeItems[j])) {
+          for(int j = 0; j < Consts.TradeItems.size(); j++) {
+            if(WarpSystem().ItemTraded(Consts.TradeItems.get(j))) {
               _universe[i].TradeItems()[j] = Math.max(0, _universe[i].TradeItems()[j] + Functions.GetRandom(-4, 5));
             }
           }
@@ -863,15 +863,15 @@ public final class Game extends STSerializableObject {
   }
 
   private void CalculatePrices(StarSystem system) {
-    for(int i = 0; i < Consts.TradeItems.length; i++) {
-      int price = Consts.TradeItems[i].StandardPrice(system);
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      int price = Consts.TradeItems.get(i).StandardPrice(system);
       if(price > 0) {
         // In case of a special status, adapt price accordingly
-        if(Consts.TradeItems[i].PressurePriceHike() == system.SystemPressure()) {
+        if(Consts.TradeItems.get(i).PressurePriceHike() == system.SystemPressure()) {
           price = price * 3 / 2;
         }
         // Randomize price a bit
-        int variance = Math.min(Consts.TradeItems[i].PriceVariance(), price - 1);
+        int variance = Math.min(Consts.TradeItems.get(i).PriceVariance(), price - 1);
         price += Functions.GetRandom(-variance, variance + 1);
         // Criminals have to pay off an intermediary
         if(cmdr.getPoliceRecordScore() < Consts.PoliceRecordScoreDubious) {
@@ -901,7 +901,7 @@ public final class Game extends STSerializableObject {
         break;
       case BuyTrader:
         items = getOpponent().Cargo();
-        TradeItem item = Consts.TradeItems[tradeItem];
+        TradeItem item = Consts.TradeItems.get(tradeItem);
         int chance = item.Illegal() ? 45 : 10;
         double adj = Functions.GetRandom(100) < chance ? 1.1 : (item.Illegal() ? 0.8 : 0.9);
         unitPrice = Math.min(item.MaxTradePrice(), Math.max(item.MinTradePrice(), (int)Math.round(_priceCargoBuy[tradeItem] * adj / item.RoundOff()) * item.RoundOff()));
@@ -961,7 +961,7 @@ public final class Game extends STSerializableObject {
         unitPrice = _priceCargoSell[tradeItem];
         break;
       case SellTrader:
-        TradeItem item = Consts.TradeItems[tradeItem];
+        TradeItem item = Consts.TradeItems.get(tradeItem);
         int chance = item.Illegal() ? 45 : 10;
         double adj = Functions.GetRandom(100) < chance ? (item.Illegal() ? 0.8 : 0.9) : 1.1;
         unitPrice = Math.min(item.MaxTradePrice(), Math.max(item.MinTradePrice(), (int)Math.round(_priceCargoSell[tradeItem] * adj / item.RoundOff()) * item.RoundOff()));
@@ -1018,30 +1018,30 @@ public final class Game extends STSerializableObject {
   private void CreateShips() {
     // set the details of the Dragonfly...
     Dragonfly().Crew()[0] = Mercenaries()[CrewMemberId.Dragonfly.CastToInt()];
-    Dragonfly().AddEquipment(Consts.WeapObjs[WeaponType.MilitaryLaser.id]);
-    Dragonfly().AddEquipment(Consts.WeapObjs[WeaponType.PulseLaser.id]);
-    Dragonfly().AddEquipment(Consts.Shields[ShieldType.Lightning.id]);
-    Dragonfly().AddEquipment(Consts.Shields[ShieldType.Lightning.id]);
-    Dragonfly().AddEquipment(Consts.Shields[ShieldType.Lightning.id]);
-    Dragonfly().AddEquipment(Consts.Gadgets[GadgetType.AutoRepairSystem.asInteger()]);
-    Dragonfly().AddEquipment(Consts.Gadgets[GadgetType.TargetingSystem.asInteger()]);
+    Dragonfly().AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
+    Dragonfly().AddEquipment(Consts.WeapObjs.get(WeaponType.PulseLaser.id));
+    Dragonfly().AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
+    Dragonfly().AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
+    Dragonfly().AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
+    Dragonfly().AddEquipment(Consts.Gadgets.get(GadgetType.AutoRepairSystem.asInteger()));
+    Dragonfly().AddEquipment(Consts.Gadgets.get(GadgetType.TargetingSystem.asInteger()));
     // set the details of the Scarab...
     _scarab.Crew()[0] = Mercenaries()[CrewMemberId.Scarab.CastToInt()];
-    _scarab.AddEquipment(Consts.WeapObjs[WeaponType.MilitaryLaser.id]);
-    _scarab.AddEquipment(Consts.WeapObjs[WeaponType.MilitaryLaser.id]);
+    _scarab.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
+    _scarab.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
     // set the details of the Scorpion...
     _scorpion.Crew()[0] = Mercenaries()[CrewMemberId.Scorpion.CastToInt()];
-    _scorpion.AddEquipment(Consts.WeapObjs[WeaponType.MilitaryLaser.id]);
-    _scorpion.AddEquipment(Consts.WeapObjs[WeaponType.MilitaryLaser.id]);
-    _scorpion.AddEquipment(Consts.Shields[ShieldType.Reflective.id]);
-    _scorpion.AddEquipment(Consts.Shields[ShieldType.Reflective.id]);
-    _scorpion.AddEquipment(Consts.Gadgets[GadgetType.AutoRepairSystem.asInteger()]);
-    _scorpion.AddEquipment(Consts.Gadgets[GadgetType.TargetingSystem.asInteger()]);
+    _scorpion.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
+    _scorpion.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
+    _scorpion.AddEquipment(Consts.Shields.get(ShieldType.Reflective.id));
+    _scorpion.AddEquipment(Consts.Shields.get(ShieldType.Reflective.id));
+    _scorpion.AddEquipment(Consts.Gadgets.get(GadgetType.AutoRepairSystem.asInteger()));
+    _scorpion.AddEquipment(Consts.Gadgets.get(GadgetType.TargetingSystem.asInteger()));
     // set the details of the Space Monster...
     _spaceMonster.Crew()[0] = Mercenaries()[CrewMemberId.SpaceMonster.CastToInt()];
-    _spaceMonster.AddEquipment(Consts.WeapObjs[WeaponType.MilitaryLaser.id]);
-    _spaceMonster.AddEquipment(Consts.WeapObjs[WeaponType.MilitaryLaser.id]);
-    _spaceMonster.AddEquipment(Consts.WeapObjs[WeaponType.MilitaryLaser.id]);
+    _spaceMonster.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
+    _spaceMonster.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
+    _spaceMonster.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
   }
 
   private void EncounterDefeatDragonfly() {
@@ -1071,7 +1071,7 @@ public final class Game extends STSerializableObject {
       int tradeItem = -1;
       for(int sum = 0; sum <= index; sum += getOpponent().Cargo()[++tradeItem]) {
       }
-      if(Dialogs().alert(AlertType.EncounterScoop, Consts.TradeItems[tradeItem].Name()) == DialogResult.Yes) {
+      if(Dialogs().alert(AlertType.EncounterScoop, Consts.TradeItems.get(tradeItem).Name()) == DialogResult.Yes) {
         boolean jettisoned = false;
         if(cmdr.getShip().FreeCargoBays() == 0 && Dialogs().alert(AlertType.EncounterScoopNoRoom) == DialogResult.Yes) {
           host.showJettison();
@@ -1258,12 +1258,12 @@ public final class Game extends STSerializableObject {
       SystemPressure pressure = SystemPressure.None;
       SpecialResource specRes = SpecialResource.Nothing;
       ShipSize size = ShipSize.FromInt(Functions.GetRandom(ShipSize.Huge.CastToInt() + 1));
-      PoliticalSystem polSys = Consts.PoliticalSystems[Functions.GetRandom(Consts.PoliticalSystems.length)];
+      PoliticalSystem polSys = Consts.PoliticalSystems.get(Functions.GetRandom(Consts.PoliticalSystems.size()));
       TechLevel tech = TechLevel.FromInt(Functions.GetRandom(polSys.MinimumTechLevel().ordinal(), polSys.MaximumTechLevel().ordinal() + 1));
       // Galvon must be a Monarchy.
       if(id == StarSystemId.Galvon) {
         size = ShipSize.Large;
-        polSys = Consts.PoliticalSystems[PoliticalSystemType.Monarchy.CastToInt()];
+        polSys = Consts.PoliticalSystems.get(PoliticalSystemType.Monarchy.CastToInt());
         tech = TechLevel.t7;
       }
       if(Functions.GetRandom(100) < 15) {
@@ -2630,7 +2630,7 @@ public final class Game extends STSerializableObject {
       host.buyTraderCargo(item);
     }
     if(cmdr.getCash() != cash) {
-      Dialogs().alert(AlertType.EncounterTradeCompleted, alertStr, Consts.TradeItems[item].Name());
+      Dialogs().alert(AlertType.EncounterTradeCompleted, alertStr, Consts.TradeItems.get(item).Name());
     }
   }
 
@@ -2699,7 +2699,7 @@ public final class Game extends STSerializableObject {
         break;
       case CargoForSale:
         Dialogs().alert(AlertType.SpecialSealedCanisters);
-        int tradeItem = Functions.GetRandom(Consts.TradeItems.length);
+        int tradeItem = Functions.GetRandom(Consts.TradeItems.size());
         ship.Cargo()[tradeItem] += 3;
         cmdr.PriceCargo()[tradeItem] += cmdr.CurrentSystem().SpecialEvent().Price();
         break;
@@ -2719,7 +2719,7 @@ public final class Game extends STSerializableObject {
           remove = false;
         } else {
           Dialogs().alert(AlertType.EquipmentLightningShield);
-          ship.AddEquipment(Consts.Shields[ShieldType.Lightning.id]);
+          ship.AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
           setQuestStatusDragonfly(SpecialEvent.StatusDragonflyDone);
         }
         break;
@@ -2746,7 +2746,7 @@ public final class Game extends STSerializableObject {
           remove = false;
         } else {
           Dialogs().alert(AlertType.EquipmentFuelCompactor);
-          ship.AddEquipment(Consts.Gadgets[GadgetType.FuelCompactor.asInteger()]);
+          ship.AddEquipment(Consts.Gadgets.get(GadgetType.FuelCompactor.asInteger()));
           setQuestStatusGemulon(SpecialEvent.StatusGemulonDone);
         }
         break;
@@ -2819,7 +2819,7 @@ public final class Game extends STSerializableObject {
           remove = false;
         } else {
           Dialogs().alert(AlertType.EquipmentQuantumDisruptor);
-          ship.AddEquipment(Consts.WeapObjs[WeaponType.QuantumDistruptor.id]);
+          ship.AddEquipment(Consts.WeapObjs.get(WeaponType.QuantumDistruptor.id));
           setQuestStatusPrincess(SpecialEvent.StatusPrincessDone);
         }
         break;
@@ -2859,7 +2859,7 @@ public final class Game extends STSerializableObject {
           remove = false;
         } else {
           Dialogs().alert(AlertType.EquipmentMorgansLaser);
-          ship.AddEquipment(Consts.WeapObjs[WeaponType.MorgansLaser.id]);
+          ship.AddEquipment(Consts.WeapObjs.get(WeaponType.MorgansLaser.id));
           setQuestStatusReactor(SpecialEvent.StatusReactorDone);
         }
         break;
@@ -2893,7 +2893,7 @@ public final class Game extends STSerializableObject {
           remove = false;
         } else {
           Dialogs().alert(AlertType.EquipmentHiddenCompartments);
-          ship.AddEquipment(Consts.Gadgets[GadgetType.HiddenCargoBays.asInteger()]);
+          ship.AddEquipment(Consts.Gadgets.get(GadgetType.HiddenCargoBays.asInteger()));
           setQuestStatusSculpture(SpecialEvent.StatusSculptureDone);
         }
         break;
@@ -3189,8 +3189,8 @@ public final class Game extends STSerializableObject {
   }
 
   public void RecalculateBuyPrices(StarSystem system) {
-    for(int i = 0; i < Consts.TradeItems.length; i++) {
-      if(!system.ItemTraded(Consts.TradeItems[i])) {
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      if(!system.ItemTraded(Consts.TradeItems.get(i))) {
         _priceCargoBuy[i] = 0;
       } else {
         _priceCargoBuy[i] = _priceCargoSell[i];
@@ -3207,7 +3207,7 @@ public final class Game extends STSerializableObject {
   }
 
   public void RecalculateSellPrices(StarSystem system) { // After erasure of police record, selling prices must be recalculated
-    for(int i = 0; i < Consts.TradeItems.length; i++) {
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
       _priceCargoSell[i] = _priceCargoSell[i] * 100 / 90;
     }
   }

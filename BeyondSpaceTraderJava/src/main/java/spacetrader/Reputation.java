@@ -13,9 +13,9 @@ public class Reputation {
 
   public static Reputation GetReputationFromScore(int ReputationScore) {
     int i;
-    for(i = 0; i < Consts.Reputations.length && ReputationScore >= Consts.Reputations[i].MinScore(); i++) {
+    for(i = 0; i < Consts.Reputations.size() && ReputationScore >= Consts.Reputations.get(i).MinScore(); i++) {
     }
-    return Consts.Reputations[Math.max(0, i - 1)];
+    return Consts.Reputations.get(Math.max(0, i - 1));
   }
 
   public int MinScore() {

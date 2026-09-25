@@ -46,11 +46,11 @@ class ShipListPresenterTest {
 
     new ShipListPresenter(game, view).update();
 
-    assertEquals(Consts.ShipSpecs.length, view.model.rows().size());
+    assertEquals(Consts.ShipSpecs.size(), view.model.rows().size());
     ShipListViewModel.Row owned = view.model.rows().get(ship.Type().CastToInt());
     assertEquals(Strings.ShipBuyGotOne, owned.price());
     assertFalse(owned.buyVisible());
-    ShipSpec flea = Consts.ShipSpecs[ShipType.Flea.CastToInt()];
+    ShipSpec flea = Consts.ShipSpecs.get(ShipType.Flea.CastToInt());
     ShipListViewModel.Row fleaRow = view.model.rows().get(ShipType.Flea.CastToInt());
     assertEquals(flea.Name(), fleaRow.name());
     assertTrue(fleaRow.buyVisible());
@@ -72,7 +72,7 @@ class ShipListPresenterTest {
   void selectsTheShipInformation() {
     Game game = newGame(new TestDialogService());
     moveToSystem(game, true);
-    ShipSpec flea = Consts.ShipSpecs[ShipType.Flea.CastToInt()];
+    ShipSpec flea = Consts.ShipSpecs.get(ShipType.Flea.CastToInt());
     FakeView view = new FakeView();
     ShipListPresenter presenter = new ShipListPresenter(game, view);
 

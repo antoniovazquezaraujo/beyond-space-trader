@@ -47,30 +47,30 @@ public class ShipPresenter {
       labels.append(Strings.ShipHullLabel).append(Strings.newline).append(Strings.newline);
       values.append(Strings.ShipHullHardened).append(Strings.newline).append(Strings.newline);
     }
-    for(int i = 0; i < Consts.WeapObjs.length; i++) {
+    for(int i = 0; i < Consts.WeapObjs.size(); i++) {
       int count = countWeapons(ship, i);
       if(count > 0) {
         labels.append(equipPrinted ? Strings.newline : Strings.ShipEquipmentLabel + Strings.newline);
-        values.append(Functions.Multiples(count, Consts.WeapObjs[i].Name())).append(Strings.newline);
+        values.append(Functions.Multiples(count, Consts.WeapObjs.get(i).Name())).append(Strings.newline);
         equipPrinted = true;
       }
     }
-    for(int i = 0; i < Consts.Shields.length; i++) {
+    for(int i = 0; i < Consts.Shields.size(); i++) {
       int count = countShields(ship, i);
       if(count > 0) {
         labels.append(equipPrinted ? Strings.newline : Strings.ShipEquipmentLabel + Strings.newline);
-        values.append(Functions.Multiples(count, Consts.Shields[i].Name())).append(Strings.newline);
+        values.append(Functions.Multiples(count, Consts.Shields.get(i).Name())).append(Strings.newline);
         equipPrinted = true;
       }
     }
-    for(int i = 0; i < Consts.Gadgets.length; i++) {
+    for(int i = 0; i < Consts.Gadgets.size(); i++) {
       int count = countGadgets(ship, i);
       if(count > 0) {
         labels.append(equipPrinted ? Strings.newline : Strings.ShipEquipmentLabel + Strings.newline);
         if(i == GadgetType.ExtraCargoBays.asInteger() || i == GadgetType.HiddenCargoBays.asInteger()) {
-          values.append(Functions.FormatNumber(count * 5)).append(Consts.Gadgets[i].Name().substring(1)).append(Strings.newline);
+          values.append(Functions.FormatNumber(count * 5)).append(Consts.Gadgets.get(i).Name().substring(1)).append(Strings.newline);
         } else {
-          values.append(Functions.Multiples(count, Consts.Gadgets[i].Name())).append(Strings.newline);
+          values.append(Functions.Multiples(count, Consts.Gadgets.get(i).Name())).append(Strings.newline);
         }
         equipPrinted = true;
       }
@@ -99,7 +99,7 @@ public class ShipPresenter {
   private static int countWeapons(Ship ship, int index) {
     int count = 0;
     for(int j = 0; j < ship.Weapons().length; j++) {
-      if(ship.Weapons()[j] != null && ship.Weapons()[j].Type() == Consts.WeapObjs[index].Type()) {
+      if(ship.Weapons()[j] != null && ship.Weapons()[j].Type() == Consts.WeapObjs.get(index).Type()) {
         count++;
       }
     }
@@ -109,7 +109,7 @@ public class ShipPresenter {
   private static int countShields(Ship ship, int index) {
     int count = 0;
     for(int j = 0; j < ship.Shields().length; j++) {
-      if(ship.Shields()[j] != null && ship.Shields()[j].Type() == Consts.Shields[index].Type()) {
+      if(ship.Shields()[j] != null && ship.Shields()[j].Type() == Consts.Shields.get(index).Type()) {
         count++;
       }
     }
@@ -119,7 +119,7 @@ public class ShipPresenter {
   private static int countGadgets(Ship ship, int index) {
     int count = 0;
     for(int j = 0; j < ship.Gadgets().length; j++) {
-      if(ship.Gadgets()[j] != null && ship.Gadgets()[j].Type() == Consts.Gadgets[index].Type()) {
+      if(ship.Gadgets()[j] != null && ship.Gadgets()[j].Type() == Consts.Gadgets.get(index).Type()) {
         count++;
       }
     }

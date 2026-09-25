@@ -23,7 +23,7 @@ class CommanderTest {
     TestDialogService dialogs = new TestDialogService();
     Game game = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
 
-    boolean traded = game.Commander().TradeShip(Consts.ShipSpecs[Consts.MaxShip], 5000);
+    boolean traded = game.Commander().TradeShip(Consts.ShipSpecs.get(Consts.MaxShip), 5000);
 
     assertFalse(traded);
     assertEquals(List.of(AlertType.ShipBuyIF), dialogs.alerts());

@@ -204,7 +204,7 @@ public class FormTest extends WinformForm {
   }
 
   private void btnTestSpecialEvent_Click() {
-    SpecialEvent se = Consts.SpecialEvents[((SpecialEventType)selSpecialEvent.getSelectedItem()).CastToInt()];
+    SpecialEvent se = Consts.SpecialEvents.get(((SpecialEventType)selSpecialEvent.getSelectedItem()).CastToInt());
     String btn1, btn2;
     DialogResult res1, res2;
     if(se.MessageOnly()) {

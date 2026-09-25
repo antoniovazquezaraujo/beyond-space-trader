@@ -555,7 +555,7 @@ public class FormMonster extends WinformForm {
     // Populate the mercenary ids array.
     ArrayList<Integer> ids = new ArrayList<>();
     for(CrewMember merc : game.Mercenaries()) {
-      if(!Util.ArrayContains(Consts.SpecialCrewMemberIds, merc.Id())) {
+      if(!Consts.SpecialCrewMemberIds.contains(merc.Id())) {
         ids.add(merc.Id().CastToInt());
       }
     }

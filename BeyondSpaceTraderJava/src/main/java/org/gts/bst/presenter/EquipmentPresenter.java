@@ -34,7 +34,7 @@ import spacetrader.enums.AlertType;
  * involved: the view forwards the selected list and index.
  */
 public class EquipmentPresenter {
-  private static final Equipment[] FOR_SALE = Consts.EquipmentForSale;
+  private static final List<Equipment> FOR_SALE = Consts.EquipmentForSale;
 
   private final Game game;
   private final Commander cmdr;

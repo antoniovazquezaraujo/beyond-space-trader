@@ -39,15 +39,15 @@ public class Ship extends ShipSpec {
 
   public Ship(OpponentType oppType) {
     if(oppType == OpponentType.FamousCaptain) {
-      Ship.this.SetValues(Consts.ShipSpecs[Consts.MaxShip].Type());
+      Ship.this.SetValues(Consts.ShipSpecs.get(Consts.MaxShip).Type());
       for(int i = 0; i < _shields.length; i++) {
-        Ship.this.AddEquipment(Consts.Shields[ShieldType.Reflective.id]);
+        Ship.this.AddEquipment(Consts.Shields.get(ShieldType.Reflective.id));
       }
       for(int i = 0; i < _weapons.length; i++) {
-        Ship.this.AddEquipment(Consts.WeapObjs[WeaponType.MilitaryLaser.id]);
+        Ship.this.AddEquipment(Consts.WeapObjs.get(WeaponType.MilitaryLaser.id));
       }
-      Ship.this.AddEquipment(Consts.Gadgets[GadgetType.NavigatingSystem.asInteger()]);
-      Ship.this.AddEquipment(Consts.Gadgets[GadgetType.TargetingSystem.asInteger()]);
+      Ship.this.AddEquipment(Consts.Gadgets.get(GadgetType.NavigatingSystem.asInteger()));
+      Ship.this.AddEquipment(Consts.Gadgets.get(GadgetType.TargetingSystem.asInteger()));
       Ship.this.Crew()[0] = Game.CurrentGame().Mercenaries()[CrewMemberId.FamousCaptain.CastToInt()];
     } else if(oppType == OpponentType.Bottle) {
       Ship.this.SetValues(ShipType.Bottle);
@@ -179,7 +179,7 @@ public class Ship extends ShipSpec {
     if(Trader() != skill) {
       Game.CurrentGame().RecalculateBuyPrices(Game.CurrentGame().Commander().CurrentSystem());
     }
-    if(merc != null && !Util.ArrayContains(Consts.SpecialCrewMemberIds, (merc.Id()))) {
+    if(merc != null && !Consts.SpecialCrewMemberIds.contains((merc.Id()))) {
       StarSystem[] universe = Game.CurrentGame().Universe();
       // The leaving Mercenary travels to a nearby random system.
       merc.setCurrentSystemId(StarSystemId.NA);
@@ -207,7 +207,7 @@ public class Ship extends ShipSpec {
         }
       }
       for(int bays, i = 0; i < baysToFill; i += bays) {
-        int item = Functions.GetRandom(Consts.TradeItems.length);
+        int item = Functions.GetRandom(Consts.TradeItems.size());
         bays = Math.min(baysToFill - i, 1 + Functions.GetRandom(10 - item));
         Cargo()[item] += bays;
       }
@@ -237,7 +237,7 @@ public class Ship extends ShipSpec {
     }
     for(int i = 1; i < numCrew; i++) {
       // Keep getting a new random mercenary until we have a non-special one.
-      while(Crew()[i] == null || Util.ArrayContains(Consts.SpecialCrewMemberIds, Crew()[i].Id())) {
+      while(Crew()[i] == null || Consts.SpecialCrewMemberIds.contains(Crew()[i].Id())) {
         Crew()[i] = mercs[Functions.GetRandom(mercs.length)];
       }
     }
@@ -258,17 +258,17 @@ public class Ship extends ShipSpec {
         int bestGadgetType = 0;
         for(int j = 0; j < tries; j++) {
           int x = Functions.GetRandom(100);
-          int sum = Consts.Gadgets[0].Chance();
+          int sum = Consts.Gadgets.get(0).Chance();
           int gadgetType = 0;
-          while(sum < x && gadgetType <= Consts.Gadgets.length - 1) {
+          while(sum < x && gadgetType <= Consts.Gadgets.size() - 1) {
             gadgetType++;
-            sum += Consts.Gadgets[gadgetType].Chance();
+            sum += Consts.Gadgets.get(gadgetType).Chance();
           }
-          if(!HasGadget(Consts.Gadgets[gadgetType].Type()) && gadgetType > bestGadgetType) {
+          if(!HasGadget(Consts.Gadgets.get(gadgetType).Type()) && gadgetType > bestGadgetType) {
             bestGadgetType = gadgetType;
           }
         }
-        AddEquipment(Consts.Gadgets[bestGadgetType]);
+        AddEquipment(Consts.Gadgets.get(bestGadgetType));
       }
     }
   }
@@ -320,17 +320,17 @@ public class Ship extends ShipSpec {
         int bestShieldType = 0;
         for(int j = 0; j < tries; j++) {
           int x = Functions.GetRandom(100);
-          int sum = Consts.Shields[0].Chance();
+          int sum = Consts.Shields.get(0).Chance();
           int shieldType = 0;
-          while(sum < x && shieldType <= Consts.Shields.length - 1) {
+          while(sum < x && shieldType <= Consts.Shields.size() - 1) {
             shieldType++;
-            sum += Consts.Shields[shieldType].Chance();
+            sum += Consts.Shields.get(shieldType).Chance();
           }
-          if(!HasShield(Consts.Shields[shieldType].Type()) && shieldType > bestShieldType) {
+          if(!HasShield(Consts.Shields.get(shieldType).Type()) && shieldType > bestShieldType) {
             bestShieldType = shieldType;
           }
         }
-        AddEquipment(Consts.Shields[bestShieldType]);
+        AddEquipment(Consts.Shields.get(bestShieldType));
         _shields[i].setCharge(0);
         for(int j = 0; j < 5; j++) {
           int charge = 1 + Functions.GetRandom(_shields[i].Power());
@@ -359,17 +359,17 @@ public class Ship extends ShipSpec {
         int bestWeaponType = 0;
         for(int j = 0; j < tries; j++) {
           int x = Functions.GetRandom(100);
-          int sum = Consts.WeapObjs[0].Chance();
+          int sum = Consts.WeapObjs.get(0).Chance();
           int weaponType = 0;
-          while(sum < x && weaponType <= Consts.WeapObjs.length - 1) {
+          while(sum < x && weaponType <= Consts.WeapObjs.size() - 1) {
             weaponType++;
-            sum += Consts.WeapObjs[weaponType].Chance();
+            sum += Consts.WeapObjs.get(weaponType).Chance();
           }
           if(!HasWeapon(WeaponType.fromId(weaponType), true) && weaponType > bestWeaponType) {
             bestWeaponType = weaponType;
           }
         }
-        AddEquipment(Consts.WeapObjs[bestWeaponType]);
+        AddEquipment(Consts.WeapObjs.get(bestWeaponType));
       }
     }
   }
@@ -424,7 +424,7 @@ public class Ship extends ShipSpec {
       }
       int total = 0;
       for(int i = 0; i < Consts.MaxShip; i++) {
-        ShipSpec spec = Consts.ShipSpecs[i];
+        ShipSpec spec = Consts.ShipSpecs.get(i);
         if(polSys.ShipTypeLikely(spec.Type(), oppType, difficulty)) {
           total += spec.Occurrence();
         }
@@ -435,16 +435,16 @@ public class Ship extends ShipSpec {
         int j = -1;
         do {
           j++;
-          if(polSys.ShipTypeLikely(Consts.ShipSpecs[j].Type(), oppType, difficulty)) {
+          if(polSys.ShipTypeLikely(Consts.ShipSpecs.get(j).Type(), oppType, difficulty)) {
             if(sum > 0) {
-              sum += Consts.ShipSpecs[j].Occurrence();
+              sum += Consts.ShipSpecs.get(j).Occurrence();
             } else {
-              sum = Consts.ShipSpecs[j].Occurrence();
+              sum = Consts.ShipSpecs.get(j).Occurrence();
             }
           }
         } while(sum < x && j < Consts.MaxShip);
         if(j > oppShipType.CastToInt()) {
-          oppShipType = Consts.ShipSpecs[j].Type();
+          oppShipType = Consts.ShipSpecs.get(j).Type();
         }
       }
       SetValues(oppShipType);
@@ -518,7 +518,7 @@ public class Ship extends ShipSpec {
       // Criminals can only buy or sell illegal goods, Noncriminals cannot buy or sell such items.
       // Simplified this - JAF
       if(Cargo()[i] > 0
-          && !(criminal ^ Consts.TradeItems[i].Illegal())
+          && !(criminal ^ Consts.TradeItems.get(i).Illegal())
           && ((!CommandersShip() && Game.CurrentGame().PriceCargoBuy()[i] > 0) || (CommandersShip() && Game.CurrentGame().PriceCargoSell()[i] > 0))) {
         found = true;
         _tradeableItems[i] = true;
@@ -633,8 +633,8 @@ public class Ship extends ShipSpec {
   }
 
   public void RemoveIllegalGoods() {
-    for(int i = 0; i < Consts.TradeItems.length; i++) {
-      if(Consts.TradeItems[i].Illegal()) {
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      if(Consts.TradeItems.get(i).Illegal()) {
         Cargo()[i] = 0;
         Game.CurrentGame().Commander().PriceCargo()[i] = 0;
       }
@@ -696,8 +696,8 @@ public class Ship extends ShipSpec {
 
   public boolean AnyIllegalCargo() {
     int illegalCargo = 0;
-    for(int i = 0; i < Consts.TradeItems.length; i++) {
-      if(Consts.TradeItems[i].Illegal()) {
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      if(Consts.TradeItems.get(i).Illegal()) {
         illegalCargo += Cargo()[i];
       }
     }
@@ -750,8 +750,8 @@ public class Ship extends ShipSpec {
 
   public boolean DetectableIllegalCargo() {
     int illegalCargo = 0;
-    for(int i = 0; i < Consts.TradeItems.length; i++) {
-      if(Consts.TradeItems[i].Illegal()) {
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      if(Consts.TradeItems.get(i).Illegal()) {
         illegalCargo += Cargo()[i];
       }
     }
@@ -961,7 +961,7 @@ public class Ship extends ShipSpec {
   public CrewMember[] SpecialCrew() {
     ArrayList<CrewMember> list = new ArrayList<>();
     for(int i = 0; i < Crew().length; i++) {
-      if(Crew()[i] != null && Util.ArrayContains(Consts.SpecialCrewMemberIds, Crew()[i].Id())) {
+      if(Crew()[i] != null && Consts.SpecialCrewMemberIds.contains(Crew()[i].Id())) {
         list.add(Crew()[i]);
       }
     }

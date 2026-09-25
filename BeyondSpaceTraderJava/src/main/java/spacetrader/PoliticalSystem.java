@@ -42,13 +42,13 @@ public class PoliticalSystem {
     int diffMod = Math.max(0, difficulty.CastToInt() - Difficulty.Normal.CastToInt());
     switch(oppType) {
       case Pirate:
-        likely = ActivityPirates().CastToInt() + diffMod >= Consts.ShipSpecs[shipType.CastToInt()].Pirates().CastToInt();
+        likely = ActivityPirates().CastToInt() + diffMod >= Consts.ShipSpecs.get(shipType.CastToInt()).Pirates().CastToInt();
         break;
       case Police:
-        likely = ActivityPolice().CastToInt() + diffMod >= Consts.ShipSpecs[shipType.CastToInt()].Police().CastToInt();
+        likely = ActivityPolice().CastToInt() + diffMod >= Consts.ShipSpecs.get(shipType.CastToInt()).Police().CastToInt();
         break;
       case Trader:
-        likely = ActivityTraders().CastToInt() + diffMod >= Consts.ShipSpecs[shipType.CastToInt()].Traders().CastToInt();
+        likely = ActivityTraders().CastToInt() + diffMod >= Consts.ShipSpecs.get(shipType.CastToInt()).Traders().CastToInt();
         break;
       default:
         break;
