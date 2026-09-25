@@ -57,8 +57,10 @@ import org.gts.bst.ship.equip.Shield;
 import org.gts.bst.ship.equip.Weapon;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.DialogService;
+import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
+import org.gts.bst.view.ShipyardViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
 import spacetrader.Commander;
@@ -2930,63 +2932,32 @@ public class ApplicationST extends WinformWindow implements MainView {
   }
 
   private void UpdateDock() {
-    if(game == null) {
-      lblFuelStatus.setText("");
-      lblFuelCost.setText("");
-      btnFuel.setVisible(false);
-      lblHullStatus.setText("");
-      lblRepairCost.setText("");
-      btnRepair.setVisible(false);
-    } else {
-      Ship ship = cmdr.getShip();
-      lblFuelStatus.setText(
-          Functions.StringVars("You have fuel to fly ^1.", Functions.Multiples(ship.getFuel(), "parsec")));
-      int tanksEmpty = ship.FuelTanks() - ship.getFuel();
-      lblFuelCost.setText(tanksEmpty > 0
-          ? Functions.StringVars("A full tank costs ^1", Functions.FormatMoney(tanksEmpty * ship.getFuelCost()))
-          : "Your tank is full.");
-      btnFuel.setVisible(tanksEmpty > 0);
-      lblHullStatus.setText(
-          Functions.StringVars("Your hull strength is at ^1%.",
-          Functions.FormatNumber((int)Math.floor((double)100 * ship.getHull() / ship.HullStrength()))));
-      int hullLoss = ship.HullStrength() - ship.getHull();
-      lblRepairCost.setText(hullLoss > 0
-          ? Functions.StringVars("Full repairs will cost ^1", Functions.FormatMoney(hullLoss * ship.getRepairCost()))
-          : "No repairs are needed.");
-      btnRepair.setVisible(hullLoss > 0);
-    }
+    mainPresenter.updateDock();
+  }
+
+  @Override
+  public void renderDock(DockViewModel model) {
+    lblFuelStatus.setText(model.fuelStatus());
+    lblFuelCost.setText(model.fuelCost());
+    btnFuel.setVisible(model.fuelButtonVisible());
+    lblHullStatus.setText(model.hullStatus());
+    lblRepairCost.setText(model.repairCost());
+    btnRepair.setVisible(model.repairButtonVisible());
   }
 
   private void UpdateShipyard() {
-    if(game == null) {
-      lblShipsForSale.setText("");
-      lblEquipForSale.setText("");
-      lblEscapePod.setText("");
-      btnPod.setVisible(false);
-      btnBuyShip.setVisible(false);
-      btnDesign.setVisible(false);
-      btnEquip.setVisible(false);
-    } else {
-      boolean noTech =
-          cmdr.CurrentSystem().TechLevel().ordinal()
-          < Consts.ShipSpecs[ShipType.Flea.CastToInt()].MinimumTechLevel().ordinal();
-      lblShipsForSale.setText(noTech ? Strings.ShipyardShipNoSale : Strings.ShipyardShipForSale);
-      btnBuyShip.setVisible(true);
-      btnDesign.setVisible((cmdr.CurrentSystem().Shipyard() != null));
-      lblEquipForSale.setText(noTech ? Strings.ShipyardEquipNoSale : Strings.ShipyardEquipForSale);
-      btnEquip.setVisible(true);
-      btnPod.setVisible(false);
-      if(cmdr.getShip().getEscapePod()) {
-        lblEscapePod.setText(Strings.ShipyardPodInstalled);
-      } else if(noTech) {
-        lblEscapePod.setText(Strings.ShipyardPodNoSale);
-      } else if(cmdr.getCash() < 2000) {
-        lblEscapePod.setText(Strings.ShipyardPodIF);
-      } else {
-        lblEscapePod.setText(Strings.ShipyardPodCost);
-        btnPod.setVisible(true);
-      }
-    }
+    mainPresenter.updateShipyard();
+  }
+
+  @Override
+  public void renderShipyard(ShipyardViewModel model) {
+    lblShipsForSale.setText(model.shipsForSale());
+    btnBuyShip.setVisible(model.buyShipVisible());
+    btnDesign.setVisible(model.designVisible());
+    lblEquipForSale.setText(model.equipForSale());
+    btnEquip.setVisible(model.equipVisible());
+    lblEscapePod.setText(model.escapePod());
+    btnPod.setVisible(model.podVisible());
   }
 
   public void UpdateStatusBar() {

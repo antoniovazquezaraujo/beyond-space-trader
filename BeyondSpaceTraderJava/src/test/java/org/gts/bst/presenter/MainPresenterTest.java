@@ -6,12 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
+import org.gts.bst.ship.ShipType;
+import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
+import org.gts.bst.view.ShipyardViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.StarSystem;
@@ -33,12 +37,18 @@ class MainPresenterTest {
 
     presenter.updateStatusBar();
     presenter.updateSystemInfo();
+    presenter.updateDock();
+    presenter.updateShipyard();
     presenter.updateTargetSystemInfo();
 
     assertEquals("", view.status.cash());
     assertEquals("No Game Loaded.", view.status.extra());
     assertEquals("", view.system.name());
     assertFalse(view.system.newsVisible());
+    assertEquals("", view.dock.fuelStatus());
+    assertFalse(view.dock.fuelButtonVisible());
+    assertEquals("", view.shipyard.shipsForSale());
+    assertFalse(view.shipyard.buyShipVisible());
     assertFalse(view.target.navigationVisible());
     assertFalse(view.target.warpVisible());
   }
@@ -64,6 +74,45 @@ class MainPresenterTest {
   }
 
   @Test
+  void showsTheFuelAndHullState() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    MainPresenter presenter = new MainPresenter(() -> game, view);
+
+    presenter.updateDock();
+
+    assertEquals("You have fuel to fly 14 parsecs.", view.dock.fuelStatus());
+    assertEquals("Your tank is full.", view.dock.fuelCost());
+    assertFalse(view.dock.fuelButtonVisible());
+    assertEquals("Your hull strength is at 100%.", view.dock.hullStatus());
+    assertEquals("No repairs are needed.", view.dock.repairCost());
+    assertFalse(view.dock.repairButtonVisible());
+  }
+
+  @Test
+  void showsTheShipyardAccordingToTheSystemTechLevel() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    MainPresenter presenter = new MainPresenter(() -> game, view);
+    int minTech = Consts.ShipSpecs[ShipType.Flea.CastToInt()].MinimumTechLevel().ordinal();
+
+    game.Commander().CurrentSystem(firstSystemWithTech(game, true, minTech));
+    presenter.updateShipyard();
+    StarSystem highTech = game.Commander().CurrentSystem();
+    assertEquals(Strings.ShipyardShipForSale, view.shipyard.shipsForSale());
+    assertEquals(Strings.ShipyardEquipForSale, view.shipyard.equipForSale());
+    assertEquals(highTech.Shipyard() != null, view.shipyard.designVisible());
+    assertEquals(Strings.ShipyardPodIF, view.shipyard.escapePod());
+    assertFalse(view.shipyard.podVisible());
+
+    game.Commander().CurrentSystem(firstSystemWithTech(game, false, minTech));
+    presenter.updateShipyard();
+    assertEquals(Strings.ShipyardShipNoSale, view.shipyard.shipsForSale());
+    assertEquals(Strings.ShipyardEquipNoSale, view.shipyard.equipForSale());
+    assertEquals(Strings.ShipyardPodNoSale, view.shipyard.escapePod());
+  }
+
+  @Test
   void showsTheTargetSystem() {
     Game game = newGame();
     game.SelectedSystemId(StarSystemId.FromInt(0));
@@ -83,9 +132,20 @@ class MainPresenterTest {
     return new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
   }
 
+  private static StarSystem firstSystemWithTech(Game game, boolean atLeast, int tech) {
+    for(StarSystem system : game.Universe()) {
+      if(atLeast == (system.TechLevel().ordinal() >= tech)) {
+        return system;
+      }
+    }
+    throw new AssertionError("no system with the required tech level");
+  }
+
   private static class FakeView implements MainView {
     private MainStatusViewModel status;
     private SystemInfoViewModel system;
+    private DockViewModel dock;
+    private ShipyardViewModel shipyard;
     private TargetSystemViewModel target;
 
     @Override
@@ -96,6 +156,16 @@ class MainPresenterTest {
     @Override
     public void renderSystemInfo(SystemInfoViewModel model) {
       system = model;
+    }
+
+    @Override
+    public void renderDock(DockViewModel model) {
+      dock = model;
+    }
+
+    @Override
+    public void renderShipyard(ShipyardViewModel model) {
+      shipyard = model;
     }
 
     @Override

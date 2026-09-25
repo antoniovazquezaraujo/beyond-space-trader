@@ -10,5 +10,9 @@ public interface MainView {
 
   void renderSystemInfo(SystemInfoViewModel model);
 
+  void renderDock(DockViewModel model);
+
+  void renderShipyard(ShipyardViewModel model);
+
   void renderTargetSystem(TargetSystemViewModel model);
 }
