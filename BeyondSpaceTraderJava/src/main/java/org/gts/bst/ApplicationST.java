@@ -3013,7 +3013,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   }
 
   private void btnBuyShip_Click(Object sender, EventArgs e) {
-    (new FormShipList()).ShowDialog(this);
+    (new FormShipList(this)).ShowDialog(this);
     UpdateAll();
   }
 
