@@ -3023,7 +3023,7 @@ public class ApplicationST extends WinformWindow implements MainView, MainWindow
   }
 
   private void btnEquip_Click(Object sender, EventArgs e) {
-    (new FormEquipment()).ShowDialog(this);
+    (new FormEquipment(this)).ShowDialog(this);
     UpdateAll();
   }
 

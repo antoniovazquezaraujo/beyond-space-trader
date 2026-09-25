@@ -18,25 +18,19 @@ import jwinforms.enums.FlatStyle;
 import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
-import org.gts.bst.ship.equip.Equipment;
+import org.gts.bst.presenter.EquipmentPresenter;
 import org.gts.bst.ship.equip.EquipmentType;
-import org.gts.bst.ship.equip.Gadget;
-import org.gts.bst.ship.equip.GadgetType;
-import org.gts.bst.ship.equip.Shield;
-import org.gts.bst.ship.equip.Weapon;
-import spacetrader.Commander;
-import spacetrader.Consts;
-import spacetrader.Functions;
+import org.gts.bst.view.EquipmentInfoViewModel;
+import org.gts.bst.view.EquipmentView;
+import org.gts.bst.view.EquipmentViewModel;
+import org.gts.bst.view.MainWindow;
 import spacetrader.Game;
-import spacetrader.Ship;
-import spacetrader.Strings;
-import spacetrader.enums.AlertType;
 
 
-public class FormEquipment extends WinformForm {
+public class FormEquipment extends WinformForm implements EquipmentView {
   private final Game game = Game.CurrentGame();
-  private final Commander cmdr = game.Commander();
-  private final Ship ship = cmdr.getShip();
+  private final MainWindow mainWindow;
+  private final EquipmentPresenter presenter;
   private Button btnClose;
   private Button btnBuy;
   private Button btnSell;
@@ -75,15 +69,13 @@ public class FormEquipment extends WinformForm {
   private ListBox lstBuyShield;
   private ListBox lstBuyWeapon;
   private PictureBox picEquipment;
-  private Equipment selectedEquipment = null;
-  private Equipment[] equipBuy = Consts.EquipmentForSale;
-  private boolean sellSideSelected = false;
   private boolean handlingSelect = false;
 
-  public FormEquipment() {
+  public FormEquipment(MainWindow mainWindow) {
     InitializeComponent();
-    UpdateBuy();
-    UpdateSell();
+    this.mainWindow = mainWindow;
+    presenter = new EquipmentPresenter(game, this);
+    presenter.update();
   }
 
   // Required method for Designer support - do not modify the contents of this method with the code editor.
@@ -530,27 +522,63 @@ public class FormEquipment extends WinformForm {
     ResumeLayout(false);
   }
 
-  private void Buy() {
-    if(selectedEquipment != null && !sellSideSelected) {
-      EquipmentType baseType = selectedEquipment.EquipmentType();
-      if(baseType == EquipmentType.Gadget && ship.HasGadget(((Gadget)selectedEquipment).Type())
-          && ((Gadget)selectedEquipment).Type() != GadgetType.ExtraCargoBays) {
-        FormAlert.Alert(AlertType.EquipmentAlreadyOwn, this);
-      } else if(cmdr.getDebt() > 0) {
-        FormAlert.Alert(AlertType.DebtNoBuy, this);
-      } else if(selectedEquipment.Price() > cmdr.CashToSpend()) {
-        FormAlert.Alert(AlertType.EquipmentIF, this);
-      } else if((baseType == EquipmentType.Weapon && ship.FreeSlotsWeapon() == 0)
-          || (baseType == EquipmentType.Shield && ship.FreeSlotsShield() == 0)
-          || (baseType == EquipmentType.Gadget && ship.FreeSlotsGadget() == 0)) {
-        FormAlert.Alert(AlertType.EquipmentNotEnoughSlots, this);
-      } else if(FormAlert.Alert(AlertType.EquipmentBuy, this, selectedEquipment.Name(), Functions.FormatNumber(selectedEquipment.Price())) == DialogResult.Yes) {
-        ship.AddEquipment(selectedEquipment);
-        cmdr.setCash(cmdr.getCash() - selectedEquipment.Price());
-        DeselectAll();
-        UpdateSell();
-        game.getParentWindow().UpdateAll();
-      }
+  @Override
+  public void render(EquipmentViewModel model) {
+    handlingSelect = true;
+    try {
+      fill(lstBuyWeapon, model.buyWeapons());
+      fill(lstBuyShield, model.buyShields());
+      fill(lstBuyGadget, model.buyGadgets());
+      fill(lstSellWeapon, model.sellWeapons());
+      fill(lstSellShield, model.sellShields());
+      fill(lstSellGadget, model.sellGadgets());
+    } finally {
+      handlingSelect = false;
+    }
+    updateList(lstBuyWeapon, lblBuyWeaponNone);
+    updateList(lstBuyShield, lblBuyShieldNone);
+    updateList(lstBuyGadget, lblBuyGadgetNone);
+    updateList(lstSellWeapon, lblSellWeaponNoSlots);
+    updateList(lstSellShield, lblSellShieldNoSlots);
+    updateList(lstSellGadget, lblSellGadgetNoSlots);
+  }
+
+  @Override
+  public void renderInfo(EquipmentInfoViewModel info) {
+    picEquipment.setVisible(info.visible());
+    lblNameLabel.setVisible(info.visible());
+    lblTypeLabel.setVisible(info.visible());
+    lblBuyPriceLabel.setVisible(info.visible());
+    lblSellPriceLabel.setVisible(info.visible());
+    lblPowerLabel.setVisible(info.visible());
+    lblChargeLabel.setVisible(info.visible());
+    lblName.setText(info.name());
+    lblType.setText(info.type());
+    lblDescription.setText(info.description());
+    lblBuyPrice.setText(info.buyPrice());
+    lblSellPrice.setText(info.sellPrice());
+    lblPower.setText(info.power());
+    lblCharge.setText(info.charge());
+    if(info.visible() && info.imageIndex() != null) {
+      picEquipment.setImage(game.getParentWindow().EquipmentImages().getImages()[info.imageIndex()]);
+    }
+    btnBuy.setVisible(info.buyVisible());
+    btnSell.setVisible(info.sellVisible());
+  }
+
+  private static void fill(ListBox list, java.util.List<String> entries) {
+    list.Items.clear();
+    for(String entry : entries) {
+      list.Items.add(entry);
+    }
+  }
+
+  private static void updateList(ListBox list, Label noneLabel) {
+    boolean entries = list.Items.size() > 0;
+    list.setVisible(entries);
+    noneLabel.setVisible(!entries);
+    if(entries) {
+      list.setHeight(list.getItemHeight() * Math.min(list.Items.size(), 5) + 2);
     }
   }
 
@@ -563,166 +591,43 @@ public class FormEquipment extends WinformForm {
     lstBuyGadget.clearSelected();
   }
 
-  private void Sell() {
-    if(selectedEquipment != null && sellSideSelected) {
-      if(FormAlert.Alert(AlertType.EquipmentSell, this) == DialogResult.Yes) {
-        // The slot is the selected index. Two of the three list boxes will have selected indices of -1, so adding 2 to the total cancels those out.
-        int slot = lstSellWeapon.getSelectedIndex() + lstSellShield.getSelectedIndex() + lstSellGadget.getSelectedIndex() + 2;
-        if(selectedEquipment.EquipmentType() == EquipmentType.Gadget
-            && (((Gadget)selectedEquipment).Type() == GadgetType.ExtraCargoBays || ((Gadget)selectedEquipment).Type() == GadgetType.HiddenCargoBays)
-            && ship.FreeCargoBays() < 5) {
-          FormAlert.Alert(AlertType.EquipmentExtraBaysInUse, this);
-        } else {
-          cmdr.setCash(cmdr.getCash() + selectedEquipment.SellPrice());
-          ship.RemoveEquipment(selectedEquipment.EquipmentType(), slot);
-          UpdateSell();
-          game.getParentWindow().UpdateAll();
-        }
-      }
-    }
-  }
-
-  private void UpdateBuy() {
-    for(int i = 0; i < equipBuy.length; i++) {
-      if(equipBuy[i].Price() > 0) {
-        switch(equipBuy[i].EquipmentType()) {
-          case Weapon:
-            lstBuyWeapon.Items.add(equipBuy[i]);
-            break;
-          case Shield:
-            lstBuyShield.Items.add(equipBuy[i]);
-            break;
-          case Gadget:
-            lstBuyGadget.Items.add(equipBuy[i]);
-            break;
-        }
-      }
-    }
-    ListBox[] buyBoxes = new ListBox[] {lstBuyWeapon, lstBuyShield, lstBuyGadget};
-    Label[] buyLabels = new Label[] {lblBuyWeaponNone, lblBuyShieldNone, lblBuyGadgetNone};
-    for(int i = 0; i < buyBoxes.length; i++) {
-      boolean entries = (buyBoxes[i].Items.size() > 0);
-      buyBoxes[i].setVisible(entries);
-      buyLabels[i].setVisible(!entries);
-      if(entries) {
-        buyBoxes[i].setHeight(buyBoxes[i].getItemHeight() * Math.min(buyBoxes[i].Items.size(), 5) + 2);
-      }
-    }
-  }
-
-  private void UpdateInfo() {
-    boolean visible = selectedEquipment != null;
-    picEquipment.setVisible(visible);
-    lblNameLabel.setVisible(visible);
-    lblTypeLabel.setVisible(visible);
-    lblBuyPriceLabel.setVisible(visible);
-    lblSellPriceLabel.setVisible(visible);
-    lblPowerLabel.setVisible(visible);
-    lblChargeLabel.setVisible(visible);
-    if(selectedEquipment == null) {
-      lblName.setText("");
-      lblType.setText("");
-      lblDescription.setText("");
-      lblBuyPrice.setText("");
-      lblSellPrice.setText("");
-      lblPower.setText("");
-      lblCharge.setText("");
-      btnBuy.setVisible(false);
-      btnSell.setVisible(false);
-    } else {
-      String power = "";
-      String charge = "";
-      switch(selectedEquipment.EquipmentType()) {
-        case Weapon:
-          power = "" + ((Weapon)selectedEquipment).Power();
-          charge = Strings.NA;
-          break;
-        case Shield:
-          power = "" + ((Shield)selectedEquipment).Power();
-          charge = sellSideSelected ? "" + ((Shield)selectedEquipment).getCharge() : Strings.NA;
-          break;
-        case Gadget:
-          power = Strings.NA;
-          charge = Strings.NA;
-          break;
-      }
-      lblName.setText(selectedEquipment.Name());
-      lblType.setText(Strings.EquipmentTypes[selectedEquipment.EquipmentType().CastToInt()]);
-      lblDescription.setText(Strings.EquipmentDescriptions[selectedEquipment.EquipmentType().CastToInt()][selectedEquipment.SubType().asInteger()]);
-      lblBuyPrice.setText(Functions.FormatMoney(selectedEquipment.Price()));
-      lblSellPrice.setText(Functions.FormatMoney(selectedEquipment.SellPrice()));
-      lblPower.setText(power);
-      lblCharge.setText(charge);
-      picEquipment.setImage(selectedEquipment.Image());
-      btnBuy.setVisible(!sellSideSelected && (selectedEquipment.Price() > 0));
-      btnSell.setVisible(sellSideSelected);
-    }
-  }
-
-  private void UpdateSell() {
-    sellSideSelected = false;
-    selectedEquipment = null;
-    UpdateInfo();
-    lstSellWeapon.Items.clear();
-    lstSellShield.Items.clear();
-    lstSellGadget.Items.clear();
-    Equipment[] equipSell;
-    int index;
-    equipSell = ship.EquipmentByType(EquipmentType.Weapon);
-    for(index = 0; index < equipSell.length; index++) {
-      lstSellWeapon.Items.add(equipSell[index] == null ? (Object)Strings.EquipmentFreeSlot : equipSell[index]);
-    }
-    equipSell = ship.EquipmentByType(EquipmentType.Shield);
-    for(index = 0; index < equipSell.length; index++) {
-      lstSellShield.Items.add(equipSell[index] == null ? (Object)Strings.EquipmentFreeSlot : equipSell[index]);
-    }
-    equipSell = ship.EquipmentByType(EquipmentType.Gadget);
-    for(index = 0; index < equipSell.length; index++) {
-      lstSellGadget.Items.add(equipSell[index] == null ? (Object)Strings.EquipmentFreeSlot : equipSell[index]);
-    }
-    ListBox[] sellBoxes = new ListBox[] {lstSellWeapon, lstSellShield, lstSellGadget};
-    Label[] sellLabels = new Label[] {lblSellWeaponNoSlots, lblSellShieldNoSlots, lblSellGadgetNoSlots};
-    for(int i = 0; i < sellBoxes.length; i++) {
-      boolean entries = (sellBoxes[i].Items.size() > 0);
-      sellBoxes[i].setVisible(entries);
-      sellLabels[i].setVisible(!entries);
-      if(entries) {
-        sellBoxes[i].setHeight(sellBoxes[i].getItemHeight() * Math.min(sellBoxes[i].Items.size(), 5) + 2);
-      }
-    }
-  }
-
   private void BuyClick(Object sender, EventArgs e) {
-    if(selectedEquipment != null) {
-      Buy();
+    if(presenter.buy()) {
+      mainWindow.refresh();
+    }
+  }
+
+  private void SellClick() {
+    if(presenter.sell()) {
+      mainWindow.refresh();
     }
   }
 
   private void SelectedIndexChanged(Object sender, EventArgs e) {
     if(!handlingSelect) {
+      ListBox list = (ListBox)sender;
+      Object obj = list.getSelectedItem();
       handlingSelect = true;
-      Object obj = ((ListBox)sender).getSelectedItem();
       DeselectAll();
-      ((ListBox)sender).setSelectedItem(obj);
-      sellSideSelected = (((ListBox)sender).getName().indexOf("Sell") >= 0);
-      if(obj instanceof Equipment) {
-        selectedEquipment = (Equipment)obj;
-      } else {
-        selectedEquipment = null;
-      }
+      list.setSelectedItem(obj);
       handlingSelect = false;
-      UpdateInfo();
+      presenter.select(equipmentType(list), list.getName().indexOf("Sell") >= 0, list.getSelectedIndex());
     }
   }
 
-  private void SellClick() {
-    if(selectedEquipment != null) {
-      Sell();
+  private static EquipmentType equipmentType(ListBox list) {
+    String name = list.getName();
+    if(name.endsWith("Weapon")) {
+      return EquipmentType.Weapon;
     }
+    if(name.endsWith("Shield")) {
+      return EquipmentType.Shield;
+    }
+    return EquipmentType.Gadget;
   }
 
   public static void main(String[] args) throws Exception {
-    FormEquipment fe = new FormEquipment();
+    FormEquipment fe = new FormEquipment(() -> {});
     Launcher.runForm(fe);
   }
 }
