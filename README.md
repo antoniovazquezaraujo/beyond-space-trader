@@ -54,6 +54,17 @@ Override the size with `-Dbst.uiFontSize=<points>` (`0` disables the adjustment)
 java -Dbst.uiFontSize=11 -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
 ```
 
+## Translations
+
+The game texts live in
+[`BeyondSpaceTraderJava/src/main/resources/spacetrader/Strings.properties`](BeyondSpaceTraderJava/src/main/resources/spacetrader/Strings.properties).
+`^1`, `^2`... are placeholders filled at runtime and the table entries use indexed
+keys (`Name.0`, `Name.1`..., `Name.row.col` for the two-dimensional ones). To
+translate the game, copy the file to `Strings_<language>.properties` next to it
+(for example `Strings_es.properties`) and translate the values, keeping the keys and
+the placeholders. Drop the file in the resources directory and run the game with that
+locale (`java -Duser.language=es ...`).
+
 ## License
 
 GNU General Public License v3.0 or later (`GPL-3.0-or-later`).
