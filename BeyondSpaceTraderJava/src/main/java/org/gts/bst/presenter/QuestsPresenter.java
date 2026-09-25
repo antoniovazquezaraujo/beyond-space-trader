@@ -93,6 +93,8 @@ public class QuestsPresenter {
       case SpecialEvent.StatusDragonflyDestroyed:
         quests.add(Strings.QuestDragonflyShield);
         break;
+      default:
+        break;
     }
     switch(game.getQuestStatusPrincess()) {
       case SpecialEvent.StatusPrincessFlyCentauri:
@@ -117,6 +119,8 @@ public class QuestsPresenter {
         break;
       case SpecialEvent.StatusPrincessReturned:
         quests.add(Strings.QuestPrincessQuantum);
+        break;
+      default:
         break;
     }
     if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabHunting) {

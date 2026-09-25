@@ -413,6 +413,8 @@ public class Ship extends ShipSpec {
           }
           tries = Math.max(1, tries + Game.CurrentGame().Difficulty().CastToInt() - Difficulty.Normal.CastToInt());
           break;
+        default:
+          break;
       }
       if(oppType == OpponentType.Trader) {
         oppShipType = ShipType.Flea;

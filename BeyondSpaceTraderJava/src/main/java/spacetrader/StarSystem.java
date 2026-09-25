@@ -44,13 +44,13 @@ public class StarSystem extends STSerializableObject {
   public StarSystem(Hashtable hash) {
     super(hash);
     _id = StarSystemId.FromInt(GetValueFromHash(hash, "_id", Integer.class));
-    _x = GetValueFromHash(hash, "_x", _x);
-    _y = GetValueFromHash(hash, "_y", _y);
-    _size = ShipSize.FromInt(GetValueFromHash(hash, "_size", _size, Integer.class));
+    _x = GetValueFromHash(hash, "_x", 0);
+    _y = GetValueFromHash(hash, "_y", 0);
+    _size = ShipSize.FromInt(GetValueFromHash(hash, "_size", ShipSize.Tiny, Integer.class));
     _techLevel = TechLevel.FromInt(GetValueFromHash(hash, "_techLevel", /*_techLevel*/0, Integer.class));
-    _politicalSystemType = PoliticalSystemType.FromInt(GetValueFromHash(hash, "_politicalSystemType", _politicalSystemType, Integer.class));
-    _systemPressure = SystemPressure.FromInt(GetValueFromHash(hash, "_systemPressure", _systemPressure, Integer.class));
-    _specialResource = SpecialResource.FromInt(GetValueFromHash(hash, "_specialResource", _specialResource, Integer.class));
+    _politicalSystemType = PoliticalSystemType.FromInt(GetValueFromHash(hash, "_politicalSystemType", PoliticalSystemType.Anarchy, Integer.class));
+    _systemPressure = SystemPressure.FromInt(GetValueFromHash(hash, "_systemPressure", SystemPressure.None, Integer.class));
+    _specialResource = SpecialResource.FromInt(GetValueFromHash(hash, "_specialResource", SpecialResource.NA, Integer.class));
     _specialEventType = SpecialEventType.FromInt(GetValueFromHash(hash, "_specialEventType", _specialEventType, Integer.class));
     _tradeItems = GetValueFromHash(hash, "_tradeItems", _tradeItems, int[].class);
     _countDown = GetValueFromHash(hash, "_countDown", _countDown);
@@ -297,7 +297,6 @@ public class StarSystem extends STSerializableObject {
   }
 
   public Shipyard Shipyard() {
-    ShipyardId();
     return (_shipyardId == ShipyardId.NA ? null : Consts.Shipyards[_shipyardId.CastToInt()]);
   }
 
@@ -314,7 +313,6 @@ public class StarSystem extends STSerializableObject {
   }
 
   public SpecialEvent SpecialEvent() {
-    SpecialEventType();
     return (_specialEventType == SpecialEventType.NA ? null : Consts.SpecialEvents[_specialEventType.CastToInt()]);
   }
 

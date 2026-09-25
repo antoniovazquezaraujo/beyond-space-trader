@@ -4,7 +4,7 @@ import org.gts.bst.ship.equip.WeaponType;
 
 
 public interface Strings {
-  public static final String newline = String.format("\n");
+  public static final String newline = "\n";
   public static final String CargoSellStatementDump = "You can ^1 up to ^2.";
   public static final String CargoTitle = "^1 ^2";
   public static final String CargoUnit = "unit";
