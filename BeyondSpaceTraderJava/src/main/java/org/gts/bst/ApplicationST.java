@@ -63,6 +63,7 @@ import org.gts.bst.view.DialogService;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
+import org.gts.bst.view.MainWindow;
 import org.gts.bst.view.ShipyardViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
@@ -109,7 +110,7 @@ import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
 
-public class ApplicationST extends WinformWindow implements MainView {
+public class ApplicationST extends WinformWindow implements MainView, MainWindow {
   private Button btnDesign;
   private Button btnNews;
   private Button btnSpecial;
@@ -2897,6 +2898,11 @@ public class ApplicationST extends WinformWindow implements MainView {
     btnFind.setVisible(model.findVisible());
   }
 
+  @Override
+  public void refresh() {
+    UpdateAll();
+  }
+
   private void UpdateDock() {
     mainPresenter.updateDock();
   }
@@ -3296,7 +3302,7 @@ public class ApplicationST extends WinformWindow implements MainView {
   }
 
   private void btnMerc_Click(Object sender, EventArgs e) {
-    (new FormViewPersonnel()).ShowDialog(this);
+    (new FormViewPersonnel(this)).ShowDialog(this);
     UpdateAll();
   }
 
@@ -3454,7 +3460,7 @@ public class ApplicationST extends WinformWindow implements MainView {
   }
 
   private void mnuViewBank_Click(Object sender, EventArgs e) {
-    (new FormViewBank()).ShowDialog(this);
+    (new FormViewBank(this)).ShowDialog(this);
   }
 
   private void mnuViewCommander_Click(Object sender, EventArgs e) {
@@ -3462,11 +3468,11 @@ public class ApplicationST extends WinformWindow implements MainView {
   }
 
   private void mnuViewPersonnel_Click(Object sender, EventArgs e) {
-    (new FormViewPersonnel()).ShowDialog(this);
+    (new FormViewPersonnel(this)).ShowDialog(this);
   }
 
   private void mnuViewQuests_Click(Object sender, EventArgs e) {
-    (new FormViewQuests()).ShowDialog(this);
+    (new FormViewQuests(this)).ShowDialog(this);
   }
 
   private void mnuViewShip_Click(Object sender, EventArgs e) {

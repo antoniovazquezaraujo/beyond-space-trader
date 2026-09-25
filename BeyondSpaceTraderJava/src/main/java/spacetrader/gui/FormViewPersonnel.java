@@ -17,6 +17,7 @@ import jwinforms.enums.FontStyle;
 import jwinforms.enums.FormBorderStyle;
 import jwinforms.enums.FormStartPosition;
 import org.gts.bst.presenter.PersonnelPresenter;
+import org.gts.bst.view.MainWindow;
 import org.gts.bst.view.PersonnelInfo;
 import org.gts.bst.view.PersonnelView;
 import org.gts.bst.view.PersonnelViewModel;
@@ -26,6 +27,7 @@ import spacetrader.Game;
 public class FormViewPersonnel extends WinformForm implements PersonnelView {
   private final Game game = Game.CurrentGame();
   private final PersonnelPresenter presenter;
+  private final MainWindow mainWindow;
   private Button btnClose;
   private Button btnHireFire;
   private GroupBox boxForHire;
@@ -47,8 +49,9 @@ public class FormViewPersonnel extends WinformForm implements PersonnelView {
   private ListBox lstCrew;
   private boolean handlingSelect = false;
 
-  public FormViewPersonnel() {
+  public FormViewPersonnel(MainWindow mainWindow) {
     InitializeComponent();
+    this.mainWindow = mainWindow;
     presenter = new PersonnelPresenter(game, this);
     presenter.update();
   }
@@ -343,7 +346,7 @@ public class FormViewPersonnel extends WinformForm implements PersonnelView {
 
   private void HireFire(Object sender, EventArgs e) {
     if(presenter.hireFire()) {
-      game.getParentWindow().UpdateAll(); // TODO: move to the application navigator (#4)
+      mainWindow.refresh();
     }
   }
 }

@@ -18,6 +18,7 @@ import jwinforms.enums.FormStartPosition;
 import org.gts.bst.presenter.BankPresenter;
 import org.gts.bst.view.BankView;
 import org.gts.bst.view.BankViewModel;
+import org.gts.bst.view.MainWindow;
 import spacetrader.Game;
 
 
@@ -40,10 +41,12 @@ public class FormViewBank extends WinformForm implements BankView {
   private Label lblInsAmtLabel;
   private Label lblMaxNoClaim;
   private final Game game = Game.CurrentGame();
+  private final MainWindow mainWindow;
   private final BankPresenter presenter;
 
-  public FormViewBank() {
+  public FormViewBank(MainWindow mainWindow) {
     InitializeComponent();
+    this.mainWindow = mainWindow;
     presenter = new BankPresenter(game, this);
     presenter.update();
   }
@@ -272,18 +275,18 @@ public class FormViewBank extends WinformForm implements BankView {
 
   private void btnGetLoan_Click(Object sender, EventArgs e) {
     if(presenter.getLoan()) {
-      game.getParentWindow().UpdateAll(); // TODO: move to the application navigator (#4)
+      mainWindow.refresh();
     }
   }
 
   private void btnPayBack_Click(Object sender, EventArgs e) {
     if(presenter.payBack()) {
-      game.getParentWindow().UpdateAll(); // TODO: move to the application navigator (#4)
+      mainWindow.refresh();
     }
   }
 
   private void btnBuyInsurance_Click(Object sender, EventArgs e) {
     presenter.toggleInsurance();
-    game.getParentWindow().UpdateAll(); // TODO: move to the application navigator (#4)
+    mainWindow.refresh();
   }
 }
