@@ -21,6 +21,7 @@ import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.ship.equip.ShieldType;
 import org.gts.bst.ship.equip.WeaponType;
+import org.gts.bst.view.DialogService;
 import spacetrader.enums.AlertType;
 import spacetrader.enums.GameEndType;
 import spacetrader.enums.OpponentType;
@@ -103,6 +104,7 @@ public class Game extends STSerializableObject {
   private GameOptions _options = new GameOptions(true);
   // The rest of the member variables are not saved between games.
   private ApplicationST _parentWin = null;
+  private final DialogService _dialogs;
   private boolean _encounterContinueFleeing = false;
   private boolean _encounterContinueAttacking = false;
   private boolean _encounterCmdrFleeing = false;
@@ -111,9 +113,11 @@ public class Game extends STSerializableObject {
   private boolean _encounterOppFleeing = false;
   private boolean _encounterOppHit = false;
 
-  public Game(String name, Difficulty difficulty, int pilot, int fighter, int trader, int engineer, ApplicationST parentWin) {
+  public Game(String name, Difficulty difficulty, int pilot, int fighter, int trader, int engineer, ApplicationST parentWin,
+      DialogService dialogs) {
     Game.CurrentGame(this);
     _parentWin = parentWin;
+    _dialogs = dialogs;
     _difficulty = difficulty;
     // Keep Generating a new universe until PlaceSpecialEvents and PlaceShipyards return true, indicating all special events and shipyards were placed.
     do {
@@ -130,10 +134,11 @@ public class Game extends STSerializableObject {
   }
 
   @SuppressWarnings("unchecked")
-  public Game(Hashtable hash, ApplicationST parentWin) {
+  public Game(Hashtable hash, ApplicationST parentWin, DialogService dialogs) {
     super(hash);
     Game.CurrentGame(this);
     _parentWin = parentWin;
+    _dialogs = dialogs;
     String version = GetValueFromHash(hash, "_version", String.class);
     if(version.compareTo(Consts.CurrentVersion) > 0) {
       throw new FutureVersionException();
@@ -1612,6 +1617,10 @@ public class Game extends STSerializableObject {
 
   public ApplicationST getParentWindow() {
     return _parentWin;
+  }
+
+  public DialogService Dialogs() {
+    return _dialogs;
   }
 
   public StarSystem SelectedSystem() {

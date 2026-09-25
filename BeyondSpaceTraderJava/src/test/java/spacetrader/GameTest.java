@@ -10,8 +10,10 @@ import org.junit.jupiter.api.Test;
 
 
 class GameTest {
-  private static Game newGame(Difficulty difficulty) {
-    return new Game("Test", difficulty, 4, 4, 4, 4, null);
+  private final TestDialogService dialogs = new TestDialogService();
+
+  private Game newGame(Difficulty difficulty) {
+    return new Game("Test", difficulty, 4, 4, 4, 4, null, dialogs);
   }
 
   @Test
@@ -56,5 +58,12 @@ class GameTest {
     Game game = newGame(Difficulty.Hard);
 
     assertEquals(Difficulty.Hard, game.Difficulty());
+  }
+
+  @Test
+  void dialogServiceIsInjected() {
+    Game game = newGame(Difficulty.Normal);
+
+    assertSame(dialogs, game.Dialogs());
   }
 }

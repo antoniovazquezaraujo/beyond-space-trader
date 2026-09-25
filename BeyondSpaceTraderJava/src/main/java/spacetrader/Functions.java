@@ -11,10 +11,9 @@ import jwinforms.GraphicsUnit;
 import jwinforms.Rectangle;
 import jwinforms.WfBitmap;
 import jwinforms.WfImage;
-import jwinforms.WinformPane;
 import org.gts.bst.difficulty.Difficulty;
+import org.gts.bst.view.DialogService;
 import spacetrader.enums.AlertType;
-import spacetrader.gui.FormAlert;
 import spacetrader.stub.ArrayList;
 import spacetrader.stub.BinaryFormatter;
 import spacetrader.stub.RegistryKey;
@@ -89,9 +88,9 @@ public class Functions {
     return -1;
   }
 
-  public static HighScoreRecord[] GetHighScores(WinformPane owner) {
+  public static HighScoreRecord[] GetHighScores(DialogService dialogs) {
     HighScoreRecord[] highScores = new HighScoreRecord[3];
-    Object obj = LoadFile(Consts.HighScoreFile, true, owner);
+    Object obj = LoadFile(Consts.HighScoreFile, true, dialogs);
     if(obj != null) {
       highScores = (HighScoreRecord[])STSerializableObject.ArrayListToArray((ArrayList<Hashtable>)obj, "HighScoreRecord");
     }
@@ -126,7 +125,7 @@ public class Functions {
     return isInt;
   }
 
-  public static Object LoadFile(String fileName, boolean ignoreMissingFile, WinformPane owner) {
+  public static Object LoadFile(String fileName, boolean ignoreMissingFile, DialogService dialogs) {
     Object obj = null;
     FileInputStream inStream = null;
     try {
@@ -134,12 +133,12 @@ public class Functions {
       obj = (new BinaryFormatter()).Deserialize(inStream);
     } catch(FileNotFoundException e) {
       if(!ignoreMissingFile) {
-        FormAlert.Alert(AlertType.FileErrorOpen, owner, fileName, e.getMessage());
+        dialogs.alert(AlertType.FileErrorOpen, fileName, e.getMessage());
       }
     } catch(IOException ex) {
-      FormAlert.Alert(AlertType.FileErrorOpen, owner, fileName, ex.getMessage());
+      dialogs.alert(AlertType.FileErrorOpen, fileName, ex.getMessage());
     } catch(SerializationException ex) {
-      FormAlert.Alert(AlertType.FileErrorOpen, owner, fileName, Strings.FileFormatBad);
+      dialogs.alert(AlertType.FileErrorOpen, fileName, Strings.FileFormatBad);
     } finally {
       if(inStream != null) {
         try {
@@ -203,7 +202,7 @@ public class Functions {
     }
   }
 
-  public static boolean SaveFile(String fileName, Object toSerialize, WinformPane owner) {
+  public static boolean SaveFile(String fileName, Object toSerialize, DialogService dialogs) {
     System.out.println(fileName);
     FileOutputStream outStream = null;
     boolean saveOk = false;
@@ -213,7 +212,7 @@ public class Functions {
       (new BinaryFormatter()).Serialize(outStream, toSerialize);
       saveOk = true;
     } catch(IOException ex) {
-      FormAlert.Alert(AlertType.FileErrorSave, owner, fileName, ex.getMessage());
+      dialogs.alert(AlertType.FileErrorSave, fileName, ex.getMessage());
     } finally {
       if(outStream != null) {
         try {

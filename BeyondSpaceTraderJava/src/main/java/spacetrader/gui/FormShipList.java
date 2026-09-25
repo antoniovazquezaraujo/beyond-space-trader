@@ -826,7 +826,7 @@ public class FormShipList extends WinformForm {
 
   private void Buy(int id) {
     Info(id);
-    if(cmdr.TradeShip(Consts.ShipSpecs[id], prices[id], this)) {
+    if(cmdr.TradeShip(Consts.ShipSpecs[id], prices[id])) {
       if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
         game.setQuestStatusScarab(SpecialEvent.StatusScarabNotStarted);
       }

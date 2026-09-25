@@ -960,7 +960,7 @@ public class FormShipyard extends WinformForm {
     // Add the user-created templates.
     ArrayList<ShipTemplate> userTemplates = new ArrayList<>();
     for(String fileName : Directory.GetFiles(Consts.CustomTemplatesDirectory, "*.sst")) {
-      ShipTemplate template = new ShipTemplate((Hashtable)Functions.LoadFile(fileName, true, this));
+      ShipTemplate template = new ShipTemplate((Hashtable)Functions.LoadFile(fileName, true, game.Dialogs()));
       if(sizes.contains(template.Size())) {
         userTemplates.add(template);
       }
@@ -1060,7 +1060,7 @@ public class FormShipyard extends WinformForm {
 
   private void btnConstruct_Click(Object sender, EventArgs e) {
     if(ConstructButtonEnabled()) {
-      if(cmdr.TradeShip(yard.ShipSpec(), yard.TotalCost(), txtName.getText(), this)) {
+      if(cmdr.TradeShip(yard.ShipSpec(), yard.TotalCost(), txtName.getText())) {
         Strings.ShipNames[ShipType.Custom.CastToInt()] = txtName.getText();
         if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
           game.setQuestStatusScarab(SpecialEvent.StatusScarabNotStarted);
@@ -1112,7 +1112,7 @@ public class FormShipyard extends WinformForm {
         } else {
           template.ImageIndex(imgIndex);
         }
-        Functions.SaveFile(dlgSave.getFileName(), template.Serialize(), this);
+        Functions.SaveFile(dlgSave.getFileName(), template.Serialize(), game.Dialogs());
         LoadTemplateList();
       }
     }

@@ -1,14 +1,13 @@
 package spacetrader;
-import jwinforms.WinformPane;
-import jwinforms.enums.DialogResult;
 import org.gts.bst.crew.CrewMemberId;
+import org.gts.bst.view.DialogResult;
+import org.gts.bst.view.DialogService;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.Equipment;
 import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.ship.equip.ShieldType;
 import org.gts.bst.ship.equip.WeaponType;
 import spacetrader.enums.AlertType;
-import spacetrader.gui.FormAlert;
 import spacetrader.util.Hashtable;
 
 
@@ -82,26 +81,30 @@ public class Commander extends CrewMember {
     return hash;
   }
 
-  public boolean TradeShip(ShipSpec specToBuy, int netPrice, WinformPane owner) {
-    return TradeShip(specToBuy, netPrice, specToBuy.Name(), owner);
+  private static DialogService dialogs() {
+    return Game.CurrentGame().Dialogs();
   }
 
-  public boolean TradeShip(ShipSpec specToBuy, int netPrice, String newShipName, WinformPane owner) {
+  public boolean TradeShip(ShipSpec specToBuy, int netPrice) {
+    return TradeShip(specToBuy, netPrice, specToBuy.Name());
+  }
+
+  public boolean TradeShip(ShipSpec specToBuy, int netPrice, String newShipName) {
     boolean traded = false;
     if(netPrice > 0 && getDebt() > 0) {
-      FormAlert.Alert(AlertType.DebtNoBuy, owner);
+      dialogs().alert(AlertType.DebtNoBuy);
     } else if(netPrice > CashToSpend()) {
-      FormAlert.Alert(AlertType.ShipBuyIF, owner);
+      dialogs().alert(AlertType.ShipBuyIF);
     } else if(specToBuy.getCrewQuarters() < getShip().SpecialCrew().length) {
       String passengers = getShip().SpecialCrew()[1].Name();
       if(getShip().SpecialCrew().length > 2) {
         passengers += " and " + getShip().SpecialCrew()[2].Name();
       }
-      FormAlert.Alert(AlertType.ShipBuyPassengerQuarters, owner, passengers);
+      dialogs().alert(AlertType.ShipBuyPassengerQuarters, passengers);
     } else if(specToBuy.getCrewQuarters() < getShip().CrewCount()) {
-      FormAlert.Alert(AlertType.ShipBuyCrewQuarters, owner);
+      dialogs().alert(AlertType.ShipBuyCrewQuarters);
     } else if(getShip().ReactorOnBoard()) {
-      FormAlert.Alert(AlertType.ShipBuyReactor, owner);
+      dialogs().alert(AlertType.ShipBuyReactor);
     } else {
       Equipment[] special = new Equipment[] {
         Consts.WeapObjs[WeaponType.MorgansLaser.id],
@@ -116,7 +119,7 @@ public class Commander extends CrewMember {
       for(int i = 0; i < special.length; i++) {
         if(getShip().HasEquipment(special[i])) {
           if(specToBuy.Slots(special[i].EquipmentType()) == 0) {
-            FormAlert.Alert(AlertType.ShipBuyNoSlots, owner, newShipName, special[i].Name(), Strings.EquipmentTypes[special[i].EquipmentType().CastToInt()]);
+            dialogs().alert(AlertType.ShipBuyNoSlots, newShipName, special[i].Name(), Strings.EquipmentTypes[special[i].EquipmentType().CastToInt()]);
           } else {
             extraCost += special[i].TransferPrice();
             add[i] = true;
@@ -128,14 +131,14 @@ public class Commander extends CrewMember {
         extraCost += Consts.PodTransferCost;
       }
       if(netPrice + extraCost > CashToSpend()) {
-        FormAlert.Alert(AlertType.ShipBuyIFTransfer, owner);
+        dialogs().alert(AlertType.ShipBuyIFTransfer);
       }
       extraCost = 0;
       for(int i = 0; i < special.length; i++) {
         if(add[i]) {
           if(netPrice + extraCost + special[i].TransferPrice() > CashToSpend()) {
-            FormAlert.Alert(AlertType.ShipBuyNoTransfer, owner, special[i].Name());
-          } else if(FormAlert.Alert(AlertType.ShipBuyTransfer, owner, special[i].Name(), special[i].Name().toLowerCase(), Functions.FormatNumber(special[i].TransferPrice())) == jwinforms.enums.DialogResult.Yes) {
+            dialogs().alert(AlertType.ShipBuyNoTransfer, special[i].Name());
+          } else if(dialogs().alert(AlertType.ShipBuyTransfer, special[i].Name(), special[i].Name().toLowerCase(), Functions.FormatNumber(special[i].TransferPrice())) == DialogResult.Yes) {
             extraCost += special[i].TransferPrice();
           } else {
             add[i] = false;
@@ -144,15 +147,15 @@ public class Commander extends CrewMember {
       }
       if(addPod) {
         if(netPrice + extraCost + Consts.PodTransferCost > CashToSpend()) {
-          FormAlert.Alert(AlertType.ShipBuyNoTransfer, owner, Strings.ShipInfoEscapePod);
-        } else if(FormAlert.Alert(AlertType.ShipBuyTransfer, owner, Strings.ShipInfoEscapePod,
+          dialogs().alert(AlertType.ShipBuyNoTransfer, Strings.ShipInfoEscapePod);
+        } else if(dialogs().alert(AlertType.ShipBuyTransfer, Strings.ShipInfoEscapePod,
                                   Strings.ShipInfoEscapePod.toLowerCase(), Functions.FormatNumber(Consts.PodTransferCost)) == DialogResult.Yes) {
           extraCost += Consts.PodTransferCost;
         } else {
           addPod = false;
         }
       }
-      if(FormAlert.Alert(AlertType.ShipBuyConfirm, owner, getShip().Name(), newShipName, (add[0] || add[1]
+      if(dialogs().alert(AlertType.ShipBuyConfirm, getShip().Name(), newShipName, (add[0] || add[1]
           || add[2] || addPod ? Strings.ShipBuyTransfer : "")) == DialogResult.Yes) {
         CrewMember[] oldCrew = getShip().Crew();
         setShip(new Ship(specToBuy.Type()));
