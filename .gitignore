@@ -1,7 +1,5 @@
-# Build output (NetBeans / Ant)
-build/
-dist/
-nbproject/private/
+# Build output (Maven)
+target/
 
 # Compiled classes and archives
 *.class
@@ -10,6 +8,7 @@ nbproject/private/
 # Runtime data
 save/
 autosave_*.sav
+registryKey.properties
 *.log
 
 # Original upstream snapshot, if present in the parent directory

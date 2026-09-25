@@ -11,38 +11,39 @@ This repository starts from the upstream snapshot `spacetraderjava-code-r69`
 
 ## Status
 
-Work in progress. The imported snapshot **does not run out of the box**; these are the
-known blockers:
-
-- Starting or loading a game throws `NullPointerException` because the
-  `Game.CurrentGame()` singleton is never assigned (`Game.java`).
-- The main window hardcodes the Windows look & feel
-  (`com.sun.java.swing.plaf.windows.WindowsLookAndFeel`), which does not exist outside Windows.
-- The image-list resources are looked up under the wrong package path and the app
-  aborts while building the main window.
-- New games start with a leftover debug cheat (1,000,000 credits, easy encounters,
-  super warp) in the `Game` constructor.
+Work in progress. The game now builds and runs; the remaining known issue carried over
+from the imported snapshot is a leftover debug cheat in the `Game` constructor that
+gives every new game 1,000,000 credits, easy encounters and super warp.
 
 Roadmap:
 
 - [x] Fix startup issues (singleton, look & feel, resource paths)
 - [ ] Remove the debug cheat from the `Game` constructor
-- [ ] Replace the NetBeans/Ant build with Maven and drop JNLP/WebStart
+- [x] Replace the NetBeans/Ant build with Maven and drop JNLP/WebStart
 - [ ] Refactor towards Model-View-Presenter
 - [ ] Port the UI to Lanterna
 
 ## Layout
 
-| Directory | Contents |
+| Module | Contents |
 |---|---|
-| `BeyondSpaceTraderJava/` | The game (NetBeans Ant project). Main class: `org.gts.bst.ApplicationST`. |
+| `BeyondSpaceTraderJava/` | The game. Main class: `org.gts.bst.ApplicationST`. |
 | `JWinForms/` | A WinForms-over-Swing compatibility layer used by the game. Planned for removal. |
 
-## Building
+Both are Maven modules of a single reactor (`pom.xml` at the repository root). The old
+NetBeans/Ant build files were removed during the Maven migration and remain available
+in git history (tag `upstream-r69`).
 
-The original build is a NetBeans Ant project and requires JDK 8-17: the project sets
-`javac.source=1.7`, which JDK 21 and later reject. `JWinForms` must be built first,
-because `BeyondSpaceTraderJava` references `../JWinForms/dist/JWinForms.jar`.
+## Building and running
+
+Requires JDK 17 and Maven 3.9+.
+
+```bash
+./run.sh                                     # compile and run from sources
+java -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
+
+mvn package                                  # build both modules and the jar
+```
 
 ## License
 
