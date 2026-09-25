@@ -1898,7 +1898,6 @@ public class Game extends STSerializableObject {
     // and now, finally, useful news (if any); base probability of a story showing up is (50 / MAXTECHLEVEL) * Current Tech Level
     // This is then modified by adding 10% for every level of play less than Impossible
     boolean realNews = false;
-    int minProbability = Consts.StoryProbability * curSys.TechLevel().ordinal() + 10 * (5 - _difficulty.CastToInt());
     for(int i = 0; i < _universe.length; i++) {
       if(_universe[i].DestOk() && _universe[i] != curSys) {
         // Special stories that always get shown: moon, millionaire, shipyard

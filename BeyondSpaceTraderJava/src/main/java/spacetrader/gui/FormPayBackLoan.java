@@ -121,10 +121,4 @@ public class FormPayBackLoan extends WinformForm {
   public int Amount() {
     return numAmount.getValue();
   }
-
-  public static void main(String[] args) throws Exception {
-    FormPayBackLoan form = new FormPayBackLoan();
-    Launcher.runForm(form);
-    System.out.println(form.Amount());
-  }
 }
