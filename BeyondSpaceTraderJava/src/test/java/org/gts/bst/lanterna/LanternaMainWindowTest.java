@@ -267,6 +267,7 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F8));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.OptionsTitle), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.OptionAutoSave), screenText(screen));
       String off = Functions.StringVars(Strings.OptionsValue, Strings.OptionAutoFuel, Strings.OptionsOff);
       assertTrue(screenText(screen).contains(off), screenText(screen));
 
