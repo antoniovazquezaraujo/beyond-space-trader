@@ -38,7 +38,7 @@ class LanternaChartViewTest {
 
       // The current system is drawn inverted: its colour becomes the background.
       TextCharacter current = screen.getBackCharacter(10, 4);
-      assertEquals('⬤', current.getCharacter());
+      assertEquals('✧', current.getCharacter());
       assertEquals(TextColor.ANSI.BLACK, current.getForegroundColor());
       assertEquals(TextColor.ANSI.CYAN_BRIGHT, current.getBackgroundColor());
       TextCharacter sol = screen.getBackCharacter(13, 4);

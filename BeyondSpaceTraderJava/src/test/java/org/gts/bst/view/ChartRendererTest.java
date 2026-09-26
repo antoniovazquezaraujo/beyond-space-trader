@@ -30,9 +30,9 @@ class ChartRendererTest {
     // scale = max(20 / 10, 10 / 4) = 2.5; the map is 8 x 4 characters at (1, 0).
     assertEquals('·', canvas.at(1, 0));
     assertEquals(ChartColor.GREEN_DIM, canvas.colorAt(1, 0));
-    assertEquals('⬤', canvas.at(5, 2));
+    assertEquals('✧', canvas.at(5, 2));
     assertTrue(canvas.invertedAt(5, 2), "the current system must be inverted");
-    assertEquals('✺', canvas.at(9, 4));
+    assertEquals('✶', canvas.at(9, 4));
     assertEquals(' ', canvas.at(0, 0));
   }
 
@@ -48,10 +48,10 @@ class ChartRendererTest {
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 3, 20, 10));
 
     // The current system keeps its inverted cell: the cross arm cannot paint over it.
-    assertEquals('●', canvas.at(5, 2));
+    assertEquals('◦', canvas.at(5, 2));
     assertTrue(canvas.invertedAt(5, 2), canvas.line(2));
     // The cross of the selected system.
-    assertEquals('●', canvas.at(6, 2));
+    assertEquals('◦', canvas.at(6, 2));
     assertEquals('─', canvas.at(7, 2));
     assertEquals('│', canvas.at(6, 1));
     assertEquals('│', canvas.at(6, 3));
@@ -60,7 +60,7 @@ class ChartRendererTest {
     assertEquals('(', canvas.at(2, 2));
     assertEquals(')', canvas.at(4, 2));
     // The wormhole mark next to its system.
-    assertEquals('●', canvas.at(5, 4));
+    assertEquals('◦', canvas.at(5, 4));
     assertEquals('~', canvas.at(6, 4));
     assertEquals(ChartColor.MAGENTA, canvas.colorAt(6, 4));
   }
@@ -77,7 +77,7 @@ class ChartRendererTest {
     // scale = max(154 / 5, 110 / 2) = 55; the map is 3 x 2 characters at (1, 0).
     assertEquals('·', canvas.at(1, 0));
     assertTrue(canvas.invertedAt(1, 0));
-    assertEquals('✺', canvas.at(4, 2));
+    assertEquals('✶', canvas.at(4, 2));
   }
 
   @Test
@@ -103,7 +103,7 @@ class ChartRendererTest {
 
     ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, -10, -4, 5, "3 parsecs to Sol."));
 
-    assertEquals('●', canvas.at(10, 4));
+    assertEquals('◦', canvas.at(10, 4));
     assertTrue(canvas.invertedAt(10, 4), "the current system must be inverted");
     assertEquals('•', canvas.at(13, 4));
     // The names go under their stars.
@@ -198,10 +198,10 @@ class ChartRendererTest {
   void sizeGlyphsGrowWithTheSystemSize() {
     assertEquals('·', ChartRenderer.sizeGlyph(system(0, 0, "T", ShipSize.Tiny, ChartColor.WHITE, false)));
     assertEquals('•', ChartRenderer.sizeGlyph(system(0, 0, "S", ShipSize.Small, ChartColor.WHITE, false)));
-    assertEquals('●', ChartRenderer.sizeGlyph(system(0, 0, "M", ShipSize.Medium, ChartColor.WHITE, false)));
-    assertEquals('⬤', ChartRenderer.sizeGlyph(system(0, 0, "L", ShipSize.Large, ChartColor.WHITE, false)));
-    assertEquals('★', ChartRenderer.sizeGlyph(system(0, 0, "H", ShipSize.Huge, ChartColor.WHITE, false)));
-    assertEquals('✺', ChartRenderer.sizeGlyph(system(0, 0, "G", ShipSize.Gargantuan, ChartColor.WHITE, false)));
+    assertEquals('◦', ChartRenderer.sizeGlyph(system(0, 0, "M", ShipSize.Medium, ChartColor.WHITE, false)));
+    assertEquals('✧', ChartRenderer.sizeGlyph(system(0, 0, "L", ShipSize.Large, ChartColor.WHITE, false)));
+    assertEquals('✦', ChartRenderer.sizeGlyph(system(0, 0, "H", ShipSize.Huge, ChartColor.WHITE, false)));
+    assertEquals('✶', ChartRenderer.sizeGlyph(system(0, 0, "G", ShipSize.Gargantuan, ChartColor.WHITE, false)));
   }
 
   private static ChartSystem system(int x, int y, String name, ShipSize size, ChartColor color, boolean wormhole) {
