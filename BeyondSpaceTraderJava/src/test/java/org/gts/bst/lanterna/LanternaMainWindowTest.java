@@ -245,6 +245,41 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void spaceClosesTheReadOnlyPanels() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('i', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.CommanderTitle), screenText(screen));
+      assertTrue(screenText(screen).contains("[SPACE] close"), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains(Strings.CommanderTitle), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.QuestsTitle), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains(Strings.QuestsTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void logsWhenTheGameActionsAreNotAvailable() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
