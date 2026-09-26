@@ -108,7 +108,7 @@ class LanternaMainWindowTest {
       assertTrue(trade.contains(Strings.TradeTitle), trade);
       assertTrue(trade.contains("> Water"), trade);
       assertTrue(trade.contains("[B] buy"), trade);
-      assertTrue(trade.contains("[Shift]"), trade);
+      assertTrue(trade.contains("[Shift+B/S] all"), trade);
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
       gui.updateScreen();

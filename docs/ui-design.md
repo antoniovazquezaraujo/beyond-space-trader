@@ -298,6 +298,6 @@ the new views.
 
 ## Quantities in trade
 
-The player types the number (with backspace) and `ENTER` confirms; there are also
-quick keys (`1`, `10`, `100` and `A` for everything). No dialogs and no separate
-input mode.
+The player types the number (with backspace) and `ENTER` confirms. Holding `Shift`
+while buying or selling (`Shift+B` / `Shift+S` in the trade panel) does the operation
+for the maximum amount without asking. No separate input mode.
