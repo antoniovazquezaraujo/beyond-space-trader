@@ -413,6 +413,7 @@ public final class Strings {
   public static final String OptionsTitle = text("OptionsTitle");
   public static final String OptionsValue = text("OptionsValue");
   public static final String OptionAutoFuel = text("OptionAutoFuel");
+  public static final String OptionAutoSave = text("OptionAutoSave");
   public static final String OptionAutoRepair = text("OptionAutoRepair");
   public static final String OptionContinuousAttack = text("OptionContinuousAttack");
   public static final String OptionContinuousAttackFleeing = text("OptionContinuousAttackFleeing");

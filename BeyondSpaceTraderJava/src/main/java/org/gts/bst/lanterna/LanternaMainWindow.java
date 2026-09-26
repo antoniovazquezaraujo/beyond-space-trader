@@ -92,6 +92,8 @@ public final class LanternaMainWindow
     PersonnelView, CommanderView, ShipView, ShipListView, EquipmentView, HighScoresView,
     ShipyardView {
   private static final int DESIGNER_FIELDS = 12;
+  private static final String AUTOSAVE_DEPARTURE = "autosave_departure.sav";
+  private static final String AUTOSAVE_ARRIVAL = "autosave_arrival.sav";
 
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
@@ -667,7 +669,7 @@ public final class LanternaMainWindow
     if(game == null) {
       return;
     }
-    content.options(optionLines(game.Options()));
+    content.options(optionLines(game));
     content.optionsIndex(0);
     content.openOptions();
   }
@@ -700,13 +702,14 @@ public final class LanternaMainWindow
     }
     if(character == 'l') {
       game.Options().LoadFromDefaults(true, game.Dialogs());
-      content.options(optionLines(game.Options()));
+      content.options(optionLines(game));
       return true;
     }
     return false;
   }
 
-  private List<String> optionLines(GameOptions options) {
+  private List<String> optionLines(Game game) {
+    GameOptions options = game.Options();
     List<String> lines = new ArrayList<>();
     lines.add(optionLine(Strings.OptionAutoFuel, options.getAutoFuel()));
     lines.add(optionLine(Strings.OptionAutoRepair, options.getAutoRepair()));
@@ -724,6 +727,7 @@ public final class LanternaMainWindow
     lines.add(optionLine(Strings.OptionContinuousAttack, options.getContinuousAttack()));
     lines.add(optionLine(Strings.OptionContinuousAttackFleeing, options.getContinuousAttackFleeing()));
     lines.add(optionLine(Strings.OptionDisableOpponents, options.getDisableOpponents()));
+    lines.add(optionLine(Strings.OptionAutoSave, game.getAutoSave()));
     return lines;
   }
 
@@ -786,10 +790,13 @@ public final class LanternaMainWindow
       case 15:
         options.setDisableOpponents(!options.getDisableOpponents());
         break;
+      case 16:
+        game.setAutoSave(!game.getAutoSave());
+        break;
       default:
         break;
     }
-    content.options(optionLines(options));
+    content.options(optionLines(game));
   }
 
   @Override
@@ -1162,7 +1169,13 @@ public final class LanternaMainWindow
     }
     try {
       game.setCanSuperWarp(false);
+      if(game.getAutoSave()) {
+        Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_DEPARTURE).getPath(), game.Serialize(), game.Dialogs());
+      }
       game.Warp(true);
+      if(game.getAutoSave()) {
+        Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_ARRIVAL).getPath(), game.Serialize(), game.Dialogs());
+      }
     } catch(GameEndException e) {
       showGameEnd(game);
       return;
