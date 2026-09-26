@@ -748,6 +748,8 @@ public final class LanternaMainWindow
     lines.add(optionLine(Strings.OptionContinuousAttackFleeing, options.getContinuousAttackFleeing()));
     lines.add(optionLine(Strings.OptionDisableOpponents, options.getDisableOpponents()));
     lines.add(optionLine(Strings.OptionAutoSave, game.getAutoSave()));
+    lines.add(Functions.StringVars(Strings.OptionsValue, Strings.OptionGalaxyColumns,
+        "" + options.getGalaxyColumns()));
     return lines;
   }
 
@@ -812,6 +814,9 @@ public final class LanternaMainWindow
         break;
       case 16:
         game.setAutoSave(!game.getAutoSave());
+        break;
+      case 17:
+        options.setGalaxyColumns(options.getGalaxyColumns() >= 3 ? 1 : options.getGalaxyColumns() + 1);
         break;
       default:
         break;

@@ -24,16 +24,17 @@ public record ChartViewModel(
     int fuel,
     int galaxyWidth,
     int galaxyHeight,
-    String trackedRangeText) {
+    String trackedRangeText,
+    int galacticColumns) {
 
   /**
    * The galactic chart: the whole galaxy is scaled down to fit the chart area, so it
    * always shows every system and never scrolls.
    */
   public static ChartViewModel galactic(List<ChartSystem> systems, int currentX, int currentY,
-      int fuel, int galaxyWidth, int galaxyHeight) {
+      int fuel, int galaxyWidth, int galaxyHeight, int columns) {
     return new ChartViewModel(ChartType.GALACTIC, systems, currentX, currentY, 0, 0,
-        fuel, galaxyWidth, galaxyHeight, null);
+        fuel, galaxyWidth, galaxyHeight, null, columns);
   }
 
   /**
@@ -43,6 +44,6 @@ public record ChartViewModel(
   public static ChartViewModel shortRange(List<ChartSystem> systems, int currentX, int currentY,
       int viewX, int viewY, int fuel, String trackedRangeText) {
     return new ChartViewModel(ChartType.SHORT_RANGE, systems, currentX, currentY, viewX, viewY,
-        fuel, 0, 0, trackedRangeText);
+        fuel, 0, 0, trackedRangeText, 1);
   }
 }

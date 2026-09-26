@@ -442,6 +442,7 @@ public final class Strings {
   public static final String OptionReserveMoney = text("OptionReserveMoney");
   public static final String OptionShowTrackedRange = text("OptionShowTrackedRange");
   public static final String OptionTrackAutoOff = text("OptionTrackAutoOff");
+  public static final String OptionGalaxyColumns = text("OptionGalaxyColumns");
 
   public static final String DesignerCargo = text("DesignerCargo");
   public static final String DesignerConstruct = text("DesignerConstruct");
