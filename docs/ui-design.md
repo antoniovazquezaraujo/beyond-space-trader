@@ -165,7 +165,9 @@ chart is hidden; the chart comes back when the panel closes.
     A green braille ring marks the actual jump range (the current fuel), so the
     systems inside it are green too.
   - *Galactic chart (situation)*: the whole galaxy scaled down to fit the chart
-    area, so it never scrolls and every system is always visible. Systems are shown
+    area using **two character columns per sector** (a blank between systems), so the
+    shapes and the fuel circle keep their proportions and the width is filled; it
+    never scrolls and every system is always visible. Systems are shown
     as markers (no names at that scale) with the current position, the selected
     destination, the tracked system, the wormholes, the visited marks and the small
     fuel circle around the current system.

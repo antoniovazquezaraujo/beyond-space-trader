@@ -992,7 +992,8 @@ class LanternaMainWindowTest {
   private static boolean chartHasTarget(Screen screen) {
     for(int y = 4; y < 27; y++) {
       for(int x = 1; x < 64; x++) {
-        if(screen.getBackCharacter(x, y).getCharacter() == '(') {
+        char character = screen.getBackCharacter(x, y).getCharacter();
+        if(character == '(' || character == ')') {
           return true;
         }
       }
