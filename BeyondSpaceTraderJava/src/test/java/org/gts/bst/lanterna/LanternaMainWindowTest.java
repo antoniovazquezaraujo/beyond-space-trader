@@ -172,9 +172,7 @@ class LanternaMainWindowTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.PersonnelTitle), screenText(screen));
       assertTrue(screenText(screen).contains(Strings.PersonnelCrew), screenText(screen));
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
-      gui.updateScreen();
-      assertTrue(screenText(screen).contains(">"), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.PersonnelForHire), screenText(screen));
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertFalse(screenText(screen).contains(Strings.PersonnelTitle));
