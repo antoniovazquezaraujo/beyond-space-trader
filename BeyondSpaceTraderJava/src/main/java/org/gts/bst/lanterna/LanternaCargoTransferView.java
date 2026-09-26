@@ -95,18 +95,23 @@ public final class LanternaCargoTransferView implements CargoTransferView {
       return false;
     }
     char character = key.getCharacter();
-    int index;
-    if(character >= '1' && character <= '9') {
-      index = character - '1';
-    } else if(character == '0') {
-      index = 9;
-    } else {
+    int index = digitIndex(character);
+    if(index < 0 || index >= model.quantities().size()) {
       return false;
     }
-    if(index >= model.quantities().size()) {
-      return false;
-    }
-    presenter.transfer(index, key.isShiftDown());
+    // Shift+digit arrives as the shifted symbol on most terminals.
+    presenter.transfer(index, key.isShiftDown() || character < '0' || character > '9');
     return true;
+  }
+
+  /** The quantity slot of a digit key (0..9), also for its shifted symbol; -1 if none. */
+  static int digitIndex(char character) {
+    if(character >= '1' && character <= '9') {
+      return character - '1';
+    }
+    if(character == '0') {
+      return 9;
+    }
+    return "!@#$%^&*()".indexOf(character);
   }
 }

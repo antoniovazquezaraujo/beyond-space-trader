@@ -1093,6 +1093,15 @@ public final class LanternaMainWindow
     content.openShip();
   }
 
+  /**
+   * Whether the key asks for the maximum amount. Most terminals do not report the
+   * shift modifier for letters, so the uppercase letter counts as well.
+   */
+  static boolean allAmount(KeyStroke key) {
+    Character character = key.getCharacter();
+    return key.isShiftDown() || (character != null && Character.isUpperCase(character));
+  }
+
   private boolean handleTradeKey(KeyStroke key) {
     switch(key.getKeyType()) {
       case ArrowUp:
@@ -1104,11 +1113,11 @@ public final class LanternaMainWindow
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'b') {
-          presenter.buyCargo(content.selectedItem(), key.isShiftDown());
+          presenter.buyCargo(content.selectedItem(), allAmount(key));
           return true;
         }
         if(character == 's') {
-          presenter.sellCargo(content.selectedItem(), key.isShiftDown());
+          presenter.sellCargo(content.selectedItem(), allAmount(key));
           return true;
         }
         return false;

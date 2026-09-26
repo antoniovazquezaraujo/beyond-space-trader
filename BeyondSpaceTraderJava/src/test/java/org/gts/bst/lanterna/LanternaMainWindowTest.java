@@ -254,6 +254,17 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theShiftHintAlsoAcceptsTheUppercaseLetter() {
+    // Most terminals do not report the shift modifier for letters: Shift+B arrives
+    // as 'B', so the uppercase letter must count as "all".
+    assertTrue(LanternaMainWindow.allAmount(new KeyStroke('B', false, false)));
+    assertTrue(LanternaMainWindow.allAmount(new KeyStroke('S', false, false)));
+    assertFalse(LanternaMainWindow.allAmount(new KeyStroke('b', false, false)));
+    assertFalse(LanternaMainWindow.allAmount(new KeyStroke('s', false, false)));
+    assertTrue(LanternaMainWindow.allAmount(new KeyStroke('B', true, false)));
+  }
+
+  @Test
   void vimKeysMoveTheChartCursor() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
