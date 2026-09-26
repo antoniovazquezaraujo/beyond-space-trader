@@ -1,7 +1,7 @@
 package spacetrader;
 import java.util.Arrays;
 import org.gts.bst.view.DialogResult;
-import org.gts.bst.ApplicationST;
+import org.gts.bst.view.GameWindow;
 import org.gts.bst.cargo.TradeItem;
 import org.gts.bst.cargo.TradeItemType;
 import org.gts.bst.crew.CrewMemberId;
@@ -89,7 +89,7 @@ public final class Game extends STSerializableObject {
   // Options
   private GameOptions _options = new GameOptions(true);
   // The rest of the member variables are not saved between games.
-  private ApplicationST _parentWin = null;
+  private GameWindow _parentWin = null;
   private final DialogService _dialogs;
   private boolean _encounterContinueFleeing = false;
   private boolean _encounterContinueAttacking = false;
@@ -99,7 +99,7 @@ public final class Game extends STSerializableObject {
   private boolean _encounterOppFleeing = false;
   private boolean _encounterOppHit = false;
 
-  public Game(String name, Difficulty difficulty, int pilot, int fighter, int trader, int engineer, ApplicationST parentWin,
+  public Game(String name, Difficulty difficulty, int pilot, int fighter, int trader, int engineer, GameWindow parentWin,
       DialogService dialogs) {
     Game.CurrentGame(this);
     _parentWin = parentWin;
@@ -123,7 +123,7 @@ public final class Game extends STSerializableObject {
   }
 
   @SuppressWarnings("unchecked")
-  public Game(Hashtable hash, ApplicationST parentWin, DialogService dialogs) {
+  public Game(Hashtable hash, GameWindow parentWin, DialogService dialogs) {
     super(hash);
     Game.CurrentGame(this);
     _parentWin = parentWin;
@@ -1200,7 +1200,7 @@ public final class Game extends STSerializableObject {
     return _spaceMonster;
   }
 
-  public ApplicationST getParentWindow() {
+  public GameWindow getParentWindow() {
     return _parentWin;
   }
 
@@ -2972,7 +2972,7 @@ public final class Game extends STSerializableObject {
     _paidForNewspaper = paidForNewspaper;
   }
 
-  public void setParentWindow(ApplicationST parentWindow) {
+  public void setParentWindow(GameWindow parentWindow) {
     _parentWin = parentWindow;
   }
 

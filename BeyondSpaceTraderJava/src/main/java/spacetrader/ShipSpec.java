@@ -1,6 +1,6 @@
 package spacetrader;
 import jwinforms.WfImage;
-import org.gts.bst.ApplicationST;
+import org.gts.bst.view.GameWindow;
 import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
@@ -166,7 +166,7 @@ public class ShipSpec extends STSerializableObject {
   }
 
   public void UpdateCustomImageOffsetConstants() {
-    ApplicationST parent = Game.CurrentGame().getParentWindow();
+    GameWindow parent = Game.CurrentGame().getParentWindow();
     if(parent == null) {
       return;
     }
