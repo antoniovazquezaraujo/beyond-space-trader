@@ -452,4 +452,8 @@ public final class Strings {
   public static final String DialogShipNameTitle = text("DialogShipNameTitle");
   public static final String MainDesignUnavailable = text("MainDesignUnavailable");
 
+  public static final String NewsKeys = text("NewsKeys");
+  public static final String NewsPosition = text("NewsPosition");
+  public static final String NewsTitle = text("NewsTitle");
+
 }

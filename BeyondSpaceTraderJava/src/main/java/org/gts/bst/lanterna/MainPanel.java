@@ -24,5 +24,6 @@ public enum MainPanel {
   Equipment,
   Options,
   HighScores,
-  Designer
+  Designer,
+  News
 }
