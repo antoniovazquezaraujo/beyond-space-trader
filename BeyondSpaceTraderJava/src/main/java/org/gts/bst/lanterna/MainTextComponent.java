@@ -37,6 +37,7 @@ import org.gts.bst.view.QuestsViewModel;
 import org.gts.bst.view.ShipInfoViewModel;
 import org.gts.bst.view.ShipListViewModel;
 import org.gts.bst.view.ShipViewModel;
+import org.gts.bst.view.ShipyardDesignerViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
 import spacetrader.Commander;
@@ -93,6 +94,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private final List<String> optionsLines = new ArrayList<>();
   private int optionsIndex;
   private HighScoresViewModel highScores;
+  private ShipyardDesignerViewModel designer;
+  private int designerField;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -209,6 +212,24 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     invalidate();
   }
 
+  public void designer(ShipyardDesignerViewModel designer) {
+    this.designer = designer;
+    invalidate();
+  }
+
+  public ShipyardDesignerViewModel designer() {
+    return designer;
+  }
+
+  public int designerField() {
+    return designerField;
+  }
+
+  public void designerField(int field) {
+    this.designerField = field;
+    invalidate();
+  }
+
   public int equipmentEntryCount() {
     if(equipment == null) {
       return 0;
@@ -293,6 +314,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public void openHighScores() {
     panel = MainPanel.HighScores;
+    invalidate();
+  }
+
+  public void openDesigner() {
+    panel = MainPanel.Designer;
     invalidate();
   }
 
@@ -450,6 +476,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         return 60;
       case HighScores:
         return 60;
+      case Designer:
+        return 60;
       default:
         return PANEL_WIDTH;
     }
@@ -488,6 +516,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case HighScores:
         drawHighScoresPanel(graphics, x, height);
+        break;
+      case Designer:
+        drawDesignerPanel(graphics, x, height);
         break;
       default:
         drawNavigationPanel(graphics, x, height);
@@ -729,6 +760,69 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
   }
 
+  private void drawDesignerPanel(TextGUIGraphics graphics, int x, int height) {
+    if(designer == null) {
+      return;
+    }
+    int row = 3;
+    graphics.putString(x, row++, cut(designer.title(), panelWidth()));
+    List<String> welcome = new ArrayList<>();
+    wrap(welcome, designer.welcome(), panelWidth());
+    for(String line : welcome) {
+      if(row < height - 3) {
+        graphics.putString(x, row++, line);
+      }
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(marker(0) + Functions.StringVars(Strings.DesignerSize,
+          designer.sizes().isEmpty() ? "" : designer.sizes().get(designer.sizeIndex())), panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(marker(1) + Functions.StringVars(Strings.DesignerTemplate,
+          designer.templates().isEmpty() ? "" : designer.templates().get(designer.templateIndex())), panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(marker(2) + Functions.StringVars(Strings.DesignerName, designer.name()), panelWidth()));
+    }
+    String[] labels = {Strings.DesignerCargo, Strings.DesignerFuel, Strings.DesignerHull, Strings.DesignerWeapon,
+        Strings.DesignerShield, Strings.DesignerGadget, Strings.DesignerCrew};
+    for(int i = 0; i < designer.numerics().size() && i < labels.length && row < height - 3; i++) {
+      ShipyardDesignerViewModel.Numeric numeric = designer.numerics().get(i);
+      String text;
+      if(numeric.min() != null && numeric.max() != null) {
+        text = Functions.StringVars(Strings.DesignerNumeric, new String[]{
+            labels[i], "" + numeric.value(), "" + numeric.min(), "" + numeric.max()});
+      } else {
+        text = Functions.StringVars(Strings.DesignerNumericValue, labels[i], "" + numeric.value());
+      }
+      graphics.putString(x, row++, cut(marker(3 + i) + text, panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerUnits, designer.unitsUsed(), designer.percent()), panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerCost, new String[]{
+          designer.shipCost(), designer.designFee(), designer.penalty(), designer.tradeIn()}), panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerTotal, designer.totalCost()), panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(marker(10) + Strings.DesignerConstruct, panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row, cut(marker(11) + Strings.DesignerSave, panelWidth()));
+    }
+  }
+
+  private String marker(int field) {
+    return fieldsMarker(field);
+  }
+
+  private String fieldsMarker(int field) {
+    return designerField == field ? "> " : "  ";
+  }
+
   private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
     graphics.putString(x, 3, Strings.QuestsTitle);
     int row = 4;
@@ -823,6 +917,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case HighScores:
         keys = Strings.HighScoresKeys;
+        break;
+      case Designer:
+        keys = Strings.DesignerKeys;
         break;
       default:
         keys = Strings.MainKeys;

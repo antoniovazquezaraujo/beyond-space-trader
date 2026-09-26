@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
@@ -28,6 +29,7 @@ import org.gts.bst.view.DialogService;
 import org.junit.jupiter.api.Test;
 import spacetrader.Functions;
 import spacetrader.Game;
+import spacetrader.StarSystem;
 import spacetrader.Strings;
 
 
@@ -282,6 +284,69 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertFalse(screenText(screen).contains(Strings.HighScoresTitle));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void opensTheDesignerAtAShipyard() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      StarSystem shipyard = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system.Shipyard() != null) {
+          shipyard = system;
+          break;
+        }
+      }
+      assertNotNull(shipyard, "the universe must have shipyards");
+      holder[0].Commander().CurrentSystem(shipyard);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('d', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("Size:"), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.DesignerConstruct), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains(Strings.DesignerConstruct));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void logsWhenThereIsNoShipyardHere() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('d', false, false));
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains(Strings.MainDesignUnavailable), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();

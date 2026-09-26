@@ -10,9 +10,13 @@ package org.gts.bst.lanterna;
 
 import com.googlecode.lanterna.gui2.BasicWindow;
 import com.googlecode.lanterna.gui2.Window;
+import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.FileDialog;
+import com.googlecode.lanterna.gui2.dialogs.TextInputDialog;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +36,7 @@ import org.gts.bst.presenter.PersonnelPresenter;
 import org.gts.bst.presenter.QuestsPresenter;
 import org.gts.bst.presenter.ShipListPresenter;
 import org.gts.bst.presenter.ShipPresenter;
+import org.gts.bst.presenter.ShipyardPresenter;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.BankView;
@@ -61,6 +66,8 @@ import org.gts.bst.view.ShipListView;
 import org.gts.bst.view.ShipListViewModel;
 import org.gts.bst.view.ShipView;
 import org.gts.bst.view.ShipViewModel;
+import org.gts.bst.view.ShipyardDesignerViewModel;
+import org.gts.bst.view.ShipyardView;
 import org.gts.bst.view.ShipyardViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
@@ -72,6 +79,7 @@ import spacetrader.StarSystem;
 import spacetrader.Strings;
 import org.gts.bst.ship.equip.EquipmentType;
 import spacetrader.GameOptions;
+import spacetrader.ShipTemplate;
 import spacetrader.enums.AlertType;
 
 
@@ -81,7 +89,10 @@ import spacetrader.enums.AlertType;
  */
 public final class LanternaMainWindow
     implements MainView, MainWindow, GameWindow, BankView, QuestsView,
-    PersonnelView, CommanderView, ShipView, ShipListView, EquipmentView, HighScoresView {
+    PersonnelView, CommanderView, ShipView, ShipListView, EquipmentView, HighScoresView,
+    ShipyardView {
+  private static final int DESIGNER_FIELDS = 12;
+
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
   private final BasicWindow window = new BasicWindow();
@@ -92,6 +103,7 @@ public final class LanternaMainWindow
   private PersonnelPresenter personnelPresenter;
   private ShipListPresenter shipListPresenter;
   private EquipmentPresenter equipmentPresenter;
+  private ShipyardPresenter shipyardPresenter;
   private Runnable newGameAction;
   private Runnable saveGameAction;
   private Runnable loadGameAction;
@@ -328,6 +340,9 @@ public final class LanternaMainWindow
     }
     if(key.getKeyType() == KeyType.Escape) {
       if(content.panel() != MainPanel.Navigation) {
+        if(content.panel() == MainPanel.Designer) {
+          shipyardPresenter = null;
+        }
         content.closePanel();
         return true;
       }
@@ -360,6 +375,9 @@ public final class LanternaMainWindow
     }
     if(content.panel() == MainPanel.HighScores) {
       return false;
+    }
+    if(content.panel() == MainPanel.Designer) {
+      return handleDesignerKey(key);
     }
     switch(key.getKeyType()) {
       case Tab:
@@ -504,6 +522,163 @@ public final class LanternaMainWindow
   @Override
   public void render(HighScoresViewModel model) {
     content.highScores(model);
+  }
+
+  @Override
+  public void render(ShipyardDesignerViewModel model) {
+    content.designer(model);
+  }
+
+  @Override
+  public void close() {
+    shipyardPresenter = null;
+    content.closePanel();
+    content.invalidate();
+  }
+
+  @Override
+  public void showFileError(String fileName, String message) {
+    content.log(fileName + ": " + message);
+    content.invalidate();
+  }
+
+  @Override
+  public String askSaveTemplateFile() {
+    FileDialog dialog = new FileDialog(Strings.DesignerSave, Strings.DialogSaveDescription,
+        Strings.DialogSaveAction, new TerminalSize(60, 15), false, new File(Consts.CustomTemplatesDirectory));
+    File file = dialog.showDialog(gui);
+    if(file == null) {
+      return null;
+    }
+    String path = file.getPath();
+    return path.endsWith(".sst") ? path : path + ".sst";
+  }
+
+  @Override
+  public void adoptTemplateImages(ShipTemplate template) {
+    // The text UI does not have ship images; the ASCII art comes later.
+  }
+
+  @Override
+  public void applyCustomImages(ShipTemplate template) {
+    // The text UI does not have ship images; the ASCII art comes later.
+  }
+
+  @Override
+  public void applyCustomShipImages() {
+    // The text UI does not have ship images; the ASCII art comes later.
+  }
+
+  private void openDesigner() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    if(game.Commander().CurrentSystem().Shipyard() == null) {
+      content.log(Strings.MainDesignUnavailable);
+      content.invalidate();
+      return;
+    }
+    shipyardPresenter = new ShipyardPresenter(game, this);
+    content.designerField(0);
+    shipyardPresenter.start();
+    content.openDesigner();
+  }
+
+  private boolean handleDesignerKey(KeyStroke key) {
+    ShipyardDesignerViewModel model = content.designer();
+    if(shipyardPresenter == null || model == null) {
+      return false;
+    }
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        content.designerField(Math.floorMod(content.designerField() - 1, DESIGNER_FIELDS));
+        return true;
+      case ArrowDown:
+        content.designerField(Math.floorMod(content.designerField() + 1, DESIGNER_FIELDS));
+        return true;
+      case ArrowLeft:
+        return changeDesignerField(model, -1);
+      case ArrowRight:
+        return changeDesignerField(model, 1);
+      case Enter:
+        return activateDesignerField(model);
+      case Character:
+        char character = Character.toLowerCase(key.getCharacter());
+        if(character == 'n') {
+          askDesignerName(model);
+          return true;
+        }
+        if(character == 'c') {
+          shipyardPresenter.construct(model.name());
+          return true;
+        }
+        if(character == 'v') {
+          shipyardPresenter.saveTemplate(model.name());
+          return true;
+        }
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  private boolean changeDesignerField(ShipyardDesignerViewModel model, int delta) {
+    int field = content.designerField();
+    if(field == 0 && !model.sizes().isEmpty()) {
+      shipyardPresenter.onSizeChanged(Math.floorMod(model.sizeIndex() + delta, model.sizes().size()));
+      return true;
+    }
+    if(field == 1 && !model.templates().isEmpty()) {
+      shipyardPresenter.loadSelectedTemplate(Math.floorMod(model.templateIndex() + delta, model.templates().size()));
+      return true;
+    }
+    if(field >= 3 && field <= 9) {
+      int index = field - 3;
+      List<ShipyardDesignerViewModel.Numeric> values = model.numerics();
+      if(values.size() < 7 || index >= values.size()) {
+        return false;
+      }
+      ShipyardDesignerViewModel.Numeric numeric = values.get(index);
+      int step = numeric.increment() == null ? 1 : numeric.increment();
+      int maximum = numeric.max() == null ? Integer.MAX_VALUE : numeric.max();
+      int minimum = numeric.min() == null ? 0 : numeric.min();
+      int next = Math.max(minimum, Math.min(maximum, numeric.value() + delta * step));
+      if(next == numeric.value()) {
+        return true;
+      }
+      int[] numbers = new int[7];
+      for(int i = 0; i < numbers.length; i++) {
+        numbers[i] = values.get(i).value();
+      }
+      numbers[index] = next;
+      shipyardPresenter.onValuesChanged(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5], numbers[6]);
+      return true;
+    }
+    return false;
+  }
+
+  private boolean activateDesignerField(ShipyardDesignerViewModel model) {
+    switch(content.designerField()) {
+      case 2:
+        askDesignerName(model);
+        return true;
+      case 10:
+        shipyardPresenter.construct(model.name());
+        return true;
+      case 11:
+        shipyardPresenter.saveTemplate(model.name());
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private void askDesignerName(ShipyardDesignerViewModel model) {
+    String name = TextInputDialog.showDialog(gui, Strings.DialogShipNameTitle, Strings.DialogShipNamePrompt, model.name());
+    if(name != null && !name.trim().isEmpty()) {
+      shipyardPresenter.onNameChanged(name.trim());
+    }
   }
 
   private void openHighScores() {
@@ -931,6 +1106,9 @@ public final class LanternaMainWindow
         return true;
       case 'o':
         buyEscapePod();
+        return true;
+      case 'd':
+        openDesigner();
         return true;
       case 't':
         trackSelection(game);
