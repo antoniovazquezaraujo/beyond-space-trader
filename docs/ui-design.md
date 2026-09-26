@@ -20,6 +20,14 @@ and the presenters stay.
   stays visible behind.
 - **Options, save/load and confirmations:** panels in the same window, not a
   separate menu screen.
+- **Menu:** hybrid. Direct shortcuts for the daily actions (chart, track, trade,
+  bank, quests, newspaper, jump, fuel and repairs) plus a visible **F10 menu** with
+  the secondary screens and actions (ships, equipment, designer, escape pod,
+  commander, personnel, bank, newspaper, scores, options, save/load/new game and
+  quit).
+- **Responsive panels:** a panel with a list takes the whole width when the terminal
+  is narrower than 120 columns (the chart is hidden while it is open); wider
+  terminals keep the chart next to the panel.
 
 ## Layout
 
@@ -28,6 +36,7 @@ and the presenters stay.
 | Antonio · Day 12 · 12.345 cr · Debt 0                                  |
 | Fuel 14/15 · Hull 25/25 · Shields 0/0                                  |
 | Cargo 3/10 · Police: Clean · No warnings                               |
+| F10 menu: Ship · Crew · Trade · Game ──────────────────────────────    |
 +------------------------------------+------------------------------------+
 | MAP                                | Acamar · T6 · Democracy            |
 | (local / galactic)                 | Pressure: Boredom                  |
@@ -35,13 +44,18 @@ and the presenters stay.
 |                                    | Water   30/ 35   buy/sell          |
 |                                    | Furs   250/265   buy/sell          |
 |                                    |                                    |
-|                                    | [C] Trade   [A] Shipyard           |
-|                                    | [B] Bank    [P] Personnel          |
-|                                    | [Q] Quests  [W] Warp               |
+|                                    | [C] Trade   [B] Bank               |
+|                                    | [Q] Quests  [N] Newspaper          |
+|                                    | [J] Jump    [F/H] Dock             |
 +------------------------------------+------------------------------------+
-| Last message / news / combat log            [S/N] confirm              |
+| Last message / news / combat log                                       |
+| TAB map · ENTER track · C trade · B bank · Q quests · F10 menu         |
 +------------------------------------------------------------------------+
 ```
+
+When a panel with a list is open (trade, ships, equipment, designer, newspaper...)
+and the terminal is narrower than 120 columns, the panel uses the whole width and the
+chart is hidden; the chart comes back when the panel closes.
 
 - **Header (always visible):** commander, day, credits, debt, fuel, hull, shields,
   cargo bays, police record and any active warning (low fuel/hull, quest item on
@@ -70,22 +84,25 @@ and the presenters stay.
 
 | Key | Action |
 | --- | --- |
-| Arrows / WASD | Move the cursor on the map or in the panel |
+| Arrows | Move the cursor on the map or in the panel |
 | TAB | Local chart / galactic chart |
-| ENTER | Confirm / open the selected thing |
-| ESC | Close the panel / go back |
+| ENTER / T | Confirm / track the selected system |
+| ESC | Close the panel / go back / quit |
 | C | Trade panel |
-| A | Shipyard panel |
 | B | Bank panel |
-| P | Personnel panel |
-| Q | Quests & news panel |
-| W | Warp / travel |
-| O | Options |
-| F1 | Help |
-| Digits | Quantities (1, 10, 100, all) inside the trade panels |
+| Q | Quests panel |
+| N | Newspaper panel |
+| J | Jump (travel) to the selected system |
+| F / H | Buy fuel / repair the hull |
+| F10 | Menu (all the screens and actions) |
+| F2 / F5 / F9 | New game / save / load |
+| F3 / F8 | High scores / options |
+| Digits | Quantities in the trade panels and cargo transfer |
 
 Encounter keys are shown in the encounter panel itself. Every panel lists its own
-shortcuts in the bottom bar, so the player never has to remember them.
+shortcuts in the bottom bar; the F10 menu shows the rest (ships, equipment, designer,
+escape pod, commander, personnel, bank, newspaper, scores, options, save/load/new
+game and quit).
 
 ## Screens and states
 
