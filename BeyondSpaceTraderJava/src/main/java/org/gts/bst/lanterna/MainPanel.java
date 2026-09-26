@@ -14,5 +14,7 @@ package org.gts.bst.lanterna;
  */
 public enum MainPanel {
   Navigation,
-  Trade
+  Trade,
+  Bank,
+  Quests
 }

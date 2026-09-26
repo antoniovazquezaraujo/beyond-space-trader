@@ -327,4 +327,18 @@ public final class Strings {
   public static final String TradeSell = text("TradeSell");
   public static final String TradeTitle = text("TradeTitle");
 
+  public static final String BankDebt = text("BankDebt");
+  public static final String BankInsurance = text("BankInsurance");
+  public static final String BankKeys = text("BankKeys");
+  public static final String BankMaxLoan = text("BankMaxLoan");
+  public static final String BankNoClaim = text("BankNoClaim");
+  public static final String BankShipValue = text("BankShipValue");
+  public static final String BankTitle = text("BankTitle");
+  public static final String DialogLoanPrompt = text("DialogLoanPrompt");
+  public static final String DialogLoanTitle = text("DialogLoanTitle");
+  public static final String DialogPayBackPrompt = text("DialogPayBackPrompt");
+  public static final String DialogPayBackTitle = text("DialogPayBackTitle");
+  public static final String QuestsKeys = text("QuestsKeys");
+  public static final String QuestsTitle = text("QuestsTitle");
+
 }

@@ -52,7 +52,7 @@ class LanternaMainWindowTest {
       assertTrue(header.contains(Strings.MainDay.substring(0, 3)), header);
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
       assertTrue(areaContains(screen, 1, 4, 60, 26, "*o@+"), "no chart markers");
-      assertTrue(row(screen, 29).contains(Strings.MainKeys), row(screen, 29));
+      assertTrue(row(screen, 29).contains("TAB chart"), row(screen, 29));
       assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
           "the window background must be black");
       assertTrue(columnContains(screen, 68, 3, 29, holder[0].Commander().CurrentSystem().Name()),
@@ -97,6 +97,43 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertFalse(screenText(screen).contains(Strings.TradeTitle));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void opensTheBankAndQuestsPanels() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('b', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.BankTitle), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.BankKeys), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains(Strings.BankTitle));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.QuestsTitle), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains(Strings.QuestsTitle));
     } finally {
       screen.stopScreen();
       screen.close();
