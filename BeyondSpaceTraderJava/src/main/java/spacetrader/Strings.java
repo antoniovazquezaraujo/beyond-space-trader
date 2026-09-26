@@ -273,4 +273,30 @@ public final class Strings {
   public static final String ShipShieldSlot = text("ShipShieldSlot");
   public static final String ShipGadgetSlot = text("ShipGadgetSlot");
   public static final String ShipBayUnit = text("ShipBayUnit");
+  public static final String DialogCargoBuyPrompt = text("DialogCargoBuyPrompt");
+  public static final String DialogCargoBuyTitle = text("DialogCargoBuyTitle");
+  public static final String DialogCargoSellPrompt = text("DialogCargoSellPrompt");
+  public static final String DialogCargoSellTitle = text("DialogCargoSellTitle");
+  public static final String DialogFuelPrompt = text("DialogFuelPrompt");
+  public static final String DialogFuelTitle = text("DialogFuelTitle");
+  public static final String DialogRepairsPrompt = text("DialogRepairsPrompt");
+  public static final String DialogRepairsTitle = text("DialogRepairsTitle");
+  public static final String MainCargo = text("MainCargo");
+  public static final String MainChartGalactic = text("MainChartGalactic");
+  public static final String MainChartShortRange = text("MainChartShortRange");
+  public static final String MainDay = text("MainDay");
+  public static final String MainDebt = text("MainDebt");
+  public static final String MainEncounterUnsupported = text("MainEncounterUnsupported");
+  public static final String MainFuel = text("MainFuel");
+  public static final String MainHull = text("MainHull");
+  public static final String MainKeys = text("MainKeys");
+  public static final String MainNoGame = text("MainNoGame");
+  public static final String MainPolice = text("MainPolice");
+  public static final String MainResource = text("MainResource");
+  public static final String MainShields = text("MainShields");
+  public static final String MainSystem = text("MainSystem");
+  public static final String MainTarget = text("MainTarget");
+  public static final String MainTech = text("MainTech");
+  public static final String MainTracking = text("MainTracking");
+
 }
