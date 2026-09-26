@@ -217,7 +217,7 @@ chart is hidden; the chart comes back when the panel closes.
 | Key | Action |
 | --- | --- |
 | Arrows | Move the cursor on the map or in the panel |
-| hjkl | Move the cursor on the map (vim style) |
+| hjkl | Move the cursor on the map and up/down in the lists (vim style) |
 | TAB | Local chart / galactic chart |
 | ENTER / T | Confirm / track the selected system (T again stops tracking it) |
 | ESC | Close the panel / go back / quit |

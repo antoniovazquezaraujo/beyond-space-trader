@@ -347,6 +347,17 @@ public final class LanternaMainWindow
     if(game == null) {
       return false;
     }
+    // Vim keys: in the menu and the panels j and k move down and up like the arrows;
+    // on the map they move the cursor (see handleCharacter).
+    if(key.getKeyType() == KeyType.Character
+        && (content.menuVisible() || content.panel() != MainPanel.Navigation)) {
+      char vim = Character.toLowerCase(key.getCharacter());
+      if(vim == 'j') {
+        key = new KeyStroke(KeyType.ArrowDown, false, false);
+      } else if(vim == 'k') {
+        key = new KeyStroke(KeyType.ArrowUp, false, false);
+      }
+    }
     if(key.getKeyType() == KeyType.F10) {
       toggleMenu();
       return true;
