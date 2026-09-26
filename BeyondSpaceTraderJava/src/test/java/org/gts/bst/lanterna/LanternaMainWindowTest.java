@@ -115,6 +115,14 @@ class LanternaMainWindowTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains("> Furs"), screenText(screen));
 
+      // The vim keys move the list too.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('k', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Water"), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('j', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Furs"), screenText(screen));
+
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertFalse(screenText(screen).contains("> Water"), screenText(screen));
@@ -508,8 +516,8 @@ class LanternaMainWindowTest {
       assertTrue(menu.contains(Strings.MenuQuit), menu);
       assertFalse(menu.contains("Commander"), menu);
 
-      // The cursor starts on "High scores"; moving down goes to "Options"
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      // The cursor starts on "High scores"; the vim key moves down to "Options"
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('j', false, false));
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.OptionsTitle), screenText(screen));
