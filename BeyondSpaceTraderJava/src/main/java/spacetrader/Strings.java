@@ -493,9 +493,12 @@ public final class Strings {
   public static final String NavDesign = text("NavDesign");
   public static final String NavEquip = text("NavEquip");
   public static final String NavJump = text("NavJump");
+  public static final String NavFuel = text("NavFuel");
+  public static final String NavRepairs = text("NavRepairs");
   public static final String NavPod = text("NavPod");
   public static final String NavShips = text("NavShips");
 
   public static final String DirectKeys = text("DirectKeys");
+  public static final String DirectMenu = text("DirectMenu");
 
 }

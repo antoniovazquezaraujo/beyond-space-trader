@@ -1319,7 +1319,7 @@ public final class LanternaMainWindow
   private String directKeys() {
     Game game = gameSupplier.get();
     if(game == null || game.Commander().CurrentSystem() == null) {
-      return Strings.DirectKeys;
+      return Strings.DirectKeys + " · " + Strings.DirectMenu;
     }
     StarSystem system = game.Commander().CurrentSystem();
     boolean noTech = system.TechLevel().ordinal()
@@ -1341,10 +1341,13 @@ public final class LanternaMainWindow
     if(hasCrew(game)) {
       contextual.add(Strings.NavCrew);
     }
-    if(contextual.isEmpty()) {
-      return Strings.DirectKeys;
+    StringBuilder keys = new StringBuilder(Strings.DirectKeys);
+    for(String token : contextual) {
+      keys.append(" · ").append(token);
     }
-    return Strings.DirectKeys + " · " + String.join(" · ", contextual);
+    // The program menu always goes last, after the contextual actions.
+    keys.append(" · ").append(Strings.DirectMenu);
+    return keys.toString();
   }
 
   private static boolean hasCrew(Game game) {

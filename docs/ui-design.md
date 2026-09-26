@@ -54,8 +54,10 @@ and the presenters stay.
 |                                     |  information: no keys)             |
 +-------------------------------------+------------------------------------+
 | Last message (embedded in the separator line)                            |
-| TAB map · C trade · B bank · Q quests · N news · J jump · F/H dock ...   |
-| ... · I cmdr · V ship · F10 menu · [L] Ships · [E] Equipment ...         |
+| [TAB] map · [C] trade · [B] bank · [Q] quests · [N] news · [W] warp ...  |
+| ... [T] track · [F] fuel · [H] repairs · [I] cmdr · [V] ship ...         |
+| ... plus the actions available here ([L] Ships, [E] Equipment, ...)      |
+| ... and the program menu ([F10] menu) last                               |
 +--------------------------------------------------------------------------+
 ```
 
