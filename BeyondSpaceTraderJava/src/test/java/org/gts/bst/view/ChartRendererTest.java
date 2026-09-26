@@ -99,6 +99,32 @@ class ChartRendererTest {
   }
 
   @Test
+  void shortRangeDrawsTheFuelRangeRing() {
+    TestChartCanvas canvas = new TestChartCanvas(21, 13);
+    List<ChartSystem> systems = List.of(new ChartSystem(0, 0, "Here", true, false, false, false));
+
+    ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, 4, 20, null));
+
+    // The ring only marks the cells at the fuel distance: inside and outside stay free.
+    assertEquals(ChartRenderer.RANGE, canvas.at(14, 6));
+    assertEquals(ChartColor.GREEN, canvas.colorAt(14, 6));
+    assertEquals(' ', canvas.at(12, 6));
+    assertEquals(' ', canvas.at(16, 6));
+  }
+
+  @Test
+  void shortRangeScalesTheRangeRingWithTheChart() {
+    TestChartCanvas canvas = new TestChartCanvas(41, 25);
+    List<ChartSystem> systems = List.of(new ChartSystem(0, 0, "Here", true, false, false, false));
+
+    ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, 5, 5, null));
+
+    // delta = 25 / (5 * 2) = 2, so the ring is drawn 10 cells to the right.
+    assertEquals(ChartRenderer.RANGE, canvas.at(30, 12));
+    assertEquals('+', canvas.at(20, 12));
+  }
+
+  @Test
   void shortRangeDrawsTheTrackingArrowWhenTheSystemIsOutOfView() {
     TestChartCanvas canvas = new TestChartCanvas(21, 9);
     List<ChartSystem> systems = List.of(

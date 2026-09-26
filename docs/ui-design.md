@@ -159,9 +159,13 @@ chart is hidden; the chart comes back when the panel closes.
   board, wanted...).
 - **Map (center):** the axis of the screen.
   - *Local chart*: the current system, its planet/station, the own ship and the
-    other ships, with a cursor.
+    other ships, with a cursor. A green dotted circle marks the actual jump range
+    (the current fuel), so the systems inside it are green too.
   - *Galactic chart*: known systems, current position, selected destination, routes
     and wormholes, visited marks.
+  - Both charts draw one character per sector; the galactic one pans with the
+    selection and the local one is centred on the current system. Discrete zoom
+    levels could be added later.
   - `TAB` switches between both charts.
 - **Context panel (right):** one panel at a time, no new windows.
   - *Navigation* (default): current/selected system data, prices at a glance and the
