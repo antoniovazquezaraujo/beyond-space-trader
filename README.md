@@ -39,7 +39,8 @@ in git history (tag `upstream-r69`).
 Requires JDK 17 and Maven 3.9+.
 
 ```bash
-./run.sh                                     # compile and run from sources
+./run.sh                                     # compile and run from sources (Swing)
+./run-text.sh                                # run with the Lanterna text UI (work in progress)
 java -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
 
 mvn package                                  # build both modules and the jar

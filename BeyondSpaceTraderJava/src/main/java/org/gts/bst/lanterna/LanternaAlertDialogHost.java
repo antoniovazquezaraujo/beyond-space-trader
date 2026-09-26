@@ -1,0 +1,68 @@
+/*
+ * This file is part of Beyond Space Trader.
+ *
+ * Distributed under the GNU General Public License, version 3 or later; see
+ * the LICENSE file. Based on SpaceTrader for Java, which is based on Space
+ * Trader for Windows, which is based on Space Trader by Pieter Spronck; see
+ * the NOTICE file for the full provenance chain.
+ */
+package org.gts.bst.lanterna;
+
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.gui2.BasicWindow;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.Direction;
+import com.googlecode.lanterna.gui2.EmptySpace;
+import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.LinearLayout;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import java.util.List;
+import org.gts.bst.view.AlertButton;
+import org.gts.bst.view.AlertDialogHost;
+import org.gts.bst.view.DialogResult;
+
+
+/**
+ * Shows the predefined alerts in a Lanterna dialog with the original texts and
+ * buttons.
+ */
+public final class LanternaAlertDialogHost implements AlertDialogHost {
+  private final WindowBasedTextGUI gui;
+
+  public LanternaAlertDialogHost(WindowBasedTextGUI gui) {
+    this.gui = gui;
+  }
+
+  @Override
+  public DialogResult show(String title, String message, List<AlertButton> buttons) {
+    if(buttons.isEmpty()) {
+      return DialogResult.None;
+    }
+    DialogResult[] chosen = {buttons.get(0).result()};
+    BasicWindow dialog = new BasicWindow(title);
+    Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
+    panel.addComponent(new Label(message));
+    panel.addComponent(new EmptySpace(TerminalSize.ONE));
+    Panel row = new Panel(new LinearLayout(Direction.HORIZONTAL));
+    Button first = null;
+    for(AlertButton button : buttons) {
+      Button component = new Button(button.text(), () -> {
+        chosen[0] = button.result();
+        dialog.close();
+      });
+      row.addComponent(component);
+      if(first == null) {
+        first = component;
+      }
+    }
+    panel.addComponent(row);
+    dialog.setComponent(panel);
+    if(first != null) {
+      dialog.setFocusedInteractable(first);
+    }
+    gui.addWindow(dialog);
+    gui.waitForWindowToClose(dialog);
+    return chosen[0];
+  }
+}
