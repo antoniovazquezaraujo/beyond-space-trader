@@ -22,27 +22,27 @@ public record ChartViewModel(
     int viewX,
     int viewY,
     int fuel,
-    int maxRange,
     int galaxyWidth,
     int galaxyHeight,
     String trackedRangeText) {
 
   /**
-   * The galactic chart: the viewport is centred on {@code viewX/viewY} (the cursor
-   * or the current system) and the fuel range is measured from the current system.
+   * The galactic chart: the whole galaxy is scaled down to fit the chart area, so it
+   * always shows every system and never scrolls.
    */
   public static ChartViewModel galactic(List<ChartSystem> systems, int currentX, int currentY,
-      int viewX, int viewY, int fuel, int galaxyWidth, int galaxyHeight) {
-    return new ChartViewModel(ChartType.GALACTIC, systems, currentX, currentY, viewX, viewY,
-        fuel, 0, galaxyWidth, galaxyHeight, null);
+      int fuel, int galaxyWidth, int galaxyHeight) {
+    return new ChartViewModel(ChartType.GALACTIC, systems, currentX, currentY, 0, 0,
+        fuel, galaxyWidth, galaxyHeight, null);
   }
 
   /**
-   * The short-range chart: it is always centred on the current system.
+   * The short-range chart: a 1:1 map (one sector per character) whose viewport starts
+   * at {@code viewX/viewY}.
    */
   public static ChartViewModel shortRange(List<ChartSystem> systems, int currentX, int currentY,
-      int fuel, int maxRange, String trackedRangeText) {
-    return new ChartViewModel(ChartType.SHORT_RANGE, systems, currentX, currentY, currentX, currentY,
-        fuel, maxRange, 0, 0, trackedRangeText);
+      int viewX, int viewY, int fuel, String trackedRangeText) {
+    return new ChartViewModel(ChartType.SHORT_RANGE, systems, currentX, currentY, viewX, viewY,
+        fuel, 0, 0, trackedRangeText);
   }
 }

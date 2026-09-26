@@ -1164,8 +1164,10 @@ public final class LanternaMainWindow
   }
 
   private void trackSelection(Game game) {
-    game.setTrackedSystemId(game.SelectedSystemId());
-    content.log(Functions.StringVars(Strings.MainTracking, game.SelectedSystem().Name()));
+    StarSystem selected = game.SelectedSystem() == null
+        ? game.Commander().CurrentSystem() : game.SelectedSystem();
+    game.setTrackedSystemId(selected.Id());
+    content.log(Functions.StringVars(Strings.MainTracking, selected.Name()));
     if(presenter != null) {
       presenter.updateTargetSystemInfo();
     }
