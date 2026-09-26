@@ -986,6 +986,35 @@ class LanternaMainWindowTest {
     }
   }
 
+  @Test
+  void putsTheProgramMenuAfterTheContextualActions() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].setCanSuperWarp(true);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains("[J] Jump"), text);
+      assertTrue(text.contains("[F] fuel"), text);
+      assertTrue(text.contains("[H] repairs"), text);
+      assertTrue(text.contains("[F10] menu"), text);
+      assertTrue(text.indexOf("[F10] menu") > text.indexOf("[J] Jump"),
+          "the program menu goes after the contextual actions:\n" + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static StarSystem farthestSystem(Game game) {
     StarSystem current = game.Commander().CurrentSystem();
     StarSystem far = current;

@@ -429,13 +429,15 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
+    List<String> footerKeys = panel == MainPanel.Navigation ? footerKeys(width - 2) : new ArrayList<>();
     drawHeader(graphics, width, cmdr);
     panelWidth = Math.max(20, Math.min(width - 24, panelWidthFor(panel, width)));
     int chartWidth = width - panelWidth - 2;
-    int chartHeight = height - 7;
+    // The footer keeps two menu rows (the usual case); a longer menu takes one more.
+    int chartHeight = height - 5 - Math.max(2, footerKeys.size());
     drawChart(graphics, chartWidth, chartHeight, game, cmdr);
     drawPanel(graphics, width - panelWidth, chartWidth, height);
-    drawFooter(graphics, width, height);
+    drawFooter(graphics, width, height, footerKeys);
     drawMenu(graphics, width, height);
   }
 
@@ -653,7 +655,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     List<String> lines = new ArrayList<>();
     String keys = keysFor(panel);
     if(keys != null) {
-      wrap(lines, keys, panelWidth);
+      wrapTokens(lines, keys, panelWidth);
     }
     int row = height - 4 - Math.max(0, lines.size() - 1);
     for(String line : lines) {
@@ -1248,20 +1250,26 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return row;
   }
 
-  private void drawFooter(TextGUIGraphics graphics, int width, int height) {
+  private void drawFooter(TextGUIGraphics graphics, int width, int height, List<String> lines) {
     UiPalette.reset(graphics);
-    graphics.drawLine(0, height - 3, width - 1, height - 3, '─');
+    // The separator (with the last message) sits right above the menu.
+    int separator = height - 1 - Math.max(2, lines.size());
+    graphics.drawLine(0, separator, width - 1, separator, '─');
     if(!log.isEmpty()) {
-      graphics.putString(2, height - 3, cut(" " + log.get(log.size() - 1) + " ", width - 2));
+      graphics.putString(2, separator, cut(" " + log.get(log.size() - 1) + " ", width - 2));
     }
-    if(panel == MainPanel.Navigation && !directKeys.isEmpty()) {
-      List<String> lines = new ArrayList<>();
-      wrap(lines, directKeys, width - 2);
-      int row = height - 1 - Math.max(0, lines.size() - 1);
-      for(String line : lines) {
-        UiPalette.keys(graphics, 1, row++, line, width - 2);
-      }
+    int row = height - lines.size();
+    for(String line : lines) {
+      UiPalette.keys(graphics, 1, row++, line, width - 2);
     }
+  }
+
+  private List<String> footerKeys(int width) {
+    List<String> lines = new ArrayList<>();
+    if(!directKeys.isEmpty()) {
+      wrapTokens(lines, directKeys, width);
+    }
+    return lines;
   }
 
   private static String keysFor(MainPanel panel) {
@@ -1292,6 +1300,27 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         return Strings.NewsKeys;
       default:
         return null;
+    }
+  }
+
+  /**
+   * Wraps a line of key tokens (separated by {@code  ·  }) without splitting a token,
+   * so a key like {@code [H] repairs} never ends up in two lines.
+   */
+  static void wrapTokens(List<String> lines, String text, int width) {
+    StringBuilder line = new StringBuilder();
+    for(String token : text.split(" · ")) {
+      if(line.length() > 0 && line.length() + 3 + token.length() > width) {
+        lines.add(line.toString());
+        line.setLength(0);
+      }
+      if(line.length() > 0) {
+        line.append(" · ");
+      }
+      line.append(token);
+    }
+    if(line.length() > 0) {
+      lines.add(line.toString());
     }
   }
 
