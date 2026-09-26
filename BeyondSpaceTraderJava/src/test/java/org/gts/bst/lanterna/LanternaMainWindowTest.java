@@ -221,6 +221,31 @@ class LanternaMainWindowTest {
     }
   }
 
+  @Test
+  void logsWhenTheGameActionsAreNotAvailable() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F5));
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains(Strings.MainSaveUnavailable), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {

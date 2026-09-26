@@ -380,4 +380,27 @@ public final class Strings {
   public static final String ShipListKeys = text("ShipListKeys");
   public static final String ShipListTitle = text("ShipListTitle");
 
+  public static final String DialogDifficultyPrompt = text("DialogDifficultyPrompt");
+  public static final String DialogDifficultyTitle = text("DialogDifficultyTitle");
+  public static final String DialogLoadAction = text("DialogLoadAction");
+  public static final String DialogLoadDescription = text("DialogLoadDescription");
+  public static final String DialogLoadTitle = text("DialogLoadTitle");
+  public static final String DialogNewNamePrompt = text("DialogNewNamePrompt");
+  public static final String DialogNewNameTitle = text("DialogNewNameTitle");
+  public static final String DialogSaveAction = text("DialogSaveAction");
+  public static final String DialogSaveDescription = text("DialogSaveDescription");
+  public static final String DialogSaveTitle = text("DialogSaveTitle");
+  public static final String DialogSkillPrompt = text("DialogSkillPrompt");
+  public static final String DialogSkillTitle = text("DialogSkillTitle");
+  public static final String MainGameLoaded = text("MainGameLoaded");
+  public static final String MainGameSaved = text("MainGameSaved");
+  public static final String MainLoadUnavailable = text("MainLoadUnavailable");
+  public static final String MainNewGame = text("MainNewGame");
+  public static final String MainNewGameUnavailable = text("MainNewGameUnavailable");
+  public static final String MainSaveUnavailable = text("MainSaveUnavailable");
+  public static final String SkillEngineer = text("SkillEngineer");
+  public static final String SkillFighter = text("SkillFighter");
+  public static final String SkillPilot = text("SkillPilot");
+  public static final String SkillTrader = text("SkillTrader");
+
 }

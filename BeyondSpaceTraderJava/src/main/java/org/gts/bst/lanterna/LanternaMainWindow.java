@@ -86,6 +86,9 @@ public final class LanternaMainWindow
   private PersonnelPresenter personnelPresenter;
   private ShipListPresenter shipListPresenter;
   private EquipmentPresenter equipmentPresenter;
+  private Runnable newGameAction;
+  private Runnable saveGameAction;
+  private Runnable loadGameAction;
 
   public LanternaMainWindow(Supplier<Game> gameSupplier, WindowBasedTextGUI gui) {
     this.gameSupplier = gameSupplier;
@@ -102,6 +105,37 @@ public final class LanternaMainWindow
 
   public void setPresenter(MainPresenter presenter) {
     this.presenter = presenter;
+  }
+
+  /**
+   * The actions of the new game, save and load keys; the application sets them because
+   * it owns the current game and the dialogs.
+   */
+  public void setGameActions(Runnable newGameAction, Runnable saveGameAction, Runnable loadGameAction) {
+    this.newGameAction = newGameAction;
+    this.saveGameAction = saveGameAction;
+    this.loadGameAction = loadGameAction;
+  }
+
+  /**
+   * Called after the current game changed (new game or loaded game).
+   */
+  public void gameChanged() {
+    bankPresenter = null;
+    questsPresenter = null;
+    personnelPresenter = null;
+    shipListPresenter = null;
+    equipmentPresenter = null;
+    content.closePanel();
+    if(presenter != null) {
+      presenter.updateAll();
+    }
+    content.invalidate();
+  }
+
+  public void log(String message) {
+    content.log(message);
+    content.invalidate();
   }
 
   @Override
@@ -334,11 +368,27 @@ public final class LanternaMainWindow
       case Enter:
         trackSelection(game);
         return true;
+      case F2:
+        return runAction(newGameAction, Strings.MainNewGameUnavailable);
+      case F5:
+        return runAction(saveGameAction, Strings.MainSaveUnavailable);
+      case F9:
+        return runAction(loadGameAction, Strings.MainLoadUnavailable);
       case Character:
         return handleCharacter(game, Character.toLowerCase(key.getCharacter()));
       default:
         return false;
     }
+  }
+
+  private boolean runAction(Runnable action, String unavailableMessage) {
+    if(action == null) {
+      content.log(unavailableMessage);
+      content.invalidate();
+      return true;
+    }
+    action.run();
+    return true;
   }
 
   private boolean handleBankKey(KeyStroke key) {
