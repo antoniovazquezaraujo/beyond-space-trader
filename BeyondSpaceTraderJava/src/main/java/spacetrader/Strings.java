@@ -429,4 +429,26 @@ public final class Strings {
   public static final String OptionShowTrackedRange = text("OptionShowTrackedRange");
   public static final String OptionTrackAutoOff = text("OptionTrackAutoOff");
 
+  public static final String DesignerCargo = text("DesignerCargo");
+  public static final String DesignerConstruct = text("DesignerConstruct");
+  public static final String DesignerCost = text("DesignerCost");
+  public static final String DesignerCrew = text("DesignerCrew");
+  public static final String DesignerFuel = text("DesignerFuel");
+  public static final String DesignerGadget = text("DesignerGadget");
+  public static final String DesignerHull = text("DesignerHull");
+  public static final String DesignerKeys = text("DesignerKeys");
+  public static final String DesignerName = text("DesignerName");
+  public static final String DesignerNumeric = text("DesignerNumeric");
+  public static final String DesignerNumericValue = text("DesignerNumericValue");
+  public static final String DesignerSave = text("DesignerSave");
+  public static final String DesignerShield = text("DesignerShield");
+  public static final String DesignerSize = text("DesignerSize");
+  public static final String DesignerTemplate = text("DesignerTemplate");
+  public static final String DesignerTotal = text("DesignerTotal");
+  public static final String DesignerUnits = text("DesignerUnits");
+  public static final String DesignerWeapon = text("DesignerWeapon");
+  public static final String DialogShipNamePrompt = text("DialogShipNamePrompt");
+  public static final String DialogShipNameTitle = text("DialogShipNameTitle");
+  public static final String MainDesignUnavailable = text("MainDesignUnavailable");
+
 }

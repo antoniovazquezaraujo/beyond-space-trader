@@ -23,5 +23,6 @@ public enum MainPanel {
   ShipList,
   Equipment,
   Options,
-  HighScores
+  HighScores,
+  Designer
 }
