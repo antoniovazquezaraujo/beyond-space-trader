@@ -26,6 +26,7 @@ import org.gts.bst.view.ChartSystem;
 import org.gts.bst.view.CommanderViewModel;
 import org.gts.bst.view.EquipmentInfoViewModel;
 import org.gts.bst.view.EquipmentViewModel;
+import org.gts.bst.view.HighScoresViewModel;
 import org.gts.bst.view.ChartType;
 import org.gts.bst.view.ChartViewModel;
 import org.gts.bst.view.DockViewModel;
@@ -89,6 +90,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private int personnelIndex;
   private int shipListIndex;
   private int equipmentIndex;
+  private final List<String> optionsLines = new ArrayList<>();
+  private int optionsIndex;
+  private HighScoresViewModel highScores;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -181,6 +185,30 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     invalidate();
   }
 
+  public void options(List<String> lines) {
+    optionsLines.clear();
+    optionsLines.addAll(lines);
+    invalidate();
+  }
+
+  public int optionsIndex() {
+    return optionsIndex;
+  }
+
+  public void optionsIndex(int index) {
+    this.optionsIndex = index;
+    invalidate();
+  }
+
+  public int optionsCount() {
+    return optionsLines.size();
+  }
+
+  public void highScores(HighScoresViewModel model) {
+    this.highScores = model;
+    invalidate();
+  }
+
   public int equipmentEntryCount() {
     if(equipment == null) {
       return 0;
@@ -255,6 +283,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public void openEquipment() {
     panel = MainPanel.Equipment;
+    invalidate();
+  }
+
+  public void openOptions() {
+    panel = MainPanel.Options;
+    invalidate();
+  }
+
+  public void openHighScores() {
+    panel = MainPanel.HighScores;
     invalidate();
   }
 
@@ -408,6 +446,10 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         return 52;
       case Equipment:
         return 54;
+      case Options:
+        return 60;
+      case HighScores:
+        return 60;
       default:
         return PANEL_WIDTH;
     }
@@ -440,6 +482,12 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case Equipment:
         drawEquipmentPanel(graphics, x, height);
+        break;
+      case Options:
+        drawOptionsPanel(graphics, x, height);
+        break;
+      case HighScores:
+        drawHighScoresPanel(graphics, x, height);
         break;
       default:
         drawNavigationPanel(graphics, x, height);
@@ -650,6 +698,37 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return row;
   }
 
+  private void drawOptionsPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.OptionsTitle);
+    int row = 4;
+    for(int i = 0; i < optionsLines.size() && row < height - 3; i++) {
+      graphics.putString(x, row++, cut((i == optionsIndex ? "> " : "  ") + optionsLines.get(i), panelWidth()));
+    }
+  }
+
+  private void drawHighScoresPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.HighScoresTitle);
+    if(highScores == null) {
+      return;
+    }
+    int row = 5;
+    for(HighScoresViewModel.Row score : highScores.rows()) {
+      if(!score.filled() || row >= height - 3) {
+        continue;
+      }
+      graphics.putString(x, row++, cut(score.name() + "   " + score.score(), panelWidth()));
+      List<String> wrapped = new ArrayList<>();
+      wrap(wrapped, score.status(), panelWidth() - 2);
+      for(String line : wrapped) {
+        if(row >= height - 3) {
+          break;
+        }
+        graphics.putString(x + 2, row++, line);
+      }
+      row++;
+    }
+  }
+
   private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
     graphics.putString(x, 3, Strings.QuestsTitle);
     int row = 4;
@@ -710,9 +789,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private void drawFooter(TextGUIGraphics graphics, int width, int height) {
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.drawLine(0, height - 3, width - 1, height - 3, '─');
-    int row = height - 2;
-    for(String message : log) {
-      graphics.putString(1, row++, cut(message, width - 2));
+    if(!log.isEmpty()) {
+      graphics.putString(1, height - 2, cut(log.get(log.size() - 1), width - 2));
     }
     String keys;
     switch(panel) {
@@ -739,6 +817,12 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case Equipment:
         keys = Strings.EquipmentKeys;
+        break;
+      case Options:
+        keys = Strings.OptionsKeys;
+        break;
+      case HighScores:
+        keys = Strings.HighScoresKeys;
         break;
       default:
         keys = Strings.MainKeys;

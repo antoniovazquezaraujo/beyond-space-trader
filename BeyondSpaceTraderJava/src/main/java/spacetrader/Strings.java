@@ -403,4 +403,30 @@ public final class Strings {
   public static final String SkillPilot = text("SkillPilot");
   public static final String SkillTrader = text("SkillTrader");
 
+  public static final String DialogLeaveEmptyPrompt = text("DialogLeaveEmptyPrompt");
+  public static final String DialogLeaveEmptyTitle = text("DialogLeaveEmptyTitle");
+  public static final String HighScoresKeys = text("HighScoresKeys");
+  public static final String HighScoresTitle = text("HighScoresTitle");
+  public static final String OptionsKeys = text("OptionsKeys");
+  public static final String OptionsOff = text("OptionsOff");
+  public static final String OptionsOn = text("OptionsOn");
+  public static final String OptionsTitle = text("OptionsTitle");
+  public static final String OptionsValue = text("OptionsValue");
+  public static final String OptionAutoFuel = text("OptionAutoFuel");
+  public static final String OptionAutoRepair = text("OptionAutoRepair");
+  public static final String OptionContinuousAttack = text("OptionContinuousAttack");
+  public static final String OptionContinuousAttackFleeing = text("OptionContinuousAttackFleeing");
+  public static final String OptionDisableOpponents = text("OptionDisableOpponents");
+  public static final String OptionIgnorePirates = text("OptionIgnorePirates");
+  public static final String OptionIgnorePolice = text("OptionIgnorePolice");
+  public static final String OptionIgnoreTraders = text("OptionIgnoreTraders");
+  public static final String OptionIgnoreTradeInOrbit = text("OptionIgnoreTradeInOrbit");
+  public static final String OptionLeaveEmpty = text("OptionLeaveEmpty");
+  public static final String OptionNewsAutoPay = text("OptionNewsAutoPay");
+  public static final String OptionNewsAutoShow = text("OptionNewsAutoShow");
+  public static final String OptionRemindLoans = text("OptionRemindLoans");
+  public static final String OptionReserveMoney = text("OptionReserveMoney");
+  public static final String OptionShowTrackedRange = text("OptionShowTrackedRange");
+  public static final String OptionTrackAutoOff = text("OptionTrackAutoOff");
+
 }

@@ -21,5 +21,7 @@ public enum MainPanel {
   Commander,
   Ship,
   ShipList,
-  Equipment
+  Equipment,
+  Options,
+  HighScores
 }
