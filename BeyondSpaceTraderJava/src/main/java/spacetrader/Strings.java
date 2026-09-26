@@ -341,4 +341,22 @@ public final class Strings {
   public static final String QuestsKeys = text("QuestsKeys");
   public static final String QuestsTitle = text("QuestsTitle");
 
+  public static final String CommanderBounty = text("CommanderBounty");
+  public static final String CommanderCash = text("CommanderCash");
+  public static final String CommanderHeader = text("CommanderHeader");
+  public static final String CommanderKeys = text("CommanderKeys");
+  public static final String CommanderKills = text("CommanderKills");
+  public static final String CommanderRecord = text("CommanderRecord");
+  public static final String CommanderSkills = text("CommanderSkills");
+  public static final String CommanderTime = text("CommanderTime");
+  public static final String CommanderTitle = text("CommanderTitle");
+  public static final String PersonnelCrew = text("PersonnelCrew");
+  public static final String PersonnelForHire = text("PersonnelForHire");
+  public static final String PersonnelKeys = text("PersonnelKeys");
+  public static final String PersonnelTitle = text("PersonnelTitle");
+  public static final String ShipKeys = text("ShipKeys");
+  public static final String ShipSpecialCargo = text("ShipSpecialCargo");
+  public static final String ShipTitle = text("ShipTitle");
+  public static final String ShipType = text("ShipType");
+
 }

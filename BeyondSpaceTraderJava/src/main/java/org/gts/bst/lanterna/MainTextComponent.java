@@ -23,11 +23,15 @@ import org.gts.bst.view.BankViewModel;
 import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.ChartSystem;
+import org.gts.bst.view.CommanderViewModel;
 import org.gts.bst.view.ChartType;
 import org.gts.bst.view.ChartViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.LanternaChartView;
+import org.gts.bst.view.PersonnelInfo;
+import org.gts.bst.view.PersonnelViewModel;
 import org.gts.bst.view.QuestsViewModel;
+import org.gts.bst.view.ShipViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
 import spacetrader.Commander;
@@ -70,6 +74,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private TargetSystemViewModel target;
   private BankViewModel bank;
   private QuestsViewModel quests;
+  private PersonnelViewModel personnel;
+  private PersonnelInfo personnelInfo;
+  private CommanderViewModel commander;
+  private ShipViewModel ship;
+  private int personnelIndex;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -100,6 +109,39 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     this.quests = quests;
   }
 
+  public void personnel(PersonnelViewModel personnel) {
+    this.personnel = personnel;
+  }
+
+  public void personnelInfo(PersonnelInfo personnelInfo) {
+    this.personnelInfo = personnelInfo;
+  }
+
+  public void commander(CommanderViewModel commander) {
+    this.commander = commander;
+  }
+
+  public void ship(ShipViewModel ship) {
+    this.ship = ship;
+  }
+
+  public int personnelIndex() {
+    return personnelIndex;
+  }
+
+  public void personnelIndex(int index) {
+    this.personnelIndex = index;
+    invalidate();
+  }
+
+  public int personnelEntryCount() {
+    return personnel == null ? 0 : personnel.crewEntries().size() + personnel.forHireEntries().size();
+  }
+
+  public int personnelCrewSize() {
+    return personnel == null ? 0 : personnel.crewEntries().size();
+  }
+
   public void toggleChart() {
     chartType = chartType == ChartType.GALACTIC ? ChartType.SHORT_RANGE : ChartType.GALACTIC;
   }
@@ -124,6 +166,21 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public void openQuests() {
     panel = MainPanel.Quests;
+    invalidate();
+  }
+
+  public void openPersonnel() {
+    panel = MainPanel.Personnel;
+    invalidate();
+  }
+
+  public void openCommander() {
+    panel = MainPanel.Commander;
+    invalidate();
+  }
+
+  public void openShip() {
+    panel = MainPanel.Ship;
     invalidate();
   }
 
@@ -267,6 +324,12 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         return 38;
       case Quests:
         return 60;
+      case Personnel:
+        return 46;
+      case Commander:
+        return 42;
+      case Ship:
+        return 50;
       default:
         return PANEL_WIDTH;
     }
@@ -284,6 +347,15 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case Quests:
         drawQuestsPanel(graphics, x, height);
+        break;
+      case Personnel:
+        drawPersonnelPanel(graphics, x, height);
+        break;
+      case Commander:
+        drawCommanderPanel(graphics, x, height);
+        break;
+      case Ship:
+        drawShipPanel(graphics, x, height);
         break;
       default:
         drawNavigationPanel(graphics, x, height);
@@ -303,6 +375,92 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankNoClaim, bank.noClaim()), panelWidth()));
     graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankInsurance, bank.insuranceCost()), panelWidth()));
     graphics.putString(x, row + 1, cut(bank.insuranceButtonText(), panelWidth()));
+  }
+
+  private void drawPersonnelPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.PersonnelTitle);
+    if(personnel == null) {
+      return;
+    }
+    int row = 4;
+    graphics.putString(x, row++, Strings.PersonnelCrew);
+    int index = 0;
+    for(String entry : personnel.crewEntries()) {
+      if(row >= height - 3) {
+        return;
+      }
+      graphics.putString(x, row++, cut((index == personnelIndex ? ">" : " ") + " " + entry, panelWidth()));
+      index++;
+    }
+    row++;
+    if(row < height - 3) {
+      graphics.putString(x, row++, Strings.PersonnelForHire);
+    }
+    for(String entry : personnel.forHireEntries()) {
+      if(row >= height - 3) {
+        return;
+      }
+      graphics.putString(x, row++, cut((index == personnelIndex ? ">" : " ") + " " + entry, panelWidth()));
+      index++;
+    }
+    if(personnelInfo != null && personnelInfo.visible() && row < height - 3) {
+      row++;
+      if(row < height - 3) {
+        graphics.putString(x, row++, cut(personnelInfo.name() + (personnelInfo.rateVisible() ? "  " + personnelInfo.rate() : ""), panelWidth()));
+      }
+      if(row < height - 3) {
+        graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderSkills, new String[]{
+            personnelInfo.pilot(), personnelInfo.fighter(), personnelInfo.trader(), personnelInfo.engineer()}), panelWidth()));
+      }
+      if(row < height - 3) {
+        graphics.putString(x, row, cut(personnelInfo.hireFireText(), panelWidth()));
+      }
+    }
+  }
+
+  private void drawCommanderPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.CommanderTitle);
+    if(commander == null) {
+      return;
+    }
+    int row = 4;
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderHeader, commander.name(), commander.difficulty()), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderTime, commander.time()), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderSkills, new String[]{
+        commander.pilot(), commander.fighter(), commander.trader(), commander.engineer()}), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderCash, new String[]{
+        commander.cash(), commander.debt(), commander.netWorth()}), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderKills, commander.kills()), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderRecord, commander.record(),
+        commander.reputation()), panelWidth()));
+    if(commander.bounty().visible()) {
+      graphics.putString(x, row, cut(Functions.StringVars(Strings.CommanderBounty, commander.bounty().label(),
+          commander.bounty().amount()), panelWidth()));
+    }
+  }
+
+  private void drawShipPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.ShipTitle);
+    if(ship == null) {
+      return;
+    }
+    int row = 4;
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipType, ship.type()), panelWidth()));
+    String[] labels = ship.equipmentLabels().split("\n", -1);
+    String[] values = ship.equipmentValues().split("\n", -1);
+    for(int i = 0; i < labels.length && i < values.length && row < height - 3; i++) {
+      graphics.putString(x, row++, cut(labels[i] + " " + values[i], panelWidth()));
+    }
+    if(!ship.specialCargo().isEmpty()) {
+      List<String> wrapped = new ArrayList<>();
+      wrap(wrapped, Functions.StringVars(Strings.ShipSpecialCargo, ship.specialCargo()), panelWidth());
+      for(String line : wrapped) {
+        if(row >= height - 3) {
+          break;
+        }
+        graphics.putString(x, row++, line);
+      }
+    }
   }
 
   private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
@@ -379,6 +537,15 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case Quests:
         keys = Strings.QuestsKeys;
+        break;
+      case Personnel:
+        keys = Strings.PersonnelKeys;
+        break;
+      case Commander:
+        keys = Strings.CommanderKeys;
+        break;
+      case Ship:
+        keys = Strings.ShipKeys;
         break;
       default:
         keys = Strings.MainKeys;

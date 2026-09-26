@@ -22,21 +22,31 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.presenter.BankPresenter;
 import org.gts.bst.presenter.CargoTransferPresenter;
+import org.gts.bst.presenter.CommanderPresenter;
 import org.gts.bst.presenter.EncounterPresenter;
+import org.gts.bst.presenter.PersonnelPresenter;
 import org.gts.bst.presenter.QuestsPresenter;
+import org.gts.bst.presenter.ShipPresenter;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.BankView;
 import org.gts.bst.view.BankViewModel;
 import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.ChartsViewModel;
+import org.gts.bst.view.CommanderView;
+import org.gts.bst.view.CommanderViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.GameWindow;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
 import org.gts.bst.view.MainWindow;
+import org.gts.bst.view.PersonnelInfo;
+import org.gts.bst.view.PersonnelView;
+import org.gts.bst.view.PersonnelViewModel;
 import org.gts.bst.view.QuestsView;
 import org.gts.bst.view.QuestsViewModel;
+import org.gts.bst.view.ShipView;
+import org.gts.bst.view.ShipViewModel;
 import org.gts.bst.view.ShipyardViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
@@ -53,7 +63,9 @@ import spacetrader.enums.AlertType;
  * The main window of the text UI. It renders the view models through
  * {@link MainTextComponent} and forwards the keys to the game and the presenter.
  */
-public final class LanternaMainWindow implements MainView, MainWindow, GameWindow, BankView, QuestsView {
+public final class LanternaMainWindow
+    implements MainView, MainWindow, GameWindow, BankView, QuestsView,
+    PersonnelView, CommanderView, ShipView {
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
   private final BasicWindow window = new BasicWindow();
@@ -61,6 +73,7 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
   private MainPresenter presenter;
   private BankPresenter bankPresenter;
   private QuestsPresenter questsPresenter;
+  private PersonnelPresenter personnelPresenter;
 
   public LanternaMainWindow(Supplier<Game> gameSupplier, WindowBasedTextGUI gui) {
     this.gameSupplier = gameSupplier;
@@ -278,6 +291,12 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
     if(content.panel() == MainPanel.Quests) {
       return false;
     }
+    if(content.panel() == MainPanel.Personnel) {
+      return handlePersonnelKey(key);
+    }
+    if(content.panel() == MainPanel.Commander || content.panel() == MainPanel.Ship) {
+      return false;
+    }
     switch(key.getKeyType()) {
       case Tab:
         content.toggleChart();
@@ -371,6 +390,97 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
     content.quests(model);
   }
 
+  @Override
+  public void render(PersonnelViewModel model) {
+    content.personnel(model);
+  }
+
+  @Override
+  public void renderInfo(PersonnelInfo info) {
+    content.personnelInfo(info);
+  }
+
+  @Override
+  public void render(CommanderViewModel model) {
+    content.commander(model);
+  }
+
+  @Override
+  public void render(ShipViewModel model) {
+    content.ship(model);
+  }
+
+  private boolean handlePersonnelKey(KeyStroke key) {
+    if(personnelPresenter == null) {
+      return false;
+    }
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        selectPersonnelEntry(content.personnelIndex() - 1);
+        return true;
+      case ArrowDown:
+        selectPersonnelEntry(content.personnelIndex() + 1);
+        return true;
+      case Character:
+        if(Character.toLowerCase(key.getCharacter()) != 'h') {
+          return false;
+        }
+        if(personnelPresenter.hireFire()) {
+          selectPersonnelEntry(Math.min(content.personnelIndex(),
+              Math.max(0, content.personnelEntryCount() - 1)));
+        }
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private void selectPersonnelEntry(int index) {
+    int count = content.personnelEntryCount();
+    if(count == 0) {
+      return;
+    }
+    int selected = Math.floorMod(index, count);
+    content.personnelIndex(selected);
+    int crewSize = content.personnelCrewSize();
+    if(selected < crewSize) {
+      personnelPresenter.selectCrew(selected);
+    } else {
+      personnelPresenter.selectForHire(selected - crewSize);
+    }
+  }
+
+  private void openPersonnel() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    if(personnelPresenter == null) {
+      personnelPresenter = new PersonnelPresenter(game, this);
+    }
+    personnelPresenter.update();
+    selectPersonnelEntry(0);
+    content.openPersonnel();
+  }
+
+  private void openCommander() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    new CommanderPresenter(game, this).update();
+    content.openCommander();
+  }
+
+  private void openShip() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    new ShipPresenter(game, this).update();
+    content.openShip();
+  }
+
   private boolean handleTradeKey(KeyStroke key) {
     switch(key.getKeyType()) {
       case ArrowUp:
@@ -405,6 +515,15 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
         return true;
       case 'q':
         openQuests();
+        return true;
+      case 'p':
+        openPersonnel();
+        return true;
+      case 'v':
+        openShip();
+        return true;
+      case 'i':
+        openCommander();
         return true;
       case 't':
         trackSelection(game);
