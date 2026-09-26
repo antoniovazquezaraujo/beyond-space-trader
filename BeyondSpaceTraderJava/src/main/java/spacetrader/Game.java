@@ -2820,8 +2820,8 @@ public final class Game extends STSerializableObject {
         getParentWindow().UpdateAll();
       }
     }
-    if(getPaidForNewspaper()) {
-      Dialogs().alert(AlertType.Alert, NewspaperHead(), NewspaperText());
+    if(getPaidForNewspaper() && getParentWindow() != null) {
+      getParentWindow().showNewspaper();
     }
   }
 

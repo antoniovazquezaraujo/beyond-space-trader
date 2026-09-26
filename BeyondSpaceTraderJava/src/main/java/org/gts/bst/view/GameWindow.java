@@ -18,6 +18,8 @@ import org.gts.bst.events.EncounterResult;
 public interface GameWindow {
   EncounterResult showEncounter();
 
+  void showNewspaper();
+
   void UpdateStatusBar();
 
   void UpdateAll();

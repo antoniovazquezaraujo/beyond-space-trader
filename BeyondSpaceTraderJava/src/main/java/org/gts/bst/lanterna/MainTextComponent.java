@@ -96,6 +96,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private HighScoresViewModel highScores;
   private ShipyardDesignerViewModel designer;
   private int designerField;
+  private final List<String> newsLines = new ArrayList<>();
+  private String newsHead = "";
+  private int newsScroll;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -230,6 +233,27 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     invalidate();
   }
 
+  public void news(String head, String text) {
+    newsHead = head;
+    newsLines.clear();
+    wrap(newsLines, text, PANEL_WIDTH - 2);
+    newsScroll = 0;
+    invalidate();
+  }
+
+  public int newsScroll() {
+    return newsScroll;
+  }
+
+  public int newsLineCount() {
+    return newsLines.size();
+  }
+
+  public void moveNewsScroll(int delta) {
+    newsScroll = Math.max(0, Math.min(newsScroll + delta, Math.max(0, newsLines.size() - 1)));
+    invalidate();
+  }
+
   public int equipmentEntryCount() {
     if(equipment == null) {
       return 0;
@@ -319,6 +343,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public void openDesigner() {
     panel = MainPanel.Designer;
+    invalidate();
+  }
+
+  public void openNews() {
+    panel = MainPanel.News;
     invalidate();
   }
 
@@ -478,6 +507,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         return 60;
       case Designer:
         return 60;
+      case News:
+        return 60;
       default:
         return PANEL_WIDTH;
     }
@@ -519,6 +550,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case Designer:
         drawDesignerPanel(graphics, x, height);
+        break;
+      case News:
+        drawNewsPanel(graphics, x, height);
         break;
       default:
         drawNavigationPanel(graphics, x, height);
@@ -823,6 +857,17 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return designerField == field ? "> " : "  ";
   }
 
+  private void drawNewsPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, cut(Strings.NewsTitle + " · " + newsHead, panelWidth()));
+    int row = 5;
+    int last = Math.min(newsLines.size(), newsScroll + (height - 9));
+    for(int i = newsScroll; i < last; i++) {
+      graphics.putString(x, row++, cut(newsLines.get(i), panelWidth()));
+    }
+    graphics.putString(x, height - 4, cut(Functions.StringVars(Strings.NewsPosition,
+        "" + (newsLines.isEmpty() ? 0 : newsScroll + 1), "" + newsLines.size()), panelWidth()));
+  }
+
   private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
     graphics.putString(x, 3, Strings.QuestsTitle);
     int row = 4;
@@ -920,6 +965,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case Designer:
         keys = Strings.DesignerKeys;
+        break;
+      case News:
+        keys = Strings.NewsKeys;
         break;
       default:
         keys = Strings.MainKeys;

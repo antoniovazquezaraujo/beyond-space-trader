@@ -230,6 +230,11 @@ public final class LanternaMainWindow
   }
 
   @Override
+  public void showNewspaper() {
+    openNews();
+  }
+
+  @Override
   public EncounterResult showEncounter() {
     Game game = gameSupplier.get();
     if(game == null) {
@@ -367,6 +372,9 @@ public final class LanternaMainWindow
     }
     if(content.panel() == MainPanel.Designer) {
       return handleDesignerKey(key);
+    }
+    if(content.panel() == MainPanel.News) {
+      return handleNewsKey(key);
     }
     switch(key.getKeyType()) {
       case Tab:
@@ -1068,6 +1076,9 @@ public final class LanternaMainWindow
       case 'q':
         openQuests();
         return true;
+      case 'n':
+        openNews();
+        return true;
       case 'p':
         openPersonnel();
         return true;
@@ -1181,6 +1192,34 @@ public final class LanternaMainWindow
       return;
     }
     refresh();
+  }
+
+  private boolean handleNewsKey(KeyStroke key) {
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        content.moveNewsScroll(-1);
+        return true;
+      case ArrowDown:
+        content.moveNewsScroll(1);
+        return true;
+      case PageUp:
+        content.moveNewsScroll(-10);
+        return true;
+      case PageDown:
+        content.moveNewsScroll(10);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private void openNews() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    content.news(game.NewspaperHead(), game.NewspaperText());
+    content.openNews();
   }
 
   private boolean handleGameOverKey(KeyStroke key) {
