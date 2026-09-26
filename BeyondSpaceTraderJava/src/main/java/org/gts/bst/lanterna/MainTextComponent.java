@@ -136,6 +136,10 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    String blank = " ".repeat(width);
+    for(int row = 0; row < height; row++) {
+      graphics.putString(0, row, blank);
+    }
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
     drawHeader(graphics, width, cmdr);

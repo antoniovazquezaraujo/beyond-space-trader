@@ -10,7 +10,10 @@ package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -49,6 +52,8 @@ class LanternaMainWindowTest {
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
       assertTrue(areaContains(screen, 1, 4, 60, 26, "*o@+"), "no chart markers");
       assertTrue(row(screen, 29).contains(Strings.MainKeys), row(screen, 29));
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
+          "the window background must be black");
       assertTrue(columnContains(screen, 68, 3, 29, holder[0].Commander().CurrentSystem().Name()),
           "current system not in the panel");
 
