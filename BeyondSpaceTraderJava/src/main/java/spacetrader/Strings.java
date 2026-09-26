@@ -298,6 +298,7 @@ public final class Strings {
   public static final String MainTarget = text("MainTarget");
   public static final String MainTargetDistance = text("MainTargetDistance");
   public static final String MainTargetOffRange = text("MainTargetOffRange");
+  public static final String MainWormhole = text("MainWormhole");
   public static final String MainTech = text("MainTech");
   public static final String MainTracking = text("MainTracking");
   public static final String MainUntracking = text("MainUntracking");

@@ -24,6 +24,7 @@ public record TargetSystemViewModel(
     String distance,
     boolean outOfRangeVisible,
     boolean warpVisible,
-    boolean trackVisible) {
+    boolean trackVisible,
+    String wormholeTo) {
 }
 

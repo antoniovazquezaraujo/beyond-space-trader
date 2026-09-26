@@ -301,6 +301,7 @@ public class MainPresenter {
     }
     Commander cmdr = game.Commander();
     boolean outOfRange = !system.DestOk() && system != cmdr.CurrentSystem();
+    StarSystem pair = Functions.WormholeTarget(system.Id().CastToInt());
     view.renderTargetSystem(new TargetSystemViewModel(
         true,
         system.Name(),
@@ -313,11 +314,12 @@ public class MainPresenter {
         "" + Functions.Distance(cmdr.CurrentSystem(), system),
         outOfRange,
         system.DestOk(),
-        outOfRange && system != game.TrackedSystem()));
+        outOfRange && system != game.TrackedSystem(),
+        pair == null ? "" : pair.Name()));
   }
 
   private static TargetSystemViewModel emptyTarget(boolean navigationVisible) {
-    return new TargetSystemViewModel(navigationVisible, "", "", "", "", "", "", "", "", false, false, false);
+    return new TargetSystemViewModel(navigationVisible, "", "", "", "", "", "", "", "", false, false, false, "");
   }
 }
 

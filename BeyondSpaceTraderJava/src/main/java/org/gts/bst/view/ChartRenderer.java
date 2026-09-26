@@ -21,8 +21,8 @@ import java.util.List;
  * visited and dim afterwards. The state markers are a pair of horizontal symbols:
  * the current system is drawn inverted (its colour becomes the cell background), the
  * selected/target system carries parentheses, the tracked system brackets (outside
- * the parentheses when both apply, {@code [(·)]}) and a system with a wormhole a
- * magenta {@code ~} next to it. The short-range chart also draws the names just under
+ * the parentheses when both apply, {@code [(·)]}) and a system with a wormhole is
+ * drawn as a circled dot ({@code ⊙}) instead of its size glyph. The short-range chart also draws the names just under
  * their stars, skipping (or truncating with an ellipsis) the ones that do not fit.
  *
  * <p>The galactic chart scales the whole galaxy down so that it always fits in the
@@ -32,13 +32,15 @@ import java.util.List;
  * falls outside the view, an arrow at the edge points to it.
  */
 public final class ChartRenderer {
-  static final char WORMHOLE = '~';
+  static final char WORMHOLE = '⊙';
   static final char BRAILLE_BASE = '\u2800';
   static final char TARGET_OPEN = '(';
   static final char TARGET_CLOSE = ')';
   static final char TRACK_OPEN = '[';
   static final char TRACK_CLOSE = ']';
   static final char ELLIPSIS = '…';
+  static final char WORMHOLE_HORIZONTAL = '─';
+  static final char WORMHOLE_VERTICAL = '│';
   /** Shortest truncated name worth drawing (letters plus the ellipsis). */
   private static final int MIN_TRUNCATED_NAME = 5;
   private static final char[] SIZE_GLYPHS = {'·', '•', '◦', '✧', '✦', '✶'};
@@ -48,6 +50,7 @@ public final class ChartRenderer {
   private static final ChartColor TRACK_COLOR = ChartColor.WHITE;
   private static final ChartColor CURRENT_ARROW_COLOR = ChartColor.CYAN;
   private static final ChartColor TRACKED_ARROW_COLOR = ChartColor.RED;
+  private static final ChartColor WORMHOLE_COLOR = ChartColor.MAGENTA;
 
   private ChartRenderer() {
   }
@@ -74,6 +77,15 @@ public final class ChartRenderer {
     boolean[][] used = new boolean[canvas.height()][canvas.width()];
     drawRangeRing(canvas, left + (int)Math.round(model.currentX() / scale),
         top + (int)Math.round(model.currentY() / scale), model.fuel() / scale);
+    for(ChartSystem system : model.systems()) {
+      if(system.selected() && system.wormholeLinked()) {
+        drawWormholeLine(canvas, system,
+            left + (int)Math.round(system.x() / scale), top + (int)Math.round(system.y() / scale),
+            left + (int)Math.round(system.wormholeToX() / scale),
+            top + (int)Math.round(system.wormholeToY() / scale), used);
+        break;
+      }
+    }
     // The stars first (the special ones last), then the wormhole marks and, over
     // everything, the state decorations; nothing paints over a star.
     for(ChartSystem system : model.systems()) {
@@ -87,10 +99,6 @@ public final class ChartRenderer {
         drawStar(canvas, model, system, left + (int)Math.round(system.x() / scale),
             top + (int)Math.round(system.y() / scale), used);
       }
-    }
-    for(ChartSystem system : model.systems()) {
-      drawWormhole(canvas, system, left + (int)Math.round(system.x() / scale),
-          top + (int)Math.round(system.y() / scale), used);
     }
     for(ChartSystem system : model.systems()) {
       drawDecoration(canvas, system, left + (int)Math.round(system.x() / scale),
@@ -110,6 +118,14 @@ public final class ChartRenderer {
     int currentY = model.currentY() - model.viewY();
     drawRangeRing(canvas, currentX, currentY, model.fuel());
     for(ChartSystem system : model.systems()) {
+      if(system.selected() && system.wormholeLinked()) {
+        drawWormholeLine(canvas, system,
+            system.x() - model.viewX(), system.y() - model.viewY(),
+            system.wormholeToX() - model.viewX(), system.wormholeToY() - model.viewY(), used);
+        break;
+      }
+    }
+    for(ChartSystem system : model.systems()) {
       if(!isSpecial(system, model)) {
         drawStar(canvas, model, system, system.x() - model.viewX(), system.y() - model.viewY(), used);
       }
@@ -118,9 +134,6 @@ public final class ChartRenderer {
       if(isSpecial(system, model)) {
         drawStar(canvas, model, system, system.x() - model.viewX(), system.y() - model.viewY(), used);
       }
-    }
-    for(ChartSystem system : model.systems()) {
-      drawWormhole(canvas, system, system.x() - model.viewX(), system.y() - model.viewY(), used);
     }
     for(ChartSystem system : model.systems()) {
       drawDecoration(canvas, system, system.x() - model.viewX(), system.y() - model.viewY(), used);
@@ -142,7 +155,7 @@ public final class ChartRenderer {
     if(!inside(canvas, x, y)) {
       return;
     }
-    char glyph = sizeGlyph(system);
+    char glyph = system.wormhole() ? WORMHOLE : sizeGlyph(system);
     if(isCurrent(system, model)) {
       canvas.putInverted(x, y, glyph, system.color());
     } else {
@@ -179,11 +192,42 @@ public final class ChartRenderer {
     }
   }
 
-  private static void drawWormhole(ChartCanvas canvas, ChartSystem system, int x, int y, boolean[][] used) {
-    if(system.wormhole() && inside(canvas, x, y) && x + 1 < canvas.width()) {
-      canvas.put(x + 1, y, WORMHOLE, ChartColor.MAGENTA);
-      mark(used, x + 1, y);
+  /**
+   * Draws the link of a wormhole when its system is selected: a horizontal and a
+   * vertical segment (an L) in magenta, starting after the state marks and under the
+   * stars, so the player sees where it leads before travelling. The names avoid it.
+   */
+  private static void drawWormholeLine(ChartCanvas canvas, ChartSystem source, int x1, int y1, int x2, int y2,
+      boolean[][] used) {
+    int stepX = x1 <= x2 ? 1 : -1;
+    int stepY = y1 <= y2 ? 1 : -1;
+    int offset = source.tracked() ? 3 : 2;
+    boolean horizontal = (x2 - (x1 + stepX * offset)) * stepX > 0;
+    boolean vertical = (y2 - (y1 + stepY)) * stepY > 0;
+    if(horizontal) {
+      int x = x1 + stepX * offset;
+      while((x2 - x) * stepX > 0) {
+        draw(canvas, used, x, y1, WORMHOLE_HORIZONTAL, WORMHOLE_COLOR);
+        x += stepX;
+      }
     }
+    if(horizontal && vertical && x1 != x2 && y1 != y2) {
+      draw(canvas, used, x2, y1, corner(stepX, stepY), WORMHOLE_COLOR);
+    }
+    if(vertical) {
+      int y = y1 + stepY;
+      while((y2 - y) * stepY > 0) {
+        draw(canvas, used, x2, y, WORMHOLE_VERTICAL, WORMHOLE_COLOR);
+        y += stepY;
+      }
+    }
+  }
+
+  private static char corner(int stepX, int stepY) {
+    if(stepX > 0) {
+      return stepY > 0 ? '┌' : '└';
+    }
+    return stepY > 0 ? '┐' : '┘';
   }
 
   /**
