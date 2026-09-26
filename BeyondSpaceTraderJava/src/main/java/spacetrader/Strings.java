@@ -300,6 +300,7 @@ public final class Strings {
   public static final String MainTargetOffRange = text("MainTargetOffRange");
   public static final String MainTech = text("MainTech");
   public static final String MainTracking = text("MainTracking");
+  public static final String MainUntracking = text("MainUntracking");
   public static final String MainWarpCurrent = text("MainWarpCurrent");
   public static final String MainWarpNoTarget = text("MainWarpNoTarget");
   public static final String MainWarpOutOfRange = text("MainWarpOutOfRange");

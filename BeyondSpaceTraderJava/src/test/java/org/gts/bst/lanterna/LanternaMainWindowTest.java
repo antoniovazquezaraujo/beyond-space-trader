@@ -36,6 +36,7 @@ import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.StarSystem;
+import spacetrader.enums.StarSystemId;
 import spacetrader.Strings;
 
 
@@ -62,6 +63,7 @@ class LanternaMainWindowTest {
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
       assertTrue(areaContains(screen, 1, 4, 60, 26, "·•◦✧✦✶"), "no chart markers");
       assertTrue(screenText(screen).contains("[TAB] map · [C] trade · [B] bank"), screenText(screen));
+      assertTrue(screenText(screen).contains("[T] track"), screenText(screen));
       assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
           "the window background must be black");
       assertTrue(screenText(screen).contains(holder[0].Commander().CurrentSystem().Name()),
@@ -898,7 +900,7 @@ class LanternaMainWindowTest {
   }
 
   @Test
-  void tracksTheCurrentSystemWhenNothingIsSelectedYet() throws IOException {
+  void tracksAndUntracksTheCurrentSystemWhenNothingIsSelectedYet() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
@@ -918,6 +920,13 @@ class LanternaMainWindowTest {
       StarSystem current = holder[0].Commander().CurrentSystem();
       assertEquals(current.Id().CastToInt(), holder[0].getTrackedSystemId().CastToInt());
       assertTrue(screenText(screen).contains(Functions.StringVars(Strings.MainTracking, current.Name())),
+          screenText(screen));
+
+      // Pressing T again stops tracking it.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('t', false, false));
+      gui.updateScreen();
+      assertEquals(StarSystemId.NA.CastToInt(), holder[0].getTrackedSystemId().CastToInt());
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.MainUntracking, current.Name())),
           screenText(screen));
     } finally {
       screen.stopScreen();
