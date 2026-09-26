@@ -74,6 +74,7 @@ import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.GameEndException;
 import spacetrader.StarSystem;
+import spacetrader.enums.StarSystemId;
 import org.gts.bst.ship.ShipType;
 import spacetrader.Strings;
 import org.gts.bst.ship.equip.EquipmentType;
@@ -1166,8 +1167,13 @@ public final class LanternaMainWindow
   private void trackSelection(Game game) {
     StarSystem selected = game.SelectedSystem() == null
         ? game.Commander().CurrentSystem() : game.SelectedSystem();
-    game.setTrackedSystemId(selected.Id());
-    content.log(Functions.StringVars(Strings.MainTracking, selected.Name()));
+    if(selected == game.TrackedSystem()) {
+      game.setTrackedSystemId(StarSystemId.NA);
+      content.log(Functions.StringVars(Strings.MainUntracking, selected.Name()));
+    } else {
+      game.setTrackedSystemId(selected.Id());
+      content.log(Functions.StringVars(Strings.MainTracking, selected.Name()));
+    }
     if(presenter != null) {
       presenter.updateTargetSystemInfo();
     }

@@ -204,7 +204,7 @@ chart is hidden; the chart comes back when the panel closes.
 | --- | --- |
 | Arrows | Move the cursor on the map or in the panel |
 | TAB | Local chart / galactic chart |
-| ENTER / T | Confirm / track the selected system |
+| ENTER / T | Confirm / track the selected system (T again stops tracking it) |
 | ESC | Close the panel / go back / quit |
 | C | Trade panel |
 | B | Bank panel |
