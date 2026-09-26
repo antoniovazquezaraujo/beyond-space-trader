@@ -56,7 +56,7 @@ and the presenters stay.
 | Last message (embedded in the separator line)                            |
 | [TAB] map · [C] trade · [B] bank · [Q] quests · [N] news · [W] warp ...  |
 | ... [T] track · [F] fuel · [R] repairs · [I] cmdr · [V] ship ...         |
-| ... plus the actions available here ([L] Ships, [E] Equipment, ...)      |
+| ... plus the actions available here ([S] ships, [E] equipment, ...)      |
 | ... and the program menu ([F10] menu) last                               |
 +--------------------------------------------------------------------------+
 ```
