@@ -107,6 +107,7 @@ public final class LanternaMainWindow
   private EquipmentPresenter equipmentPresenter;
   private ShipyardPresenter shipyardPresenter;
   private boolean gameOver;
+  private List<MenuEntry> menuEntries = new ArrayList<>();
   private Runnable newGameAction;
   private Runnable saveGameAction;
   private Runnable loadGameAction;
@@ -329,8 +330,19 @@ public final class LanternaMainWindow
     if(game == null) {
       return false;
     }
+    if(key.getKeyType() == KeyType.F10) {
+      if(content.panel() == MainPanel.Menu) {
+        content.closePanel();
+      } else {
+        openMenu();
+      }
+      return true;
+    }
     if(gameOver) {
       return handleGameOverKey(key);
+    }
+    if(content.panel() == MainPanel.Menu) {
+      return handleMenuKey(key);
     }
     if(key.getKeyType() == KeyType.Escape) {
       if(content.panel() != MainPanel.Navigation) {
@@ -1192,6 +1204,85 @@ public final class LanternaMainWindow
       return;
     }
     refresh();
+  }
+
+  private boolean handleMenuKey(KeyStroke key) {
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        content.moveMenuSelection(-1);
+        return true;
+      case ArrowDown:
+        content.moveMenuSelection(1);
+        return true;
+      case Enter:
+        activateMenuEntry();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private void openMenu() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    menuEntries = new ArrayList<>();
+    menuEntries.add(header(Strings.MenuShip));
+    menuEntries.add(entry(Strings.MenuShipInfo, this::openShip));
+    menuEntries.add(entry(Strings.MenuShipList, this::openShipList));
+    menuEntries.add(entry(Strings.MenuEquipment, this::openEquipment));
+    menuEntries.add(entry(Strings.MenuDesign, this::openDesigner));
+    menuEntries.add(entry(Strings.MenuPod, this::buyEscapePod));
+    menuEntries.add(entry(Strings.MenuFuel, this::buyFuel));
+    menuEntries.add(entry(Strings.MenuRepairs, this::buyRepairs));
+    menuEntries.add(header(Strings.MenuCrew));
+    menuEntries.add(entry(Strings.MenuCommander, this::openCommander));
+    menuEntries.add(entry(Strings.MenuPersonnel, this::openPersonnel));
+    menuEntries.add(entry(Strings.MenuQuests, this::openQuests));
+    menuEntries.add(header(Strings.MenuTrade));
+    menuEntries.add(entry(Strings.MenuTradePanel, content::openTrade));
+    menuEntries.add(entry(Strings.MenuBank, this::openBank));
+    menuEntries.add(header(Strings.MenuGame));
+    menuEntries.add(entry(Strings.MenuNews, this::openNews));
+    menuEntries.add(entry(Strings.MenuScores, this::openHighScores));
+    menuEntries.add(entry(Strings.MenuOptions, this::openOptions));
+    menuEntries.add(entry(Strings.MenuSave, () -> runAction(saveGameAction, Strings.MainSaveUnavailable)));
+    menuEntries.add(entry(Strings.MenuLoad, () -> runAction(loadGameAction, Strings.MainLoadUnavailable)));
+    menuEntries.add(entry(Strings.MenuNewGame, () -> runAction(newGameAction, Strings.MainNewGameUnavailable)));
+    menuEntries.add(entry(Strings.MenuQuit, window::close));
+    List<String> lines = new ArrayList<>(menuEntries.size());
+    List<Boolean> selectable = new ArrayList<>(menuEntries.size());
+    for(MenuEntry menuEntry : menuEntries) {
+      lines.add(menuEntry.label());
+      selectable.add(menuEntry.selectable());
+    }
+    content.menu(lines, selectable);
+    content.openMenu();
+  }
+
+  private void activateMenuEntry() {
+    int index = content.menuIndex();
+    if(index >= 0 && index < menuEntries.size()) {
+      Runnable action = menuEntries.get(index).action();
+      if(action != null) {
+        action.run();
+      }
+    }
+  }
+
+  private static MenuEntry header(String label) {
+    return new MenuEntry(label, null);
+  }
+
+  private static MenuEntry entry(String label, Runnable action) {
+    return new MenuEntry(label, action);
+  }
+
+  private record MenuEntry(String label, Runnable action) {
+    boolean selectable() {
+      return action != null;
+    }
   }
 
   private boolean handleNewsKey(KeyStroke key) {

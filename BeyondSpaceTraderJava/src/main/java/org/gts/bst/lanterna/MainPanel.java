@@ -25,5 +25,6 @@ public enum MainPanel {
   Options,
   HighScores,
   Designer,
-  News
+  News,
+  Menu
 }

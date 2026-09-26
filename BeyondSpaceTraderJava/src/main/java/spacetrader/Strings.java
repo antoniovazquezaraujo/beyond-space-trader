@@ -456,4 +456,31 @@ public final class Strings {
   public static final String NewsPosition = text("NewsPosition");
   public static final String NewsTitle = text("NewsTitle");
 
+  public static final String MenuBank = text("MenuBank");
+  public static final String MenuBar = text("MenuBar");
+  public static final String MenuCommander = text("MenuCommander");
+  public static final String MenuCrew = text("MenuCrew");
+  public static final String MenuDesign = text("MenuDesign");
+  public static final String MenuEquipment = text("MenuEquipment");
+  public static final String MenuFuel = text("MenuFuel");
+  public static final String MenuGame = text("MenuGame");
+  public static final String MenuKeys = text("MenuKeys");
+  public static final String MenuLoad = text("MenuLoad");
+  public static final String MenuNewGame = text("MenuNewGame");
+  public static final String MenuNews = text("MenuNews");
+  public static final String MenuOptions = text("MenuOptions");
+  public static final String MenuPersonnel = text("MenuPersonnel");
+  public static final String MenuPod = text("MenuPod");
+  public static final String MenuQuests = text("MenuQuests");
+  public static final String MenuQuit = text("MenuQuit");
+  public static final String MenuRepairs = text("MenuRepairs");
+  public static final String MenuSave = text("MenuSave");
+  public static final String MenuScores = text("MenuScores");
+  public static final String MenuShip = text("MenuShip");
+  public static final String MenuShipInfo = text("MenuShipInfo");
+  public static final String MenuShipList = text("MenuShipList");
+  public static final String MenuTitle = text("MenuTitle");
+  public static final String MenuTrade = text("MenuTrade");
+  public static final String MenuTradePanel = text("MenuTradePanel");
+
 }
