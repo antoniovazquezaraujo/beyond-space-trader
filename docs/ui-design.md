@@ -12,6 +12,14 @@ and the presenters stay.
 - **Clean terminal.** Simple boxes and borders, a small intentional palette
   (default/green/yellow/red), no bevels, no system dialogs, no system fonts.
 - **Keyboard first.** Every action has a visible key; the mouse is optional.
+- **Header:** the fields in the sketch below (commander, day, credits, debt, fuel,
+  hull, shields, cargo, police record and warnings).
+- **Charts:** one at a time in the centre; `TAB` switches between the local and the
+  galactic chart.
+- **Encounters:** they replace the context panel with their own action keys; the map
+  stays visible behind.
+- **Options, save/load and confirmations:** panels in the same window, not a
+  separate menu screen.
 
 ## Layout
 
@@ -118,9 +126,4 @@ the new views.
 
 ## Open questions
 
-- Header fields: is this set right? Anything missing (e.g. day-of-week, current
-  system name in the header too)?
-- Do we keep both charts at once (galactic mini-map inside the local chart)?
-- Encounter: replace the right panel or take the whole window with the map dimmed?
-- Options/save/load: panel or separate menu screen?
 - Quantities in trade: preset steps (1/10/100/all) or free number entry?
