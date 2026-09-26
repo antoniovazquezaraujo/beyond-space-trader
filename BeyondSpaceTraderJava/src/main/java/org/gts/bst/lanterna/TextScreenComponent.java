@@ -10,7 +10,6 @@ package org.gts.bst.lanterna;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.AbstractInteractableComponent;
 import com.googlecode.lanterna.gui2.Interactable;
 import com.googlecode.lanterna.gui2.InteractableRenderer;
@@ -75,15 +74,13 @@ public final class TextScreenComponent extends AbstractInteractableComponent<Tex
     TerminalSize size = getSize();
     int width = size.getColumns();
     int height = size.getRows();
-    graphics.setForegroundColor(TextColor.ANSI.WHITE);
-    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    UiPalette.reset(graphics);
     String blank = " ".repeat(width);
     for(int row = 0; row < height; row++) {
       graphics.putString(0, row, blank);
     }
     for(int i = 0; i < lines.size() && i < height; i++) {
-      String line = lines.get(i);
-      graphics.putString(0, i, line.length() <= width ? line : line.substring(0, width));
+      UiPalette.keys(graphics, 0, i, lines.get(i), width);
     }
   }
 }

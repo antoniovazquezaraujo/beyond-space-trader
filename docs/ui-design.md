@@ -212,6 +212,16 @@ new game and quit).
 4. **Encounter:** context panel replaced; the map stays visible behind it.
 5. **Game over / retirement:** summary and the high score table.
 
+## Colours (ANSI palette)
+
+The text UI uses one ANSI palette with semantic roles, defined in `UiPalette`: white
+text, **cyan** titles and accents (day, system, target, panel titles), **yellow** keys
+(written as `[C]`) and amounts, **green/red** status values (fuel, hull, shields,
+police record, buy/sell prices) and highlighted selected rows (black on cyan). The F10
+menu uses the same colours (cyan frame, highlighted entry) and the window chrome
+(encounter, dialogs) takes its colours from `LanternaTheme`. The chart keeps its own
+system colours.
+
 ## Ship sprites
 
 Every standard ship has a small schematic ASCII sprite (up to 12 columns x 5 rows) in
