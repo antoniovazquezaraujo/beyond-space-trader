@@ -19,5 +19,7 @@ public enum MainPanel {
   Quests,
   Personnel,
   Commander,
-  Ship
+  Ship,
+  ShipList,
+  Equipment
 }

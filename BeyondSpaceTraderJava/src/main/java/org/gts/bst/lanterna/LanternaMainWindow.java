@@ -24,8 +24,10 @@ import org.gts.bst.presenter.BankPresenter;
 import org.gts.bst.presenter.CargoTransferPresenter;
 import org.gts.bst.presenter.CommanderPresenter;
 import org.gts.bst.presenter.EncounterPresenter;
+import org.gts.bst.presenter.EquipmentPresenter;
 import org.gts.bst.presenter.PersonnelPresenter;
 import org.gts.bst.presenter.QuestsPresenter;
+import org.gts.bst.presenter.ShipListPresenter;
 import org.gts.bst.presenter.ShipPresenter;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.presenter.MainPresenter;
@@ -35,6 +37,10 @@ import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.ChartsViewModel;
 import org.gts.bst.view.CommanderView;
 import org.gts.bst.view.CommanderViewModel;
+import org.gts.bst.view.DialogResult;
+import org.gts.bst.view.EquipmentInfoViewModel;
+import org.gts.bst.view.EquipmentView;
+import org.gts.bst.view.EquipmentViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.GameWindow;
 import org.gts.bst.view.MainStatusViewModel;
@@ -45,6 +51,9 @@ import org.gts.bst.view.PersonnelView;
 import org.gts.bst.view.PersonnelViewModel;
 import org.gts.bst.view.QuestsView;
 import org.gts.bst.view.QuestsViewModel;
+import org.gts.bst.view.ShipInfoViewModel;
+import org.gts.bst.view.ShipListView;
+import org.gts.bst.view.ShipListViewModel;
 import org.gts.bst.view.ShipView;
 import org.gts.bst.view.ShipViewModel;
 import org.gts.bst.view.ShipyardViewModel;
@@ -56,6 +65,7 @@ import spacetrader.Game;
 import spacetrader.GameEndException;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
+import org.gts.bst.ship.equip.EquipmentType;
 import spacetrader.enums.AlertType;
 
 
@@ -65,7 +75,7 @@ import spacetrader.enums.AlertType;
  */
 public final class LanternaMainWindow
     implements MainView, MainWindow, GameWindow, BankView, QuestsView,
-    PersonnelView, CommanderView, ShipView {
+    PersonnelView, CommanderView, ShipView, ShipListView, EquipmentView {
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
   private final BasicWindow window = new BasicWindow();
@@ -74,6 +84,8 @@ public final class LanternaMainWindow
   private BankPresenter bankPresenter;
   private QuestsPresenter questsPresenter;
   private PersonnelPresenter personnelPresenter;
+  private ShipListPresenter shipListPresenter;
+  private EquipmentPresenter equipmentPresenter;
 
   public LanternaMainWindow(Supplier<Game> gameSupplier, WindowBasedTextGUI gui) {
     this.gameSupplier = gameSupplier;
@@ -297,6 +309,12 @@ public final class LanternaMainWindow
     if(content.panel() == MainPanel.Commander || content.panel() == MainPanel.Ship) {
       return false;
     }
+    if(content.panel() == MainPanel.ShipList) {
+      return handleShipListKey(key);
+    }
+    if(content.panel() == MainPanel.Equipment) {
+      return handleEquipmentKey(key);
+    }
     switch(key.getKeyType()) {
       case Tab:
         content.toggleChart();
@@ -408,6 +426,174 @@ public final class LanternaMainWindow
   @Override
   public void render(ShipViewModel model) {
     content.ship(model);
+  }
+
+  @Override
+  public void render(ShipListViewModel model) {
+    content.shipList(model);
+  }
+
+  @Override
+  public void renderInfo(ShipInfoViewModel info) {
+    content.shipInfo(info);
+  }
+
+  @Override
+  public void render(EquipmentViewModel model) {
+    content.equipment(model);
+  }
+
+  @Override
+  public void renderInfo(EquipmentInfoViewModel info) {
+    content.equipmentInfo(info);
+  }
+
+  private boolean handleShipListKey(KeyStroke key) {
+    if(shipListPresenter == null) {
+      return false;
+    }
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        selectShipListEntry(content.shipListIndex() - 1);
+        return true;
+      case ArrowDown:
+        selectShipListEntry(content.shipListIndex() + 1);
+        return true;
+      case Character:
+        if(Character.toLowerCase(key.getCharacter()) != 'b') {
+          return false;
+        }
+        ShipListViewModel model = content.shipList();
+        int index = content.shipListIndex();
+        if(model != null && index < model.rows().size() && model.rows().get(index).buyVisible()) {
+          shipListPresenter.buy(index);
+          selectShipListEntry(0);
+        }
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private void selectShipListEntry(int index) {
+    int count = content.shipListEntryCount();
+    if(count == 0) {
+      return;
+    }
+    int selected = Math.floorMod(index, count);
+    content.shipListIndex(selected);
+    shipListPresenter.select(selected);
+  }
+
+  private boolean handleEquipmentKey(KeyStroke key) {
+    if(equipmentPresenter == null) {
+      return false;
+    }
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        selectEquipmentEntry(content.equipmentIndex() - 1);
+        return true;
+      case ArrowDown:
+        selectEquipmentEntry(content.equipmentIndex() + 1);
+        return true;
+      case Character:
+        char character = Character.toLowerCase(key.getCharacter());
+        if(character == 'b') {
+          equipmentPresenter.buy();
+          selectEquipmentEntry(content.equipmentIndex());
+          return true;
+        }
+        if(character == 's') {
+          equipmentPresenter.sell();
+          selectEquipmentEntry(content.equipmentIndex());
+          return true;
+        }
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  private void selectEquipmentEntry(int index) {
+    int count = content.equipmentEntryCount();
+    EquipmentViewModel model = content.equipment();
+    if(count == 0 || model == null) {
+      return;
+    }
+    int selected = Math.floorMod(index, count);
+    content.equipmentIndex(selected);
+    int weapons = model.buyWeapons().size();
+    int shields = model.buyShields().size();
+    int gadgets = model.buyGadgets().size();
+    int buyCount = weapons + shields + gadgets;
+    if(selected < buyCount) {
+      if(selected < weapons) {
+        equipmentPresenter.select(EquipmentType.Weapon, false, selected);
+      } else if(selected < weapons + shields) {
+        equipmentPresenter.select(EquipmentType.Shield, false, selected - weapons);
+      } else {
+        equipmentPresenter.select(EquipmentType.Gadget, false, selected - weapons - shields);
+      }
+    } else {
+      int sellIndex = selected - buyCount;
+      int sellWeapons = model.sellWeapons().size();
+      int sellShields = model.sellShields().size();
+      if(sellIndex < sellWeapons) {
+        equipmentPresenter.select(EquipmentType.Weapon, true, sellIndex);
+      } else if(sellIndex < sellWeapons + sellShields) {
+        equipmentPresenter.select(EquipmentType.Shield, true, sellIndex - sellWeapons);
+      } else {
+        equipmentPresenter.select(EquipmentType.Gadget, true, sellIndex - sellWeapons - sellShields);
+      }
+    }
+  }
+
+  private void openShipList() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    if(shipListPresenter == null) {
+      shipListPresenter = new ShipListPresenter(game, this);
+    }
+    content.shipListIndex(0);
+    shipListPresenter.update();
+    shipListPresenter.notifyTribblesTradeInIfNeeded();
+    selectShipListEntry(0);
+    content.openShipList();
+  }
+
+  private void openEquipment() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    if(equipmentPresenter == null) {
+      equipmentPresenter = new EquipmentPresenter(game, this);
+    }
+    content.equipmentIndex(0);
+    equipmentPresenter.update();
+    selectEquipmentEntry(0);
+    content.openEquipment();
+  }
+
+  private void buyEscapePod() {
+    Game game = gameSupplier.get();
+    if(game.Commander().getShip().getEscapePod()) {
+      content.log(Strings.MainEscapePodAlready);
+      return;
+    }
+    if(game.Dialogs().alert(AlertType.EquipmentEscapePod) != DialogResult.Yes) {
+      return;
+    }
+    if(game.Commander().getCash() < 2000) {
+      game.Dialogs().alert(AlertType.EquipmentIF);
+      return;
+    }
+    game.Commander().setCash(game.Commander().getCash() - 2000);
+    game.Commander().getShip().setEscapePod(true);
+    content.log(Strings.MainEscapePodBought);
+    refresh();
   }
 
   private boolean handlePersonnelKey(KeyStroke key) {
@@ -525,6 +711,15 @@ public final class LanternaMainWindow
       case 'i':
         openCommander();
         return true;
+      case 'l':
+        openShipList();
+        return true;
+      case 'e':
+        openEquipment();
+        return true;
+      case 'o':
+        buyEscapePod();
+        return true;
       case 't':
         trackSelection(game);
         return true;
@@ -600,7 +795,7 @@ public final class LanternaMainWindow
       game.Dialogs().alert(AlertType.ChartJumpCurrent);
       return;
     }
-    if(game.Dialogs().alert(AlertType.ChartJump, game.WarpSystem().Name()) != org.gts.bst.view.DialogResult.Yes) {
+    if(game.Dialogs().alert(AlertType.ChartJump, game.WarpSystem().Name()) != DialogResult.Yes) {
       return;
     }
     try {

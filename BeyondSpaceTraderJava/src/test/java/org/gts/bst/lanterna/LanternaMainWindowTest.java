@@ -52,7 +52,7 @@ class LanternaMainWindowTest {
       assertTrue(header.contains(Strings.MainDay.substring(0, 3)), header);
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
       assertTrue(areaContains(screen, 1, 4, 60, 26, "*o@+"), "no chart markers");
-      assertTrue(row(screen, 29).contains("TAB chart"), row(screen, 29));
+      assertTrue(row(screen, 29).contains("TAB map"), row(screen, 29));
       assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
           "the window background must be black");
       assertTrue(columnContains(screen, 68, 3, 29, holder[0].Commander().CurrentSystem().Name()),
@@ -176,6 +176,45 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertFalse(screenText(screen).contains(Strings.PersonnelTitle));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void opensTheShipListAndEquipmentPanels() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('l', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.ShipListTitle), screenText(screen));
+      assertTrue(screenText(screen).contains("> Flea"), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Gnat"), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('e', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.EquipmentTitle), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.EquipmentBuySection), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.EquipmentSellSection), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains(Strings.EquipmentTitle));
     } finally {
       screen.stopScreen();
       screen.close();
