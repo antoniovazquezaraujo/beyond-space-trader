@@ -55,10 +55,11 @@ class LanternaMainWindowTest {
       assertTrue(header.contains(Strings.MainDay.substring(0, 3)), header);
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
       assertTrue(areaContains(screen, 1, 4, 60, 26, "*o@+"), "no chart markers");
-      assertTrue(row(screen, 29).contains("TAB map"), row(screen, 29));
+      assertTrue(screenText(screen).contains(Strings.NavTrade), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.NavChart), screenText(screen));
       assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
           "the window background must be black");
-      assertTrue(columnContains(screen, 68, 3, 29, holder[0].Commander().CurrentSystem().Name()),
+      assertTrue(screenText(screen).contains(holder[0].Commander().CurrentSystem().Name()),
           "current system not in the panel");
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Tab));
@@ -129,7 +130,7 @@ class LanternaMainWindowTest {
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
-      assertFalse(screenText(screen).contains(Strings.BankTitle));
+      assertFalse(screenText(screen).contains(Strings.BankKeys));
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
       gui.updateScreen();
@@ -137,7 +138,7 @@ class LanternaMainWindowTest {
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
-      assertFalse(screenText(screen).contains(Strings.QuestsTitle));
+      assertFalse(screenText(screen).contains(Strings.QuestsKeys));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -218,7 +219,7 @@ class LanternaMainWindowTest {
       assertTrue(screenText(screen).contains(Strings.EquipmentSellSection), screenText(screen));
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
-      assertFalse(screenText(screen).contains(Strings.EquipmentTitle));
+      assertFalse(screenText(screen).contains(Strings.EquipmentKeys));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -407,15 +408,15 @@ class LanternaMainWindowTest {
       gui.updateScreen();
       String menu = screenText(screen);
       assertTrue(menu.contains(Strings.MenuTitle), menu);
-      assertTrue(menu.contains(Strings.MenuShip), menu);
+      assertTrue(menu.contains(Strings.MenuCommander), menu);
       assertTrue(menu.contains(Strings.MenuShipInfo), menu);
-      assertTrue(menu.contains(Strings.MenuKeys), menu);
 
-      // The cursor starts on "Ship (V)"; moving down goes to "Ships for sale (L)"
+      // The cursor starts on "Commander (I)"; moving down goes to "Ship (V)"
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains(Strings.ShipListTitle), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.ShipTitle), screenText(screen));
+      assertFalse(screenText(screen).contains(Strings.MenuCommander), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -423,11 +424,11 @@ class LanternaMainWindowTest {
   }
 
   @Test
-  void panelsAreFullWidthOnNarrowTerminalsAndKeepTheChartOnWideOnes() throws IOException {
-    Screen narrow = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
-    narrow.startScreen();
+  void panelsTakeTheWholeScreen() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
     try {
-      MultiWindowTextGUI gui = new MultiWindowTextGUI(narrow);
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       Game[] holder = new Game[1];
       LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
       holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
@@ -439,33 +440,15 @@ class LanternaMainWindowTest {
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
       gui.updateScreen();
-      assertFalse(screenText(narrow).contains(Strings.MainChartGalactic), screenText(narrow));
-      assertTrue(row(narrow, 3).trim().startsWith(Strings.TradeTitle), row(narrow, 3));
-    } finally {
-      narrow.stopScreen();
-      narrow.close();
-    }
+      assertFalse(screenText(screen).contains(Strings.MainChartGalactic), screenText(screen));
+      assertTrue(row(screen, 3).trim().startsWith(Strings.TradeTitle), row(screen, 3));
 
-    Screen wide = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(140, 30)));
-    wide.startScreen();
-    try {
-      MultiWindowTextGUI gui = new MultiWindowTextGUI(wide);
-      Game[] holder = new Game[1];
-      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
-      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
-      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
-      window.setPresenter(presenter);
-      presenter.updateAll();
-      gui.addWindow(window.asWindow());
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
-
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
-      gui.updateScreen();
-      assertTrue(row(wide, 3).contains(Strings.MainChartGalactic), row(wide, 3));
-      assertTrue(row(wide, 3).contains(Strings.TradeTitle), row(wide, 3));
+      assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
     } finally {
-      wide.stopScreen();
-      wide.close();
+      screen.stopScreen();
+      screen.close();
     }
   }
 
@@ -494,17 +477,5 @@ class LanternaMainWindowTest {
       }
     }
     return false;
-  }
-
-  private static boolean columnContains(Screen screen, int x1, int y1, int y2, String text) {
-    StringBuilder column = new StringBuilder();
-    int lastColumn = Math.min(x1 + 32, screen.getTerminalSize().getColumns());
-    for(int y = y1; y <= y2; y++) {
-      for(int x = x1; x < lastColumn; x++) {
-        column.append(screen.getBackCharacter(x, y).getCharacter());
-      }
-      column.append('\n');
-    }
-    return column.toString().contains(text);
   }
 }

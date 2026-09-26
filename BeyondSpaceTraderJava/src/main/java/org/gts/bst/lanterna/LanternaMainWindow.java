@@ -74,8 +74,10 @@ import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.GameEndException;
 import spacetrader.StarSystem;
+import org.gts.bst.ship.ShipType;
 import spacetrader.Strings;
 import org.gts.bst.ship.equip.EquipmentType;
+import spacetrader.CrewMember;
 import spacetrader.GameOptions;
 import spacetrader.enums.GameEndType;
 import spacetrader.HighScoreRecord;
@@ -107,7 +109,7 @@ public final class LanternaMainWindow
   private EquipmentPresenter equipmentPresenter;
   private ShipyardPresenter shipyardPresenter;
   private boolean gameOver;
-  private List<MenuEntry> menuEntries = new ArrayList<>();
+  private final List<Runnable> menuActions = new ArrayList<>();
   private Runnable newGameAction;
   private Runnable saveGameAction;
   private Runnable loadGameAction;
@@ -177,6 +179,7 @@ public final class LanternaMainWindow
   @Override
   public void renderSystemInfo(SystemInfoViewModel model) {
     content.system(model);
+    content.navigationKeys(navigationKeys());
   }
 
   @Override
@@ -331,18 +334,14 @@ public final class LanternaMainWindow
       return false;
     }
     if(key.getKeyType() == KeyType.F10) {
-      if(content.panel() == MainPanel.Menu) {
-        content.closePanel();
-      } else {
-        openMenu();
-      }
+      toggleMenu();
       return true;
+    }
+    if(content.menuVisible()) {
+      return handleMenuKey(key);
     }
     if(gameOver) {
       return handleGameOverKey(key);
-    }
-    if(content.panel() == MainPanel.Menu) {
-      return handleMenuKey(key);
     }
     if(key.getKeyType() == KeyType.Escape) {
       if(content.panel() != MainPanel.Navigation) {
@@ -1217,72 +1216,93 @@ public final class LanternaMainWindow
       case Enter:
         activateMenuEntry();
         return true;
+      case Escape:
+        content.hideMenu();
+        return true;
       default:
         return false;
     }
   }
 
-  private void openMenu() {
+  private void toggleMenu() {
+    if(content.menuVisible()) {
+      content.hideMenu();
+      return;
+    }
     Game game = gameSupplier.get();
     if(game == null) {
       return;
     }
-    menuEntries = new ArrayList<>();
-    menuEntries.add(header(Strings.MenuShip));
-    menuEntries.add(entry(Strings.MenuShipInfo, this::openShip));
-    menuEntries.add(entry(Strings.MenuShipList, this::openShipList));
-    menuEntries.add(entry(Strings.MenuEquipment, this::openEquipment));
-    menuEntries.add(entry(Strings.MenuDesign, this::openDesigner));
-    menuEntries.add(entry(Strings.MenuPod, this::buyEscapePod));
-    menuEntries.add(entry(Strings.MenuFuel, this::buyFuel));
-    menuEntries.add(entry(Strings.MenuRepairs, this::buyRepairs));
-    menuEntries.add(header(Strings.MenuCrew));
-    menuEntries.add(entry(Strings.MenuCommander, this::openCommander));
-    menuEntries.add(entry(Strings.MenuPersonnel, this::openPersonnel));
-    menuEntries.add(entry(Strings.MenuQuests, this::openQuests));
-    menuEntries.add(header(Strings.MenuTrade));
-    menuEntries.add(entry(Strings.MenuTradePanel, content::openTrade));
-    menuEntries.add(entry(Strings.MenuBank, this::openBank));
-    menuEntries.add(header(Strings.MenuGame));
-    menuEntries.add(entry(Strings.MenuNews, this::openNews));
-    menuEntries.add(entry(Strings.MenuScores, this::openHighScores));
-    menuEntries.add(entry(Strings.MenuOptions, this::openOptions));
-    menuEntries.add(entry(Strings.MenuSave, () -> runAction(saveGameAction, Strings.MainSaveUnavailable)));
-    menuEntries.add(entry(Strings.MenuLoad, () -> runAction(loadGameAction, Strings.MainLoadUnavailable)));
-    menuEntries.add(entry(Strings.MenuNewGame, () -> runAction(newGameAction, Strings.MainNewGameUnavailable)));
-    menuEntries.add(entry(Strings.MenuQuit, window::close));
-    List<String> lines = new ArrayList<>(menuEntries.size());
-    List<Boolean> selectable = new ArrayList<>(menuEntries.size());
-    for(MenuEntry menuEntry : menuEntries) {
-      lines.add(menuEntry.label());
-      selectable.add(menuEntry.selectable());
-    }
-    content.menu(lines, selectable);
-    content.openMenu();
+    List<String> items = new ArrayList<>();
+    menuActions.clear();
+    addMenuItem(items, Strings.MenuCommander, this::openCommander);
+    addMenuItem(items, Strings.MenuShipInfo, this::openShip);
+    addMenuItem(items, Strings.MenuScores, this::openHighScores);
+    addMenuItem(items, Strings.MenuOptions, this::openOptions);
+    addMenuItem(items, Strings.MenuSave, () -> runAction(saveGameAction, Strings.MainSaveUnavailable));
+    addMenuItem(items, Strings.MenuLoad, () -> runAction(loadGameAction, Strings.MainLoadUnavailable));
+    addMenuItem(items, Strings.MenuNewGame, () -> runAction(newGameAction, Strings.MainNewGameUnavailable));
+    addMenuItem(items, Strings.MenuQuit, window::close);
+    content.showMenu(items);
+  }
+
+  private void addMenuItem(List<String> items, String label, Runnable action) {
+    items.add(label);
+    menuActions.add(action);
   }
 
   private void activateMenuEntry() {
     int index = content.menuIndex();
-    if(index >= 0 && index < menuEntries.size()) {
-      Runnable action = menuEntries.get(index).action();
-      if(action != null) {
-        action.run();
+    content.hideMenu();
+    if(index >= 0 && index < menuActions.size()) {
+      menuActions.get(index).run();
+    }
+  }
+
+  private List<String> navigationKeys() {
+    Game game = gameSupplier.get();
+    if(game == null || game.Commander().CurrentSystem() == null) {
+      return List.of();
+    }
+    StarSystem system = game.Commander().CurrentSystem();
+    boolean noTech = system.TechLevel().ordinal()
+        < Consts.ShipSpecs.get(ShipType.Flea.CastToInt()).MinimumTechLevel().ordinal();
+    List<String> tokens = new ArrayList<>();
+    tokens.add(Strings.NavTrade);
+    tokens.add(Strings.NavBank);
+    if(hasCrew(game)) {
+      tokens.add(Strings.NavCrew);
+    }
+    tokens.add(Strings.NavQuests);
+    tokens.add(Strings.NavNews);
+    if(!noTech) {
+      tokens.add(Strings.NavShips);
+      tokens.add(Strings.NavEquip);
+      if(system.Shipyard() != null) {
+        tokens.add(Strings.NavDesign);
+      }
+      if(!game.Commander().getShip().getEscapePod()) {
+        tokens.add(Strings.NavPod);
       }
     }
-  }
-
-  private static MenuEntry header(String label) {
-    return new MenuEntry(label, null);
-  }
-
-  private static MenuEntry entry(String label, Runnable action) {
-    return new MenuEntry(label, action);
-  }
-
-  private record MenuEntry(String label, Runnable action) {
-    boolean selectable() {
-      return action != null;
+    tokens.add(Strings.NavFuel);
+    tokens.add(Strings.NavRepairs);
+    if(game.WarpSystem() != null && game.WarpSystem() != system) {
+      tokens.add(Strings.NavJump);
     }
+    tokens.add(Strings.NavChart);
+    tokens.add(Strings.NavMenu);
+    return tokens;
+  }
+
+  private static boolean hasCrew(Game game) {
+    CrewMember[] crew = game.Commander().getShip().Crew();
+    for(int i = 1; i < crew.length; i++) {
+      if(crew[i] != null) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private boolean handleNewsKey(KeyStroke key) {

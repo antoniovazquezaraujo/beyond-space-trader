@@ -21,36 +21,69 @@ and the presenters stay.
 - **Options, save/load and confirmations:** panels in the same window, not a
   separate menu screen.
 - **Menu:** hybrid. Direct shortcuts for the daily actions (chart, track, trade,
-  bank, quests, newspaper, jump, fuel and repairs) plus a visible **F10 menu** with
-  the secondary screens and actions (ships, equipment, designer, escape pod,
-  commander, personnel, bank, newspaper, scores, options, save/load/new game and
-  quit).
-- **Responsive panels:** a panel with a list takes the whole width when the terminal
-  is narrower than 120 columns (the chart is hidden while it is open); wider
-  terminals keep the chart next to the panel.
+  bank, quests, newspaper, jump, fuel and repairs) plus a **dropdown menu** (F10)
+  with the system screens and actions (commander, ship, high scores, options,
+  save/load, new game and quit). The menu is an overlay that only exists while it is
+  open: there is no permanent menu bar.
+- **Keys inside the panels:** every screen shows its own keys at the bottom of the
+  panel, and the navigation panel shows the actions available in the current system
+  (ships, equipment, designer, crew...), so the player never has to look at the other
+  side of the screen to choose something.
+- **Full screens:** every screen that is not the navigation one (trade, bank, quests,
+  ships, equipment, commander, personnel, designer, newspaper...) takes the whole
+  width under the header; the chart comes back when it closes.
 
 ## Layout
 
 ```
-+------------------------------------------------------------------------+
-| Antonio · Day 12 · 12.345 cr · Debt 0                                  |
-| Fuel 14/15 · Hull 25/25 · Shields 0/0                                  |
-| Cargo 3/10 · Police: Clean · No warnings                               |
-| F10 menu: Ship · Crew · Trade · Game ──────────────────────────────    |
-+------------------------------------+------------------------------------+
-| MAP                                | Acamar · T6 · Democracy            |
-| (local / galactic)                 | Pressure: Boredom                  |
-|                  TAB               | Resource: Rich Fauna               |
-|                                    | Water   30/ 35   buy/sell          |
-|                                    | Furs   250/265   buy/sell          |
-|                                    |                                    |
-|                                    | [C] Trade   [B] Bank               |
-|                                    | [Q] Quests  [N] Newspaper          |
-|                                    | [J] Jump    [F/H] Dock             |
-+------------------------------------+------------------------------------+
-| Last message / news / combat log                                       |
-| TAB map · ENTER track · C trade · B bank · Q quests · F10 menu         |
-+------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Antonio · Day 12 · 12.345 cr · Debt 0                                    |
+| Fuel 14/15 · Hull 25/25 · Shields 0/0 · Cargo 3/10 · Police: Clean       |
++-------------------------------------+------------------------------------+
+|                                     | Acamar · T6 · Democracy            |
+|              MAP                    | Pressure: Boredom                  |
+|        (local / galactic)           | Water  30/ 35   buy/sell           |
+|                                     | Furs  250/265   buy/sell           |
+|                                     |                                    |
+|                                     | [C] Trade  [B] Bank  [Q] Quests    |
+|                                     | [N] News  [L] Ships  [E] Equipment |
+|                                     | [J] Jump  [F] Fuel  [H] Repairs    |
++-------------------------------------+------------------------------------+
+| Last message / news                                                      |
++--------------------------------------------------------------------------+
+```
+
+A screen that is not the navigation one takes the whole width (its own keys at the
+bottom, inside the panel):
+
+```
++--------------------------------------------------------------------------+
+| Antonio · Day 12 · 12.345 cr · Debt 0                                    |
++--------------------------------------------------------------------------+
+| Trade                                                                    |
+| item          buy      sell   cargo  here                               |
+| > Water      30 cr.   35 cr.   0     12                                 |
+|   Furs      250 cr.  265 cr.   3      4                                 |
+|                                                                          |
+| [arrows] select  [B] buy  [S] sell  [Shift] all  [ESC] close            |
++--------------------------------------------------------------------------+
+| Last message / news                                                      |
++--------------------------------------------------------------------------+
+```
+
+The F10 menu is a dropdown over the content (only while it is open):
+
+```
+┌─ Menu ──────────────┐
+│ > Commander    (I)  │
+│   Ship         (V)  │
+│   High scores (F3)  │
+│   Options      (F8) │
+│   Save         (F5) │
+│   Load         (F9) │
+│   New game     (F2) │
+│   Quit              │
+└─────────────────────┘
 ```
 
 When a panel with a list is open (trade, ships, equipment, designer, newspaper...)
@@ -94,15 +127,15 @@ chart is hidden; the chart comes back when the panel closes.
 | N | Newspaper panel |
 | J | Jump (travel) to the selected system |
 | F / H | Buy fuel / repair the hull |
-| F10 | Menu (all the screens and actions) |
+| F10 | Dropdown menu (commander, ship, scores, options, save/load/new game, quit) |
 | F2 / F5 / F9 | New game / save / load |
 | F3 / F8 | High scores / options |
 | Digits | Quantities in the trade panels and cargo transfer |
 
-Encounter keys are shown in the encounter panel itself. Every panel lists its own
-shortcuts in the bottom bar; the F10 menu shows the rest (ships, equipment, designer,
-escape pod, commander, personnel, bank, newspaper, scores, options, save/load/new
-game and quit).
+Encounter keys are shown in the encounter panel itself. Every screen lists its own
+keys at the bottom of the panel; the navigation panel shows the actions available in
+the current system, and the F10 menu holds the system screens (commander, ship, high
+scores, options, save/load, new game and quit).
 
 ## Screens and states
 

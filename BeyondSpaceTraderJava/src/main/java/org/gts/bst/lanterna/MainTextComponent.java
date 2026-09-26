@@ -66,8 +66,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     boolean handle(KeyStroke keyStroke);
   }
 
-  private static final int NAVIGATION_PANEL_WIDTH = 32;
-  private static final int ADAPTIVE_WIDTH = 120;
+  private static final int NAVIGATION_PANEL_WIDTH = 42;
 
   private final Supplier<Game> gameSupplier;
   private final KeyHandler keyHandler;
@@ -100,9 +99,10 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private final List<String> newsLines = new ArrayList<>();
   private String newsHead = "";
   private int newsScroll;
-  private final List<String> menuLines = new ArrayList<>();
-  private final List<Boolean> menuSelectable = new ArrayList<>();
-  private int menuIndex = -1;
+  private final List<String> navigationKeys = new ArrayList<>();
+  private final List<String> menuItems = new ArrayList<>();
+  private boolean menuVisible;
+  private int menuIndex;
   private int panelWidth = NAVIGATION_PANEL_WIDTH;
   private boolean fullPanel;
 
@@ -423,8 +423,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
     drawHeader(graphics, width, cmdr);
-    drawMenuBar(graphics, width);
-    fullPanel = panel != MainPanel.Navigation && width < ADAPTIVE_WIDTH;
+    fullPanel = panel != MainPanel.Navigation;
     panelWidth = fullPanel ? width - 2 : panelWidthFor(panel);
     if(fullPanel) {
       drawPanel(graphics, 1, width, height);
@@ -435,6 +434,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       drawPanel(graphics, width - panelWidth, chartWidth, height);
     }
     drawFooter(graphics, width, height);
+    drawMenu(graphics, width, height);
   }
 
   private void drawHeader(TextGUIGraphics graphics, int width, Commander cmdr) {
@@ -453,19 +453,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         + " · " + Functions.StringVars(Strings.MainPolice, PoliceRecord.GetPoliceRecordFromScore(cmdr.getPoliceRecordScore()).Name());
     graphics.putString(1, 0, cut(line1, width - 2));
     graphics.putString(1, 1, cut(line2, width - 2));
-  }
-
-  private void drawMenuBar(TextGUIGraphics graphics, int width) {
-    graphics.setForegroundColor(TextColor.ANSI.WHITE);
-    String bar = " " + Strings.MenuBar + " ";
-    graphics.putString(0, 2, cut(bar, width));
-    StringBuilder line = new StringBuilder();
-    for(int x = bar.length(); x < width; x++) {
-      line.append('─');
-    }
-    if(line.length() > 0) {
-      graphics.putString(bar.length(), 2, line.toString());
-    }
+    graphics.drawLine(0, 2, width - 1, 2, '─');
   }
 
   private void drawChart(TextGUIGraphics graphics, int chartWidth, int chartHeight, Game game, Commander cmdr) {
@@ -533,8 +521,6 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         return 60;
       case News:
         return 60;
-      case Menu:
-        return 60;
       default:
         return NAVIGATION_PANEL_WIDTH;
     }
@@ -582,13 +568,44 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       case News:
         drawNewsPanel(graphics, x, height);
         break;
-      case Menu:
-        drawMenuPanel(graphics, x, height);
-        break;
       default:
         drawNavigationPanel(graphics, x, height);
         break;
     }
+    drawPanelKeys(graphics, x, height);
+  }
+
+  private void drawPanelKeys(TextGUIGraphics graphics, int x, int height) {
+    List<String> lines;
+    if(panel == MainPanel.Navigation) {
+      lines = wrapTokens(navigationKeys, panelWidth);
+    } else {
+      String keys = keysFor(panel);
+      lines = keys == null ? List.of() : List.of(keys);
+    }
+    int row = height - 3 - Math.max(0, lines.size() - 1);
+    for(String line : lines) {
+      graphics.putString(x, row++, cut(line, panelWidth));
+    }
+  }
+
+  private static List<String> wrapTokens(List<String> tokens, int width) {
+    List<String> lines = new ArrayList<>();
+    StringBuilder line = new StringBuilder();
+    for(String token : tokens) {
+      if(line.length() > 0 && line.length() + 2 + token.length() > width) {
+        lines.add(line.toString());
+        line.setLength(0);
+      }
+      if(line.length() > 0) {
+        line.append("  ");
+      }
+      line.append(token);
+    }
+    if(line.length() > 0) {
+      lines.add(line.toString());
+    }
+    return lines;
   }
 
   private void drawBankPanel(TextGUIGraphics graphics, int x, int height) {
@@ -888,54 +905,68 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return designerField == field ? "> " : "  ";
   }
 
-  public void menu(List<String> lines, List<Boolean> selectable) {
-    menuLines.clear();
-    menuLines.addAll(lines);
-    menuSelectable.clear();
-    menuSelectable.addAll(selectable);
-    menuIndex = firstSelectable();
+  public void navigationKeys(List<String> tokens) {
+    navigationKeys.clear();
+    navigationKeys.addAll(tokens);
     invalidate();
+  }
+
+  public boolean menuVisible() {
+    return menuVisible;
   }
 
   public int menuIndex() {
     return menuIndex;
   }
 
+  public void showMenu(List<String> items) {
+    menuItems.clear();
+    menuItems.addAll(items);
+    menuIndex = 0;
+    menuVisible = true;
+    invalidate();
+  }
+
+  public void hideMenu() {
+    menuVisible = false;
+    invalidate();
+  }
+
   public void moveMenuSelection(int delta) {
-    int count = menuSelectable.size();
-    if(count == 0 || menuIndex < 0) {
+    if(menuItems.isEmpty()) {
       return;
     }
-    int index = menuIndex;
-    do {
-      index = Math.floorMod(index + delta, count);
-    } while(!Boolean.TRUE.equals(menuSelectable.get(index)) && index != menuIndex);
-    menuIndex = index;
+    menuIndex = Math.floorMod(menuIndex + delta, menuItems.size());
     invalidate();
   }
 
-  public void openMenu() {
-    panel = MainPanel.Menu;
-    invalidate();
-  }
-
-  private int firstSelectable() {
-    for(int i = 0; i < menuSelectable.size(); i++) {
-      if(Boolean.TRUE.equals(menuSelectable.get(i))) {
-        return i;
-      }
+  private void drawMenu(TextGUIGraphics graphics, int width, int height) {
+    if(!menuVisible || menuItems.isEmpty()) {
+      return;
     }
-    return -1;
-  }
-
-  private void drawMenuPanel(TextGUIGraphics graphics, int x, int height) {
-    graphics.putString(x, 3, Strings.MenuTitle);
-    int row = 5;
-    for(int i = 0; i < menuLines.size() && row < height - 3; i++) {
-      boolean selectable = Boolean.TRUE.equals(menuSelectable.get(i));
-      String marker = selectable ? (i == menuIndex ? "> " : "  ") : "  ";
-      graphics.putString(x, row++, cut(marker + menuLines.get(i), panelWidth));
+    int boxWidth = Strings.MenuTitle.length();
+    for(String item : menuItems) {
+      boxWidth = Math.max(boxWidth, item.length() + 2);
     }
+    boxWidth += 4;
+    boxWidth = Math.min(boxWidth, width - 4);
+    int boxHeight = menuItems.size() + 2;
+    int left = 2;
+    int top = 3;
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    String blank = " ".repeat(boxWidth);
+    for(int y = top; y < top + boxHeight && y < height; y++) {
+      graphics.putString(left, y, blank);
+    }
+    String title = " " + Strings.MenuTitle + " ";
+    graphics.putString(left, top, "┌─" + title + "─".repeat(Math.max(0, boxWidth - 3 - title.length())) + "┐");
+    for(int i = 0; i < menuItems.size(); i++) {
+      String marker = i == menuIndex ? ">" : " ";
+      String text = marker + " " + menuItems.get(i);
+      graphics.putString(left, top + 1 + i, "│ " + text + " ".repeat(Math.max(0, boxWidth - 4 - text.length())) + " │");
+    }
+    graphics.putString(left, top + boxHeight - 1, "└" + "─".repeat(boxWidth - 2) + "┘");
   }
 
   private void drawNewsPanel(TextGUIGraphics graphics, int x, int height) {
@@ -1008,56 +1039,41 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   private void drawFooter(TextGUIGraphics graphics, int width, int height) {
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
-    graphics.drawLine(0, height - 3, width - 1, height - 3, '─');
+    graphics.drawLine(0, height - 2, width - 1, height - 2, '─');
     if(!log.isEmpty()) {
-      graphics.putString(1, height - 2, cut(log.get(log.size() - 1), width - 2));
+      graphics.putString(1, height - 1, cut(log.get(log.size() - 1), width - 2));
     }
-    String keys;
+  }
+
+  private static String keysFor(MainPanel panel) {
     switch(panel) {
       case Trade:
-        keys = Strings.TradeKeys;
-        break;
+        return Strings.TradeKeys;
       case Bank:
-        keys = Strings.BankKeys;
-        break;
+        return Strings.BankKeys;
       case Quests:
-        keys = Strings.QuestsKeys;
-        break;
+        return Strings.QuestsKeys;
       case Personnel:
-        keys = Strings.PersonnelKeys;
-        break;
+        return Strings.PersonnelKeys;
       case Commander:
-        keys = Strings.CommanderKeys;
-        break;
+        return Strings.CommanderKeys;
       case Ship:
-        keys = Strings.ShipKeys;
-        break;
+        return Strings.ShipKeys;
       case ShipList:
-        keys = Strings.ShipListKeys;
-        break;
+        return Strings.ShipListKeys;
       case Equipment:
-        keys = Strings.EquipmentKeys;
-        break;
+        return Strings.EquipmentKeys;
       case Options:
-        keys = Strings.OptionsKeys;
-        break;
+        return Strings.OptionsKeys;
       case HighScores:
-        keys = Strings.HighScoresKeys;
-        break;
+        return Strings.HighScoresKeys;
       case Designer:
-        keys = Strings.DesignerKeys;
-        break;
+        return Strings.DesignerKeys;
       case News:
-        keys = Strings.NewsKeys;
-        break;
-      case Menu:
-        keys = Strings.MenuKeys;
-        break;
+        return Strings.NewsKeys;
       default:
-        keys = Strings.MainKeys;
-        break;
+        return null;
     }
-    graphics.putString(1, height - 1, cut(keys, width - 2));
   }
 
   static void wrap(List<String> lines, String text, int width) {
