@@ -211,7 +211,9 @@ public final class ChartRenderer {
         x += stepX;
       }
     }
-    if(horizontal && vertical && x1 != x2 && y1 != y2) {
+    // The corner is drawn even when the vertical segment is empty (the pair is one
+    // row away): it sits right above or below it and closes the link.
+    if(horizontal && y1 != y2) {
       draw(canvas, used, x2, y1, corner(stepX, stepY), WORMHOLE_COLOR);
     }
     if(vertical) {
