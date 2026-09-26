@@ -319,4 +319,12 @@ public final class Strings {
   public static final String MainGameOver = text("MainGameOver");
   public static final String MainJump = text("MainJump");
 
+  public static final String TradeBuy = text("TradeBuy");
+  public static final String TradeCargo = text("TradeCargo");
+  public static final String TradeHere = text("TradeHere");
+  public static final String TradeItem = text("TradeItem");
+  public static final String TradeKeys = text("TradeKeys");
+  public static final String TradeSell = text("TradeSell");
+  public static final String TradeTitle = text("TradeTitle");
+
 }

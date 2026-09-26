@@ -12,6 +12,7 @@ import com.googlecode.lanterna.gui2.BasicWindow;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import java.util.Set;
 import java.util.function.Supplier;
 import jwinforms.ImageList;
@@ -252,6 +253,17 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
     if(game == null) {
       return false;
     }
+    if(key.getKeyType() == KeyType.Escape) {
+      if(content.panel() != MainPanel.Navigation) {
+        content.closePanel();
+        return true;
+      }
+      window.close();
+      return true;
+    }
+    if(content.panel() == MainPanel.Trade) {
+      return handleTradeKey(key);
+    }
     switch(key.getKeyType()) {
       case Tab:
         content.toggleChart();
@@ -271,11 +283,32 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
       case Enter:
         trackSelection(game);
         return true;
-      case Escape:
-        window.close();
-        return true;
       case Character:
         return handleCharacter(game, Character.toLowerCase(key.getCharacter()));
+      default:
+        return false;
+    }
+  }
+
+  private boolean handleTradeKey(KeyStroke key) {
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        content.moveItemSelection(-1);
+        return true;
+      case ArrowDown:
+        content.moveItemSelection(1);
+        return true;
+      case Character:
+        char character = Character.toLowerCase(key.getCharacter());
+        if(character == 'b') {
+          presenter.buyCargo(content.selectedItem(), key.isShiftDown());
+          return true;
+        }
+        if(character == 's') {
+          presenter.sellCargo(content.selectedItem(), key.isShiftDown());
+          return true;
+        }
+        return false;
       default:
         return false;
     }
@@ -285,6 +318,9 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
     switch(character) {
       case 'q':
         window.close();
+        return true;
+      case 'c':
+        content.openTrade();
         return true;
       case 't':
         trackSelection(game);
