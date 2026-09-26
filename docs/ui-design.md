@@ -171,7 +171,9 @@ chart is hidden; the chart comes back when the panel closes.
 - **Context panel (right):** one panel at a time, no new windows.
   - *Navigation* (default): current/selected system data, prices at a glance and the
     action keys.
-  - *Trade*: buy/sell offers for every item, the ship cargo and the cash.
+  - *Trade*: buy/sell offers for every item, the ship cargo and the cash. On wide
+    screens the table adds the prices at the target system (price, +/- and %); on
+    narrow ones the selected item shows them in a line under the table.
   - *Shipyard*: repairs, fuel, ships for sale, equipment (sections of the panel).
   - *Bank*: cash, debt, loans, insurance.
   - *Personnel*: crew/mercenaries, skills, hire/dismiss.

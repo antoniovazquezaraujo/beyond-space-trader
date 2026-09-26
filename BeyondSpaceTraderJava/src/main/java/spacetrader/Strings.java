@@ -324,10 +324,15 @@ public final class Strings {
 
   public static final String TradeBuy = text("TradeBuy");
   public static final String TradeCargo = text("TradeCargo");
+  public static final String TradeDiff = text("TradeDiff");
   public static final String TradeHere = text("TradeHere");
   public static final String TradeItem = text("TradeItem");
   public static final String TradeKeys = text("TradeKeys");
+  public static final String TradeNoTarget = text("TradeNoTarget");
+  public static final String TradePct = text("TradePct");
   public static final String TradeSell = text("TradeSell");
+  public static final String TradeTarget = text("TradeTarget");
+  public static final String TradeTargetLine = text("TradeTargetLine");
   public static final String TradeTitle = text("TradeTitle");
 
   public static final String BankDebt = text("BankDebt");
