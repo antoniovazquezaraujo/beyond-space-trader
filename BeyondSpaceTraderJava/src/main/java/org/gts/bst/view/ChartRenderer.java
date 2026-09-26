@@ -100,9 +100,11 @@ public final class ChartRenderer {
             top + (int)Math.round(system.y() / scale), used);
       }
     }
+    int blockedX = left + (int)Math.round(model.currentX() / scale);
+    int blockedY = top + (int)Math.round(model.currentY() / scale);
     for(ChartSystem system : model.systems()) {
       drawDecoration(canvas, system, left + (int)Math.round(system.x() / scale),
-          top + (int)Math.round(system.y() / scale), used);
+          top + (int)Math.round(system.y() / scale), used, blockedX, blockedY);
     }
   }
 
@@ -136,7 +138,8 @@ public final class ChartRenderer {
       }
     }
     for(ChartSystem system : model.systems()) {
-      drawDecoration(canvas, system, system.x() - model.viewX(), system.y() - model.viewY(), used);
+      drawDecoration(canvas, system, system.x() - model.viewX(), system.y() - model.viewY(), used,
+          currentX, currentY);
     }
     drawEdgeArrow(canvas, currentX, currentY, CURRENT_ARROW_COLOR);
     drawTrackingArrow(canvas, model);
@@ -177,18 +180,33 @@ public final class ChartRenderer {
    * and the brackets of the tracked one. When both apply they nest ({@code [(·)]}),
    * so they combine without hiding each other.
    */
-  private static void drawDecoration(ChartCanvas canvas, ChartSystem system, int x, int y, boolean[][] used) {
+  private static void drawDecoration(ChartCanvas canvas, ChartSystem system, int x, int y, boolean[][] used,
+      int blockedX, int blockedY) {
     if(!inside(canvas, x, y)) {
       return;
     }
     if(system.selected()) {
-      draw(canvas, used, x - 1, y, TARGET_OPEN, TARGET_COLOR);
-      draw(canvas, used, x + 1, y, TARGET_CLOSE, TARGET_COLOR);
+      drawMark(canvas, used, x - 1, y, -1, TARGET_OPEN, TARGET_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x + 1, y, 1, TARGET_CLOSE, TARGET_COLOR, blockedX, blockedY);
     }
     if(system.tracked()) {
       int offset = system.selected() ? 2 : 1;
-      draw(canvas, used, x - offset, y, TRACK_OPEN, TRACK_COLOR);
-      draw(canvas, used, x + offset, y, TRACK_CLOSE, TRACK_COLOR);
+      drawMark(canvas, used, x - offset, y, -1, TRACK_OPEN, TRACK_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x + offset, y, 1, TRACK_CLOSE, TRACK_COLOR, blockedX, blockedY);
+    }
+  }
+
+  /**
+   * Writes a state mark over whatever is on the cell (the marks win over the stars),
+   * except on the current system's cell: there it moves one cell further out, so the
+   * mark is never lost and the player's own position is never hidden.
+   */
+  private static void drawMark(ChartCanvas canvas, boolean[][] used, int x, int y, int direction, char character,
+      ChartColor color, int blockedX, int blockedY) {
+    int cell = x == blockedX && y == blockedY ? x + direction : x;
+    if(inside(canvas, cell, y)) {
+      canvas.put(cell, y, character, color);
+      mark(used, cell, y);
     }
   }
 
