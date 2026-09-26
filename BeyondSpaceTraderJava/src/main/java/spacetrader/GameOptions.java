@@ -68,6 +68,11 @@ public class GameOptions extends STSerializableObject {
    * Number of cargo bays to leave empty when buying goods
    */
   private int _leaveEmpty = 0;
+  /**
+   * Character columns the galactic chart uses per sector (1, 2 or 3): keeps the
+   * galaxy's proportions with the terminal font the player uses.
+   */
+  private int _galaxyColumns = 2;
 
   public GameOptions(Hashtable hash) {
     super(hash);
@@ -87,6 +92,7 @@ public class GameOptions extends STSerializableObject {
     _showTrackedRange = GetValueFromHash(hash, "_showTrackedRange", _showTrackedRange);
     _trackAutoOff = GetValueFromHash(hash, "_trackAutoOff", _trackAutoOff);
     _leaveEmpty = GetValueFromHash(hash, "_leaveEmpty", _leaveEmpty);
+    _galaxyColumns = GetValueFromHash(hash, "_galaxyColumns", _galaxyColumns);
   }
   public GameOptions(boolean loadFromDefaults) {
     if(loadFromDefaults) {
@@ -112,6 +118,7 @@ public class GameOptions extends STSerializableObject {
     hash.add("_showTrackedRange", _showTrackedRange);
     hash.add("_trackAutoOff", _trackAutoOff);
     hash.add("_leaveEmpty", _leaveEmpty);
+    hash.add("_galaxyColumns", _galaxyColumns);
     return hash;
   }
 
@@ -132,6 +139,7 @@ public class GameOptions extends STSerializableObject {
     setShowTrackedRange(source.getShowTrackedRange());
     setTrackAutoOff(source.getTrackAutoOff());
     setLeaveEmpty(source.getLeaveEmpty());
+    setGalaxyColumns(source.getGalaxyColumns());
   }
   public void LoadFromDefaults(boolean errorIfFileNotFound) {
     LoadFromDefaults(errorIfFileNotFound, DialogService.NONE);
@@ -202,6 +210,12 @@ public class GameOptions extends STSerializableObject {
   }
   public void setDisableOpponents(boolean value) {
     _disableOpponents = value;
+  }
+  public int getGalaxyColumns() {
+    return _galaxyColumns;
+  }
+  public void setGalaxyColumns(int value) {
+    _galaxyColumns = Math.max(1, Math.min(3, value));
   }
   public int getLeaveEmpty() {
     return _leaveEmpty;

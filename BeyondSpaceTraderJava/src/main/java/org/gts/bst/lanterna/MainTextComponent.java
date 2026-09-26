@@ -523,7 +523,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     int fuel = cmdr.getShip().getFuel();
     if(chartType == ChartType.GALACTIC) {
       return ChartViewModel.galactic(systems, current.X(), current.Y(), fuel,
-          UniverseGenerator.GalaxyWidth, UniverseGenerator.GalaxyHeight);
+          UniverseGenerator.GalaxyWidth, UniverseGenerator.GalaxyHeight, game.Options().getGalaxyColumns());
     }
     // The short-range chart follows the cursor: its view only scrolls when the
     // selected system gets close to an edge, and it re-centres after a trip.

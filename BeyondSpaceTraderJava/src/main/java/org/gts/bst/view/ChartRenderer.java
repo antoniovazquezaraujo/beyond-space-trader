@@ -39,12 +39,6 @@ public final class ChartRenderer {
   static final char TRACK_OPEN = '[';
   static final char TRACK_CLOSE = ']';
   static final char ELLIPSIS = '…';
-  /**
-   * The galactic chart draws each map cell with this many character columns (a blank
-   * between systems): the terminal cell is about twice as tall as wide, so this keeps
-   * the galaxy's shape and the round fuel ring while filling the chart width.
-   */
-  static final int GALACTIC_COLUMNS = 2;
   static final char WORMHOLE_HORIZONTAL = '─';
   static final char WORMHOLE_VERTICAL = '│';
   /** Shortest truncated name worth drawing (letters plus the ellipsis). */
@@ -75,7 +69,7 @@ public final class ChartRenderer {
   }
 
   private static void renderGalactic(ChartCanvas canvas, ChartViewModel model) {
-    int columns = GALACTIC_COLUMNS;
+    int columns = Math.max(1, model.galacticColumns());
     int cellsWide = Math.max(1, (canvas.width() + 1) / columns);
     int cellsTall = Math.max(1, canvas.height());
     double scale = Math.max((double)model.galaxyWidth() / Math.max(1, cellsWide - 1),

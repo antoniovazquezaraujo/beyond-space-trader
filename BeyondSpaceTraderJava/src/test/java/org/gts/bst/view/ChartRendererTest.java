@@ -25,7 +25,7 @@ class ChartRendererTest {
         system(10, 5, "Current", ShipSize.Large, ChartColor.CYAN, false),
         system(20, 10, "BottomRight", ShipSize.Gargantuan, ChartColor.RED, false));
 
-    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 0, 20, 10));
+    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 0, 20, 10, 2));
 
     // Two columns per cell, scale = max(20 / 5, 10 / 4) = 4.
     assertEquals('·', canvas.at(0, 0));
@@ -46,7 +46,7 @@ class ChartRendererTest {
         system(4, 5, "Tracked", ShipSize.Medium, ChartColor.WHITE, false, false, true, false),
         system(10, 9, "Worm", ShipSize.Medium, ChartColor.WHITE, true, true, false, false));
 
-    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 3, 20, 10));
+    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 3, 20, 10, 2));
 
     // The current system keeps its inverted cell: its parenthesis moves one cell out.
     assertEquals('◦', canvas.at(8, 2));
@@ -72,7 +72,7 @@ class ChartRendererTest {
         system(0, 0, "TopLeft", ShipSize.Tiny, ChartColor.WHITE, false),
         system(153, 109, "BottomRight", ShipSize.Gargantuan, ChartColor.WHITE, false));
 
-    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 0, 0, 0, 154, 110));
+    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 0, 0, 0, 154, 110, 2));
 
     // Two columns per cell and scale = max(154 / 2, 110 / 2) = 77.
     assertEquals('·', canvas.at(0, 0));
@@ -86,7 +86,7 @@ class ChartRendererTest {
     List<ChartSystem> systems = List.of(
         system(10, 5, "Here", ShipSize.Medium, ChartColor.WHITE, false));
 
-    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 5, 20, 10));
+    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 5, 20, 10, 2));
 
     // The circle comes out round: five columns to the right, two rows below.
     assertRing(canvas, 15, 5);
@@ -276,7 +276,7 @@ class ChartRendererTest {
         new ChartSystem(10, 5, "End", false, true, false, false, true, ShipSize.Small, ChartColor.WHITE, 18, 9),
         new ChartSystem(18, 9, "Pair", false, true, false, false, false, ShipSize.Small, ChartColor.WHITE, 10, 5));
 
-    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 0, 0, 0, 20, 10));
+    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 0, 0, 0, 20, 10, 2));
 
     // The horizontal segment fills the columns between the map cells.
     assertEquals('─', canvas.at(14, 5));
@@ -286,6 +286,20 @@ class ChartRendererTest {
     assertEquals('│', canvas.at(18, 6));
     assertEquals('◉', canvas.at(10, 5));
     assertEquals('◉', canvas.at(18, 7));
+  }
+
+  @Test
+  void galacticUsesTheConfiguredColumns() {
+    TestChartCanvas canvas = new TestChartCanvas(11, 5);
+    List<ChartSystem> systems = List.of(
+        system(0, 0, "TopLeft", ShipSize.Tiny, ChartColor.WHITE, false),
+        system(20, 10, "BottomRight", ShipSize.Gargantuan, ChartColor.WHITE, false));
+
+    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 0, 0, 0, 20, 10, 1));
+
+    // One column per cell: the old 1:1 map (scale = max(20 / 11, 10 / 4) = 2.5).
+    assertEquals('·', canvas.at(1, 0));
+    assertEquals('✶', canvas.at(9, 4));
   }
 
   @Test

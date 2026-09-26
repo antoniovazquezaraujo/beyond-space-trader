@@ -42,13 +42,16 @@ Requires JDK 17 and Maven 3.9+.
 
 ```bash
 ./run.sh                                     # build and run the terminal UI
+./run-fixed-font.sh                          # run in a terminal with a fixed font (kitty/xfce4/alacritty)
 java -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
 
 mvn package                                  # build the jar
 mvn -Pquality verify                         # tests and SpotBugs (the gate fails on findings)
 ```
 
-The game needs a terminal of at least 60x15 (100x30 or bigger is recommended).
+The game needs a terminal of at least 60x15 (100x30 or bigger is recommended). The
+maps assume the usual monospace cell (about twice as tall as wide); if the galaxy
+looks stretched, change *Galaxy chart columns per sector* in Options (`F8`).
 
 ## Design
 

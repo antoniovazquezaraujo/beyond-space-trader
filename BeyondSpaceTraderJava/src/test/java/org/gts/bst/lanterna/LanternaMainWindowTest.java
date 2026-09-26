@@ -296,6 +296,18 @@ class LanternaMainWindowTest {
       String on = Functions.StringVars(Strings.OptionsValue, Strings.OptionAutoFuel, Strings.OptionsOn);
       assertTrue(screenText(screen).contains(on), screenText(screen));
 
+      // The last option cycles the galaxy chart width (1, 2, 3).
+      for(int i = 0; i < 17; i++) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionGalaxyColumns, "2")), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionGalaxyColumns, "3")), screenText(screen));
+
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
 
