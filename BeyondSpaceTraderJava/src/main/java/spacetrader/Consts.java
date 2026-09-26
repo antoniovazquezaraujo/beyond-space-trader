@@ -27,19 +27,19 @@ import spacetrader.enums.SpecialResource;
 import spacetrader.enums.SystemPressure;
 import spacetrader.enums.TechLevel;
 import spacetrader.util.Environment;
-import util.Path;
+import java.io.File;
 
 
 public class Consts {
   // Directory structure and File Constsants.
   public static final String BaseDirectory = Environment.CurrentDirectory;
-  public static final String CustomDirectory = Path.Combine(BaseDirectory, "custom");
-  public static final String DataDirectory = Path.Combine(BaseDirectory, "data");
-  public static final String SaveDirectory = Path.Combine(BaseDirectory, "save");
-  public static final String CustomImagesDirectory = Path.Combine(CustomDirectory, "images");
-  public static final String CustomTemplatesDirectory = Path.Combine(CustomDirectory, "templates");
-  public static final String HighScoreFile = Path.Combine(DataDirectory, "HighScores.bin");
-  public static final String DefaultSettingsFile = Path.Combine(DataDirectory, "DefaultSettings.bin");
+  public static final String CustomDirectory = path(BaseDirectory, "custom");
+  public static final String DataDirectory = path(BaseDirectory, "data");
+  public static final String SaveDirectory = path(BaseDirectory, "save");
+  public static final String CustomImagesDirectory = path(CustomDirectory, "images");
+  public static final String CustomTemplatesDirectory = path(CustomDirectory, "templates");
+  public static final String HighScoreFile = path(DataDirectory, "HighScores.bin");
+  public static final String DefaultSettingsFile = path(DataDirectory, "DefaultSettings.bin");
   public static final String CurrentVersion = "2.00";
   // Price paid by government for each negative PoliceScore point
   //public static final int BountyModifier = 1000;
@@ -62,11 +62,6 @@ public class Consts {
   public static final int MaxSlots = 5;
   public static final int FleaConversionCost = 500;
   public static final int PodTransferCost = 200;
-  public static final int ImagesPerShip = 4;
-  public static final int ShipImgOffsetNormal = 0;
-  public static final int ShipImgOffsetDamage = 1;
-  public static final int ShipImgOffsetShield = 2;
-  public static final int ShipImgOffsetSheildDamage = 3;
   public static final int ShipImgUseDefault = -1;
   public static final int EncounterImgAlien = 0;
   public static final int EncounterImgPirate = 1;
@@ -75,10 +70,6 @@ public class Consts {
   public static final int EncounterImgTrader = 4;
   public static final int StoryProbability = 50 / 8;
   public static final int FabricRipInitialProbability = 25;
-  public static final int DirectionUp = 0;
-  public static final int DirectionDown = 1;
-  public static final int DirectionLeft = 2;
-  public static final int DirectionRight = 3;
   public static final int DisruptorSystemsMultiplier = 3;
   public static final int MaxTribbles = 100000;
   public static final int PoliceRecordScorePsychopath = -100;
@@ -173,34 +164,6 @@ public class Consts {
     new Reputation(ReputationType.Deadly, ReputationScoreDeadly),
     new Reputation(ReputationType.Elite, ReputationScoreElite)
   }));
-  private static final List<ShipImageOffset> CUSTOMIZABLE_SHIP_IMAGE_OFFSETS = new ArrayList<>(Arrays.asList(new ShipImageOffset[] {
-    // We only care about X and Width, so set Y and Height to 0.
-    new ShipImageOffset(22, 19), // Flea
-    new ShipImageOffset(18, 27), // Gnat
-    new ShipImageOffset(18, 27), // Firefly
-    new ShipImageOffset(18, 27), // Mosquito
-    new ShipImageOffset(12, 40), // Bumblebee
-    new ShipImageOffset(12, 40), // Beetle
-    new ShipImageOffset(7, 50), // Hornet
-    new ShipImageOffset(7, 50), // Grasshopper
-    new ShipImageOffset(2, 60), // Termite
-    new ShipImageOffset(2, 60), // Wasp
-    new ShipImageOffset(7, 49), // Space Monster
-    new ShipImageOffset(21, 22), // Dragonfly
-    new ShipImageOffset(15, 34), // Mantis
-    new ShipImageOffset(7, 49), // Scarab
-    new ShipImageOffset(9, 46), // Bottle
-    new ShipImageOffset(2, 60), // Custom
-    new ShipImageOffset(2, 60) // Scorpion
-  }));
-  public static final List<ShipImageOffset> ShipImageOffsets = Collections.unmodifiableList(CUSTOMIZABLE_SHIP_IMAGE_OFFSETS);
-  /**
-   * Registers the custom ship image offset, clamped like the original code.
-   */
-  public static void SetCustomShipImageOffset(int x, int width) {
-    int offsetX = Math.max(2, x);
-    CUSTOMIZABLE_SHIP_IMAGE_OFFSETS.set(ShipType.Custom.CastToInt(), new ShipImageOffset(offsetX, Math.min(62 - offsetX, width)));
-  }
   private static final List<ShipSpec> CUSTOMIZABLE_SHIP_SPECS = new ArrayList<>(Arrays.asList(new ShipSpec[] {
     //           Type                  ShipSize        Bays W  S  G  Cr F   FC Hull RC  Price   %   Police             Pirates           Traders          MinTechLevel
     new ShipSpec(ShipType.Flea,        ShipSize.Tiny,  10,  0, 0, 0, 1, 20, 1, 25,  1,  2000,   2,  Activity.NA,       Activity.NA,      Activity.Absent, TechLevel.t4),
@@ -334,4 +297,9 @@ public class Consts {
     Gadgets.get(GadgetType.TargetingSystem.asInteger()),
     Gadgets.get(GadgetType.CloakingDevice.asInteger())
   }));
+
+  private static String path(String parent, String child) {
+    return new File(parent, child).getPath();
+  }
+
 }

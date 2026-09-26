@@ -1,6 +1,4 @@
 package spacetrader;
-import jwinforms.WfImage;
-import org.gts.bst.view.GameWindow;
 import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
@@ -75,10 +73,6 @@ public class ShipSpec extends STSerializableObject {
     _minTech = TechLevel.FromInt(GetValueFromHash(hash, "_minTech", /*_minTech*/0, Integer.class));
     _hullUpgraded = GetValueFromHash(hash, "_hullUpgraded", _hullUpgraded);
     _imageIndex = GetValueFromHash(hash, "_imageIndex", Consts.ShipImgUseDefault);
-    // Get the images if the ship uses the custom images.
-    if(_imageIndex == ShipType.Custom.CastToInt()) {
-      Game.CurrentGame().getParentWindow().setCustomShipImages(GetValueFromHash(hash, "_images", Game.CurrentGame().getParentWindow().CustomShipImages()));
-    }
     // Get the name if the ship is a custom design.
     if(_type == ShipType.Custom) {
       Strings.SetShipName(ShipType.Custom,
@@ -86,7 +80,6 @@ public class ShipSpec extends STSerializableObject {
       Consts.SetCustomShipSpec(new ShipSpec(
           _type, _size, _cargoBays, _weaponSlots, _shieldSlots, _gadgetSlots, _crewQuarters, _fuelTanks,
           _fuelCost, _hullStrength, _repairCost, _price, _occurrence, _police, _pirates, _traders, _minTech));
-      UpdateCustomImageOffsetConstants();
     }
   }
 
@@ -118,10 +111,6 @@ public class ShipSpec extends STSerializableObject {
     // Save the name if the ship is a custom design.
     if(Type() == ShipType.Custom) {
       hash.add("_name", Name());
-    }
-    // Save the images if the ship uses the custom images.
-    if(ImageIndex() == ShipType.Custom.CastToInt()) {
-      hash.add("_images", Game.CurrentGame().getParentWindow().CustomShipImages());
     }
     return hash;
   }
@@ -164,19 +153,6 @@ public class ShipSpec extends STSerializableObject {
     }
     return count;
   }
-
-  public void UpdateCustomImageOffsetConstants() {
-    GameWindow parent = Game.CurrentGame().getParentWindow();
-    if(parent == null) {
-      return;
-    }
-    WfImage image = parent.CustomShipImages()[0];
-    // Find the first column of pixels that has a non-white pixel for the X value, and the last column for the width.
-    int x = Functions.GetColumnOfFirstNonWhitePixel(image, 1);
-    int width = Functions.GetColumnOfFirstNonWhitePixel(image, -1) - x + 1;
-    Consts.SetCustomShipImageOffset(x, width);
-  }
-
   public int CargoBays() {
     return _cargoBays;
   }
@@ -272,19 +248,6 @@ public class ShipSpec extends STSerializableObject {
   public void HullStrength(int value) {
     _hullStrength = value;
   }
-
-  public WfImage Image() {
-    return Game.CurrentGame().getParentWindow().ShipImages().getImages()[ImageIndex() * Consts.ImagesPerShip + Consts.ShipImgOffsetNormal];
-  }
-
-  public WfImage ImageDamaged() {
-    return Game.CurrentGame().getParentWindow().ShipImages().getImages()[ImageIndex() * Consts.ImagesPerShip + Consts.ShipImgOffsetDamage];
-  }
-
-  public WfImage ImageDamagedWithShields() {
-    return Game.CurrentGame().getParentWindow().ShipImages().getImages()[ImageIndex() * Consts.ImagesPerShip + Consts.ShipImgOffsetSheildDamage];
-  }
-
   public int ImageIndex() {
     return (_imageIndex == Consts.ShipImgUseDefault ? Type().CastToInt() : _imageIndex);
   }
@@ -292,11 +255,6 @@ public class ShipSpec extends STSerializableObject {
   public void ImageIndex(int value) {
     _imageIndex = (value == Type().CastToInt() ? Consts.ShipImgUseDefault : value);
   }
-
-  public WfImage ImageWithShields() {
-    return Game.CurrentGame().getParentWindow().ShipImages().getImages()[ImageIndex() * Consts.ImagesPerShip + Consts.ShipImgOffsetShield];
-  }
-
   public TechLevel MinimumTechLevel() {
     return _minTech;
   }

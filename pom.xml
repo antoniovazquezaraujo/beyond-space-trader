@@ -22,7 +22,6 @@
   </licenses>
 
   <modules>
-    <module>JWinForms</module>
     <module>BeyondSpaceTraderJava</module>
   </modules>
 

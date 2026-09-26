@@ -23,6 +23,5 @@ The issue tracker is the backlog. The roadmap is tracked with milestones
 
 ## Building
 
-Requires JDK 17 and Maven. `mvn package` builds both modules and creates a
-runnable jar; `./run.sh` compiles and runs the game from sources. See the
-[README](README.md) for details.
+Requires JDK 17 and Maven. `mvn package` builds the jar; `./run.sh` builds it and
+runs the terminal UI. See the [README](README.md) for details.

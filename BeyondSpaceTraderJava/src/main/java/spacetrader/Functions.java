@@ -1,5 +1,4 @@
 package spacetrader;
-import java.awt.Color;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -9,16 +8,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Random;
-import jwinforms.Graphics;
-import jwinforms.GraphicsUnit;
-import jwinforms.Rectangle;
-import jwinforms.WfBitmap;
-import jwinforms.WfImage;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.view.DialogService;
 import spacetrader.enums.AlertType;
 import spacetrader.util.Hashtable;
-import spacetrader.util.Log;
 import spacetrader.util.SettingsFile;
 import spacetrader.util.Util;
 
@@ -52,9 +45,7 @@ public class Functions {
     return (int)Math.floor(Math.sqrt(Math.pow(a.X() - x, 2) + Math.pow(a.Y() - y, 2)));
   }
 
-  private static void DrawPartialImage(Graphics g, WfImage img, int start, int stop) {
-    g.DrawImage(img, 2 + start, 2, new Rectangle(start, 0, stop - start, img.getHeight()), GraphicsUnit.Pixel);
-  }
+  
 
   public static String FormatNumber(int num) {
     return String.format("%,d", num);
@@ -72,20 +63,7 @@ public class Functions {
     return String.format("%,d%%", num);
   }
 
-  public static int GetColumnOfFirstNonWhitePixel(WfImage image, int direction) {
-    WfBitmap bitmap = new WfBitmap(image);
-    int step = direction < 0 ? -1 : 1;
-    int col = step > 0 ? 0 : bitmap.getWidth() - 1;
-    int stop = step > 0 ? bitmap.getWidth() : -1;
-    for(; col != stop; col += step) {
-      for(int row = 0; row < bitmap.getHeight(); row++) {
-        if(bitmap.ToArgb(col, row) != 0) {
-          return col;
-        }
-      }
-    }
-    return -1;
-  }
+  
 
   public static HighScoreRecord[] GetHighScores(DialogService dialogs) {
     HighScoreRecord[] highScores = new HighScoreRecord[3];
@@ -142,27 +120,7 @@ public class Functions {
     return FormatNumber(num) + " " + unit + (num == 1 ? "" : "s");
   }
 
-  public static void PaintShipImage(Ship ship, Graphics graphics, Color backgroundColor) {
-    int x = Consts.ShipImageOffsets.get(ship.Type().CastToInt()).x();
-    int width = Consts.ShipImageOffsets.get(ship.Type().CastToInt()).width();
-    int startDamage = x + width - ship.getHull() * width / ship.HullStrength();
-    int startShield = x + width + 2 - (ship.ShieldStrength() > 0 ? ship.ShieldCharge() * (width + 4) / ship.ShieldStrength() : 0);
-    graphics.clear(backgroundColor);
-    if(startDamage > x) {
-      if(startShield > x) {
-        DrawPartialImage(graphics, ship.ImageDamaged(), x, Math.min(startDamage, startShield));
-      }
-      if(startShield < startDamage) {
-        DrawPartialImage(graphics, ship.ImageDamagedWithShields(), startShield, startDamage);
-      }
-    }
-    if(startShield > startDamage) {
-      DrawPartialImage(graphics, ship.Image(), startDamage, startShield);
-    }
-    if(startShield < x + width + 2) {
-      DrawPartialImage(graphics, ship.ImageWithShields(), startShield, x + width + 2);
-    }
-  }
+  
 
   private static long Rand() {
     final int a = 18000;

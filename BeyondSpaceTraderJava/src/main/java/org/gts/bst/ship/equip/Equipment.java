@@ -1,5 +1,4 @@
 package org.gts.bst.ship.equip;
-import jwinforms.WfImage;
 import spacetrader.Commander;
 import spacetrader.Game;
 import spacetrader.STSerializableObject;
@@ -66,10 +65,6 @@ abstract public class Equipment extends STSerializableObject implements Cloneabl
 
   public EquipmentType EquipmentType() {
     return _equipType;
-  }
-
-  public WfImage Image() {
-    return Game.CurrentGame().getParentWindow().EquipmentImages().getImages()[BaseImageIndex() + SubType().asInteger()];
   }
 
   public String Name() {

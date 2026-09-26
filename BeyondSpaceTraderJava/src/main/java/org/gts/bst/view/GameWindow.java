@@ -8,15 +8,12 @@
  */
 package org.gts.bst.view;
 
-import jwinforms.ImageList;
-import jwinforms.WfImage;
 import org.gts.bst.events.EncounterResult;
 
 
 /**
- * What the model needs from the application window: the encounter screen, the
- * refreshes and the sprite images. The Swing front-end implements it today; the
- * Lanterna one returns no images because the text UI does not draw sprites.
+ * What the model needs from the application window: the encounter screen and the
+ * refreshes. The Lanterna main window implements it.
  */
 public interface GameWindow {
   EncounterResult showEncounter();
@@ -24,14 +21,4 @@ public interface GameWindow {
   void UpdateStatusBar();
 
   void UpdateAll();
-
-  ImageList ShipImages();
-
-  ImageList EquipmentImages();
-
-  ImageList DirectionImages();
-
-  WfImage[] CustomShipImages();
-
-  void setCustomShipImages(WfImage[] images);
 }

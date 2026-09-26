@@ -22,7 +22,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import spacetrader.Functions;
 import spacetrader.Game;
-import spacetrader.ShipTemplate;
 import spacetrader.Shipyard;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
@@ -118,7 +117,6 @@ class ShipyardPresenterTest {
 
     assertEquals(ShipType.Custom, game.Commander().getShip().Type());
     assertEquals("My Ship", Strings.ShipNames.get(ShipType.Custom.CastToInt()));
-    assertTrue(view.customShipImagesApplied);
     assertTrue(view.closed);
   }
 
@@ -166,8 +164,7 @@ class ShipyardPresenterTest {
   private static class FakeView implements ShipyardView {
     private ShipyardDesignerViewModel model;
     private boolean closed;
-    private boolean customShipImagesApplied;
-    private int saveFileRequests;
+      private int saveFileRequests;
 
     @Override
     public void render(ShipyardDesignerViewModel model) {
@@ -188,21 +185,6 @@ class ShipyardPresenterTest {
     public String askSaveTemplateFile() {
       saveFileRequests++;
       return null;
-    }
-
-    @Override
-    public void adoptTemplateImages(ShipTemplate template) {
-      // No action.
-    }
-
-    @Override
-    public void applyCustomImages(ShipTemplate template) {
-      // No action.
-    }
-
-    @Override
-    public void applyCustomShipImages() {
-      customShipImagesApplied = true;
     }
   }
 }
