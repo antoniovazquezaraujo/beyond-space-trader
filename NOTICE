@@ -6,19 +6,24 @@ This repository is a derivative work of the following free software projects:
 1. Space Trader (Palm OS, 2002)
    Copyright (C) 2000-2005 Pieter Spronck
    Homepage: https://www.spronck.net/spacetrader/
-   Published under the GNU General Public License (GPLv2 or later).
-   In-game artwork is copyright (C) 2000 Alexander Lawrence.
+   Published under the GNU General Public License, version 2 or later: the source
+   headers state "either version 2 of the License, or (at your option) any later
+   version". In-game artwork is copyright (C) 2000 Alexander Lawrence.
 
 2. Space Trader for Windows 2.01 (C#, WinForms, 2008)
-   Copyright (C) 2008 Jay French. Additional coding by David Pierron.
+   Copyright (C) 2005 Jay French. Additional coding by David Pierron.
    Original coding by Pieter Spronck, Sam Anderson, Samuel Goldstein and Matt Lee.
    Project: https://sourceforge.net/projects/spacetraderwin/
-   Licensed under the GNU General Public License, version 2 or later.
+   Licensed under the GNU General Public License, version 2 or later: the source
+   headers state "either version 2 of the License, or (at your option) any later
+   version".
 
 3. SpaceTrader for Java
-   A Java port based on Space Trader for Windows.
+   A Java port based on Space Trader for Windows, by Aviv Eyal and contributors
+   (the upstream snapshot credits "Gregory").
    Project: https://sourceforge.net/projects/spacetraderjava/
-   Licensed under the GNU General Public License, version 2 or later.
+   As a derivative of the previous work it is distributed under the GNU General
+   Public License, version 2 or later.
 
 4. Beyond SpaceTraderJava / Beyond Space Trader (this repository)
    Copyright (C) 2011-2012 Gregory and other contributors.
@@ -28,14 +33,26 @@ This repository is a derivative work of the following free software projects:
 Combined licensing
 ------------------
 The upstream licenses permit use of "version 2 of the License, or (at your
-option) any later version". This project exercises that option and distributes
-the combined work under the GNU General Public License, version 3 or later.
-See the LICENSE file for the full license text.
+option) any later version" (see the source headers quoted above). This project
+exercises that option and distributes the combined work under the GNU General
+Public License, version 3 or later, which is also the license of the Lanterna
+library it uses (LGPL-3.0). See the LICENSE file for the full license text.
+
+Changes in this repository
+--------------------------
+This is a modified version of the upstream snapshot: the build moved from
+NetBeans/Ant to Maven, the code was refactored towards Model-View-Presenter, the
+Swing/JWinForms front-end (and the original game artwork it loaded) was removed,
+and a Lanterna text UI replaced it. The removed front-end and the original image
+files remain available in the git history under the tags `upstream-r69` and
+`swing-final`.
 
 Artwork
 -------
-The images under BeyondSpaceTraderJava/src/images are derived from the original
-game artwork, whose copyright is held by Alexander Lawrence (see also the credits
-in BeyondSpaceTraderJava/src/spacetrader/gui/FormAbout.properties). They are not
-covered by the code license above and may require separate permission for
-redistribution.
+The original game artwork is copyright (C) 2000 Alexander Lawrence and was
+distributed with the GPL releases of the game. This repository does not ship
+those image files in its working tree: they were removed when the Swing
+front-end was retired and remain only in the git history of the upstream import
+(tags `upstream-r69` and `swing-final`). Artwork added to this project (for
+example the planned ASCII ships) is original work of this repository's
+contributors and covered by the same license as the code.
