@@ -105,9 +105,12 @@ class ChartRendererTest {
 
     ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, 4, 20, null));
 
-    // The ring only marks the cells at the fuel distance: inside and outside stay free.
-    assertEquals(ChartRenderer.RANGE, canvas.at(14, 6));
-    assertEquals(ChartColor.GREEN, canvas.colorAt(14, 6));
+    // The ring is drawn with braille cells at the fuel distance; inside and outside
+    // stay free.
+    assertRing(canvas, 14, 6);
+    assertRing(canvas, 6, 6);
+    assertRing(canvas, 10, 10);
+    assertRing(canvas, 10, 2);
     assertEquals(' ', canvas.at(12, 6));
     assertEquals(' ', canvas.at(16, 6));
   }
@@ -120,8 +123,16 @@ class ChartRendererTest {
     ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, 5, 5, null));
 
     // delta = 25 / (5 * 2) = 2, so the ring is drawn 10 cells to the right.
-    assertEquals(ChartRenderer.RANGE, canvas.at(30, 12));
+    assertRing(canvas, 30, 12);
     assertEquals('+', canvas.at(20, 12));
+  }
+
+  private static void assertRing(TestChartCanvas canvas, int x, int y) {
+    char character = canvas.at(x, y);
+    assertTrue(character >= ChartRenderer.BRAILLE_BASE
+        && character <= (char)(ChartRenderer.BRAILLE_BASE + 0xFF),
+        "no ring at (" + x + ", " + y + "): '" + character + "'");
+    assertEquals(ChartColor.GREEN, canvas.colorAt(x, y));
   }
 
   @Test

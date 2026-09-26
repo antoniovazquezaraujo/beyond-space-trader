@@ -19,7 +19,7 @@ package org.gts.bst.view;
  *
  * <p>The galactic chart is a viewport of the whole galaxy centred on
  * {@code viewX/viewY}; the short-range chart is centred on the current system and
- * scales the distances to fit. The short-range chart also draws a green dotted circle
+ * scales the distances to fit. The short-range chart also draws a green braille ring
  * at the current fuel distance, so the jump range is visible at a glance.
  */
 public final class ChartRenderer {
@@ -29,7 +29,9 @@ public final class ChartRenderer {
   static final char VISITED = '*';
   static final char UNVISITED = 'o';
   static final char WORMHOLE = '~';
-  static final char RANGE = '·';
+  static final char BRAILLE_BASE = '\u2800';
+  private static final int[] LEFT_DOTS = {0x01, 0x02, 0x04, 0x40};
+  private static final int[] RIGHT_DOTS = {0x08, 0x10, 0x20, 0x80};
 
   private ChartRenderer() {
   }
@@ -87,24 +89,40 @@ public final class ChartRenderer {
   }
 
   /**
-   * Draws a dotted circle at the fuel distance from the current system. It is drawn
-   * first, so names, systems and arrows paint over it; the part of the circle that
-   * falls outside the chart is simply clipped.
+   * Draws the fuel range as a braille ring: each cell holds up to eight sub-cell dots,
+   * so the circle is a continuous curve instead of a chain of character dots. One
+   * sector counts as one cell, that is, two dots across and four dots down. The ring
+   * is drawn first, so names, systems and arrows paint over it.
    */
   private static void drawRangeRing(ChartCanvas canvas, int centerX, int centerY, int delta, int fuel) {
     if(fuel <= 0) {
       return;
     }
     int radius = fuel * delta;
-    int steps = Math.max(32, radius * 8);
+    int steps = Math.max(360, radius * 24);
+    int[][] masks = new int[canvas.height()][canvas.width()];
     for(int i = 0; i < steps; i++) {
       double angle = 2 * Math.PI * i / steps;
-      int x = centerX + (int)Math.round(Math.cos(angle) * radius);
-      int y = centerY + (int)Math.round(Math.sin(angle) * radius);
+      int px = centerX * 2 + (int)Math.round(Math.cos(angle) * radius * 2);
+      int py = centerY * 4 + (int)Math.round(Math.sin(angle) * radius * 4);
+      int x = Math.floorDiv(px, 2);
+      int y = Math.floorDiv(py, 4);
       if(inside(canvas, x, y)) {
-        canvas.put(x, y, RANGE, ChartColor.GREEN);
+        masks[y][x] |= dotBit(px, py);
       }
     }
+    for(int y = 0; y < masks.length; y++) {
+      for(int x = 0; x < masks[y].length; x++) {
+        if(masks[y][x] != 0) {
+          canvas.put(x, y, (char)(BRAILLE_BASE + masks[y][x]), ChartColor.GREEN);
+        }
+      }
+    }
+  }
+
+  private static int dotBit(int px, int py) {
+    int dy = Math.floorMod(py, 4);
+    return Math.floorMod(px, 2) == 0 ? LEFT_DOTS[dy] : RIGHT_DOTS[dy];
   }
 
   private static char marker(ChartSystem system, ChartViewModel model) {
