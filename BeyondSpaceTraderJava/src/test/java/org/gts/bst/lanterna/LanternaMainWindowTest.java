@@ -66,6 +66,14 @@ class LanternaMainWindowTest {
           "the window background must be black");
       assertTrue(screenText(screen).contains(holder[0].Commander().CurrentSystem().Name()),
           "current system not in the panel");
+      String cargoHeader = String.format("%-10s %10s %10s", Strings.TradeItem, Strings.TradeSell, Strings.TradeBuy);
+      assertTrue(screenText(screen).contains(cargoHeader), screenText(screen));
+      int sell = holder[0].PriceCargoSell()[0];
+      int buy = holder[0].PriceCargoBuy()[0];
+      String cargoRow = String.format("%-10s %10s %10s", Consts.TradeItems.get(0).Name(),
+          sell > 0 ? Functions.FormatMoney(sell) : Strings.NoTrade,
+          buy > 0 ? Functions.FormatMoney(buy) : Strings.NotSold);
+      assertTrue(screenText(screen).contains(cargoRow), screenText(screen));
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
