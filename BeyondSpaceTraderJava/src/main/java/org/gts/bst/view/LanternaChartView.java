@@ -40,30 +40,49 @@ public final class LanternaChartView implements ChartView {
   @Override
   public void put(int x, int y, char character, ChartColor color) {
     graphics.setForegroundColor(foreground(color));
-    graphics.setBackgroundColor(background(color));
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    graphics.setCharacter(x, y, character);
+  }
+
+  @Override
+  public void putInverted(int x, int y, char character, ChartColor color) {
+    graphics.setForegroundColor(TextColor.ANSI.BLACK);
+    graphics.setBackgroundColor(foreground(color));
     graphics.setCharacter(x, y, character);
   }
 
   private static TextColor foreground(ChartColor color) {
     switch(color) {
+      case WHITE:
+        return TextColor.ANSI.WHITE_BRIGHT;
+      case WHITE_DIM:
+        return TextColor.ANSI.WHITE;
+      case CYAN:
+        return TextColor.ANSI.CYAN_BRIGHT;
+      case CYAN_DIM:
+        return TextColor.ANSI.CYAN;
       case GREEN:
+        return TextColor.ANSI.GREEN_BRIGHT;
+      case GREEN_DIM:
         return TextColor.ANSI.GREEN;
       case YELLOW:
+        return TextColor.ANSI.YELLOW_BRIGHT;
+      case YELLOW_DIM:
         return TextColor.ANSI.YELLOW;
-      case RED:
-        return TextColor.ANSI.RED;
-      case CYAN:
-        return TextColor.ANSI.CYAN;
       case MAGENTA:
+        return TextColor.ANSI.MAGENTA_BRIGHT;
+      case MAGENTA_DIM:
         return TextColor.ANSI.MAGENTA;
-      case SELECTED:
-        return TextColor.ANSI.BLACK;
+      case RED:
+        return TextColor.ANSI.RED_BRIGHT;
+      case RED_DIM:
+        return TextColor.ANSI.RED;
+      case BLUE:
+        return TextColor.ANSI.BLUE_BRIGHT;
+      case BLUE_DIM:
+        return TextColor.ANSI.BLUE;
       default:
         return TextColor.ANSI.WHITE;
     }
-  }
-
-  private static TextColor background(ChartColor color) {
-    return color == ChartColor.SELECTED ? TextColor.ANSI.WHITE : TextColor.ANSI.BLACK;
   }
 }

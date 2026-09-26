@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import org.gts.bst.ship.ShipSize;
 import org.junit.jupiter.api.Test;
 
 
@@ -20,72 +21,70 @@ class ChartRendererTest {
   void galacticFitsTheWholeGalaxyInTheCanvas() {
     TestChartCanvas canvas = new TestChartCanvas(11, 5);
     List<ChartSystem> systems = List.of(
-        new ChartSystem(0, 0, "TopLeft", true, false, false, false),
-        new ChartSystem(10, 5, "Current", true, false, false, false),
-        new ChartSystem(20, 10, "BottomRight", true, false, false, false));
+        system(0, 0, "TopLeft", ShipSize.Tiny, ChartColor.GREEN_DIM, false),
+        system(10, 5, "Current", ShipSize.Large, ChartColor.CYAN, false),
+        system(20, 10, "BottomRight", ShipSize.Gargantuan, ChartColor.RED, false));
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 0, 20, 10));
 
     // scale = max(20 / 10, 10 / 4) = 2.5; the map is 8 x 4 characters at (1, 0).
-    assertEquals('*', canvas.at(1, 0));
-    assertEquals('+', canvas.at(5, 2));
-    assertEquals(ChartColor.CYAN, canvas.colorAt(5, 2));
-    assertEquals('*', canvas.at(9, 4));
+    assertEquals('·', canvas.at(1, 0));
+    assertEquals(ChartColor.GREEN_DIM, canvas.colorAt(1, 0));
+    assertEquals('⬤', canvas.at(5, 2));
+    assertTrue(canvas.invertedAt(5, 2), "the current system must be inverted");
+    assertEquals('✺', canvas.at(9, 4));
     assertEquals(' ', canvas.at(0, 0));
   }
 
   @Test
-  void galacticMarksWarpTrackedWormholeReachabilityAndSelection() {
+  void galacticMarksTheStatesAsShapes() {
     TestChartCanvas canvas = new TestChartCanvas(11, 5);
     List<ChartSystem> systems = List.of(
-        new ChartSystem(10, 5, "Current", true, false, false, false),
-        new ChartSystem(12, 5, "Warp", false, false, true, false),
-        new ChartSystem(8, 5, "Tracked", false, false, false, true),
-        new ChartSystem(10, 7, "Worm", true, true, false, false),
-        new ChartSystem(10, 3, "Reachable", false, false, false, false),
-        new ChartSystem(11, 5, "OverCurrent", false, false, false, false),
-        new ChartSystem(10, 9, "Selected", false, false, false, false, true),
-        new ChartSystem(13, 9, "Normal", false, false, false, false));
+        system(10, 5, "Current", ShipSize.Medium, ChartColor.CYAN, false),
+        system(12, 5, "Selected", ShipSize.Medium, ChartColor.WHITE, false, false, false, true),
+        system(6, 5, "Tracked", ShipSize.Medium, ChartColor.WHITE, false, false, true, false),
+        system(10, 9, "Worm", ShipSize.Medium, ChartColor.WHITE, true, true, false, false));
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 3, 20, 10));
 
-    // The special systems win over their neighbours: the current one is drawn last.
-    assertEquals('+', canvas.at(5, 2));
-    assertEquals(ChartColor.CYAN, canvas.colorAt(5, 2));
-    assertEquals('@', canvas.at(6, 2));
-    assertEquals(ChartColor.YELLOW, canvas.colorAt(6, 2));
-    assertEquals('X', canvas.at(4, 2));
-    assertEquals(ChartColor.RED, canvas.colorAt(4, 2));
-    assertEquals('*', canvas.at(5, 3));
-    assertEquals('~', canvas.at(6, 3));
-    assertEquals(ChartColor.MAGENTA, canvas.colorAt(6, 3));
-    assertEquals('o', canvas.at(5, 1));
-    assertEquals(ChartColor.GREEN, canvas.colorAt(5, 1));
-    assertEquals('o', canvas.at(5, 4));
-    assertEquals(ChartColor.SELECTED, canvas.colorAt(5, 4));
-    assertEquals('o', canvas.at(6, 4));
-    assertEquals(ChartColor.DEFAULT, canvas.colorAt(6, 4));
+    // The current system keeps its inverted cell: the cross arm cannot paint over it.
+    assertEquals('●', canvas.at(5, 2));
+    assertTrue(canvas.invertedAt(5, 2), canvas.line(2));
+    // The cross of the selected system.
+    assertEquals('●', canvas.at(6, 2));
+    assertEquals('─', canvas.at(7, 2));
+    assertEquals('│', canvas.at(6, 1));
+    assertEquals('│', canvas.at(6, 3));
+    assertEquals(ChartColor.YELLOW, canvas.colorAt(7, 2));
+    // The parentheses of the tracked system.
+    assertEquals('(', canvas.at(2, 2));
+    assertEquals(')', canvas.at(4, 2));
+    // The wormhole mark next to its system.
+    assertEquals('●', canvas.at(5, 4));
+    assertEquals('~', canvas.at(6, 4));
+    assertEquals(ChartColor.MAGENTA, canvas.colorAt(6, 4));
   }
 
   @Test
   void galacticFitsTheGalaxyEvenOnASmallCanvas() {
     TestChartCanvas canvas = new TestChartCanvas(6, 3);
     List<ChartSystem> systems = List.of(
-        new ChartSystem(0, 0, "TopLeft", true, false, false, false),
-        new ChartSystem(153, 109, "BottomRight", true, false, false, false));
+        system(0, 0, "TopLeft", ShipSize.Tiny, ChartColor.WHITE, false),
+        system(153, 109, "BottomRight", ShipSize.Gargantuan, ChartColor.WHITE, false));
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 0, 0, 0, 154, 110));
 
     // scale = max(154 / 5, 110 / 2) = 55; the map is 3 x 2 characters at (1, 0).
-    assertEquals('+', canvas.at(1, 0));
-    assertEquals(ChartColor.CYAN, canvas.colorAt(1, 0));
-    assertEquals('*', canvas.at(4, 2));
+    assertEquals('·', canvas.at(1, 0));
+    assertTrue(canvas.invertedAt(1, 0));
+    assertEquals('✺', canvas.at(4, 2));
   }
 
   @Test
   void galacticDrawsTheFuelCircleScaledWithTheMap() {
     TestChartCanvas canvas = new TestChartCanvas(21, 11);
-    List<ChartSystem> systems = List.of(new ChartSystem(10, 5, "Here", true, false, false, false));
+    List<ChartSystem> systems = List.of(
+        system(10, 5, "Here", ShipSize.Medium, ChartColor.WHITE, false));
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 5, 20, 10));
 
@@ -94,30 +93,68 @@ class ChartRendererTest {
   }
 
   @Test
-  void shortRangeUsesTheViewOriginAndDrawsNames() {
+  void shortRangeUsesTheViewOriginAndDrawsNamesUnderTheStars() {
     TestChartCanvas canvas = new TestChartCanvas(21, 9);
     List<ChartSystem> systems = List.of(
-        new ChartSystem(0, 0, "Here", true, false, false, false),
-        new ChartSystem(3, 0, "Sol", false, false, false, false),
-        new ChartSystem(0, 3, "Up", false, false, false, false),
-        new ChartSystem(25, 0, "Far", false, false, false, false));
+        system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false),
+        system(3, 0, "Sol", ShipSize.Small, ChartColor.WHITE, false),
+        system(0, 2, "Up", ShipSize.Medium, ChartColor.WHITE, false),
+        system(25, 0, "Far", ShipSize.Medium, ChartColor.WHITE, false));
 
     ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, -10, -4, 5, "3 parsecs to Sol."));
 
-    assertEquals('+', canvas.at(10, 4));
-    assertEquals('o', canvas.at(13, 4));
-    assertEquals('S', canvas.at(12, 4));
-    assertEquals('l', canvas.at(14, 4));
-    assertEquals(ChartColor.GREEN, canvas.colorAt(13, 4));
-    assertEquals('o', canvas.at(10, 7));
+    assertEquals('●', canvas.at(10, 4));
+    assertTrue(canvas.invertedAt(10, 4), "the current system must be inverted");
+    assertEquals('•', canvas.at(13, 4));
+    // The names go under their stars.
+    assertEquals('S', canvas.at(12, 5));
+    assertEquals('o', canvas.at(13, 5));
+    assertEquals('l', canvas.at(14, 5));
+    assertEquals('U', canvas.at(9, 7));
+    assertEquals('p', canvas.at(10, 7));
     assertEquals(' ', canvas.at(20, 4));
     assertTrue(canvas.line(8).startsWith("3 parsecs to Sol."), canvas.line(8));
   }
 
   @Test
+  void shortRangeCombinesTheTrackedParenthesesWithTheCross() {
+    TestChartCanvas canvas = new TestChartCanvas(21, 9);
+    List<ChartSystem> systems = List.of(
+        system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false),
+        system(3, 0, "Both", ShipSize.Medium, ChartColor.WHITE, false, false, true, true));
+
+    ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, -10, -4, 0, null));
+
+    // The cross and the parentheses combine: the parentheses move one cell out.
+    assertEquals('─', canvas.at(12, 4));
+    assertEquals('─', canvas.at(14, 4));
+    assertEquals('│', canvas.at(13, 3));
+    assertEquals('│', canvas.at(13, 5));
+    assertEquals('(', canvas.at(11, 4));
+    assertEquals(')', canvas.at(15, 4));
+  }
+
+  @Test
+  void shortRangeTruncatesOrSkipsTheNamesThatDoNotFit() {
+    TestChartCanvas canvas = new TestChartCanvas(11, 5);
+    List<ChartSystem> systems = List.of(
+        system(10, 4, "Here", ShipSize.Medium, ChartColor.CYAN, false),
+        system(1, 1, "Zed", ShipSize.Tiny, ChartColor.WHITE, false),
+        system(7, 1, "Narcotics", ShipSize.Small, ChartColor.WHITE, false, false, false, true));
+
+    ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 10, 4, 0, 0, 0, null));
+
+    assertEquals("Zed", canvas.line(2).substring(0, 3));
+    // The selected name falls back to a truncation with an ellipsis (the cross
+    // occupies the row under its star).
+    assertTrue(canvas.line(3).contains("Narcoti…"), canvas.line(3));
+  }
+
+  @Test
   void shortRangePointsToTheCurrentSystemWhenItIsOutOfView() {
     TestChartCanvas canvas = new TestChartCanvas(21, 9);
-    List<ChartSystem> systems = List.of(new ChartSystem(0, 0, "Here", true, false, false, false));
+    List<ChartSystem> systems = List.of(
+        system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false));
 
     ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, 30, 0, 5, null));
 
@@ -130,8 +167,8 @@ class ChartRendererTest {
   void shortRangeDrawsTheTrackingArrowWhenTheSystemIsOutOfView() {
     TestChartCanvas canvas = new TestChartCanvas(21, 9);
     List<ChartSystem> systems = List.of(
-        new ChartSystem(0, 0, "Here", true, false, false, false),
-        new ChartSystem(0, 10, "Tracked", false, false, false, true));
+        system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false),
+        system(0, 10, "Tracked", ShipSize.Medium, ChartColor.WHITE, false, false, true, false));
 
     ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, -10, -4, 5, null));
 
@@ -142,7 +179,8 @@ class ChartRendererTest {
   @Test
   void shortRangeDrawsTheFuelRangeRing() {
     TestChartCanvas canvas = new TestChartCanvas(21, 13);
-    List<ChartSystem> systems = List.of(new ChartSystem(0, 0, "Here", true, false, false, false));
+    List<ChartSystem> systems = List.of(
+        system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false));
 
     ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, -10, -6, 4, null));
 
@@ -154,6 +192,25 @@ class ChartRendererTest {
     assertRing(canvas, 10, 2);
     assertEquals(' ', canvas.at(12, 6));
     assertEquals(' ', canvas.at(16, 6));
+  }
+
+  @Test
+  void sizeGlyphsGrowWithTheSystemSize() {
+    assertEquals('·', ChartRenderer.sizeGlyph(system(0, 0, "T", ShipSize.Tiny, ChartColor.WHITE, false)));
+    assertEquals('•', ChartRenderer.sizeGlyph(system(0, 0, "S", ShipSize.Small, ChartColor.WHITE, false)));
+    assertEquals('●', ChartRenderer.sizeGlyph(system(0, 0, "M", ShipSize.Medium, ChartColor.WHITE, false)));
+    assertEquals('⬤', ChartRenderer.sizeGlyph(system(0, 0, "L", ShipSize.Large, ChartColor.WHITE, false)));
+    assertEquals('★', ChartRenderer.sizeGlyph(system(0, 0, "H", ShipSize.Huge, ChartColor.WHITE, false)));
+    assertEquals('✺', ChartRenderer.sizeGlyph(system(0, 0, "G", ShipSize.Gargantuan, ChartColor.WHITE, false)));
+  }
+
+  private static ChartSystem system(int x, int y, String name, ShipSize size, ChartColor color, boolean wormhole) {
+    return new ChartSystem(x, y, name, false, wormhole, false, false, false, size, color);
+  }
+
+  private static ChartSystem system(int x, int y, String name, ShipSize size, ChartColor color, boolean wormhole,
+      boolean warp, boolean tracked, boolean selected) {
+    return new ChartSystem(x, y, name, false, wormhole, warp, tracked, selected, size, color);
   }
 
   private static void assertRing(TestChartCanvas canvas, int x, int y) {

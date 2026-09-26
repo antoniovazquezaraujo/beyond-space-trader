@@ -19,12 +19,14 @@ class TestChartCanvas implements ChartCanvas {
   private final int height;
   private final char[][] characters;
   private final ChartColor[][] colors;
+  private final boolean[][] inverted;
 
   TestChartCanvas(int width, int height) {
     this.width = width;
     this.height = height;
     this.characters = new char[height][width];
     this.colors = new ChartColor[height][width];
+    this.inverted = new boolean[height][width];
     for(char[] row : characters) {
       Arrays.fill(row, ' ');
     }
@@ -44,6 +46,14 @@ class TestChartCanvas implements ChartCanvas {
   public void put(int x, int y, char character, ChartColor color) {
     characters[y][x] = character;
     colors[y][x] = color;
+    inverted[y][x] = false;
+  }
+
+  @Override
+  public void putInverted(int x, int y, char character, ChartColor color) {
+    characters[y][x] = character;
+    colors[y][x] = color;
+    inverted[y][x] = true;
   }
 
   char at(int x, int y) {
@@ -52,6 +62,10 @@ class TestChartCanvas implements ChartCanvas {
 
   ChartColor colorAt(int x, int y) {
     return colors[y][x];
+  }
+
+  boolean invertedAt(int x, int y) {
+    return inverted[y][x];
   }
 
   String line(int y) {
