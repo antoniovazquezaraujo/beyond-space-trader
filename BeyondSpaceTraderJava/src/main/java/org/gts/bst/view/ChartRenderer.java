@@ -19,7 +19,8 @@ package org.gts.bst.view;
  *
  * <p>The galactic chart is a viewport of the whole galaxy centred on
  * {@code viewX/viewY}; the short-range chart is centred on the current system and
- * scales the distances to fit.
+ * scales the distances to fit. The short-range chart also draws a green dotted circle
+ * at the current fuel distance, so the jump range is visible at a glance.
  */
 public final class ChartRenderer {
   static final char CURRENT = '+';
@@ -28,6 +29,7 @@ public final class ChartRenderer {
   static final char VISITED = '*';
   static final char UNVISITED = 'o';
   static final char WORMHOLE = '~';
+  static final char RANGE = '·';
 
   private ChartRenderer() {
   }
@@ -63,6 +65,7 @@ public final class ChartRenderer {
     int centerX = canvas.width() / 2;
     int centerY = canvas.height() / 2;
     int delta = Math.max(1, canvas.height() / (model.maxRange() * 2));
+    drawRangeRing(canvas, centerX, centerY, delta, model.fuel());
     // First the names, then the systems: the markers stop the names from hiding them.
     for(int pass = 0; pass < 2; pass++) {
       for(ChartSystem system : model.systems()) {
@@ -80,6 +83,27 @@ public final class ChartRenderer {
     drawTrackingArrow(canvas, model, centerX, centerY, delta);
     if(model.trackedRangeText() != null) {
       drawText(canvas, 0, canvas.height() - 1, model.trackedRangeText(), ChartColor.DEFAULT);
+    }
+  }
+
+  /**
+   * Draws a dotted circle at the fuel distance from the current system. It is drawn
+   * first, so names, systems and arrows paint over it; the part of the circle that
+   * falls outside the chart is simply clipped.
+   */
+  private static void drawRangeRing(ChartCanvas canvas, int centerX, int centerY, int delta, int fuel) {
+    if(fuel <= 0) {
+      return;
+    }
+    int radius = fuel * delta;
+    int steps = Math.max(32, radius * 8);
+    for(int i = 0; i < steps; i++) {
+      double angle = 2 * Math.PI * i / steps;
+      int x = centerX + (int)Math.round(Math.cos(angle) * radius);
+      int y = centerY + (int)Math.round(Math.sin(angle) * radius);
+      if(inside(canvas, x, y)) {
+        canvas.put(x, y, RANGE, ChartColor.GREEN);
+      }
     }
   }
 
