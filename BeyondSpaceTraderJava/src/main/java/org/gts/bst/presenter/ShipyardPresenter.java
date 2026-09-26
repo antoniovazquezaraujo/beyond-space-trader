@@ -138,7 +138,6 @@ public class ShipyardPresenter {
     ShipTemplate template = new ShipTemplate(yard.ShipSpec(), name);
     if(customImage()) {
       template.ImageIndex(ShipType.Custom.CastToInt());
-      view.applyCustomImages(template);
     } else {
       template.ImageIndex(imageIndex);
     }
@@ -155,10 +154,6 @@ public class ShipyardPresenter {
       Strings.SetShipName(ShipType.Custom, name);
       if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
         game.setQuestStatusScarab(SpecialEvent.StatusScarabNotStarted);
-      }
-      if(cmdr.getShip().ImageIndex() == ShipType.Custom.CastToInt()) {
-        view.applyCustomShipImages();
-        cmdr.getShip().UpdateCustomImageOffsetConstants();
       }
       game.Dialogs().alert(AlertType.ShipDesignThanks, yard.Name());
       view.close();
@@ -218,7 +213,6 @@ public class ShipyardPresenter {
     sizeIndex = Math.max(0, sizes.indexOf(template.Size()));
     yard.ShipSpec().setSize(template.Size());
     imageIndex = template.ImageIndex() == ShipType.Custom.CastToInt() ? IMAGE_TYPES.length - 1 : template.ImageIndex();
-    view.adoptTemplateImages(template);
     applyValues(template.CargoBays(), template.FuelTanks(), template.HullStrength(),
         template.WeaponSlots(), template.ShieldSlots(), template.GadgetSlots(), template.CrewQuarters());
     updateCalculatedFigures();

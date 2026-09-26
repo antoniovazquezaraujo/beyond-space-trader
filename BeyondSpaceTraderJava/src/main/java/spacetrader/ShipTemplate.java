@@ -1,13 +1,10 @@
 package spacetrader;
-import jwinforms.WfImage;
-import org.gts.bst.view.GameWindow;
 import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
 import spacetrader.util.Hashtable;
 
 
 public class ShipTemplate extends STSerializableObject implements Comparable<ShipTemplate> {
-  private WfImage[] _images = null;
   private ShipSize _size = ShipSize.Tiny;
   private String _name = null;
   private int _imageIndex = ShipType.Custom.CastToInt();
@@ -30,14 +27,11 @@ public class ShipTemplate extends STSerializableObject implements Comparable<Shi
     _crewQuarters = GetValueFromHash(ht, "_crewQuarters", _crewQuarters);
     _fuelTanks = GetValueFromHash(ht, "_fuelTanks", _fuelTanks);
     _hullStrength = GetValueFromHash(ht, "_hullStrength", _hullStrength);
-    _images = GetValueFromHash(ht, "_images", _images, WfImage[].class);
   }
 
   public ShipTemplate(ShipSize s, String t) {
     _size = s;
     _name = t;
-    GameWindow parent = Game.CurrentGame().getParentWindow();
-    _images = parent == null ? null : parent.CustomShipImages();
   }
 
   public ShipTemplate(ShipSpec s, String t) {
@@ -51,10 +45,6 @@ public class ShipTemplate extends STSerializableObject implements Comparable<Shi
     _crewQuarters = s.getCrewQuarters();
     _fuelTanks = s.FuelTanks();
     _hullStrength = s.HullStrength();
-    if(_imageIndex == Consts.ShipImgUseDefault) {
-      GameWindow parent = Game.CurrentGame().getParentWindow();
-      _images = parent == null ? null : parent.CustomShipImages();
-    }
   }
 
   @Override
@@ -79,9 +69,6 @@ public class ShipTemplate extends STSerializableObject implements Comparable<Shi
     ht.add("_crewQuarters", _crewQuarters);
     ht.add("_fuelTanks", _fuelTanks);
     ht.add("_hullStrength", _hullStrength);
-    if(_images != null) {
-      ht.add("_images", _images);
-    }
     return ht;
   }
 
@@ -137,15 +124,6 @@ public class ShipTemplate extends STSerializableObject implements Comparable<Shi
   public void ImageIndex(int i) {
     _imageIndex = i;
   }
-
-  public WfImage[] Images() {
-    return _images;
-  }
-
-  public void Images(WfImage[] is) {
-    _images = is;
-  }
-
   public String Name() {
     return _name;
   }

@@ -15,11 +15,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.gts</groupId>
-      <artifactId>jwinforms</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.googlecode.lanterna</groupId>
       <artifactId>lanterna</artifactId>
       <version>${lanterna.version}</version>
@@ -48,7 +43,7 @@
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>org.gts.bst.ApplicationST</mainClass>
+                  <mainClass>org.gts.bst.lanterna.LanternaApp</mainClass>
                 </transformer>
               </transformers>
             </configuration>

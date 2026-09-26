@@ -19,17 +19,6 @@
   </Match>
 
   <!--
-    The Swing views and the JWinForms widget layer are retired in #11 (the
-    Lanterna UI replaces them), so reviewing their internals now has no value.
-  -->
-  <Match>
-    <Class name="~jwinforms\..*" />
-  </Match>
-  <Match>
-    <Class name="~spacetrader\.gui\..*" />
-  </Match>
-
-  <!--
     The model objects are shared with the views by design (the MVP presenters
     hand the game objects to the views), so defensive copies are not wanted.
   -->

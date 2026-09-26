@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 #
-# Compiles both Maven modules and runs the game from sources.
+# Builds the shaded jar and runs the game with the Lanterna text UI.
 #
 #   ./run.sh              -> starts the game
-#   ./run.sh partida.sav  -> starts the game and loads that save file
 #
 set -euo pipefail
 cd "$(dirname "$0")"
 
-mvn -q -ntp -am -pl BeyondSpaceTraderJava compile
-exec java -cp "BeyondSpaceTraderJava/target/classes:JWinForms/target/classes" \
-    org.gts.bst.ApplicationST "$@"
+mvn -q -ntp -pl BeyondSpaceTraderJava -am package -Dmaven.test.skip=true
+exec java -cp BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar \
+    org.gts.bst.lanterna.LanternaApp "$@"

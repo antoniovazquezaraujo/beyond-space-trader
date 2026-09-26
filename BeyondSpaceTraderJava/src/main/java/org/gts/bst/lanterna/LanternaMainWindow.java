@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import jwinforms.ImageList;
-import jwinforms.WfImage;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.events.EncounterResult;
@@ -79,7 +77,6 @@ import spacetrader.StarSystem;
 import spacetrader.Strings;
 import org.gts.bst.ship.equip.EquipmentType;
 import spacetrader.GameOptions;
-import spacetrader.ShipTemplate;
 import spacetrader.enums.AlertType;
 
 
@@ -308,31 +305,6 @@ public final class LanternaMainWindow
     refresh();
   }
 
-  @Override
-  public ImageList ShipImages() {
-    return null;
-  }
-
-  @Override
-  public ImageList EquipmentImages() {
-    return null;
-  }
-
-  @Override
-  public ImageList DirectionImages() {
-    return null;
-  }
-
-  @Override
-  public WfImage[] CustomShipImages() {
-    return new WfImage[0];
-  }
-
-  @Override
-  public void setCustomShipImages(WfImage[] images) {
-    // The text UI does not draw sprites.
-  }
-
   private boolean handleKey(KeyStroke key) {
     Game game = gameSupplier.get();
     if(game == null) {
@@ -552,21 +524,6 @@ public final class LanternaMainWindow
     }
     String path = file.getPath();
     return path.endsWith(".sst") ? path : path + ".sst";
-  }
-
-  @Override
-  public void adoptTemplateImages(ShipTemplate template) {
-    // The text UI does not have ship images; the ASCII art comes later.
-  }
-
-  @Override
-  public void applyCustomImages(ShipTemplate template) {
-    // The text UI does not have ship images; the ASCII art comes later.
-  }
-
-  @Override
-  public void applyCustomShipImages() {
-    // The text UI does not have ship images; the ASCII art comes later.
   }
 
   private void openDesigner() {

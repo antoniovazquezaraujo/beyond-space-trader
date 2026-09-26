@@ -3,17 +3,19 @@
 A Java port of the classic Palm OS game **Space Trader**, based on the C# port
 [Space Trader for Windows](https://sourceforge.net/projects/spacetraderwin/) and on the
 SourceForge Java port [SpaceTrader for Java](https://sourceforge.net/projects/spacetraderjava/).
-The long-term goal is to turn it into a terminal (TUI) application built with
+It is a terminal (TUI) application built with
 [Lanterna](https://github.com/mabe02/lanterna), structured around Model-View-Presenter.
+The old Swing/JWinForms front-end was removed in the Lanterna port and is preserved
+under the tag `swing-final`.
 
 This repository starts from the upstream snapshot `spacetraderjava-code-r69`
 (tag `upstream-r69`).
 
 ## Status
 
-Work in progress. The game builds and runs, the imported bugs are fixed and the model is
-decoupled from the Swing front-end through Model-View-Presenter (view interfaces, view
-models and presenters with headless tests). The UI port to Lanterna is the next milestone.
+Work in progress. The game builds and runs with the Lanterna text UI; the imported bugs
+are fixed and the model is decoupled from the views through Model-View-Presenter (view
+interfaces, view models and presenters with headless tests).
 
 Roadmap:
 
@@ -21,39 +23,32 @@ Roadmap:
 - [x] Remove the debug cheat from the `Game` constructor
 - [x] Replace the NetBeans/Ant build with Maven and drop JNLP/WebStart
 - [x] Refactor towards Model-View-Presenter
-- [ ] Port the UI to Lanterna
+- [x] Port the UI to Lanterna and remove the Swing/JWinForms front-end
+- [ ] ASCII-art ship sprites (standard ships and custom ship designer)
 
 ## Layout
 
 | Module | Contents |
 |---|---|
-| `BeyondSpaceTraderJava/` | The game. Main class: `org.gts.bst.ApplicationST`. |
-| `JWinForms/` | A WinForms-over-Swing compatibility layer used by the game. Planned for removal. |
+| `BeyondSpaceTraderJava/` | The game. Main class: `org.gts.bst.lanterna.LanternaApp`. |
 
-Both are Maven modules of a single reactor (`pom.xml` at the repository root). The old
-NetBeans/Ant build files were removed during the Maven migration and remain available
-in git history (tag `upstream-r69`).
+It is a Maven project (`pom.xml` at the repository root). The old NetBeans/Ant build
+files and the Swing/JWinForms front-end were removed and remain available in git history
+(tags `upstream-r69` and `swing-final`).
 
 ## Building and running
 
 Requires JDK 17 and Maven 3.9+.
 
 ```bash
-./run.sh                                     # compile and run from sources (Swing)
-./run-text.sh                                # run with the Lanterna text UI (work in progress)
+./run.sh                                     # build and run the terminal UI
 java -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
 
-mvn package                                  # build both modules and the jar
-mvn -Pquality verify                         # also run SpotBugs (the gate fails on findings)
+mvn package                                  # build the jar
+mvn -Pquality verify                         # tests and SpotBugs (the gate fails on findings)
 ```
 
-On non-Windows platforms the default UI fonts are shrunk to 10 pt, because the JWinForms
-layouts were tuned for Microsoft Sans Serif 8.25 and fixed-size labels clip otherwise.
-Override the size with `-Dbst.uiFontSize=<points>` (`0` disables the adjustment):
-
-```bash
-java -Dbst.uiFontSize=11 -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
-```
+The game needs a terminal of at least 60x15 (100x30 or bigger is recommended).
 
 ## Design
 
