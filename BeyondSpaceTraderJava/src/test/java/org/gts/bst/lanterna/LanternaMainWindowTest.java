@@ -752,7 +752,7 @@ class LanternaMainWindowTest {
       presenter.updateAll();
       gui.addWindow(window.asWindow());
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("[G] Jump"), screenText(screen));
+      assertTrue(screenText(screen).contains("[G] jump"), screenText(screen));
 
       StarSystem current = holder[0].Commander().CurrentSystem();
       StarSystem far = null;
@@ -1144,11 +1144,11 @@ class LanternaMainWindowTest {
       gui.updateScreen();
 
       String text = screenText(screen);
-      assertTrue(text.contains("[G] Jump"), text);
+      assertTrue(text.contains("[G] jump"), text);
       assertTrue(text.contains("[F] fuel"), text);
       assertTrue(text.contains("[R] repairs"), text);
       assertTrue(text.contains("[F10] menu"), text);
-      assertTrue(text.indexOf("[F10] menu") > text.indexOf("[G] Jump"),
+      assertTrue(text.indexOf("[F10] menu") > text.indexOf("[G] jump"),
           "the program menu goes after the contextual actions:\n" + text);
     } finally {
       screen.stopScreen();
