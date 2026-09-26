@@ -8,9 +8,12 @@
  */
 package org.gts.bst.view;
 
+import org.gts.bst.ship.ShipSize;
+
 
 /**
- * A star system as the charts need it: its position in the galaxy and its markers.
+ * A star system as the charts need it: its position in the galaxy, its size (which
+ * picks the marker glyph), a decorative colour and its state markers.
  */
 public record ChartSystem(
     int x,
@@ -20,9 +23,11 @@ public record ChartSystem(
     boolean wormhole,
     boolean warp,
     boolean tracked,
-    boolean selected) {
+    boolean selected,
+    ShipSize size,
+    ChartColor color) {
 
   public ChartSystem(int x, int y, String name, boolean visited, boolean wormhole, boolean warp, boolean tracked) {
-    this(x, y, name, visited, wormhole, warp, tracked, false);
+    this(x, y, name, visited, wormhole, warp, tracked, false, ShipSize.Medium, ChartColor.WHITE);
   }
 }

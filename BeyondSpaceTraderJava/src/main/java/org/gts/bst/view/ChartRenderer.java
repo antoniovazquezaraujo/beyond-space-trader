@@ -8,32 +8,45 @@
  */
 package org.gts.bst.view;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 
 /**
  * Draws the galactic and the short-range chart on a character grid.
  *
- * <p>Markers: {@code +} the current system, {@code o}/{@code *} an unvisited or
- * visited system, {@code @} the warp target, {@code X} the tracked system and
- * {@code ~} a wormhole next to its system. Systems within the fuel range are green;
- * the selected one uses {@link ChartColor#SELECTED}.
+ * <p>Every system is a star whose glyph grows with its size ({@code · • ● ⬤ ★ ✺} for
+ * Tiny to Gargantuan) and whose colour is decorative: bright while it has not been
+ * visited and dim afterwards. The state markers are shapes: the current system is
+ * drawn inverted (its colour becomes the cell background), the selected/target system
+ * carries a cross, the tracked system parentheses and a system with a wormhole a
+ * magenta {@code ~} next to it. The short-range chart also draws the names under
+ * their stars, skipping (or truncating with an ellipsis) the ones that do not fit.
  *
  * <p>The galactic chart scales the whole galaxy down so that it always fits in the
- * chart area: it is a situation map with no scrolling (and no names, which would not
- * fit). The short-range chart is a 1:1 map (one sector per character) with names and
- * its own viewport; its fuel range is drawn as a green braille ring, and when the
- * current or the tracked system falls outside the view an arrow at the edge points
- * to it.
+ * chart area: it never scrolls and every system is always visible. The short-range
+ * chart is a 1:1 map (one sector per character) with its own viewport and a green
+ * braille ring at the current fuel distance; when the current or the tracked system
+ * falls outside the view, an arrow at the edge points to it.
  */
 public final class ChartRenderer {
-  static final char CURRENT = '+';
-  static final char WARP = '@';
-  static final char TRACKED = 'X';
-  static final char VISITED = '*';
-  static final char UNVISITED = 'o';
   static final char WORMHOLE = '~';
   static final char BRAILLE_BASE = '\u2800';
+  static final char CROSS_HORIZONTAL = '─';
+  static final char CROSS_VERTICAL = '│';
+  static final char TRACK_OPEN = '(';
+  static final char TRACK_CLOSE = ')';
+  static final char ELLIPSIS = '…';
+  /** Shortest truncated name worth drawing (letters plus the ellipsis). */
+  private static final int MIN_TRUNCATED_NAME = 5;
+  private static final char[] SIZE_GLYPHS = {'·', '•', '●', '⬤', '★', '✺'};
   private static final int[] LEFT_DOTS = {0x01, 0x02, 0x04, 0x40};
   private static final int[] RIGHT_DOTS = {0x08, 0x10, 0x20, 0x80};
+  private static final ChartColor CROSS_COLOR = ChartColor.YELLOW;
+  private static final ChartColor TRACK_COLOR = ChartColor.WHITE;
+  private static final ChartColor CURRENT_ARROW_COLOR = ChartColor.CYAN;
+  private static final ChartColor TRACKED_ARROW_COLOR = ChartColor.RED;
 
   private ChartRenderer() {
   }
@@ -57,12 +70,31 @@ public final class ChartRenderer {
     int mapHeight = (int)Math.round(model.galaxyHeight() / scale);
     int left = Math.max(0, (canvas.width() - mapWidth) / 2);
     int top = Math.max(0, (canvas.height() - mapHeight) / 2);
+    boolean[][] used = new boolean[canvas.height()][canvas.width()];
     drawRangeRing(canvas, left + (int)Math.round(model.currentX() / scale),
         top + (int)Math.round(model.currentY() / scale), model.fuel() / scale);
-    // The special systems (current, target, tracked, selected) are drawn last, so a
-    // close neighbour cannot paint over them.
-    drawGalacticSystems(canvas, model, left, top, scale, false);
-    drawGalacticSystems(canvas, model, left, top, scale, true);
+    // The stars first (the special ones last), then the wormhole marks and, over
+    // everything, the state decorations; nothing paints over a star.
+    for(ChartSystem system : model.systems()) {
+      if(!isSpecial(system, model)) {
+        drawStar(canvas, model, system, left + (int)Math.round(system.x() / scale),
+            top + (int)Math.round(system.y() / scale), used);
+      }
+    }
+    for(ChartSystem system : model.systems()) {
+      if(isSpecial(system, model)) {
+        drawStar(canvas, model, system, left + (int)Math.round(system.x() / scale),
+            top + (int)Math.round(system.y() / scale), used);
+      }
+    }
+    for(ChartSystem system : model.systems()) {
+      drawWormhole(canvas, system, left + (int)Math.round(system.x() / scale),
+          top + (int)Math.round(system.y() / scale), used);
+    }
+    for(ChartSystem system : model.systems()) {
+      drawDecoration(canvas, system, left + (int)Math.round(system.x() / scale),
+          top + (int)Math.round(system.y() / scale), used);
+    }
   }
 
   private static double galacticScale(ChartCanvas canvas, ChartViewModel model) {
@@ -71,58 +103,158 @@ public final class ChartRenderer {
     return Math.max((double)model.galaxyWidth() / width, (double)model.galaxyHeight() / height);
   }
 
-  private static void drawGalacticSystems(ChartCanvas canvas, ChartViewModel model, int left, int top,
-      double scale, boolean special) {
-    for(ChartSystem system : model.systems()) {
-      if(isSpecial(system, model) != special) {
-        continue;
-      }
-      int x = left + (int)Math.round(system.x() / scale);
-      int y = top + (int)Math.round(system.y() / scale);
-      if(!inside(canvas, x, y)) {
-        continue;
-      }
-      canvas.put(x, y, marker(system, model), color(system, model));
-      drawWormhole(canvas, system, x, y);
-    }
-  }
-
-  private static boolean isSpecial(ChartSystem system, ChartViewModel model) {
-    return isCurrent(system, model) || system.warp() || system.tracked() || system.selected();
-  }
-
   private static void renderShortRange(ChartCanvas canvas, ChartViewModel model) {
+    boolean[][] used = new boolean[canvas.height()][canvas.width()];
     int currentX = model.currentX() - model.viewX();
     int currentY = model.currentY() - model.viewY();
     drawRangeRing(canvas, currentX, currentY, model.fuel());
-    // First the names, then the systems: the markers stop the names from hiding them.
-    for(int pass = 0; pass < 2; pass++) {
-      for(ChartSystem system : model.systems()) {
-        int x = system.x() - model.viewX();
-        int y = system.y() - model.viewY();
-        if(pass == 0) {
-          drawName(canvas, system.name(), x, y);
-        } else if(inside(canvas, x, y)) {
-          canvas.put(x, y, marker(system, model), color(system, model));
-          drawWormhole(canvas, system, x, y);
-        }
+    for(ChartSystem system : model.systems()) {
+      if(!isSpecial(system, model)) {
+        drawStar(canvas, model, system, system.x() - model.viewX(), system.y() - model.viewY(), used);
       }
     }
-    if(inside(canvas, currentX, currentY)) {
-      canvas.put(currentX, currentY, CURRENT, ChartColor.CYAN);
+    for(ChartSystem system : model.systems()) {
+      if(isSpecial(system, model)) {
+        drawStar(canvas, model, system, system.x() - model.viewX(), system.y() - model.viewY(), used);
+      }
     }
-    drawEdgeArrow(canvas, currentX, currentY, ChartColor.CYAN);
+    for(ChartSystem system : model.systems()) {
+      drawWormhole(canvas, system, system.x() - model.viewX(), system.y() - model.viewY(), used);
+    }
+    for(ChartSystem system : model.systems()) {
+      drawDecoration(canvas, system, system.x() - model.viewX(), system.y() - model.viewY(), used);
+    }
+    drawEdgeArrow(canvas, currentX, currentY, CURRENT_ARROW_COLOR);
     drawTrackingArrow(canvas, model);
+    drawNames(canvas, model, used);
     if(model.trackedRangeText() != null) {
       drawText(canvas, 0, canvas.height() - 1, model.trackedRangeText(), ChartColor.DEFAULT);
     }
   }
 
   /**
+   * Draws a system: its marker glyph (by size, bright/dim by visited) and, for the
+   * current system, the inverted cell that highlights it.
+   */
+  private static void drawStar(ChartCanvas canvas, ChartViewModel model, ChartSystem system, int x, int y,
+      boolean[][] used) {
+    if(!inside(canvas, x, y)) {
+      return;
+    }
+    char glyph = sizeGlyph(system);
+    if(isCurrent(system, model)) {
+      canvas.putInverted(x, y, glyph, system.color());
+    } else {
+      canvas.put(x, y, glyph, system.color());
+    }
+    mark(used, x, y);
+  }
+
+  /** Writes a decoration: only into a free cell, never over a star. */
+  private static void draw(ChartCanvas canvas, boolean[][] used, int x, int y, char character, ChartColor color) {
+    if(inside(canvas, x, y) && !used[y][x]) {
+      canvas.put(x, y, character, color);
+      mark(used, x, y);
+    }
+  }
+
+  /**
+   * The state shapes around a system: the cross of the selected/target system and the
+   * parentheses of the tracked one. When both apply, the parentheses move one cell
+   * further out, so they combine without hiding each other.
+   */
+  private static void drawDecoration(ChartCanvas canvas, ChartSystem system, int x, int y, boolean[][] used) {
+    if(!inside(canvas, x, y)) {
+      return;
+    }
+    if(system.selected()) {
+      draw(canvas, used, x - 1, y, CROSS_HORIZONTAL, CROSS_COLOR);
+      draw(canvas, used, x + 1, y, CROSS_HORIZONTAL, CROSS_COLOR);
+      draw(canvas, used, x, y - 1, CROSS_VERTICAL, CROSS_COLOR);
+      draw(canvas, used, x, y + 1, CROSS_VERTICAL, CROSS_COLOR);
+    }
+    if(system.tracked()) {
+      int offset = system.selected() ? 2 : 1;
+      draw(canvas, used, x - offset, y, TRACK_OPEN, TRACK_COLOR);
+      draw(canvas, used, x + offset, y, TRACK_CLOSE, TRACK_COLOR);
+    }
+  }
+
+  private static void drawWormhole(ChartCanvas canvas, ChartSystem system, int x, int y, boolean[][] used) {
+    if(system.wormhole() && inside(canvas, x, y) && x + 1 < canvas.width()) {
+      canvas.put(x + 1, y, WORMHOLE, ChartColor.MAGENTA);
+      mark(used, x + 1, y);
+    }
+  }
+
+  /**
+   * Draws the names under their stars. A name is only drawn when all its cells are
+   * free; the current, selected and tracked systems come first and may fall back to a
+   * truncated version with an ellipsis, the rest are skipped when they do not fit.
+   */
+  private static void drawNames(ChartCanvas canvas, ChartViewModel model, boolean[][] used) {
+    List<ChartSystem> systems = new ArrayList<>(model.systems());
+    systems.sort(Comparator.comparingInt(system -> namePriority(system, model)));
+    for(ChartSystem system : systems) {
+      if(system.name() == null || system.name().isEmpty()) {
+        continue;
+      }
+      int starY = system.y() - model.viewY();
+      // The cross of the selected system occupies the row under its star, so its
+      // name goes one row lower.
+      int y = starY + (system.selected() ? 2 : 1);
+      if(!inside(canvas, system.x() - model.viewX(), starY) || y < 0 || y >= canvas.height()) {
+        continue;
+      }
+      int start = Math.max(0, system.x() - model.viewX() - system.name().length() / 2);
+      placeName(canvas, used, start, y, system.name(), namePriority(system, model) < 0);
+    }
+  }
+
+  private static int namePriority(ChartSystem system, ChartViewModel model) {
+    int distance = Math.abs(system.x() - model.currentX()) + Math.abs(system.y() - model.currentY());
+    if(isCurrent(system, model) || system.selected() || system.tracked()) {
+      return -1_000_000 + distance;
+    }
+    return distance;
+  }
+
+  private static void placeName(ChartCanvas canvas, boolean[][] used, int start, int y, String name,
+      boolean priority) {
+    int run = 0;
+    while(start + run < canvas.width() && !used[y][start + run]) {
+      run++;
+    }
+    if(run >= name.length()) {
+      writeName(canvas, used, start, y, name);
+    } else if(priority && run >= MIN_TRUNCATED_NAME) {
+      writeName(canvas, used, start, y, name.substring(0, run - 1) + ELLIPSIS);
+    }
+  }
+
+  private static void writeName(ChartCanvas canvas, boolean[][] used, int start, int y, String text) {
+    for(int i = 0; i < text.length(); i++) {
+      canvas.put(start + i, y, text.charAt(i), ChartColor.DEFAULT);
+      mark(used, start + i, y);
+    }
+  }
+
+  private static void mark(boolean[][] used, int x, int y) {
+    if(used != null) {
+      used[y][x] = true;
+    }
+  }
+
+  static char sizeGlyph(ChartSystem system) {
+    int size = system.size().CastToInt();
+    return SIZE_GLYPHS[Math.max(0, Math.min(size, SIZE_GLYPHS.length - 1))];
+  }
+
+  /**
    * Draws the fuel range as a braille ring: each cell holds up to eight sub-cell dots,
    * so the circle is a continuous curve instead of a chain of character dots. One
    * sector counts as one cell, that is, two dots across and four dots down. The ring
-   * is drawn first, so names, systems and arrows paint over it.
+   * is drawn first, so stars, names and arrows paint over it.
    */
   private static void drawRangeRing(ChartCanvas canvas, int centerX, int centerY, double radius) {
     if(radius < 0.5) {
@@ -154,56 +286,12 @@ public final class ChartRenderer {
     return Math.floorMod(px, 2) == 0 ? LEFT_DOTS[dy] : RIGHT_DOTS[dy];
   }
 
-  private static char marker(ChartSystem system, ChartViewModel model) {
-    if(isCurrent(system, model)) {
-      return CURRENT;
-    }
-    if(system.warp()) {
-      return WARP;
-    }
-    if(system.tracked()) {
-      return TRACKED;
-    }
-    return system.visited() ? VISITED : UNVISITED;
-  }
-
-  private static ChartColor color(ChartSystem system, ChartViewModel model) {
-    if(isCurrent(system, model)) {
-      return ChartColor.CYAN;
-    }
-    if(system.selected()) {
-      return ChartColor.SELECTED;
-    }
-    if(system.warp()) {
-      return ChartColor.YELLOW;
-    }
-    if(system.tracked()) {
-      return ChartColor.RED;
-    }
-    return reachable(system, model) ? ChartColor.GREEN : ChartColor.DEFAULT;
+  private static boolean isSpecial(ChartSystem system, ChartViewModel model) {
+    return isCurrent(system, model) || system.warp() || system.tracked() || system.selected();
   }
 
   private static boolean isCurrent(ChartSystem system, ChartViewModel model) {
     return system.x() == model.currentX() && system.y() == model.currentY();
-  }
-
-  private static boolean reachable(ChartSystem system, ChartViewModel model) {
-    int dx = system.x() - model.currentX();
-    int dy = system.y() - model.currentY();
-    return (int)Math.floor(Math.sqrt(dx * dx + dy * dy)) <= model.fuel();
-  }
-
-  private static void drawWormhole(ChartCanvas canvas, ChartSystem system, int x, int y) {
-    if(system.wormhole() && x + 1 < canvas.width()) {
-      canvas.put(x + 1, y, WORMHOLE, ChartColor.MAGENTA);
-    }
-  }
-
-  private static void drawName(ChartCanvas canvas, String name, int centerX, int y) {
-    if(name == null || name.isEmpty()) {
-      return;
-    }
-    drawText(canvas, centerX - name.length() / 2, y, name, ChartColor.DEFAULT);
   }
 
   private static void drawText(ChartCanvas canvas, int startX, int y, String text, ChartColor color) {
@@ -227,7 +315,7 @@ public final class ChartRenderer {
       }
     }
     if(tracked != null && !isCurrent(tracked, model)) {
-      drawEdgeArrow(canvas, tracked.x() - model.viewX(), tracked.y() - model.viewY(), ChartColor.RED);
+      drawEdgeArrow(canvas, tracked.x() - model.viewX(), tracked.y() - model.viewY(), TRACKED_ARROW_COLOR);
     }
   }
 

@@ -24,4 +24,11 @@ public interface ChartCanvas {
    * the renderer never writes outside the canvas.
    */
   void put(int x, int y, char character, ChartColor color);
+
+  /**
+   * Writes a character with the colour as the cell background and the map background
+   * as its foreground. The inverted cell marks the current system and can combine
+   * with the cross and the parentheses drawn around it.
+   */
+  void putInverted(int x, int y, char character, ChartColor color);
 }

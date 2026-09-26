@@ -169,6 +169,14 @@ chart is hidden; the chart comes back when the panel closes.
     as markers (no names at that scale) with the current position, the selected
     destination, the tracked system, the wormholes, the visited marks and the small
     fuel circle around the current system.
+  - *Markers*: every system is a star whose glyph grows with its size (`· • ● ⬤ ★
+    ✺` for Tiny to Gargantuan) and whose colour is decorative: bright while it has
+    not been visited and dim afterwards. The states are shapes: the current system is
+    drawn inverted (its colour becomes the cell background), the selected/target
+    system carries a cross, the tracked system parentheses (one cell further out when
+    both apply) and a system with a wormhole a magenta `~` next to it. Names go under
+    their stars; when they do not fit they fall back to a truncation with an ellipsis
+    (the current, selected and tracked systems first) or are skipped.
   - `TAB` switches between the detail chart (names) and the situation chart (the
     whole galaxy).
 - **Context panel (right):** one panel at a time, no new windows.

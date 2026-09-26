@@ -27,6 +27,7 @@ import org.gts.bst.view.CommanderViewModel;
 import org.gts.bst.view.EquipmentInfoViewModel;
 import org.gts.bst.view.EquipmentViewModel;
 import org.gts.bst.view.HighScoresViewModel;
+import org.gts.bst.view.ChartColor;
 import org.gts.bst.view.ChartType;
 import org.gts.bst.view.ChartViewModel;
 import org.gts.bst.view.DockViewModel;
@@ -514,7 +515,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     for(int i = 0; i < universe.length; i++) {
       StarSystem system = universe[i];
       systems.add(new ChartSystem(system.X(), system.Y(), system.Name(), system.Visited(),
-          Util.BruteSeek(game.Wormholes(), i) >= 0, i == warp, i == tracked, i == selected));
+          Util.BruteSeek(game.Wormholes(), i) >= 0, i == warp, i == tracked, i == selected,
+          system.Size(), ChartColor.starColor(i, system.Visited())));
     }
     int fuel = cmdr.getShip().getFuel();
     if(chartType == ChartType.GALACTIC) {

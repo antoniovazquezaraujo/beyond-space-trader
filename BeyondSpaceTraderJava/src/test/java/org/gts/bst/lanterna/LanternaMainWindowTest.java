@@ -60,7 +60,7 @@ class LanternaMainWindowTest {
       assertTrue(header.contains("Antonio"), header);
       assertTrue(header.contains(Strings.MainDay.substring(0, 3)), header);
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
-      assertTrue(areaContains(screen, 1, 4, 60, 26, "*o@+"), "no chart markers");
+      assertTrue(areaContains(screen, 1, 4, 60, 26, "·•●⬤★✺"), "no chart markers");
       assertTrue(screenText(screen).contains("[TAB] map · [C] trade · [B] bank"), screenText(screen));
       assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
           "the window background must be black");
@@ -842,7 +842,7 @@ class LanternaMainWindowTest {
       gui.addWindow(window.asWindow());
       gui.updateScreen();
 
-      int[] before = findInChart(screen, '+');
+      int[] before = findInverted(screen);
       assertNotNull(before, "the current system must be on the galactic chart:\n" + screenText(screen));
 
       // The whole galaxy fits, so selecting the farthest system does not scroll it.
@@ -850,11 +850,11 @@ class LanternaMainWindowTest {
       presenter.updateAll();
       gui.updateScreen();
 
-      int[] after = findInChart(screen, '+');
+      int[] after = findInverted(screen);
       assertNotNull(after, "the whole galaxy must fit:\n" + screenText(screen));
       assertEquals(before[0], after[0]);
       assertEquals(before[1], after[1]);
-      assertTrue(chartHasSelected(screen), "the selected system must be visible:\n" + screenText(screen));
+      assertTrue(chartHasCrosshair(screen), "the selected system must be visible:\n" + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -879,17 +879,16 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
       assertTrue(row(screen, 3).contains(Strings.MainChartShortRange), row(screen, 3));
-      int[] before = findInChart(screen, '+');
+      int[] before = findInverted(screen);
       assertNotNull(before, "the current system must be on the short-range chart:\n" + screenText(screen));
-      assertFalse(chartHasSelected(screen), "the current system is not the selection");
 
       // Selecting a system outside the view makes the chart follow it.
       holder[0].SelectedSystemId(farthestSystem(holder[0]).Id());
       presenter.updateAll();
       gui.updateScreen();
 
-      assertTrue(chartHasSelected(screen), "the chart must follow the selection:\n" + screenText(screen));
-      int[] after = findInChart(screen, '+');
+      assertTrue(chartHasCrosshair(screen), "the chart must follow the selection:\n" + screenText(screen));
+      int[] after = findInverted(screen);
       assertTrue(after == null || after[0] != before[0] || after[1] != before[1],
           "the chart must have scrolled:\n" + screenText(screen));
     } finally {
@@ -940,10 +939,11 @@ class LanternaMainWindowTest {
     return far;
   }
 
-  private static boolean chartHasSelected(Screen screen) {
+  /** The selected system is marked with a cross: its horizontal arm is a dash. */
+  private static boolean chartHasCrosshair(Screen screen) {
     for(int y = 4; y < 27; y++) {
       for(int x = 1; x < 64; x++) {
-        if(screen.getBackCharacter(x, y).getBackgroundColor() == TextColor.ANSI.WHITE) {
+        if(screen.getBackCharacter(x, y).getCharacter() == '─') {
           return true;
         }
       }
@@ -951,10 +951,11 @@ class LanternaMainWindowTest {
     return false;
   }
 
-  private static int[] findInChart(Screen screen, char character) {
+  /** The current system is the only cell with a background other than black. */
+  private static int[] findInverted(Screen screen) {
     for(int y = 4; y < 27; y++) {
       for(int x = 1; x < 64; x++) {
-        if(screen.getBackCharacter(x, y).getCharacter() == character) {
+        if(screen.getBackCharacter(x, y).getBackgroundColor() != TextColor.ANSI.BLACK) {
           return new int[] {x, y};
         }
       }

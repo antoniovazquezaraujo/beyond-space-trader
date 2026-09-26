@@ -19,6 +19,7 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
 import java.util.List;
+import org.gts.bst.ship.ShipSize;
 import org.junit.jupiter.api.Test;
 
 
@@ -30,17 +31,20 @@ class LanternaChartViewTest {
     try {
       LanternaChartView view = new LanternaChartView(screen.newTextGraphics(), screen.getTerminalSize());
       List<ChartSystem> systems = List.of(
-          new ChartSystem(0, 0, "Here", true, false, false, false),
-          new ChartSystem(3, 0, "Sol", false, false, false, false));
+          new ChartSystem(0, 0, "Here", true, false, false, false, false, ShipSize.Large, ChartColor.CYAN),
+          new ChartSystem(3, 0, "Sol", true, false, false, false, false, ShipSize.Small, ChartColor.RED_DIM));
 
       view.render(ChartViewModel.shortRange(systems, 0, 0, -10, -4, 5, null));
 
+      // The current system is drawn inverted: its colour becomes the background.
       TextCharacter current = screen.getBackCharacter(10, 4);
-      assertEquals('+', current.getCharacter());
-      assertEquals(TextColor.ANSI.CYAN, current.getForegroundColor());
+      assertEquals('⬤', current.getCharacter());
+      assertEquals(TextColor.ANSI.BLACK, current.getForegroundColor());
+      assertEquals(TextColor.ANSI.CYAN_BRIGHT, current.getBackgroundColor());
       TextCharacter sol = screen.getBackCharacter(13, 4);
-      assertEquals('o', sol.getCharacter());
-      assertEquals(TextColor.ANSI.GREEN, sol.getForegroundColor());
+      assertEquals('•', sol.getCharacter());
+      assertEquals(TextColor.ANSI.RED, sol.getForegroundColor());
+      assertEquals(TextColor.ANSI.BLACK, sol.getBackgroundColor());
     } finally {
       screen.stopScreen();
       screen.close();
