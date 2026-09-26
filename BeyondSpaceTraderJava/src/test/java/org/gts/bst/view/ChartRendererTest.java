@@ -27,41 +27,42 @@ class ChartRendererTest {
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 0, 20, 10));
 
-    // scale = max(20 / 10, 10 / 4) = 2.5; the map is 8 x 4 characters at (1, 0).
-    assertEquals('·', canvas.at(1, 0));
-    assertEquals(ChartColor.GREEN_DIM, canvas.colorAt(1, 0));
-    assertEquals('✧', canvas.at(5, 2));
-    assertTrue(canvas.invertedAt(5, 2), "the current system must be inverted");
-    assertEquals('✶', canvas.at(9, 4));
-    assertEquals(' ', canvas.at(0, 0));
+    // Two columns per cell, scale = max(20 / 5, 10 / 4) = 4.
+    assertEquals('·', canvas.at(0, 0));
+    assertEquals(ChartColor.GREEN_DIM, canvas.colorAt(0, 0));
+    assertEquals('✧', canvas.at(6, 1));
+    assertTrue(canvas.invertedAt(6, 1), "the current system must be inverted");
+    assertEquals('✶', canvas.at(10, 3));
+    // The odd columns between the map cells stay empty.
+    assertEquals(' ', canvas.at(1, 0));
   }
 
   @Test
   void galacticMarksTheStatesAsShapes() {
-    TestChartCanvas canvas = new TestChartCanvas(11, 5);
+    TestChartCanvas canvas = new TestChartCanvas(15, 5);
     List<ChartSystem> systems = List.of(
         system(10, 5, "Current", ShipSize.Medium, ChartColor.CYAN, false),
-        system(12, 5, "Selected", ShipSize.Medium, ChartColor.WHITE, false, false, false, true),
-        system(6, 5, "Tracked", ShipSize.Medium, ChartColor.WHITE, false, false, true, false),
+        system(14, 5, "Selected", ShipSize.Medium, ChartColor.WHITE, false, false, false, true),
+        system(4, 5, "Tracked", ShipSize.Medium, ChartColor.WHITE, false, false, true, false),
         system(10, 9, "Worm", ShipSize.Medium, ChartColor.WHITE, true, true, false, false));
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 3, 20, 10));
 
-    // The current system keeps its inverted cell: the parentheses cannot paint over it.
-    assertEquals('◦', canvas.at(5, 2));
-    assertTrue(canvas.invertedAt(5, 2), canvas.line(2));
-    // The parentheses of the selected system (its left one falls on the current).
-    assertEquals('◦', canvas.at(6, 2));
-    assertEquals(')', canvas.at(7, 2));
-    assertEquals(ChartColor.YELLOW, canvas.colorAt(7, 2));
+    // The current system keeps its inverted cell: its parenthesis moves one cell out.
+    assertEquals('◦', canvas.at(8, 2));
+    assertTrue(canvas.invertedAt(8, 2), canvas.line(2));
+    assertEquals('(', canvas.at(6, 2));
+    // The parentheses of the selected system.
+    assertEquals('◦', canvas.at(10, 2));
+    assertEquals(')', canvas.at(12, 2));
+    assertEquals(ChartColor.YELLOW, canvas.colorAt(12, 2));
     // The brackets of the tracked system.
-    assertEquals('[', canvas.at(2, 2));
+    assertEquals('[', canvas.at(0, 2));
     assertEquals(']', canvas.at(4, 2));
-    assertEquals(ChartColor.WHITE, canvas.colorAt(2, 2));
+    assertEquals(ChartColor.WHITE, canvas.colorAt(0, 2));
     // A wormhole system is drawn as a circled dot.
-    assertEquals('◉', canvas.at(5, 4));
-    assertEquals(ChartColor.WHITE, canvas.colorAt(5, 4));
-    assertEquals(' ', canvas.at(6, 4));
+    assertEquals('◉', canvas.at(8, 3));
+    assertEquals(ChartColor.WHITE, canvas.colorAt(8, 3));
   }
 
   @Test
@@ -73,10 +74,10 @@ class ChartRendererTest {
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 0, 0, 0, 154, 110));
 
-    // scale = max(154 / 5, 110 / 2) = 55; the map is 3 x 2 characters at (1, 0).
-    assertEquals('·', canvas.at(1, 0));
-    assertTrue(canvas.invertedAt(1, 0));
-    assertEquals('✶', canvas.at(4, 2));
+    // Two columns per cell and scale = max(154 / 2, 110 / 2) = 77.
+    assertEquals('·', canvas.at(0, 0));
+    assertTrue(canvas.invertedAt(0, 0));
+    assertEquals('✶', canvas.at(4, 1));
   }
 
   @Test
@@ -87,8 +88,9 @@ class ChartRendererTest {
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 5, 20, 10));
 
-    // Here scale is 1, so the circle has a radius of five cells.
+    // The circle comes out round: five columns to the right, two rows below.
     assertRing(canvas, 15, 5);
+    assertRing(canvas, 10, 7);
   }
 
   @Test
@@ -268,7 +270,7 @@ class ChartRendererTest {
 
   @Test
   void galacticDrawsTheWormholeLinkOfTheSelectedSystem() {
-    TestChartCanvas canvas = new TestChartCanvas(11, 5);
+    TestChartCanvas canvas = new TestChartCanvas(21, 11);
     List<ChartSystem> systems = List.of(
         system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false),
         new ChartSystem(10, 5, "End", false, true, false, false, true, ShipSize.Small, ChartColor.WHITE, 18, 9),
@@ -276,11 +278,14 @@ class ChartRendererTest {
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 0, 0, 0, 20, 10));
 
-    assertEquals('─', canvas.at(7, 2));
-    assertEquals(ChartColor.MAGENTA, canvas.colorAt(7, 2));
-    assertEquals('┐', canvas.at(8, 2));
-    assertEquals('│', canvas.at(8, 3));
-    assertEquals('◉', canvas.at(8, 4));
+    // The horizontal segment fills the columns between the map cells.
+    assertEquals('─', canvas.at(14, 5));
+    assertEquals(ChartColor.MAGENTA, canvas.colorAt(14, 5));
+    assertEquals('─', canvas.at(17, 5));
+    assertEquals('┐', canvas.at(18, 5));
+    assertEquals('│', canvas.at(18, 6));
+    assertEquals('◉', canvas.at(10, 5));
+    assertEquals('◉', canvas.at(18, 7));
   }
 
   @Test

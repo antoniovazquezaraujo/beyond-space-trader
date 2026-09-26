@@ -39,6 +39,12 @@ public final class ChartRenderer {
   static final char TRACK_OPEN = '[';
   static final char TRACK_CLOSE = ']';
   static final char ELLIPSIS = '…';
+  /**
+   * The galactic chart draws each map cell with this many character columns (a blank
+   * between systems): the terminal cell is about twice as tall as wide, so this keeps
+   * the galaxy's shape and the round fuel ring while filling the chart width.
+   */
+  static final int GALACTIC_COLUMNS = 2;
   static final char WORMHOLE_HORIZONTAL = '─';
   static final char WORMHOLE_VERTICAL = '│';
   /** Shortest truncated name worth drawing (letters plus the ellipsis). */
@@ -69,61 +75,66 @@ public final class ChartRenderer {
   }
 
   private static void renderGalactic(ChartCanvas canvas, ChartViewModel model) {
-    double scale = galacticScale(canvas, model);
-    int mapWidth = (int)Math.round(model.galaxyWidth() / scale);
-    int mapHeight = (int)Math.round(model.galaxyHeight() / scale);
-    int left = Math.max(0, (canvas.width() - mapWidth) / 2);
-    int top = Math.max(0, (canvas.height() - mapHeight) / 2);
+    int columns = GALACTIC_COLUMNS;
+    int cellsWide = Math.max(1, (canvas.width() + 1) / columns);
+    int cellsTall = Math.max(1, canvas.height());
+    double scale = Math.max((double)model.galaxyWidth() / Math.max(1, cellsWide - 1),
+        (double)model.galaxyHeight() / Math.max(1, cellsTall - 1));
+    int usedCellsWide = (int)Math.round(model.galaxyWidth() / scale) + 1;
+    int usedCellsTall = (int)Math.round(model.galaxyHeight() / scale) + 1;
+    int leftCells = Math.max(0, (cellsWide - usedCellsWide) / 2);
+    int top = Math.max(0, (cellsTall - usedCellsTall) / 2);
     boolean[][] used = new boolean[canvas.height()][canvas.width()];
-    drawRangeRing(canvas, left + (int)Math.round(model.currentX() / scale),
-        top + (int)Math.round(model.currentY() / scale), model.fuel() / scale);
+    int currentX = (leftCells + (int)Math.round(model.currentX() / scale)) * columns;
+    int currentY = top + (int)Math.round(model.currentY() / scale);
+    drawRangeRing(canvas, currentX, currentY, model.fuel() / scale, columns * 2);
     for(ChartSystem system : model.systems()) {
       if(system.selected() && system.wormholeLinked()) {
-        drawWormholeLine(canvas, system,
-            left + (int)Math.round(system.x() / scale), top + (int)Math.round(system.y() / scale),
-            left + (int)Math.round(system.wormholeToX() / scale),
-            top + (int)Math.round(system.wormholeToY() / scale), used);
+        drawWormholeLine(canvas, system, systemColumn(model, system.x(), scale, leftCells, columns),
+            systemRow(model, system.y(), scale, top),
+            systemColumn(model, system.wormholeToX(), scale, leftCells, columns),
+            systemRow(model, system.wormholeToY(), scale, top), columns, used);
         break;
       }
     }
-    // The stars first (the special ones last), then the wormhole marks and, over
-    // everything, the state decorations; nothing paints over a star.
+    // The stars first (the special ones last), then, over everything, the state
+    // decorations; nothing paints over a star except the state marks.
     for(ChartSystem system : model.systems()) {
       if(!isSpecial(system, model)) {
-        drawStar(canvas, model, system, left + (int)Math.round(system.x() / scale),
-            top + (int)Math.round(system.y() / scale), used);
+        drawStar(canvas, model, system, systemColumn(model, system.x(), scale, leftCells, columns),
+            systemRow(model, system.y(), scale, top), used);
       }
     }
     for(ChartSystem system : model.systems()) {
       if(isSpecial(system, model)) {
-        drawStar(canvas, model, system, left + (int)Math.round(system.x() / scale),
-            top + (int)Math.round(system.y() / scale), used);
+        drawStar(canvas, model, system, systemColumn(model, system.x(), scale, leftCells, columns),
+            systemRow(model, system.y(), scale, top), used);
       }
     }
-    int blockedX = left + (int)Math.round(model.currentX() / scale);
-    int blockedY = top + (int)Math.round(model.currentY() / scale);
     for(ChartSystem system : model.systems()) {
-      drawDecoration(canvas, system, left + (int)Math.round(system.x() / scale),
-          top + (int)Math.round(system.y() / scale), used, blockedX, blockedY);
+      drawDecoration(canvas, system, systemColumn(model, system.x(), scale, leftCells, columns),
+          systemRow(model, system.y(), scale, top), used, currentX, currentY, columns);
     }
   }
 
-  private static double galacticScale(ChartCanvas canvas, ChartViewModel model) {
-    int width = Math.max(1, canvas.width() - 1);
-    int height = Math.max(1, canvas.height() - 1);
-    return Math.max((double)model.galaxyWidth() / width, (double)model.galaxyHeight() / height);
+  private static int systemColumn(ChartViewModel model, int x, double scale, int leftCells, int columns) {
+    return (leftCells + (int)Math.round(x / scale)) * columns;
+  }
+
+  private static int systemRow(ChartViewModel model, int y, double scale, int top) {
+    return top + (int)Math.round(y / scale);
   }
 
   private static void renderShortRange(ChartCanvas canvas, ChartViewModel model) {
     boolean[][] used = new boolean[canvas.height()][canvas.width()];
     int currentX = model.currentX() - model.viewX();
     int currentY = model.currentY() - model.viewY();
-    drawRangeRing(canvas, currentX, currentY, model.fuel());
+    drawRangeRing(canvas, currentX, currentY, model.fuel(), 2);
     for(ChartSystem system : model.systems()) {
       if(system.selected() && system.wormholeLinked()) {
         drawWormholeLine(canvas, system,
             system.x() - model.viewX(), system.y() - model.viewY(),
-            system.wormholeToX() - model.viewX(), system.wormholeToY() - model.viewY(), used);
+            system.wormholeToX() - model.viewX(), system.wormholeToY() - model.viewY(), 1, used);
         break;
       }
     }
@@ -139,7 +150,7 @@ public final class ChartRenderer {
     }
     for(ChartSystem system : model.systems()) {
       drawDecoration(canvas, system, system.x() - model.viewX(), system.y() - model.viewY(), used,
-          currentX, currentY);
+          currentX, currentY, 1);
     }
     drawEdgeArrow(canvas, currentX, currentY, CURRENT_ARROW_COLOR);
     drawTrackingArrow(canvas, model);
@@ -181,18 +192,18 @@ public final class ChartRenderer {
    * so they combine without hiding each other.
    */
   private static void drawDecoration(ChartCanvas canvas, ChartSystem system, int x, int y, boolean[][] used,
-      int blockedX, int blockedY) {
+      int blockedX, int blockedY, int columns) {
     if(!inside(canvas, x, y)) {
       return;
     }
     if(system.selected()) {
-      drawMark(canvas, used, x - 1, y, -1, TARGET_OPEN, TARGET_COLOR, blockedX, blockedY);
-      drawMark(canvas, used, x + 1, y, 1, TARGET_CLOSE, TARGET_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x - columns, y, -columns, TARGET_OPEN, TARGET_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x + columns, y, columns, TARGET_CLOSE, TARGET_COLOR, blockedX, blockedY);
     }
     if(system.tracked()) {
       int offset = system.selected() ? 2 : 1;
-      drawMark(canvas, used, x - offset, y, -1, TRACK_OPEN, TRACK_COLOR, blockedX, blockedY);
-      drawMark(canvas, used, x + offset, y, 1, TRACK_CLOSE, TRACK_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x - offset * columns, y, -columns, TRACK_OPEN, TRACK_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x + offset * columns, y, columns, TRACK_CLOSE, TRACK_COLOR, blockedX, blockedY);
     }
   }
 
@@ -216,10 +227,10 @@ public final class ChartRenderer {
    * stars, so the player sees where it leads before travelling. The names avoid it.
    */
   private static void drawWormholeLine(ChartCanvas canvas, ChartSystem source, int x1, int y1, int x2, int y2,
-      boolean[][] used) {
+      int columns, boolean[][] used) {
     int stepX = x1 <= x2 ? 1 : -1;
     int stepY = y1 <= y2 ? 1 : -1;
-    int offset = source.tracked() ? 3 : 2;
+    int offset = (source.tracked() ? 3 : 2) * columns;
     boolean horizontal = (x2 - (x1 + stepX * offset)) * stepX > 0;
     boolean vertical = (y2 - (y1 + stepY)) * stepY > 0;
     if(horizontal) {
@@ -319,7 +330,8 @@ public final class ChartRenderer {
    * sector counts as one cell, that is, two dots across and four dots down. The ring
    * is drawn first, so stars, names and arrows paint over it.
    */
-  private static void drawRangeRing(ChartCanvas canvas, int centerX, int centerY, double radius) {
+  private static void drawRangeRing(ChartCanvas canvas, int centerX, int centerY, double radius,
+      int horizontalDotsPerCell) {
     if(radius < 0.5) {
       return;
     }
@@ -327,7 +339,7 @@ public final class ChartRenderer {
     int[][] masks = new int[canvas.height()][canvas.width()];
     for(int i = 0; i < steps; i++) {
       double angle = 2 * Math.PI * i / steps;
-      int px = centerX * 2 + (int)Math.round(Math.cos(angle) * radius * 2);
+      int px = centerX * 2 + (int)Math.round(Math.cos(angle) * radius * horizontalDotsPerCell);
       int py = centerY * 4 + (int)Math.round(Math.sin(angle) * radius * 4);
       int x = Math.floorDiv(px, 2);
       int y = Math.floorDiv(py, 4);
