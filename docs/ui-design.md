@@ -124,6 +124,8 @@ the new views.
    panels.
 3. **#11 panels:** one by one, retiring the Swing forms and JWinForms at the end.
 
-## Open questions
+## Quantities in trade
 
-- Quantities in trade: preset steps (1/10/100/all) or free number entry?
+The player types the number (with backspace) and `ENTER` confirms; there are also
+quick keys (`1`, `10`, `100` and `A` for everything). No dialogs and no separate
+input mode.
