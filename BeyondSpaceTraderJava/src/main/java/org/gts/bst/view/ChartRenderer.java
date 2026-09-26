@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Draws the galactic and the short-range chart on a character grid.
  *
- * <p>Every system is a star whose glyph grows with its size ({@code · • ● ⬤ ★ ✺} for
+ * <p>Every system is a star whose glyph grows with its size ({@code · • ◦ ✧ ✦ ✶} for
  * Tiny to Gargantuan) and whose colour is decorative: bright while it has not been
  * visited and dim afterwards. The state markers are shapes: the current system is
  * drawn inverted (its colour becomes the cell background), the selected/target system
@@ -40,7 +40,7 @@ public final class ChartRenderer {
   static final char ELLIPSIS = '…';
   /** Shortest truncated name worth drawing (letters plus the ellipsis). */
   private static final int MIN_TRUNCATED_NAME = 5;
-  private static final char[] SIZE_GLYPHS = {'·', '•', '●', '⬤', '★', '✺'};
+  private static final char[] SIZE_GLYPHS = {'·', '•', '◦', '✧', '✦', '✶'};
   private static final int[] LEFT_DOTS = {0x01, 0x02, 0x04, 0x40};
   private static final int[] RIGHT_DOTS = {0x08, 0x10, 0x20, 0x80};
   private static final ChartColor CROSS_COLOR = ChartColor.YELLOW;
