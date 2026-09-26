@@ -1120,6 +1120,9 @@ public final class LanternaMainWindow
       case 'j':
         jump();
         return true;
+      case 'w':
+        warp();
+        return true;
       case 'h':
         buyRepairs();
         return true;
@@ -1178,6 +1181,11 @@ public final class LanternaMainWindow
 
   private void jump() {
     Game game = gameSupplier.get();
+    if(!game.getCanSuperWarp()) {
+      content.log(Strings.MainJumpNoSingularity);
+      content.invalidate();
+      return;
+    }
     if(game.WarpSystem() == null) {
       game.Dialogs().alert(AlertType.ChartJumpNoSystemSelected);
       return;
@@ -1195,6 +1203,44 @@ public final class LanternaMainWindow
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_DEPARTURE).getPath(), game.Serialize(), game.Dialogs());
       }
       game.Warp(true);
+      if(game.getAutoSave()) {
+        Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_ARRIVAL).getPath(), game.Serialize(), game.Dialogs());
+      }
+    } catch(GameEndException e) {
+      showGameEnd(game);
+      return;
+    }
+    refresh();
+  }
+
+  /**
+   * The normal trip: warps to the selected target system, spending the fuel of the
+   * distance (unless a wormhole connects both systems) and advancing a day. The
+   * Portable Singularity Jump is a separate action ({@link #jump()}).
+   */
+  private void warp() {
+    Game game = gameSupplier.get();
+    StarSystem target = game.WarpSystem();
+    if(target == null) {
+      content.log(Strings.MainWarpNoTarget);
+      content.invalidate();
+      return;
+    }
+    if(target == game.Commander().CurrentSystem()) {
+      content.log(Strings.MainWarpCurrent);
+      content.invalidate();
+      return;
+    }
+    if(!target.DestOk()) {
+      content.log(Strings.MainWarpOutOfRange);
+      content.invalidate();
+      return;
+    }
+    try {
+      if(game.getAutoSave()) {
+        Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_DEPARTURE).getPath(), game.Serialize(), game.Dialogs());
+      }
+      game.Warp(false);
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_ARRIVAL).getPath(), game.Serialize(), game.Dialogs());
       }
@@ -1266,6 +1312,9 @@ public final class LanternaMainWindow
     boolean noTech = system.TechLevel().ordinal()
         < Consts.ShipSpecs.get(ShipType.Flea.CastToInt()).MinimumTechLevel().ordinal();
     List<String> contextual = new ArrayList<>();
+    if(game.getCanSuperWarp()) {
+      contextual.add(Strings.NavJump);
+    }
     if(!noTech) {
       contextual.add(Strings.NavShips);
       contextual.add(Strings.NavEquip);

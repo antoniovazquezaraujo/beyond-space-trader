@@ -193,7 +193,8 @@ chart is hidden; the chart comes back when the panel closes.
 | B | Bank panel |
 | Q | Quests panel |
 | N | Newspaper panel |
-| J | Jump (travel) to the selected system |
+| W | Warp to the selected system (normal trip: spends fuel and a day) |
+| J | Jump with the Portable Singularity, only while it is on board |
 | F / H | Buy fuel / repair the hull |
 | F10 | Dropdown menu (scores, options, save/load, new game, quit) |
 | I / V | Commander / ship status |
