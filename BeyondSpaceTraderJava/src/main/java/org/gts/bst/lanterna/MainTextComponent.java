@@ -24,6 +24,8 @@ import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.ChartSystem;
 import org.gts.bst.view.CommanderViewModel;
+import org.gts.bst.view.EquipmentInfoViewModel;
+import org.gts.bst.view.EquipmentViewModel;
 import org.gts.bst.view.ChartType;
 import org.gts.bst.view.ChartViewModel;
 import org.gts.bst.view.DockViewModel;
@@ -31,6 +33,8 @@ import org.gts.bst.view.LanternaChartView;
 import org.gts.bst.view.PersonnelInfo;
 import org.gts.bst.view.PersonnelViewModel;
 import org.gts.bst.view.QuestsViewModel;
+import org.gts.bst.view.ShipInfoViewModel;
+import org.gts.bst.view.ShipListViewModel;
 import org.gts.bst.view.ShipViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
@@ -78,7 +82,13 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private PersonnelInfo personnelInfo;
   private CommanderViewModel commander;
   private ShipViewModel ship;
+  private ShipListViewModel shipList;
+  private ShipInfoViewModel shipInfo;
+  private EquipmentViewModel equipment;
+  private EquipmentInfoViewModel equipmentInfo;
   private int personnelIndex;
+  private int shipListIndex;
+  private int equipmentIndex;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -123,6 +133,60 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public void ship(ShipViewModel ship) {
     this.ship = ship;
+  }
+
+  public void shipList(ShipListViewModel shipList) {
+    this.shipList = shipList;
+  }
+
+  public void shipInfo(ShipInfoViewModel shipInfo) {
+    this.shipInfo = shipInfo;
+  }
+
+  public void equipment(EquipmentViewModel equipment) {
+    this.equipment = equipment;
+  }
+
+  public void equipmentInfo(EquipmentInfoViewModel equipmentInfo) {
+    this.equipmentInfo = equipmentInfo;
+  }
+
+  public ShipListViewModel shipList() {
+    return shipList;
+  }
+
+  public EquipmentViewModel equipment() {
+    return equipment;
+  }
+
+  public int shipListIndex() {
+    return shipListIndex;
+  }
+
+  public void shipListIndex(int index) {
+    this.shipListIndex = index;
+    invalidate();
+  }
+
+  public int shipListEntryCount() {
+    return shipList == null ? 0 : shipList.rows().size();
+  }
+
+  public int equipmentIndex() {
+    return equipmentIndex;
+  }
+
+  public void equipmentIndex(int index) {
+    this.equipmentIndex = index;
+    invalidate();
+  }
+
+  public int equipmentEntryCount() {
+    if(equipment == null) {
+      return 0;
+    }
+    return equipment.buyWeapons().size() + equipment.buyShields().size() + equipment.buyGadgets().size()
+        + equipment.sellWeapons().size() + equipment.sellShields().size() + equipment.sellGadgets().size();
   }
 
   public int personnelIndex() {
@@ -181,6 +245,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public void openShip() {
     panel = MainPanel.Ship;
+    invalidate();
+  }
+
+  public void openShipList() {
+    panel = MainPanel.ShipList;
+    invalidate();
+  }
+
+  public void openEquipment() {
+    panel = MainPanel.Equipment;
     invalidate();
   }
 
@@ -330,6 +404,10 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         return 42;
       case Ship:
         return 50;
+      case ShipList:
+        return 52;
+      case Equipment:
+        return 54;
       default:
         return PANEL_WIDTH;
     }
@@ -356,6 +434,12 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case Ship:
         drawShipPanel(graphics, x, height);
+        break;
+      case ShipList:
+        drawShipListPanel(graphics, x, height);
+        break;
+      case Equipment:
+        drawEquipmentPanel(graphics, x, height);
         break;
       default:
         drawNavigationPanel(graphics, x, height);
@@ -463,6 +547,109 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
   }
 
+  private void drawShipListPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.ShipListTitle);
+    if(shipList == null) {
+      return;
+    }
+    int row = 4;
+    for(int i = 0; i < shipList.rows().size() && row < height - 3; i++) {
+      ShipListViewModel.Row item = shipList.rows().get(i);
+      graphics.putString(x, row++, cut(String.format("%s %-14s %14s",
+          i == shipListIndex ? ">" : " ", item.name(), item.price()), panelWidth()));
+    }
+    if(shipInfo == null || row >= height - 3) {
+      return;
+    }
+    row++;
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(shipInfo.name() + "  " + shipInfo.size(), panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipInfoBays, shipInfo.bays())
+          + " · " + Functions.StringVars(Strings.ShipInfoRange, shipInfo.range()), panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipInfoHull, shipInfo.hull())
+          + " · " + Functions.StringVars(Strings.ShipInfoCrew, shipInfo.crew()), panelWidth()));
+    }
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipInfoWeapon, shipInfo.weapon())
+          + " · " + Functions.StringVars(Strings.ShipInfoShield, shipInfo.shield())
+          + " · " + Functions.StringVars(Strings.ShipInfoGadget, shipInfo.gadget()), panelWidth()));
+    }
+  }
+
+  private void drawEquipmentPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.EquipmentTitle);
+    if(equipment == null) {
+      return;
+    }
+    int row = 4;
+    row = drawEquipmentSection(graphics, x, row, height, Strings.EquipmentBuySection, 0,
+        equipment.buyWeapons().size() + equipment.buyShields().size() + equipment.buyGadgets().size());
+    if(row < height - 3) {
+      graphics.putString(x, row++, cut(Strings.EquipmentSellSection, panelWidth()));
+    }
+    int firstSell = equipment.buyWeapons().size() + equipment.buyShields().size() + equipment.buyGadgets().size();
+    List<String> sell = new ArrayList<>();
+    sell.addAll(equipment.sellWeapons());
+    sell.addAll(equipment.sellShields());
+    sell.addAll(equipment.sellGadgets());
+    row = drawEquipmentEntries(graphics, x, row, height, sell, firstSell);
+    if(equipmentInfo != null && equipmentInfo.visible() && row < height - 3) {
+      row++;
+      if(row < height - 3) {
+        graphics.putString(x, row++, cut(equipmentInfo.name() + "  " + Functions.StringVars(Strings.EquipmentTypeLabel, equipmentInfo.type()), panelWidth()));
+      }
+      if(row < height - 3) {
+        String prices = "";
+        if(!equipmentInfo.buyPrice().isEmpty()) {
+          prices = Functions.StringVars(Strings.EquipmentBuyPrice, equipmentInfo.buyPrice());
+        }
+        if(!equipmentInfo.sellPrice().isEmpty()) {
+          prices += (prices.isEmpty() ? "" : " · ") + Functions.StringVars(Strings.EquipmentSellPrice, equipmentInfo.sellPrice());
+        }
+        if(!prices.isEmpty()) {
+          graphics.putString(x, row++, cut(prices, panelWidth()));
+        }
+      }
+      if(row < height - 3 && !equipmentInfo.power().isEmpty()) {
+        graphics.putString(x, row++, cut(Functions.StringVars(Strings.EquipmentPower, equipmentInfo.power()), panelWidth()));
+      }
+      if(row < height - 3 && !equipmentInfo.charge().isEmpty()) {
+        graphics.putString(x, row++, cut(Functions.StringVars(Strings.EquipmentCharge, equipmentInfo.charge()), panelWidth()));
+      }
+      List<String> wrapped = new ArrayList<>();
+      wrap(wrapped, equipmentInfo.description(), panelWidth());
+      for(String line : wrapped) {
+        if(row >= height - 3) {
+          break;
+        }
+        graphics.putString(x, row++, line);
+      }
+    }
+  }
+
+  private int drawEquipmentSection(TextGUIGraphics graphics, int x, int row, int height, String title, int first, int count) {
+    if(row >= height - 3) {
+      return row;
+    }
+    graphics.putString(x, row++, cut(title, panelWidth()));
+    List<String> buy = new ArrayList<>();
+    buy.addAll(equipment.buyWeapons());
+    buy.addAll(equipment.buyShields());
+    buy.addAll(equipment.buyGadgets());
+    return drawEquipmentEntries(graphics, x, row, height, buy, first);
+  }
+
+  private int drawEquipmentEntries(TextGUIGraphics graphics, int x, int row, int height, List<String> entries, int first) {
+    for(int i = 0; i < entries.size() && row < height - 3; i++) {
+      graphics.putString(x, row++, cut((first + i == equipmentIndex ? "> " : "  ") + entries.get(i), panelWidth()));
+    }
+    return row;
+  }
+
   private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
     graphics.putString(x, 3, Strings.QuestsTitle);
     int row = 4;
@@ -546,6 +733,12 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case Ship:
         keys = Strings.ShipKeys;
+        break;
+      case ShipList:
+        keys = Strings.ShipListKeys;
+        break;
+      case Equipment:
+        keys = Strings.EquipmentKeys;
         break;
       default:
         keys = Strings.MainKeys;

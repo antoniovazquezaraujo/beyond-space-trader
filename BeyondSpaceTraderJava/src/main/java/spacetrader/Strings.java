@@ -359,4 +359,25 @@ public final class Strings {
   public static final String ShipTitle = text("ShipTitle");
   public static final String ShipType = text("ShipType");
 
+  public static final String EquipmentBuyPrice = text("EquipmentBuyPrice");
+  public static final String EquipmentBuySection = text("EquipmentBuySection");
+  public static final String EquipmentCharge = text("EquipmentCharge");
+  public static final String EquipmentKeys = text("EquipmentKeys");
+  public static final String EquipmentPower = text("EquipmentPower");
+  public static final String EquipmentSellPrice = text("EquipmentSellPrice");
+  public static final String EquipmentSellSection = text("EquipmentSellSection");
+  public static final String EquipmentTitle = text("EquipmentTitle");
+  public static final String EquipmentTypeLabel = text("EquipmentTypeLabel");
+  public static final String MainEscapePodAlready = text("MainEscapePodAlready");
+  public static final String MainEscapePodBought = text("MainEscapePodBought");
+  public static final String ShipInfoBays = text("ShipInfoBays");
+  public static final String ShipInfoCrew = text("ShipInfoCrew");
+  public static final String ShipInfoGadget = text("ShipInfoGadget");
+  public static final String ShipInfoHull = text("ShipInfoHull");
+  public static final String ShipInfoRange = text("ShipInfoRange");
+  public static final String ShipInfoShield = text("ShipInfoShield");
+  public static final String ShipInfoWeapon = text("ShipInfoWeapon");
+  public static final String ShipListKeys = text("ShipListKeys");
+  public static final String ShipListTitle = text("ShipListTitle");
+
 }
