@@ -11,7 +11,6 @@ package org.gts.bst.lanterna;
 import com.googlecode.lanterna.gui2.BasicWindow;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
-import com.googlecode.lanterna.gui2.dialogs.TextInputDialog;
 import com.googlecode.lanterna.input.KeyStroke;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -20,6 +19,9 @@ import jwinforms.WfImage;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.events.EncounterResult;
+import org.gts.bst.presenter.CargoTransferPresenter;
+import org.gts.bst.presenter.EncounterPresenter;
+import org.gts.bst.view.EncounterAction;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.ChartsViewModel;
@@ -34,8 +36,10 @@ import org.gts.bst.view.TargetSystemViewModel;
 import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
+import spacetrader.GameEndException;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
+import spacetrader.enums.AlertType;
 
 
 /**
@@ -111,34 +115,101 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
 
   @Override
   public Integer askFuelAmount(int maxAmount) {
-    return askAmount(Strings.DialogFuelTitle,
+    return LanternaDialogs.askAmount(gui, Strings.DialogFuelTitle,
         Functions.StringVars(Strings.DialogFuelPrompt, "" + maxAmount), maxAmount);
   }
 
   @Override
   public Integer askRepairsAmount(int maxAmount) {
-    return askAmount(Strings.DialogRepairsTitle,
+    return LanternaDialogs.askAmount(gui, Strings.DialogRepairsTitle,
         Functions.StringVars(Strings.DialogRepairsPrompt, "" + maxAmount), maxAmount);
   }
 
   @Override
   public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
-    return askAmount(Functions.StringVars(Strings.DialogCargoBuyTitle, item),
+    return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoBuyTitle, item),
         Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount());
   }
 
   @Override
   public Integer askCargoSellQuantity(CargoSellOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
-    return askAmount(Functions.StringVars(Strings.DialogCargoSellTitle, item),
+    return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoSellTitle, item),
         Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount());
   }
 
   @Override
   public EncounterResult showEncounter() {
-    content.log(Strings.MainEncounterUnsupported);
-    return EncounterResult.Continue;
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return EncounterResult.Normal;
+    }
+    EncounterPresenter[] presenter = new EncounterPresenter[1];
+    LanternaEncounterView view = new LanternaEncounterView(gui,
+        action -> dispatch(presenter[0], action), () -> presenter[0].tick(), this::showCargoTransfer);
+    presenter[0] = new EncounterPresenter(game, view);
+    gui.addWindow(view.asWindow());
+    presenter[0].start();
+    gui.waitForWindowToClose(view.asWindow());
+    return presenter[0].result();
+  }
+
+  private static void dispatch(EncounterPresenter presenter, EncounterAction action) {
+    switch(action) {
+      case Attack:
+        presenter.attack();
+        break;
+      case Board:
+        presenter.board();
+        break;
+      case Bribe:
+        presenter.bribe();
+        break;
+      case Drink:
+        presenter.drink();
+        break;
+      case Flee:
+        presenter.flee();
+        break;
+      case Ignore:
+        presenter.ignore();
+        break;
+      case Interrupt:
+        presenter.interest();
+        break;
+      case Meet:
+        presenter.meet();
+        break;
+      case Plunder:
+        presenter.plunder();
+        break;
+      case Submit:
+        presenter.submit();
+        break;
+      case Surrender:
+        presenter.surrender();
+        break;
+      case Trade:
+        presenter.trade();
+        break;
+      case Yield:
+        presenter.yield();
+        break;
+      default:
+        break;
+    }
+  }
+
+  private void showCargoTransfer(boolean plunder) {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    LanternaCargoTransferView view = new LanternaCargoTransferView(gui, game,
+        plunder ? CargoTransferPresenter.Mode.Plunder : CargoTransferPresenter.Mode.Jettison);
+    gui.addWindow(view.asWindow());
+    gui.waitForWindowToClose(view.asWindow());
   }
 
   @Override
@@ -174,19 +245,6 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
   @Override
   public void setCustomShipImages(WfImage[] images) {
     // The text UI does not draw sprites.
-  }
-
-  private Integer askAmount(String title, String prompt, int maxAmount) {
-    String input = TextInputDialog.showDialog(gui, title, prompt, "0");
-    if(input == null) {
-      return null;
-    }
-    try {
-      int value = Integer.parseInt(input.trim());
-      return value >= 0 && value <= maxAmount ? value : null;
-    } catch(NumberFormatException e) {
-      return null;
-    }
   }
 
   private boolean handleKey(KeyStroke key) {
@@ -233,6 +291,9 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
         return true;
       case 'f':
         buyFuel();
+        return true;
+      case 'j':
+        jump();
         return true;
       case 'h':
         buyRepairs();
@@ -288,6 +349,30 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
       presenter.updateAll();
     }
     content.invalidate();
+  }
+
+  private void jump() {
+    Game game = gameSupplier.get();
+    if(game.WarpSystem() == null) {
+      game.Dialogs().alert(AlertType.ChartJumpNoSystemSelected);
+      return;
+    }
+    if(game.WarpSystem() == game.Commander().CurrentSystem()) {
+      game.Dialogs().alert(AlertType.ChartJumpCurrent);
+      return;
+    }
+    if(game.Dialogs().alert(AlertType.ChartJump, game.WarpSystem().Name()) != org.gts.bst.view.DialogResult.Yes) {
+      return;
+    }
+    try {
+      game.setCanSuperWarp(false);
+      game.Warp(true);
+    } catch(GameEndException e) {
+      content.log(Strings.MainGameOver);
+      window.close();
+      return;
+    }
+    refresh();
   }
 
   private void buyRepairs() {

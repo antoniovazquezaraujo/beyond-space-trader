@@ -284,9 +284,9 @@ public final class Strings {
   public static final String MainCargo = text("MainCargo");
   public static final String MainChartGalactic = text("MainChartGalactic");
   public static final String MainChartShortRange = text("MainChartShortRange");
+  public static final String AlertButtonOk = text("AlertButtonOk");
   public static final String MainDay = text("MainDay");
   public static final String MainDebt = text("MainDebt");
-  public static final String MainEncounterUnsupported = text("MainEncounterUnsupported");
   public static final String MainFuel = text("MainFuel");
   public static final String MainHull = text("MainHull");
   public static final String MainKeys = text("MainKeys");
@@ -298,5 +298,25 @@ public final class Strings {
   public static final String MainTarget = text("MainTarget");
   public static final String MainTech = text("MainTech");
   public static final String MainTracking = text("MainTracking");
+
+  public static final String CargoJettisonTitle = text("CargoJettisonTitle");
+  public static final String CargoPlunderTitle = text("CargoPlunderTitle");
+  public static final String CargoTransferKeys = text("CargoTransferKeys");
+  public static final String EncounterActionAttack = text("EncounterActionAttack");
+  public static final String EncounterActionBoard = text("EncounterActionBoard");
+  public static final String EncounterActionBribe = text("EncounterActionBribe");
+  public static final String EncounterActionDrink = text("EncounterActionDrink");
+  public static final String EncounterActionFlee = text("EncounterActionFlee");
+  public static final String EncounterActionIgnore = text("EncounterActionIgnore");
+  public static final String EncounterActionInterrupt = text("EncounterActionInterrupt");
+  public static final String EncounterActionMeet = text("EncounterActionMeet");
+  public static final String EncounterActionPlunder = text("EncounterActionPlunder");
+  public static final String EncounterActionSubmit = text("EncounterActionSubmit");
+  public static final String EncounterActionSurrender = text("EncounterActionSurrender");
+  public static final String EncounterActionTrade = text("EncounterActionTrade");
+  public static final String EncounterActionYield = text("EncounterActionYield");
+  public static final String EncounterTitle = text("EncounterTitle");
+  public static final String MainGameOver = text("MainGameOver");
+  public static final String MainJump = text("MainJump");
 
 }

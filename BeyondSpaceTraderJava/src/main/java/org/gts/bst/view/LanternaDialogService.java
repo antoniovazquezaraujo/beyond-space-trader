@@ -30,7 +30,10 @@ public final class LanternaDialogService implements DialogService {
   public DialogResult alert(AlertType type, String... messageArgs) {
     AlertDefinition definition = Alerts.get(type);
     if(definition == null) {
-      return DialogResult.None;
+      // Image alerts only have a title; show it with a single button.
+      host.show(Alerts.title(type), "",
+          List.of(new AlertButton(spacetrader.Strings.AlertButtonOk, DialogResult.OK)));
+      return DialogResult.OK;
     }
     String[] args = messageArgs == null ? new String[0] : messageArgs;
     List<AlertButton> buttons = new ArrayList<>(2);
