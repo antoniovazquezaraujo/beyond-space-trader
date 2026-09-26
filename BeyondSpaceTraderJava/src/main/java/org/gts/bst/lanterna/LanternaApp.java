@@ -31,6 +31,7 @@ public final class LanternaApp {
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
       LanternaDialogService dialogs = new LanternaDialogService(new LanternaAlertDialogHost(gui));
       Game[] game = new Game[1];
       LanternaMainWindow window = new LanternaMainWindow(() -> game[0], gui);
