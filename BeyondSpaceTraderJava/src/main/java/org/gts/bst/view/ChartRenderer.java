@@ -18,10 +18,11 @@ import java.util.List;
  *
  * <p>Every system is a star whose glyph grows with its size ({@code · • ◦ ✧ ✦ ✶} for
  * Tiny to Gargantuan) and whose colour is decorative: bright while it has not been
- * visited and dim afterwards. The state markers are shapes: the current system is
- * drawn inverted (its colour becomes the cell background), the selected/target system
- * carries a cross, the tracked system parentheses and a system with a wormhole a
- * magenta {@code ~} next to it. The short-range chart also draws the names under
+ * visited and dim afterwards. The state markers are a pair of horizontal symbols:
+ * the current system is drawn inverted (its colour becomes the cell background), the
+ * selected/target system carries parentheses, the tracked system brackets (outside
+ * the parentheses when both apply, {@code [(·)]}) and a system with a wormhole a
+ * magenta {@code ~} next to it. The short-range chart also draws the names just under
  * their stars, skipping (or truncating with an ellipsis) the ones that do not fit.
  *
  * <p>The galactic chart scales the whole galaxy down so that it always fits in the
@@ -33,17 +34,17 @@ import java.util.List;
 public final class ChartRenderer {
   static final char WORMHOLE = '~';
   static final char BRAILLE_BASE = '\u2800';
-  static final char CROSS_HORIZONTAL = '─';
-  static final char CROSS_VERTICAL = '│';
-  static final char TRACK_OPEN = '(';
-  static final char TRACK_CLOSE = ')';
+  static final char TARGET_OPEN = '(';
+  static final char TARGET_CLOSE = ')';
+  static final char TRACK_OPEN = '[';
+  static final char TRACK_CLOSE = ']';
   static final char ELLIPSIS = '…';
   /** Shortest truncated name worth drawing (letters plus the ellipsis). */
   private static final int MIN_TRUNCATED_NAME = 5;
   private static final char[] SIZE_GLYPHS = {'·', '•', '◦', '✧', '✦', '✶'};
   private static final int[] LEFT_DOTS = {0x01, 0x02, 0x04, 0x40};
   private static final int[] RIGHT_DOTS = {0x08, 0x10, 0x20, 0x80};
-  private static final ChartColor CROSS_COLOR = ChartColor.YELLOW;
+  private static final ChartColor TARGET_COLOR = ChartColor.YELLOW;
   private static final ChartColor TRACK_COLOR = ChartColor.WHITE;
   private static final ChartColor CURRENT_ARROW_COLOR = ChartColor.CYAN;
   private static final ChartColor TRACKED_ARROW_COLOR = ChartColor.RED;
@@ -159,19 +160,17 @@ public final class ChartRenderer {
   }
 
   /**
-   * The state shapes around a system: the cross of the selected/target system and the
-   * parentheses of the tracked one. When both apply, the parentheses move one cell
-   * further out, so they combine without hiding each other.
+   * The state symbols around a system: the parentheses of the selected/target system
+   * and the brackets of the tracked one. When both apply they nest ({@code [(·)]}),
+   * so they combine without hiding each other.
    */
   private static void drawDecoration(ChartCanvas canvas, ChartSystem system, int x, int y, boolean[][] used) {
     if(!inside(canvas, x, y)) {
       return;
     }
     if(system.selected()) {
-      draw(canvas, used, x - 1, y, CROSS_HORIZONTAL, CROSS_COLOR);
-      draw(canvas, used, x + 1, y, CROSS_HORIZONTAL, CROSS_COLOR);
-      draw(canvas, used, x, y - 1, CROSS_VERTICAL, CROSS_COLOR);
-      draw(canvas, used, x, y + 1, CROSS_VERTICAL, CROSS_COLOR);
+      draw(canvas, used, x - 1, y, TARGET_OPEN, TARGET_COLOR);
+      draw(canvas, used, x + 1, y, TARGET_CLOSE, TARGET_COLOR);
     }
     if(system.tracked()) {
       int offset = system.selected() ? 2 : 1;
@@ -200,9 +199,7 @@ public final class ChartRenderer {
         continue;
       }
       int starY = system.y() - model.viewY();
-      // The cross of the selected system occupies the row under its star, so its
-      // name goes one row lower.
-      int y = starY + (system.selected() ? 2 : 1);
+      int y = starY + 1;
       if(!inside(canvas, system.x() - model.viewX(), starY) || y < 0 || y >= canvas.height()) {
         continue;
       }

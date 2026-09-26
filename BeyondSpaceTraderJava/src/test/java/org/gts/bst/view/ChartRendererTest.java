@@ -47,18 +47,17 @@ class ChartRendererTest {
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 3, 20, 10));
 
-    // The current system keeps its inverted cell: the cross arm cannot paint over it.
+    // The current system keeps its inverted cell: the parentheses cannot paint over it.
     assertEquals('◦', canvas.at(5, 2));
     assertTrue(canvas.invertedAt(5, 2), canvas.line(2));
-    // The cross of the selected system.
+    // The parentheses of the selected system (its left one falls on the current).
     assertEquals('◦', canvas.at(6, 2));
-    assertEquals('─', canvas.at(7, 2));
-    assertEquals('│', canvas.at(6, 1));
-    assertEquals('│', canvas.at(6, 3));
+    assertEquals(')', canvas.at(7, 2));
     assertEquals(ChartColor.YELLOW, canvas.colorAt(7, 2));
-    // The parentheses of the tracked system.
-    assertEquals('(', canvas.at(2, 2));
-    assertEquals(')', canvas.at(4, 2));
+    // The brackets of the tracked system.
+    assertEquals('[', canvas.at(2, 2));
+    assertEquals(']', canvas.at(4, 2));
+    assertEquals(ChartColor.WHITE, canvas.colorAt(2, 2));
     // The wormhole mark next to its system.
     assertEquals('◦', canvas.at(5, 4));
     assertEquals('~', canvas.at(6, 4));
@@ -117,7 +116,7 @@ class ChartRendererTest {
   }
 
   @Test
-  void shortRangeCombinesTheTrackedParenthesesWithTheCross() {
+  void shortRangeCombinesTheTargetParenthesesWithTheTrackedBrackets() {
     TestChartCanvas canvas = new TestChartCanvas(21, 9);
     List<ChartSystem> systems = List.of(
         system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false),
@@ -125,13 +124,11 @@ class ChartRendererTest {
 
     ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, -10, -4, 0, null));
 
-    // The cross and the parentheses combine: the parentheses move one cell out.
-    assertEquals('─', canvas.at(12, 4));
-    assertEquals('─', canvas.at(14, 4));
-    assertEquals('│', canvas.at(13, 3));
-    assertEquals('│', canvas.at(13, 5));
-    assertEquals('(', canvas.at(11, 4));
-    assertEquals(')', canvas.at(15, 4));
+    // The markers nest: the brackets outside, the parentheses inside.
+    assertEquals('(', canvas.at(12, 4));
+    assertEquals(')', canvas.at(14, 4));
+    assertEquals('[', canvas.at(11, 4));
+    assertEquals(']', canvas.at(15, 4));
   }
 
   @Test
@@ -145,9 +142,9 @@ class ChartRendererTest {
     ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 10, 4, 0, 0, 0, null));
 
     assertEquals("Zed", canvas.line(2).substring(0, 3));
-    // The selected name falls back to a truncation with an ellipsis (the cross
-    // occupies the row under its star).
-    assertTrue(canvas.line(3).contains("Narcoti…"), canvas.line(3));
+    // The selected name falls back to a truncation with an ellipsis (the brackets
+    // and parentheses leave the row under the star free).
+    assertTrue(canvas.line(2).contains("Narcoti…"), canvas.line(2));
   }
 
   @Test
