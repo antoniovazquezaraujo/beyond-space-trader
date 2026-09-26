@@ -61,7 +61,7 @@ class LanternaMainWindowTest {
       assertTrue(header.contains("Antonio"), header);
       assertTrue(header.contains(Strings.MainDay.substring(0, 3)), header);
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
-      assertTrue(areaContains(screen, 1, 4, 60, 26, "·•◦✧✦✶"), "no chart markers");
+      assertTrue(areaContains(screen, 1, 4, 60, 26, "·•◦✧✦✶⊙"), "no chart markers");
       assertTrue(screenText(screen).contains("[TAB] map · [C] trade · [B] bank"), screenText(screen));
       assertTrue(screenText(screen).contains("[T] track"), screenText(screen));
       assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
@@ -927,6 +927,46 @@ class LanternaMainWindowTest {
       gui.updateScreen();
       assertEquals(StarSystemId.NA.CastToInt(), holder[0].getTrackedSystemId().CastToInt());
       assertTrue(screenText(screen).contains(Functions.StringVars(Strings.MainUntracking, current.Name())),
+          screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void showsTheWormholeDestinationInThePanel() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      int[] wormholes = holder[0].Wormholes();
+      StarSystem end = null;
+      StarSystem pair = null;
+      for(int i = 0; i + 1 < wormholes.length; i += 2) {
+        if(holder[0].Universe()[wormholes[i]] != current) {
+          end = holder[0].Universe()[wormholes[i]];
+          pair = holder[0].Universe()[wormholes[i + 1]];
+          break;
+        }
+      }
+      assertNotNull(end, "the galaxy must have a wormhole outside the current system");
+
+      holder[0].SelectedSystemId(end.Id());
+      presenter.updateAll();
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.MainWormhole, pair.Name())),
           screenText(screen));
     } finally {
       screen.stopScreen();

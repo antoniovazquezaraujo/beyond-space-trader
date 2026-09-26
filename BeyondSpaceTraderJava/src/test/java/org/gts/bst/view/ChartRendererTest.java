@@ -58,10 +58,10 @@ class ChartRendererTest {
     assertEquals('[', canvas.at(2, 2));
     assertEquals(']', canvas.at(4, 2));
     assertEquals(ChartColor.WHITE, canvas.colorAt(2, 2));
-    // The wormhole mark next to its system.
-    assertEquals('◦', canvas.at(5, 4));
-    assertEquals('~', canvas.at(6, 4));
-    assertEquals(ChartColor.MAGENTA, canvas.colorAt(6, 4));
+    // A wormhole system is drawn as a circled dot.
+    assertEquals('⊙', canvas.at(5, 4));
+    assertEquals(ChartColor.WHITE, canvas.colorAt(5, 4));
+    assertEquals(' ', canvas.at(6, 4));
   }
 
   @Test
@@ -189,6 +189,47 @@ class ChartRendererTest {
     assertRing(canvas, 10, 2);
     assertEquals(' ', canvas.at(12, 6));
     assertEquals(' ', canvas.at(16, 6));
+  }
+
+  @Test
+  void shortRangeDrawsTheWormholeLinkOfTheSelectedSystem() {
+    TestChartCanvas canvas = new TestChartCanvas(21, 9);
+    List<ChartSystem> systems = List.of(
+        system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false),
+        new ChartSystem(5, 2, "End", false, true, false, false, true, ShipSize.Small, ChartColor.WHITE, 9, 5),
+        new ChartSystem(9, 5, "Pair", false, true, false, false, false, ShipSize.Small, ChartColor.WHITE, 5, 2));
+
+    ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, 0, 0, 0, null));
+
+    // The link goes right and down: an L starting after the parentheses.
+    assertEquals('(', canvas.at(4, 2));
+    assertEquals(')', canvas.at(6, 2));
+    assertEquals('─', canvas.at(7, 2));
+    assertEquals('─', canvas.at(8, 2));
+    assertEquals(ChartColor.MAGENTA, canvas.colorAt(7, 2));
+    assertEquals('┌', canvas.at(9, 2));
+    assertEquals('│', canvas.at(9, 3));
+    assertEquals('│', canvas.at(9, 4));
+    // The ends of the link are the circled-dot systems.
+    assertEquals('⊙', canvas.at(5, 2));
+    assertEquals('⊙', canvas.at(9, 5));
+  }
+
+  @Test
+  void galacticDrawsTheWormholeLinkOfTheSelectedSystem() {
+    TestChartCanvas canvas = new TestChartCanvas(11, 5);
+    List<ChartSystem> systems = List.of(
+        system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false),
+        new ChartSystem(10, 5, "End", false, true, false, false, true, ShipSize.Small, ChartColor.WHITE, 18, 9),
+        new ChartSystem(18, 9, "Pair", false, true, false, false, false, ShipSize.Small, ChartColor.WHITE, 10, 5));
+
+    ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 0, 0, 0, 20, 10));
+
+    assertEquals('─', canvas.at(7, 2));
+    assertEquals(ChartColor.MAGENTA, canvas.colorAt(7, 2));
+    assertEquals('┌', canvas.at(8, 2));
+    assertEquals('│', canvas.at(8, 3));
+    assertEquals('⊙', canvas.at(8, 4));
   }
 
   @Test

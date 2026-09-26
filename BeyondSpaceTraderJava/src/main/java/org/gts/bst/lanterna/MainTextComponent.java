@@ -514,9 +514,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     List<ChartSystem> systems = new ArrayList<>(universe.length);
     for(int i = 0; i < universe.length; i++) {
       StarSystem system = universe[i];
-      systems.add(new ChartSystem(system.X(), system.Y(), system.Name(), system.Visited(),
-          Util.BruteSeek(game.Wormholes(), i) >= 0, i == warp, i == tracked, i == selected,
-          system.Size(), ChartColor.starColor(i, system.Visited())));
+      boolean wormhole = Util.BruteSeek(game.Wormholes(), i) >= 0;
+      StarSystem pair = wormhole ? Functions.WormholeTarget(i) : null;
+      systems.add(new ChartSystem(system.X(), system.Y(), system.Name(), system.Visited(), wormhole,
+          i == warp, i == tracked, i == selected, system.Size(), ChartColor.starColor(i, system.Visited()),
+          pair == null ? -1 : pair.X(), pair == null ? -1 : pair.Y()));
     }
     int fuel = cmdr.getShip().getFuel();
     if(chartType == ChartType.GALACTIC) {
@@ -1179,6 +1181,10 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       }
       UiPalette.draw(graphics, x, row++, distance,
           target.outOfRangeVisible() ? UiPalette.BAD : UiPalette.ACCENT, x + panelWidth);
+      if(target.wormholeTo() != null && !target.wormholeTo().isEmpty()) {
+        UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.MainWormhole, target.wormholeTo()),
+            UiPalette.WORMHOLE, x + panelWidth);
+      }
       row++;
     } else {
       if(system != null && !system.name().isEmpty()) {

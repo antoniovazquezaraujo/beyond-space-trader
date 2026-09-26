@@ -174,10 +174,13 @@ chart is hidden; the chart comes back when the panel closes.
     not been visited and dim afterwards. The states are horizontal symbols: the
     current system is drawn inverted (its colour becomes the cell background), the
     selected/target system carries parentheses, the tracked system brackets (nested
-    as `[(·)]` when both apply) and a system with a wormhole a magenta `~` next to
-    it. Names go under their stars; when they do not fit they fall back to a
-    truncation with an ellipsis (the current, selected and tracked systems first) or
-    are skipped.
+    as `[(·)]` when both apply) and a system with a wormhole is drawn as a circled
+    dot (`⊙`) instead of its size glyph. When the selected system has a wormhole,
+    the chart draws the link to its
+    pair as a magenta L (a horizontal and a vertical segment) under the stars, and
+    the navigation panel shows `Wormhole to <system>`. Names go under their stars;
+    when they do not fit they fall back to a truncation with an ellipsis (the
+    current, selected and tracked systems first) or are skipped.
   - `TAB` switches between the detail chart (names) and the situation chart (the
     whole galaxy).
 - **Context panel (right):** one panel at a time, no new windows.

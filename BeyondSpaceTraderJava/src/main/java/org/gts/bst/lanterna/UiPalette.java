@@ -40,6 +40,8 @@ public final class UiPalette {
   public static final TextColor WARN = TextColor.ANSI.YELLOW;
   /** Dangerous values: debts, damage, criminal record. */
   public static final TextColor BAD = TextColor.ANSI.RED;
+  /** The wormhole marks of the charts and the panels. */
+  public static final TextColor WORMHOLE = TextColor.ANSI.MAGENTA;
   public static final TextColor SELECTED_FG = TextColor.ANSI.BLACK;
   public static final TextColor SELECTED_BG = TextColor.ANSI.CYAN;
 
