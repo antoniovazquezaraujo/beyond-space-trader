@@ -178,9 +178,11 @@ chart is hidden; the chart comes back when the panel closes.
     current system is drawn inverted (its colour becomes the cell background), the
     selected/target system carries parentheses, the tracked system brackets (nested
     as `[(·)]` when both apply) and a system with a wormhole is drawn as a circled
-    dot (`◉`) instead of its size glyph. The state marks win over the stars; when one
-    would land on the current system's cell it moves one cell further out, so the
-    player's own position is never hidden. When the selected system has a wormhole,
+    dot (`◉`) instead of its size glyph. The state marks hug their system (on the
+    wide galactic chart they use the blank column between map cells, so they never
+    hit a neighbour) and win over the stars; when one would land on the current
+    system's cell it moves one cell further out, so the player's own position is
+    never hidden. When the selected system has a wormhole,
     the chart draws the link to its
     pair as a magenta L (a horizontal and a vertical segment) under the stars, and
     the navigation panel shows `Wormhole to <system>`. Names go under their stars;

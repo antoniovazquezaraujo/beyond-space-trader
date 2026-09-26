@@ -48,18 +48,18 @@ class ChartRendererTest {
 
     ChartRenderer.render(canvas, ChartViewModel.galactic(systems, 10, 5, 3, 20, 10, 2));
 
-    // The current system keeps its inverted cell: its parenthesis moves one cell out.
+    // The current system keeps its inverted cell.
     assertEquals('◦', canvas.at(8, 2));
     assertTrue(canvas.invertedAt(8, 2), canvas.line(2));
-    assertEquals('(', canvas.at(6, 2));
-    // The parentheses of the selected system.
+    // The marks hug their systems (the odd columns between the map cells).
     assertEquals('◦', canvas.at(10, 2));
-    assertEquals(')', canvas.at(12, 2));
-    assertEquals(ChartColor.YELLOW, canvas.colorAt(12, 2));
+    assertEquals('(', canvas.at(9, 2));
+    assertEquals(ChartColor.YELLOW, canvas.colorAt(9, 2));
+    assertEquals(')', canvas.at(11, 2));
     // The brackets of the tracked system.
-    assertEquals('[', canvas.at(0, 2));
-    assertEquals(']', canvas.at(4, 2));
-    assertEquals(ChartColor.WHITE, canvas.colorAt(0, 2));
+    assertEquals('[', canvas.at(1, 2));
+    assertEquals(']', canvas.at(3, 2));
+    assertEquals(ChartColor.WHITE, canvas.colorAt(1, 2));
     // A wormhole system is drawn as a circled dot.
     assertEquals('◉', canvas.at(8, 3));
     assertEquals(ChartColor.WHITE, canvas.colorAt(8, 3));

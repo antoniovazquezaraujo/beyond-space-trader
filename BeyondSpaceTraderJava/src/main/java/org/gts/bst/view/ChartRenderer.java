@@ -87,7 +87,7 @@ public final class ChartRenderer {
         drawWormholeLine(canvas, system, systemColumn(model, system.x(), scale, leftCells, columns),
             systemRow(model, system.y(), scale, top),
             systemColumn(model, system.wormholeToX(), scale, leftCells, columns),
-            systemRow(model, system.wormholeToY(), scale, top), columns, used);
+            systemRow(model, system.wormholeToY(), scale, top), used);
         break;
       }
     }
@@ -107,7 +107,7 @@ public final class ChartRenderer {
     }
     for(ChartSystem system : model.systems()) {
       drawDecoration(canvas, system, systemColumn(model, system.x(), scale, leftCells, columns),
-          systemRow(model, system.y(), scale, top), used, currentX, currentY, columns);
+          systemRow(model, system.y(), scale, top), used, currentX, currentY);
     }
   }
 
@@ -128,7 +128,7 @@ public final class ChartRenderer {
       if(system.selected() && system.wormholeLinked()) {
         drawWormholeLine(canvas, system,
             system.x() - model.viewX(), system.y() - model.viewY(),
-            system.wormholeToX() - model.viewX(), system.wormholeToY() - model.viewY(), 1, used);
+            system.wormholeToX() - model.viewX(), system.wormholeToY() - model.viewY(), used);
         break;
       }
     }
@@ -144,7 +144,7 @@ public final class ChartRenderer {
     }
     for(ChartSystem system : model.systems()) {
       drawDecoration(canvas, system, system.x() - model.viewX(), system.y() - model.viewY(), used,
-          currentX, currentY, 1);
+          currentX, currentY);
     }
     drawEdgeArrow(canvas, currentX, currentY, CURRENT_ARROW_COLOR);
     drawTrackingArrow(canvas, model);
@@ -186,18 +186,18 @@ public final class ChartRenderer {
    * so they combine without hiding each other.
    */
   private static void drawDecoration(ChartCanvas canvas, ChartSystem system, int x, int y, boolean[][] used,
-      int blockedX, int blockedY, int columns) {
+      int blockedX, int blockedY) {
     if(!inside(canvas, x, y)) {
       return;
     }
     if(system.selected()) {
-      drawMark(canvas, used, x - columns, y, -columns, TARGET_OPEN, TARGET_COLOR, blockedX, blockedY);
-      drawMark(canvas, used, x + columns, y, columns, TARGET_CLOSE, TARGET_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x - 1, y, -1, TARGET_OPEN, TARGET_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x + 1, y, 1, TARGET_CLOSE, TARGET_COLOR, blockedX, blockedY);
     }
     if(system.tracked()) {
       int offset = system.selected() ? 2 : 1;
-      drawMark(canvas, used, x - offset * columns, y, -columns, TRACK_OPEN, TRACK_COLOR, blockedX, blockedY);
-      drawMark(canvas, used, x + offset * columns, y, columns, TRACK_CLOSE, TRACK_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x - offset, y, -1, TRACK_OPEN, TRACK_COLOR, blockedX, blockedY);
+      drawMark(canvas, used, x + offset, y, 1, TRACK_CLOSE, TRACK_COLOR, blockedX, blockedY);
     }
   }
 
@@ -221,10 +221,10 @@ public final class ChartRenderer {
    * stars, so the player sees where it leads before travelling. The names avoid it.
    */
   private static void drawWormholeLine(ChartCanvas canvas, ChartSystem source, int x1, int y1, int x2, int y2,
-      int columns, boolean[][] used) {
+      boolean[][] used) {
     int stepX = x1 <= x2 ? 1 : -1;
     int stepY = y1 <= y2 ? 1 : -1;
-    int offset = (source.tracked() ? 3 : 2) * columns;
+    int offset = source.tracked() ? 3 : 2;
     boolean horizontal = (x2 - (x1 + stepX * offset)) * stepX > 0;
     boolean vertical = (y2 - (y1 + stepY)) * stepY > 0;
     if(horizontal) {
