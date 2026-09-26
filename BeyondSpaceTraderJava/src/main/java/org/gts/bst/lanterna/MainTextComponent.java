@@ -36,6 +36,7 @@ import org.gts.bst.view.PersonnelViewModel;
 import org.gts.bst.view.QuestsViewModel;
 import org.gts.bst.view.ShipInfoViewModel;
 import org.gts.bst.view.ShipListViewModel;
+import org.gts.bst.view.ShipSprites;
 import org.gts.bst.view.ShipViewModel;
 import org.gts.bst.view.ShipyardDesignerViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
@@ -665,6 +666,13 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     int row = 4;
     graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipType, ship.type()), panelWidth));
+    for(String artLine : ShipSprites.of(ship.typeId())) {
+      if(row >= height - 5) {
+        break;
+      }
+      graphics.putString(x, row++, cut(artLine, panelWidth));
+    }
+    row++;
     String[] labels = ship.equipmentLabels().split("\n", -1);
     String[] values = ship.equipmentValues().split("\n", -1);
     for(int i = 0; i < labels.length && i < values.length && row < height - 5; i++) {
@@ -687,29 +695,42 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     if(shipList == null) {
       return;
     }
+    int limit = height - 5;
+    List<ShipListViewModel.Row> rows = shipList.rows();
+    // The selected ship block (blank, name, sprite, three stats) reserves its rows
+    // first, so the list scrolls instead of pushing the sprite out of the panel.
+    int visible = shipInfo == null ? limit - 4 : Math.max(1, limit - 14);
+    int start = Math.max(0, Math.min(shipListIndex - visible + 1, Math.max(0, rows.size() - visible)));
     int row = 4;
-    for(int i = 0; i < shipList.rows().size() && row < height - 5; i++) {
-      ShipListViewModel.Row item = shipList.rows().get(i);
+    for(int i = start; i < rows.size() && i < start + visible && row < limit; i++) {
+      ShipListViewModel.Row item = rows.get(i);
       graphics.putString(x, row++, cut(String.format("%s %-14s %14s",
           i == shipListIndex ? ">" : " ", item.name(), item.price()), panelWidth));
     }
-    if(shipInfo == null || row >= height - 5) {
+    if(shipInfo == null || row >= limit) {
       return;
     }
     row++;
-    if(row < height - 5) {
+    if(row < limit) {
       graphics.putString(x, row++, cut(shipInfo.name() + "  " + shipInfo.size(), panelWidth));
     }
-    if(row < height - 5) {
+    for(String artLine : ShipSprites.of(shipInfo.type())) {
+      if(row >= limit) {
+        break;
+      }
+      graphics.putString(x, row++, cut(artLine, panelWidth));
+    }
+    row++;
+    if(row < limit) {
       graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipInfoBays, shipInfo.bays())
           + " · " + Functions.StringVars(Strings.ShipInfoRange, shipInfo.range()), panelWidth));
     }
-    if(row < height - 5) {
+    if(row < limit) {
       graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipInfoHull, shipInfo.hull())
           + " · " + Functions.StringVars(Strings.ShipInfoCrew, shipInfo.crew()), panelWidth));
     }
-    if(row < height - 5) {
-      graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipInfoWeapon, shipInfo.weapon())
+    if(row < limit) {
+      graphics.putString(x, row, cut(Functions.StringVars(Strings.ShipInfoWeapon, shipInfo.weapon())
           + " · " + Functions.StringVars(Strings.ShipInfoShield, shipInfo.shield())
           + " · " + Functions.StringVars(Strings.ShipInfoGadget, shipInfo.gadget()), panelWidth));
     }

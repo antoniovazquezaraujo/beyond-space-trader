@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
 import org.junit.jupiter.api.Test;
@@ -40,12 +41,14 @@ class LanternaEncounterViewTest {
           EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
           false, 0, "Flea", "Hull at 100%", "Shields at 100%",
           "Pirate", "Hull at 100%", "Shields at 100%",
-          "The pirate attacks.", "Choose an action."));
+          "The pirate attacks.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion));
       gui.addWindow(view.asWindow());
       gui.updateScreen();
 
       String text = screenText(screen);
       assertTrue(text.contains("Flea"), text);
+      assertTrue(text.contains("| o o >"), text);
       assertTrue(text.contains("The pirate attacks."), text);
       assertTrue(text.contains("[A]Attack"), text);
       assertTrue(text.contains("[F]Flee"), text);

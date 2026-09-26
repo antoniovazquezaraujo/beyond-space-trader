@@ -170,6 +170,7 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.ShipTitle), screenText(screen));
+      assertTrue(screenText(screen).contains("| o o >"), screenText(screen));
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
 
@@ -206,6 +207,7 @@ class LanternaMainWindowTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.ShipListTitle), screenText(screen));
       assertTrue(screenText(screen).contains("> Flea"), screenText(screen));
+      assertTrue(screenText(screen).contains("| o o >"), screenText(screen));
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("> Gnat"), screenText(screen));

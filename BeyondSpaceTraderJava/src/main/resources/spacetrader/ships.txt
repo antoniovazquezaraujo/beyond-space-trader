@@ -1,0 +1,106 @@
+# ASCII ship sprites (schematic, monochrome).
+# One [ShipType] section per ship; up to 12 columns x 5 rows.
+# Edit the drawings freely: the game loads them at startup.
+
+[Flea]
+    __
+   /  \_
+  | o o >
+   \__/
+
+[Gnat]
+    /\
+   /  \_
+  | o o >
+   \___/
+
+[Firefly]
+     __
+    /  \_
+  <| o o >
+    \__/
+
+[Mosquito]
+      /\
+   __/  \_
+  |  o o  >
+   \____/
+
+[Bumblebee]
+    /\/\
+   / o o \
+  <  =|=  >
+   \_____/
+
+[Beetle]
+      ____
+     /    \_
+   | o   o \
+   |_|___|_/
+
+[Hornet]
+     /\
+    /  \__
+  <  o  o  \
+    \__/\__/
+
+[Grasshopper]
+     /\
+    /  \_
+  <| o o | >
+    \_/\_/
+
+[Termite]
+     _____
+    /     \_
+  | o   o \
+  |___|_|_/
+
+[Wasp]
+    /\_/\
+   / o o \
+  <  \_/  >
+   \_____/
+
+[SpaceMonster]
+    _/\_
+   (o  o)
+   /|__|\
+    ^  ^
+
+[Dragonfly]
+   \  |  /
+    \ | /
+    (o o)
+    /|_|\
+
+[Mantis]
+     /\
+    /  \_
+   | o  o \
+   /|    |\
+
+[Scarab]
+     ___
+    /   \_
+   | o   o \
+   |_|___|_/
+      |_|
+
+[Bottle]
+      __
+     /  \
+    |    |
+    |____|
+
+[Custom]
+     /\
+    /  \_
+   | o o >
+    \___/
+
+[Scorpion]
+    __
+   /  \_
+  | o  o \
+   \_/\__/

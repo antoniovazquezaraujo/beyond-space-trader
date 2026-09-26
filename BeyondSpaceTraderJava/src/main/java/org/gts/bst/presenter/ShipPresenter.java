@@ -36,7 +36,8 @@ public class ShipPresenter {
   public void update() {
     Ship ship = game.Commander().getShip();
     EquipmentText equipment = equipmentText(ship);
-    view.render(new ShipViewModel(ship.Name(), equipment.labels(), equipment.values(), specialCargo(ship)));
+    view.render(new ShipViewModel(ship.Name(), equipment.labels(), equipment.values(), specialCargo(ship),
+        ship.Type()));
   }
 
   private EquipmentText equipmentText(Ship ship) {
