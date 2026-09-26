@@ -13,6 +13,8 @@ import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 import jwinforms.ImageList;
@@ -25,6 +27,7 @@ import org.gts.bst.presenter.CargoTransferPresenter;
 import org.gts.bst.presenter.CommanderPresenter;
 import org.gts.bst.presenter.EncounterPresenter;
 import org.gts.bst.presenter.EquipmentPresenter;
+import org.gts.bst.presenter.HighScoresPresenter;
 import org.gts.bst.presenter.PersonnelPresenter;
 import org.gts.bst.presenter.QuestsPresenter;
 import org.gts.bst.presenter.ShipListPresenter;
@@ -41,6 +44,8 @@ import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.EquipmentInfoViewModel;
 import org.gts.bst.view.EquipmentView;
 import org.gts.bst.view.EquipmentViewModel;
+import org.gts.bst.view.HighScoresView;
+import org.gts.bst.view.HighScoresViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.GameWindow;
 import org.gts.bst.view.MainStatusViewModel;
@@ -66,6 +71,7 @@ import spacetrader.GameEndException;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
 import org.gts.bst.ship.equip.EquipmentType;
+import spacetrader.GameOptions;
 import spacetrader.enums.AlertType;
 
 
@@ -75,7 +81,7 @@ import spacetrader.enums.AlertType;
  */
 public final class LanternaMainWindow
     implements MainView, MainWindow, GameWindow, BankView, QuestsView,
-    PersonnelView, CommanderView, ShipView, ShipListView, EquipmentView {
+    PersonnelView, CommanderView, ShipView, ShipListView, EquipmentView, HighScoresView {
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
   private final BasicWindow window = new BasicWindow();
@@ -349,6 +355,12 @@ public final class LanternaMainWindow
     if(content.panel() == MainPanel.Equipment) {
       return handleEquipmentKey(key);
     }
+    if(content.panel() == MainPanel.Options) {
+      return handleOptionsKey(key);
+    }
+    if(content.panel() == MainPanel.HighScores) {
+      return false;
+    }
     switch(key.getKeyType()) {
       case Tab:
         content.toggleChart();
@@ -370,6 +382,12 @@ public final class LanternaMainWindow
         return true;
       case F2:
         return runAction(newGameAction, Strings.MainNewGameUnavailable);
+      case F3:
+        openHighScores();
+        return true;
+      case F8:
+        openOptions();
+        return true;
       case F5:
         return runAction(saveGameAction, Strings.MainSaveUnavailable);
       case F9:
@@ -481,6 +499,150 @@ public final class LanternaMainWindow
   @Override
   public void render(ShipListViewModel model) {
     content.shipList(model);
+  }
+
+  @Override
+  public void render(HighScoresViewModel model) {
+    content.highScores(model);
+  }
+
+  private void openHighScores() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    new HighScoresPresenter(Functions.GetHighScores(game.Dialogs()), this).update();
+    content.openHighScores();
+  }
+
+  private void openOptions() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    content.options(optionLines(game.Options()));
+    content.optionsIndex(0);
+    content.openOptions();
+  }
+
+  private boolean handleOptionsKey(KeyStroke key) {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return false;
+    }
+    if(key.getKeyType() == KeyType.ArrowUp || key.getKeyType() == KeyType.ArrowDown) {
+      int count = content.optionsCount();
+      if(count == 0) {
+        return true;
+      }
+      int delta = key.getKeyType() == KeyType.ArrowUp ? -1 : 1;
+      content.optionsIndex(Math.floorMod(content.optionsIndex() + delta, count));
+      return true;
+    }
+    if(key.getKeyType() == KeyType.Enter) {
+      toggleOption(game, content.optionsIndex());
+      return true;
+    }
+    if(key.getKeyType() != KeyType.Character) {
+      return false;
+    }
+    char character = Character.toLowerCase(key.getCharacter());
+    if(character == 's') {
+      game.Options().SaveAsDefaults(game.Dialogs());
+      return true;
+    }
+    if(character == 'l') {
+      game.Options().LoadFromDefaults(true, game.Dialogs());
+      content.options(optionLines(game.Options()));
+      return true;
+    }
+    return false;
+  }
+
+  private List<String> optionLines(GameOptions options) {
+    List<String> lines = new ArrayList<>();
+    lines.add(optionLine(Strings.OptionAutoFuel, options.getAutoFuel()));
+    lines.add(optionLine(Strings.OptionAutoRepair, options.getAutoRepair()));
+    lines.add(optionLine(Strings.OptionNewsAutoPay, options.getNewsAutoPay()));
+    lines.add(optionLine(Strings.OptionNewsAutoShow, options.getNewsAutoShow()));
+    lines.add(optionLine(Strings.OptionRemindLoans, options.getRemindLoans()));
+    lines.add(optionLine(Strings.OptionShowTrackedRange, options.getShowTrackedRange()));
+    lines.add(optionLine(Strings.OptionTrackAutoOff, options.getTrackAutoOff()));
+    lines.add(optionLine(Strings.OptionReserveMoney, options.getReserveMoney()));
+    lines.add(Functions.StringVars(Strings.OptionsValue, Strings.OptionLeaveEmpty, "" + options.getLeaveEmpty()));
+    lines.add(optionLine(Strings.OptionIgnorePirates, options.getAlwaysIgnorePirates()));
+    lines.add(optionLine(Strings.OptionIgnorePolice, options.getAlwaysIgnorePolice()));
+    lines.add(optionLine(Strings.OptionIgnoreTraders, options.getAlwaysIgnoreTraders()));
+    lines.add(optionLine(Strings.OptionIgnoreTradeInOrbit, options.getAlwaysIgnoreTradeInOrbit()));
+    lines.add(optionLine(Strings.OptionContinuousAttack, options.getContinuousAttack()));
+    lines.add(optionLine(Strings.OptionContinuousAttackFleeing, options.getContinuousAttackFleeing()));
+    lines.add(optionLine(Strings.OptionDisableOpponents, options.getDisableOpponents()));
+    return lines;
+  }
+
+  private static String optionLine(String label, boolean value) {
+    return Functions.StringVars(Strings.OptionsValue, label, value ? Strings.OptionsOn : Strings.OptionsOff);
+  }
+
+  private void toggleOption(Game game, int index) {
+    GameOptions options = game.Options();
+    switch(index) {
+      case 0:
+        options.setAutoFuel(!options.getAutoFuel());
+        break;
+      case 1:
+        options.setAutoRepair(!options.getAutoRepair());
+        break;
+      case 2:
+        options.setNewsAutoPay(!options.getNewsAutoPay());
+        break;
+      case 3:
+        options.setNewsAutoShow(!options.getNewsAutoShow());
+        break;
+      case 4:
+        options.setRemindLoans(!options.getRemindLoans());
+        break;
+      case 5:
+        options.setShowTrackedRange(!options.getShowTrackedRange());
+        break;
+      case 6:
+        options.setTrackAutoOff(!options.getTrackAutoOff());
+        break;
+      case 7:
+        options.setReserveMoney(!options.getReserveMoney());
+        break;
+      case 8:
+        Integer value = LanternaDialogs.askAmount(gui, Strings.DialogLeaveEmptyTitle,
+            Functions.StringVars(Strings.DialogLeaveEmptyPrompt, "99"), 99);
+        if(value != null) {
+          options.setLeaveEmpty(value);
+        }
+        break;
+      case 9:
+        options.setAlwaysIgnorePirates(!options.getAlwaysIgnorePirates());
+        break;
+      case 10:
+        options.setAlwaysIgnorePolice(!options.getAlwaysIgnorePolice());
+        break;
+      case 11:
+        options.setAlwaysIgnoreTraders(!options.getAlwaysIgnoreTraders());
+        break;
+      case 12:
+        options.setAlwaysIgnoreTradeInOrbit(!options.getAlwaysIgnoreTradeInOrbit());
+        break;
+      case 13:
+        options.setContinuousAttack(!options.getContinuousAttack());
+        break;
+      case 14:
+        options.setContinuousAttackFleeing(!options.getContinuousAttackFleeing());
+        break;
+      case 15:
+        options.setDisableOpponents(!options.getDisableOpponents());
+        break;
+      default:
+        break;
+    }
+    content.options(optionLines(options));
   }
 
   @Override

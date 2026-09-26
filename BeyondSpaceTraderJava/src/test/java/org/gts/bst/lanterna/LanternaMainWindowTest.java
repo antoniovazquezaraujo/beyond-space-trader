@@ -26,6 +26,7 @@ import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.DialogService;
 import org.junit.jupiter.api.Test;
+import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.Strings;
 
@@ -240,6 +241,47 @@ class LanternaMainWindowTest {
       gui.updateScreen();
 
       assertTrue(screenText(screen).contains(Strings.MainSaveUnavailable), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void opensTheOptionsAndHighScoresPanels() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F8));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.OptionsTitle), screenText(screen));
+      String off = Functions.StringVars(Strings.OptionsValue, Strings.OptionAutoFuel, Strings.OptionsOff);
+      assertTrue(screenText(screen).contains(off), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      String on = Functions.StringVars(Strings.OptionsValue, Strings.OptionAutoFuel, Strings.OptionsOn);
+      assertTrue(screenText(screen).contains(on), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F3));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.HighScoresTitle), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains(Strings.HighScoresTitle));
     } finally {
       screen.stopScreen();
       screen.close();
