@@ -60,6 +60,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private final KeyHandler keyHandler;
   private final List<String> log = new ArrayList<>();
   private ChartType chartType = ChartType.GALACTIC;
+  private MainPanel panel = MainPanel.Navigation;
+  private int selectedItem;
   private SystemInfoViewModel system;
   private CargoViewModel cargo;
   private DockViewModel dock;
@@ -92,6 +94,32 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public ChartType chartType() {
     return chartType;
+  }
+
+  public MainPanel panel() {
+    return panel;
+  }
+
+  public void openTrade() {
+    panel = MainPanel.Trade;
+    invalidate();
+  }
+
+  public void closePanel() {
+    panel = MainPanel.Navigation;
+    invalidate();
+  }
+
+  public int selectedItem() {
+    return selectedItem;
+  }
+
+  public void moveItemSelection(int delta) {
+    if(cargo == null || cargo.rows().isEmpty()) {
+      return;
+    }
+    selectedItem = Math.floorMod(selectedItem + delta, cargo.rows().size());
+    invalidate();
   }
 
   public void log(String message) {
@@ -143,10 +171,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
     drawHeader(graphics, width, cmdr);
-    int chartWidth = width - PANEL_WIDTH - 2;
+    int panelWidth = panelWidth();
+    int chartWidth = width - panelWidth - 2;
     int chartHeight = height - 7;
     drawChart(graphics, chartWidth, chartHeight, game, cmdr);
-    drawPanel(graphics, width - PANEL_WIDTH, chartWidth, height);
+    drawPanel(graphics, width - panelWidth, chartWidth, height);
     drawFooter(graphics, width, height);
   }
 
@@ -208,9 +237,38 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return ChartViewModel.shortRange(systems, current.X(), current.Y(), fuel, Consts.MaxRange, trackedText);
   }
 
+  private int panelWidth() {
+    return panel == MainPanel.Trade ? 48 : PANEL_WIDTH;
+  }
+
   private void drawPanel(TextGUIGraphics graphics, int x, int chartWidth, int height) {
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.drawLine(chartWidth + 1, 3, chartWidth + 1, height - 3, '│');
+    if(panel == MainPanel.Trade) {
+      drawTradePanel(graphics, x, height);
+    } else {
+      drawNavigationPanel(graphics, x, height);
+    }
+  }
+
+  private void drawTradePanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.TradeTitle);
+    int row = 4;
+    graphics.putString(x, row++, cut(String.format("%s %-11s %10s %10s %5s %5s", " ",
+        Strings.TradeItem, Strings.TradeBuy, Strings.TradeSell, Strings.TradeCargo, Strings.TradeHere), panelWidth()));
+    if(cargo == null) {
+      return;
+    }
+    for(int i = 0; i < cargo.rows().size() && row < height - 3; i++) {
+      CargoRowViewModel item = cargo.rows().get(i);
+      String name = cut(Consts.TradeItems.get(i).Name(), 11);
+      graphics.putString(x, row++, cut(String.format("%s %-11s %10s %10s %5s %5s",
+          i == selectedItem ? ">" : " ", name, item.buyPrice(), item.sellPrice(), item.sellQty(), item.buyQty()),
+          panelWidth()));
+    }
+  }
+
+  private void drawNavigationPanel(TextGUIGraphics graphics, int x, int height) {
     int row = 3;
     if(system != null && !system.name().isEmpty()) {
       graphics.putString(x, row++, Functions.StringVars(Strings.MainSystem, system.name(), system.size()));
@@ -244,7 +302,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     for(String message : log) {
       graphics.putString(1, row++, cut(message, width - 2));
     }
-    graphics.putString(1, height - 1, cut(Strings.MainKeys, width - 2));
+    graphics.putString(1, height - 1,
+        cut(panel == MainPanel.Trade ? Strings.TradeKeys : Strings.MainKeys, width - 2));
   }
 
   private static String cut(String text, int max) {

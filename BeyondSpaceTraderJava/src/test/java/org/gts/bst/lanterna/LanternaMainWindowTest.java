@@ -11,6 +11,7 @@ package org.gts.bst.lanterna;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
@@ -65,6 +66,49 @@ class LanternaMainWindowTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void opensTheTradePanelAndMovesTheSelection() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      String trade = screenText(screen);
+      assertTrue(trade.contains(Strings.TradeTitle), trade);
+      assertTrue(trade.contains("> Water"), trade);
+      assertTrue(trade.contains(Strings.TradeKeys), trade);
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Furs"), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains(Strings.TradeTitle));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static String screenText(Screen screen) {
+    StringBuilder text = new StringBuilder();
+    for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
+      text.append(row(screen, y)).append('\n');
+    }
+    return text.toString();
   }
 
   private static String row(Screen screen, int y) {
