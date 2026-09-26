@@ -20,10 +20,14 @@ import jwinforms.WfImage;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.events.EncounterResult;
+import org.gts.bst.presenter.BankPresenter;
 import org.gts.bst.presenter.CargoTransferPresenter;
 import org.gts.bst.presenter.EncounterPresenter;
+import org.gts.bst.presenter.QuestsPresenter;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.presenter.MainPresenter;
+import org.gts.bst.view.BankView;
+import org.gts.bst.view.BankViewModel;
 import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.ChartsViewModel;
 import org.gts.bst.view.DockViewModel;
@@ -31,6 +35,8 @@ import org.gts.bst.view.GameWindow;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
 import org.gts.bst.view.MainWindow;
+import org.gts.bst.view.QuestsView;
+import org.gts.bst.view.QuestsViewModel;
 import org.gts.bst.view.ShipyardViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
@@ -47,12 +53,14 @@ import spacetrader.enums.AlertType;
  * The main window of the text UI. It renders the view models through
  * {@link MainTextComponent} and forwards the keys to the game and the presenter.
  */
-public final class LanternaMainWindow implements MainView, MainWindow, GameWindow {
+public final class LanternaMainWindow implements MainView, MainWindow, GameWindow, BankView, QuestsView {
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
   private final BasicWindow window = new BasicWindow();
   private final MainTextComponent content;
   private MainPresenter presenter;
+  private BankPresenter bankPresenter;
+  private QuestsPresenter questsPresenter;
 
   public LanternaMainWindow(Supplier<Game> gameSupplier, WindowBasedTextGUI gui) {
     this.gameSupplier = gameSupplier;
@@ -264,6 +272,12 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
     if(content.panel() == MainPanel.Trade) {
       return handleTradeKey(key);
     }
+    if(content.panel() == MainPanel.Bank) {
+      return handleBankKey(key);
+    }
+    if(content.panel() == MainPanel.Quests) {
+      return false;
+    }
     switch(key.getKeyType()) {
       case Tab:
         content.toggleChart();
@@ -288,6 +302,73 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
       default:
         return false;
     }
+  }
+
+  private boolean handleBankKey(KeyStroke key) {
+    if(key.getKeyType() != KeyType.Character || bankPresenter == null) {
+      return false;
+    }
+    switch(Character.toLowerCase(key.getCharacter())) {
+      case 'g':
+        bankPresenter.getLoan();
+        return true;
+      case 'p':
+        bankPresenter.payBack();
+        return true;
+      case 'i':
+        bankPresenter.toggleInsurance();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private void openBank() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    if(bankPresenter == null) {
+      bankPresenter = new BankPresenter(game, this);
+    }
+    bankPresenter.update();
+    content.openBank();
+  }
+
+  private void openQuests() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    if(questsPresenter == null) {
+      questsPresenter = new QuestsPresenter(game, this);
+    }
+    questsPresenter.update();
+    content.openQuests();
+  }
+
+  @Override
+  public void render(BankViewModel model) {
+    content.bank(model);
+  }
+
+  @Override
+  public Integer askLoanAmount(int maxAmount) {
+    return LanternaDialogs.askAmount(gui, Strings.DialogLoanTitle,
+        Functions.StringVars(Strings.DialogLoanPrompt, "" + maxAmount), maxAmount);
+  }
+
+  @Override
+  public Integer askPayBackAmount() {
+    Game game = gameSupplier.get();
+    int max = Math.min(game.Commander().getDebt(), game.Commander().getCash());
+    return LanternaDialogs.askAmount(gui, Strings.DialogPayBackTitle,
+        Functions.StringVars(Strings.DialogPayBackPrompt, "" + max), max);
+  }
+
+  @Override
+  public void render(QuestsViewModel model) {
+    content.quests(model);
   }
 
   private boolean handleTradeKey(KeyStroke key) {
@@ -316,11 +397,14 @@ public final class LanternaMainWindow implements MainView, MainWindow, GameWindo
 
   private boolean handleCharacter(Game game, char character) {
     switch(character) {
-      case 'q':
-        window.close();
-        return true;
       case 'c':
         content.openTrade();
+        return true;
+      case 'b':
+        openBank();
+        return true;
+      case 'q':
+        openQuests();
         return true;
       case 't':
         trackSelection(game);

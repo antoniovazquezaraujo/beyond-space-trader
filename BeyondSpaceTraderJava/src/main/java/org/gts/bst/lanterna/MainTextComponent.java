@@ -19,6 +19,7 @@ import com.googlecode.lanterna.input.KeyStroke;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import org.gts.bst.view.BankViewModel;
 import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
 import org.gts.bst.view.ChartSystem;
@@ -26,6 +27,7 @@ import org.gts.bst.view.ChartType;
 import org.gts.bst.view.ChartViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.LanternaChartView;
+import org.gts.bst.view.QuestsViewModel;
 import org.gts.bst.view.SystemInfoViewModel;
 import org.gts.bst.view.TargetSystemViewModel;
 import spacetrader.Commander;
@@ -66,6 +68,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private CargoViewModel cargo;
   private DockViewModel dock;
   private TargetSystemViewModel target;
+  private BankViewModel bank;
+  private QuestsViewModel quests;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -88,6 +92,14 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     this.target = target;
   }
 
+  public void bank(BankViewModel bank) {
+    this.bank = bank;
+  }
+
+  public void quests(QuestsViewModel quests) {
+    this.quests = quests;
+  }
+
   public void toggleChart() {
     chartType = chartType == ChartType.GALACTIC ? ChartType.SHORT_RANGE : ChartType.GALACTIC;
   }
@@ -102,6 +114,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public void openTrade() {
     panel = MainPanel.Trade;
+    invalidate();
+  }
+
+  public void openBank() {
+    panel = MainPanel.Bank;
+    invalidate();
+  }
+
+  public void openQuests() {
+    panel = MainPanel.Quests;
     invalidate();
   }
 
@@ -238,16 +260,61 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private int panelWidth() {
-    return panel == MainPanel.Trade ? 48 : PANEL_WIDTH;
+    switch(panel) {
+      case Trade:
+        return 48;
+      case Bank:
+        return 38;
+      case Quests:
+        return 60;
+      default:
+        return PANEL_WIDTH;
+    }
   }
 
   private void drawPanel(TextGUIGraphics graphics, int x, int chartWidth, int height) {
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.drawLine(chartWidth + 1, 3, chartWidth + 1, height - 3, '│');
-    if(panel == MainPanel.Trade) {
-      drawTradePanel(graphics, x, height);
-    } else {
-      drawNavigationPanel(graphics, x, height);
+    switch(panel) {
+      case Trade:
+        drawTradePanel(graphics, x, height);
+        break;
+      case Bank:
+        drawBankPanel(graphics, x, height);
+        break;
+      case Quests:
+        drawQuestsPanel(graphics, x, height);
+        break;
+      default:
+        drawNavigationPanel(graphics, x, height);
+        break;
+    }
+  }
+
+  private void drawBankPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.BankTitle);
+    int row = 4;
+    if(bank == null) {
+      return;
+    }
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankDebt, bank.currentDebt()), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankMaxLoan, bank.maxLoan()), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankShipValue, bank.shipValue()), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankNoClaim, bank.noClaim()), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankInsurance, bank.insuranceCost()), panelWidth()));
+    graphics.putString(x, row + 1, cut(bank.insuranceButtonText(), panelWidth()));
+  }
+
+  private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.QuestsTitle);
+    int row = 4;
+    if(quests == null) {
+      return;
+    }
+    List<String> lines = new ArrayList<>();
+    wrap(lines, quests.text(), panelWidth());
+    for(int i = 0; i < lines.size() && row < height - 3; i++) {
+      graphics.putString(x, row++, cut(lines.get(i), panelWidth()));
     }
   }
 
@@ -302,8 +369,40 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     for(String message : log) {
       graphics.putString(1, row++, cut(message, width - 2));
     }
-    graphics.putString(1, height - 1,
-        cut(panel == MainPanel.Trade ? Strings.TradeKeys : Strings.MainKeys, width - 2));
+    String keys;
+    switch(panel) {
+      case Trade:
+        keys = Strings.TradeKeys;
+        break;
+      case Bank:
+        keys = Strings.BankKeys;
+        break;
+      case Quests:
+        keys = Strings.QuestsKeys;
+        break;
+      default:
+        keys = Strings.MainKeys;
+        break;
+    }
+    graphics.putString(1, height - 1, cut(keys, width - 2));
+  }
+
+  static void wrap(List<String> lines, String text, int width) {
+    if(text == null) {
+      return;
+    }
+    for(String paragraph : text.split("\n", -1)) {
+      String rest = paragraph;
+      while(rest.length() > width) {
+        int cutAt = rest.lastIndexOf(' ', width);
+        if(cutAt <= 0) {
+          cutAt = width;
+        }
+        lines.add(rest.substring(0, cutAt));
+        rest = rest.substring(cutAt).trim();
+      }
+      lines.add(rest);
+    }
   }
 
   private static String cut(String text, int max) {
