@@ -8,6 +8,8 @@
  */
 package org.gts.bst.view;
 
+import org.gts.bst.ship.ShipType;
+
 
 /**
  * Information panel of the ship list for the selected ship. {@code imageIndex} refers to
@@ -23,6 +25,7 @@ public record ShipInfoViewModel(
     String shield,
     String gadget,
     String crew,
-    int imageIndex) {
+    int imageIndex,
+    ShipType type) {
 }
 

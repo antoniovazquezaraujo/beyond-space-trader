@@ -77,7 +77,8 @@ public class ShipListPresenter {
         Functions.FormatNumber(spec.getShieldSlots()),
         Functions.FormatNumber(spec.getGadgetSlots()),
         Functions.FormatNumber(spec.getCrewQuarters()),
-        spec.ImageIndex()));
+        spec.ImageIndex(),
+        spec.Type()));
   }
 
   public void notifyTribblesTradeInIfNeeded() {

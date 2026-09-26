@@ -200,7 +200,8 @@ public class EncounterPresenter implements EncounterDialogHost {
         game.EncounterImageIndex(),
         cmdrship.Name(), cmdrship.HullText(), cmdrship.ShieldText(),
         game.getOpponent().Name(), game.getOpponent().HullText(), game.getOpponent().ShieldText(),
-        encounterText, actionText);
+        encounterText, actionText,
+        cmdrship.Type(), game.getOpponent().Type());
   }
 
   private Set<EncounterAction> actions() {

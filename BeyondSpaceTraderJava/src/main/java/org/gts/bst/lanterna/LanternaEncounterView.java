@@ -25,6 +25,7 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
+import org.gts.bst.view.ShipSprites;
 import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Strings;
@@ -55,6 +56,7 @@ public final class LanternaEncounterView implements EncounterView {
 
   private static final int TICK_MILLIS = 1000;
   private static final int TEXT_WIDTH = 78;
+  private static final int SHIP_COLUMN = 38;
   private static final Map<Character, EncounterAction> KEYS = Map.ofEntries(
       Map.entry('a', EncounterAction.Attack),
       Map.entry('o', EncounterAction.Board),
@@ -99,8 +101,7 @@ public final class LanternaEncounterView implements EncounterView {
   public void render(EncounterViewModel model) {
     this.model = model;
     List<String> lines = new ArrayList<>();
-    lines.add(model.youShip() + "   " + model.youHull() + "   " + model.youShields());
-    lines.add(model.opponentShip() + "   " + model.opponentHull() + "   " + model.opponentShields());
+    addShips(lines, model);
     lines.add("");
     addWrapped(lines, model.encounterText());
     lines.add("");
@@ -172,6 +173,23 @@ public final class LanternaEncounterView implements EncounterView {
     }
     commands.execute(action);
     return true;
+  }
+
+  private static void addShips(List<String> lines, EncounterViewModel model) {
+    List<String> you = ShipSprites.of(model.youType());
+    List<String> opponent = ShipSprites.of(model.opponentType());
+    lines.add(pad(model.youShip(), SHIP_COLUMN) + model.opponentShip());
+    for(int i = 0; i < Math.max(you.size(), opponent.size()); i++) {
+      String left = i < you.size() ? you.get(i) : "";
+      String right = i < opponent.size() ? opponent.get(i) : "";
+      lines.add(pad(left, SHIP_COLUMN) + right);
+    }
+    lines.add(pad(model.youHull() + "   " + model.youShields(), SHIP_COLUMN)
+        + model.opponentHull() + "   " + model.opponentShields());
+  }
+
+  private static String pad(String text, int width) {
+    return text.length() >= width ? text.substring(0, width) : text + " ".repeat(width - text.length());
   }
 
   private static String actionsLine(Set<EncounterAction> actions) {

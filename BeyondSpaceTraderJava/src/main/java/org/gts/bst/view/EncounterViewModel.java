@@ -9,6 +9,7 @@
 package org.gts.bst.view;
 
 import java.util.Set;
+import org.gts.bst.ship.ShipType;
 
 
 /**
@@ -26,6 +27,8 @@ public record EncounterViewModel(
     String opponentHull,
     String opponentShields,
     String encounterText,
-    String actionText) {
+    String actionText,
+    ShipType youType,
+    ShipType opponentType) {
 }
 

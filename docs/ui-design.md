@@ -212,6 +212,15 @@ new game and quit).
 4. **Encounter:** context panel replaced; the map stays visible behind it.
 5. **Game over / retirement:** summary and the high score table.
 
+## Ship sprites
+
+Every standard ship has a small schematic ASCII sprite (up to 12 columns x 5 rows) in
+`src/main/resources/spacetrader/ships.txt`, one `[ShipType]` section per ship. The text
+UI draws it in the ship panel (`V`), in the selected-ship card of the ship list (`L`)
+and in the encounter screen, with the two ships facing each other. The drawings are
+monochrome for now (colour roles come later) and the file can be edited freely: the
+game loads it at startup, and a ship without art falls back to a generic sprite.
+
 ## What happens to the current forms
 
 | Swing form | Where it goes |
