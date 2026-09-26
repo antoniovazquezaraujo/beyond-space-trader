@@ -335,6 +335,7 @@ public final class Strings {
   public static final String TradeKeys = text("TradeKeys");
   public static final String TradeNoTarget = text("TradeNoTarget");
   public static final String TradeTargetOutOfRange = text("TradeTargetOutOfRange");
+  public static final String TradeTargetNotTraded = text("TradeTargetNotTraded");
   public static final String TradePct = text("TradePct");
   public static final String TradeSell = text("TradeSell");
   public static final String TradeTarget = text("TradeTarget");

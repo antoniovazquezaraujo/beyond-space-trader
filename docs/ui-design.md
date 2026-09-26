@@ -201,7 +201,7 @@ chart is hidden; the chart comes back when the panel closes.
     screens the table adds the prices at the target system (price, +/- and %); on
     narrow ones the selected item shows them in a line under the table. The target
     prices need a system within range selected in the chart; when they cannot be
-    computed, the panel says why.
+    computed the cells stay blank and the panel says why.
   - *Shipyard*: repairs, fuel, ships for sale, equipment (sections of the panel).
   - *Bank*: cash, debt, loans, insurance.
   - *Personnel*: crew/mercenaries, skills, hire/dismiss.

@@ -472,6 +472,13 @@ public final class LanternaMainWindow
     }
   }
 
+  private void openTrade() {
+    if(presenter != null) {
+      presenter.updateAll();
+    }
+    content.openTrade();
+  }
+
   private void openBank() {
     Game game = gameSupplier.get();
     if(game == null) {
@@ -1102,7 +1109,7 @@ public final class LanternaMainWindow
   private boolean handleCharacter(Game game, char character) {
     switch(character) {
       case 'c':
-        content.openTrade();
+        openTrade();
         return true;
       case 'b':
         openBank();
@@ -1181,6 +1188,8 @@ public final class LanternaMainWindow
       if(presenter != null) {
         presenter.updateTargetSystemInfo();
         presenter.updateCharts();
+        // The target prices of the trade panel follow the chart cursor.
+        presenter.updateCargo();
       }
       content.invalidate();
     }
