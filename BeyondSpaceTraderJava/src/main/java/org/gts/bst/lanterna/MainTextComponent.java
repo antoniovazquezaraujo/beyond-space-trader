@@ -1134,6 +1134,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     if(!wide) {
       drawTradeTargetLine(graphics, x, row, height);
+    } else if(tradeTargetNote() != null && row < height - 5) {
+      UiPalette.line(graphics, x, row, tradeTargetNote(), panelWidth);
     }
   }
 
@@ -1149,20 +1151,33 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   /**
    * On narrow panels the target columns do not fit: the selected item shows its
-   * target price and margin in a single line under the table.
+   * target price and margin in a single line under the table. When the target prices
+   * are unknown, the line explains why instead.
    */
   private void drawTradeTargetLine(TextGUIGraphics graphics, int x, int row, int height) {
     if(row >= height - 5 || selectedItem < 0 || selectedItem >= cargo.rows().size()) {
       return;
     }
-    CargoRowViewModel item = cargo.rows().get(selectedItem);
-    if(target == null || target.name().isEmpty()) {
-      UiPalette.line(graphics, x, row, Strings.TradeNoTarget, panelWidth);
+    String note = tradeTargetNote();
+    if(note != null) {
+      UiPalette.line(graphics, x, row, note, panelWidth);
       return;
     }
+    CargoRowViewModel item = cargo.rows().get(selectedItem);
     UiPalette.draw(graphics, x, row, Functions.StringVars(Strings.TradeTargetLine, new String[]{
         Consts.TradeItems.get(selectedItem).Name(), target.name(), item.targetPrice(), item.targetPct()}),
         UiPalette.ACCENT, x + panelWidth);
+  }
+
+  /**
+   * Why the target prices are unknown (no target or out of range), or {@code null}
+   * when they can be computed.
+   */
+  private String tradeTargetNote() {
+    if(target == null || target.name().isEmpty()) {
+      return Strings.TradeNoTarget;
+    }
+    return target.warpVisible() ? null : Strings.TradeTargetOutOfRange;
   }
 
   private static TextColor pctColor(String pct) {
