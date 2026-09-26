@@ -99,7 +99,8 @@ class LanternaMainWindowTest {
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
-      assertFalse(screenText(screen).contains(Strings.TradeTitle));
+      assertFalse(screenText(screen).contains("> Water"), screenText(screen));
+      assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -384,6 +385,87 @@ class LanternaMainWindowTest {
     } finally {
       screen.stopScreen();
       screen.close();
+    }
+  }
+
+  @Test
+  void opensTheMenuAndActivatesAnEntry() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F10));
+      gui.updateScreen();
+      String menu = screenText(screen);
+      assertTrue(menu.contains(Strings.MenuTitle), menu);
+      assertTrue(menu.contains(Strings.MenuShip), menu);
+      assertTrue(menu.contains(Strings.MenuShipInfo), menu);
+      assertTrue(menu.contains(Strings.MenuKeys), menu);
+
+      // The cursor starts on "Ship (V)"; moving down goes to "Ships for sale (L)"
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.ShipListTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void panelsAreFullWidthOnNarrowTerminalsAndKeepTheChartOnWideOnes() throws IOException {
+    Screen narrow = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    narrow.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(narrow);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      assertFalse(screenText(narrow).contains(Strings.MainChartGalactic), screenText(narrow));
+      assertTrue(row(narrow, 3).trim().startsWith(Strings.TradeTitle), row(narrow, 3));
+    } finally {
+      narrow.stopScreen();
+      narrow.close();
+    }
+
+    Screen wide = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(140, 30)));
+    wide.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(wide);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      assertTrue(row(wide, 3).contains(Strings.MainChartGalactic), row(wide, 3));
+      assertTrue(row(wide, 3).contains(Strings.TradeTitle), row(wide, 3));
+    } finally {
+      wide.stopScreen();
+      wide.close();
     }
   }
 

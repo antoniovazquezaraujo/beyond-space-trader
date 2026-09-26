@@ -66,7 +66,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     boolean handle(KeyStroke keyStroke);
   }
 
-  private static final int PANEL_WIDTH = 32;
+  private static final int NAVIGATION_PANEL_WIDTH = 32;
+  private static final int ADAPTIVE_WIDTH = 120;
 
   private final Supplier<Game> gameSupplier;
   private final KeyHandler keyHandler;
@@ -99,6 +100,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private final List<String> newsLines = new ArrayList<>();
   private String newsHead = "";
   private int newsScroll;
+  private final List<String> menuLines = new ArrayList<>();
+  private final List<Boolean> menuSelectable = new ArrayList<>();
+  private int menuIndex = -1;
+  private int panelWidth = NAVIGATION_PANEL_WIDTH;
+  private boolean fullPanel;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -236,7 +242,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   public void news(String head, String text) {
     newsHead = head;
     newsLines.clear();
-    wrap(newsLines, text, PANEL_WIDTH - 2);
+    wrap(newsLines, text, NAVIGATION_PANEL_WIDTH - 2);
     newsScroll = 0;
     invalidate();
   }
@@ -417,11 +423,17 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
     drawHeader(graphics, width, cmdr);
-    int panelWidth = panelWidth();
-    int chartWidth = width - panelWidth - 2;
-    int chartHeight = height - 7;
-    drawChart(graphics, chartWidth, chartHeight, game, cmdr);
-    drawPanel(graphics, width - panelWidth, chartWidth, height);
+    drawMenuBar(graphics, width);
+    fullPanel = panel != MainPanel.Navigation && width < ADAPTIVE_WIDTH;
+    panelWidth = fullPanel ? width - 2 : panelWidthFor(panel);
+    if(fullPanel) {
+      drawPanel(graphics, 1, width, height);
+    } else {
+      int chartWidth = width - panelWidth - 2;
+      int chartHeight = height - 7;
+      drawChart(graphics, chartWidth, chartHeight, game, cmdr);
+      drawPanel(graphics, width - panelWidth, chartWidth, height);
+    }
     drawFooter(graphics, width, height);
   }
 
@@ -441,7 +453,19 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         + " · " + Functions.StringVars(Strings.MainPolice, PoliceRecord.GetPoliceRecordFromScore(cmdr.getPoliceRecordScore()).Name());
     graphics.putString(1, 0, cut(line1, width - 2));
     graphics.putString(1, 1, cut(line2, width - 2));
-    graphics.drawLine(0, 2, width - 1, 2, '─');
+  }
+
+  private void drawMenuBar(TextGUIGraphics graphics, int width) {
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    String bar = " " + Strings.MenuBar + " ";
+    graphics.putString(0, 2, cut(bar, width));
+    StringBuilder line = new StringBuilder();
+    for(int x = bar.length(); x < width; x++) {
+      line.append('─');
+    }
+    if(line.length() > 0) {
+      graphics.putString(bar.length(), 2, line.toString());
+    }
   }
 
   private void drawChart(TextGUIGraphics graphics, int chartWidth, int chartHeight, Game game, Commander cmdr) {
@@ -483,7 +507,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return ChartViewModel.shortRange(systems, current.X(), current.Y(), fuel, Consts.MaxRange, trackedText);
   }
 
-  private int panelWidth() {
+  private static int panelWidthFor(MainPanel panel) {
     switch(panel) {
       case Trade:
         return 48;
@@ -509,14 +533,18 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         return 60;
       case News:
         return 60;
+      case Menu:
+        return 60;
       default:
-        return PANEL_WIDTH;
+        return NAVIGATION_PANEL_WIDTH;
     }
   }
 
   private void drawPanel(TextGUIGraphics graphics, int x, int chartWidth, int height) {
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
-    graphics.drawLine(chartWidth + 1, 3, chartWidth + 1, height - 3, '│');
+    if(!fullPanel) {
+      graphics.drawLine(chartWidth + 1, 3, chartWidth + 1, height - 3, '│');
+    }
     switch(panel) {
       case Trade:
         drawTradePanel(graphics, x, height);
@@ -554,6 +582,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       case News:
         drawNewsPanel(graphics, x, height);
         break;
+      case Menu:
+        drawMenuPanel(graphics, x, height);
+        break;
       default:
         drawNavigationPanel(graphics, x, height);
         break;
@@ -566,12 +597,12 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     if(bank == null) {
       return;
     }
-    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankDebt, bank.currentDebt()), panelWidth()));
-    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankMaxLoan, bank.maxLoan()), panelWidth()));
-    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankShipValue, bank.shipValue()), panelWidth()));
-    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankNoClaim, bank.noClaim()), panelWidth()));
-    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankInsurance, bank.insuranceCost()), panelWidth()));
-    graphics.putString(x, row + 1, cut(bank.insuranceButtonText(), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankDebt, bank.currentDebt()), panelWidth));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankMaxLoan, bank.maxLoan()), panelWidth));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankShipValue, bank.shipValue()), panelWidth));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankNoClaim, bank.noClaim()), panelWidth));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.BankInsurance, bank.insuranceCost()), panelWidth));
+    graphics.putString(x, row + 1, cut(bank.insuranceButtonText(), panelWidth));
   }
 
   private void drawPersonnelPanel(TextGUIGraphics graphics, int x, int height) {
@@ -586,7 +617,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       if(row >= height - 3) {
         return;
       }
-      graphics.putString(x, row++, cut((index == personnelIndex ? ">" : " ") + " " + entry, panelWidth()));
+      graphics.putString(x, row++, cut((index == personnelIndex ? ">" : " ") + " " + entry, panelWidth));
       index++;
     }
     row++;
@@ -597,20 +628,20 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       if(row >= height - 3) {
         return;
       }
-      graphics.putString(x, row++, cut((index == personnelIndex ? ">" : " ") + " " + entry, panelWidth()));
+      graphics.putString(x, row++, cut((index == personnelIndex ? ">" : " ") + " " + entry, panelWidth));
       index++;
     }
     if(personnelInfo != null && personnelInfo.visible() && row < height - 3) {
       row++;
       if(row < height - 3) {
-        graphics.putString(x, row++, cut(personnelInfo.name() + (personnelInfo.rateVisible() ? "  " + personnelInfo.rate() : ""), panelWidth()));
+        graphics.putString(x, row++, cut(personnelInfo.name() + (personnelInfo.rateVisible() ? "  " + personnelInfo.rate() : ""), panelWidth));
       }
       if(row < height - 3) {
         graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderSkills, new String[]{
-            personnelInfo.pilot(), personnelInfo.fighter(), personnelInfo.trader(), personnelInfo.engineer()}), panelWidth()));
+            personnelInfo.pilot(), personnelInfo.fighter(), personnelInfo.trader(), personnelInfo.engineer()}), panelWidth));
       }
       if(row < height - 3) {
-        graphics.putString(x, row, cut(personnelInfo.hireFireText(), panelWidth()));
+        graphics.putString(x, row, cut(personnelInfo.hireFireText(), panelWidth));
       }
     }
   }
@@ -621,18 +652,18 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       return;
     }
     int row = 4;
-    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderHeader, commander.name(), commander.difficulty()), panelWidth()));
-    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderTime, commander.time()), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderHeader, commander.name(), commander.difficulty()), panelWidth));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderTime, commander.time()), panelWidth));
     graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderSkills, new String[]{
-        commander.pilot(), commander.fighter(), commander.trader(), commander.engineer()}), panelWidth()));
+        commander.pilot(), commander.fighter(), commander.trader(), commander.engineer()}), panelWidth));
     graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderCash, new String[]{
-        commander.cash(), commander.debt(), commander.netWorth()}), panelWidth()));
-    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderKills, commander.kills()), panelWidth()));
+        commander.cash(), commander.debt(), commander.netWorth()}), panelWidth));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderKills, commander.kills()), panelWidth));
     graphics.putString(x, row++, cut(Functions.StringVars(Strings.CommanderRecord, commander.record(),
-        commander.reputation()), panelWidth()));
+        commander.reputation()), panelWidth));
     if(commander.bounty().visible()) {
       graphics.putString(x, row, cut(Functions.StringVars(Strings.CommanderBounty, commander.bounty().label(),
-          commander.bounty().amount()), panelWidth()));
+          commander.bounty().amount()), panelWidth));
     }
   }
 
@@ -642,15 +673,15 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       return;
     }
     int row = 4;
-    graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipType, ship.type()), panelWidth()));
+    graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipType, ship.type()), panelWidth));
     String[] labels = ship.equipmentLabels().split("\n", -1);
     String[] values = ship.equipmentValues().split("\n", -1);
     for(int i = 0; i < labels.length && i < values.length && row < height - 3; i++) {
-      graphics.putString(x, row++, cut(labels[i] + " " + values[i], panelWidth()));
+      graphics.putString(x, row++, cut(labels[i] + " " + values[i], panelWidth));
     }
     if(!ship.specialCargo().isEmpty()) {
       List<String> wrapped = new ArrayList<>();
-      wrap(wrapped, Functions.StringVars(Strings.ShipSpecialCargo, ship.specialCargo()), panelWidth());
+      wrap(wrapped, Functions.StringVars(Strings.ShipSpecialCargo, ship.specialCargo()), panelWidth);
       for(String line : wrapped) {
         if(row >= height - 3) {
           break;
@@ -669,27 +700,27 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     for(int i = 0; i < shipList.rows().size() && row < height - 3; i++) {
       ShipListViewModel.Row item = shipList.rows().get(i);
       graphics.putString(x, row++, cut(String.format("%s %-14s %14s",
-          i == shipListIndex ? ">" : " ", item.name(), item.price()), panelWidth()));
+          i == shipListIndex ? ">" : " ", item.name(), item.price()), panelWidth));
     }
     if(shipInfo == null || row >= height - 3) {
       return;
     }
     row++;
     if(row < height - 3) {
-      graphics.putString(x, row++, cut(shipInfo.name() + "  " + shipInfo.size(), panelWidth()));
+      graphics.putString(x, row++, cut(shipInfo.name() + "  " + shipInfo.size(), panelWidth));
     }
     if(row < height - 3) {
       graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipInfoBays, shipInfo.bays())
-          + " · " + Functions.StringVars(Strings.ShipInfoRange, shipInfo.range()), panelWidth()));
+          + " · " + Functions.StringVars(Strings.ShipInfoRange, shipInfo.range()), panelWidth));
     }
     if(row < height - 3) {
       graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipInfoHull, shipInfo.hull())
-          + " · " + Functions.StringVars(Strings.ShipInfoCrew, shipInfo.crew()), panelWidth()));
+          + " · " + Functions.StringVars(Strings.ShipInfoCrew, shipInfo.crew()), panelWidth));
     }
     if(row < height - 3) {
       graphics.putString(x, row++, cut(Functions.StringVars(Strings.ShipInfoWeapon, shipInfo.weapon())
           + " · " + Functions.StringVars(Strings.ShipInfoShield, shipInfo.shield())
-          + " · " + Functions.StringVars(Strings.ShipInfoGadget, shipInfo.gadget()), panelWidth()));
+          + " · " + Functions.StringVars(Strings.ShipInfoGadget, shipInfo.gadget()), panelWidth));
     }
   }
 
@@ -702,7 +733,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     row = drawEquipmentSection(graphics, x, row, height, Strings.EquipmentBuySection, 0,
         equipment.buyWeapons().size() + equipment.buyShields().size() + equipment.buyGadgets().size());
     if(row < height - 3) {
-      graphics.putString(x, row++, cut(Strings.EquipmentSellSection, panelWidth()));
+      graphics.putString(x, row++, cut(Strings.EquipmentSellSection, panelWidth));
     }
     int firstSell = equipment.buyWeapons().size() + equipment.buyShields().size() + equipment.buyGadgets().size();
     List<String> sell = new ArrayList<>();
@@ -713,7 +744,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     if(equipmentInfo != null && equipmentInfo.visible() && row < height - 3) {
       row++;
       if(row < height - 3) {
-        graphics.putString(x, row++, cut(equipmentInfo.name() + "  " + Functions.StringVars(Strings.EquipmentTypeLabel, equipmentInfo.type()), panelWidth()));
+        graphics.putString(x, row++, cut(equipmentInfo.name() + "  " + Functions.StringVars(Strings.EquipmentTypeLabel, equipmentInfo.type()), panelWidth));
       }
       if(row < height - 3) {
         String prices = "";
@@ -724,17 +755,17 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
           prices += (prices.isEmpty() ? "" : " · ") + Functions.StringVars(Strings.EquipmentSellPrice, equipmentInfo.sellPrice());
         }
         if(!prices.isEmpty()) {
-          graphics.putString(x, row++, cut(prices, panelWidth()));
+          graphics.putString(x, row++, cut(prices, panelWidth));
         }
       }
       if(row < height - 3 && !equipmentInfo.power().isEmpty()) {
-        graphics.putString(x, row++, cut(Functions.StringVars(Strings.EquipmentPower, equipmentInfo.power()), panelWidth()));
+        graphics.putString(x, row++, cut(Functions.StringVars(Strings.EquipmentPower, equipmentInfo.power()), panelWidth));
       }
       if(row < height - 3 && !equipmentInfo.charge().isEmpty()) {
-        graphics.putString(x, row++, cut(Functions.StringVars(Strings.EquipmentCharge, equipmentInfo.charge()), panelWidth()));
+        graphics.putString(x, row++, cut(Functions.StringVars(Strings.EquipmentCharge, equipmentInfo.charge()), panelWidth));
       }
       List<String> wrapped = new ArrayList<>();
-      wrap(wrapped, equipmentInfo.description(), panelWidth());
+      wrap(wrapped, equipmentInfo.description(), panelWidth);
       for(String line : wrapped) {
         if(row >= height - 3) {
           break;
@@ -748,7 +779,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     if(row >= height - 3) {
       return row;
     }
-    graphics.putString(x, row++, cut(title, panelWidth()));
+    graphics.putString(x, row++, cut(title, panelWidth));
     List<String> buy = new ArrayList<>();
     buy.addAll(equipment.buyWeapons());
     buy.addAll(equipment.buyShields());
@@ -758,7 +789,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   private int drawEquipmentEntries(TextGUIGraphics graphics, int x, int row, int height, List<String> entries, int first) {
     for(int i = 0; i < entries.size() && row < height - 3; i++) {
-      graphics.putString(x, row++, cut((first + i == equipmentIndex ? "> " : "  ") + entries.get(i), panelWidth()));
+      graphics.putString(x, row++, cut((first + i == equipmentIndex ? "> " : "  ") + entries.get(i), panelWidth));
     }
     return row;
   }
@@ -767,7 +798,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     graphics.putString(x, 3, Strings.OptionsTitle);
     int row = 4;
     for(int i = 0; i < optionsLines.size() && row < height - 3; i++) {
-      graphics.putString(x, row++, cut((i == optionsIndex ? "> " : "  ") + optionsLines.get(i), panelWidth()));
+      graphics.putString(x, row++, cut((i == optionsIndex ? "> " : "  ") + optionsLines.get(i), panelWidth));
     }
   }
 
@@ -781,9 +812,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       if(!score.filled() || row >= height - 3) {
         continue;
       }
-      graphics.putString(x, row++, cut(score.name() + "   " + score.score(), panelWidth()));
+      graphics.putString(x, row++, cut(score.name() + "   " + score.score(), panelWidth));
       List<String> wrapped = new ArrayList<>();
-      wrap(wrapped, score.status(), panelWidth() - 2);
+      wrap(wrapped, score.status(), panelWidth - 2);
       for(String line : wrapped) {
         if(row >= height - 3) {
           break;
@@ -799,9 +830,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       return;
     }
     int row = 3;
-    graphics.putString(x, row++, cut(designer.title(), panelWidth()));
+    graphics.putString(x, row++, cut(designer.title(), panelWidth));
     List<String> welcome = new ArrayList<>();
-    wrap(welcome, designer.welcome(), panelWidth());
+    wrap(welcome, designer.welcome(), panelWidth);
     for(String line : welcome) {
       if(row < height - 3) {
         graphics.putString(x, row++, line);
@@ -809,14 +840,14 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     if(row < height - 3) {
       graphics.putString(x, row++, cut(marker(0) + Functions.StringVars(Strings.DesignerSize,
-          designer.sizes().isEmpty() ? "" : designer.sizes().get(designer.sizeIndex())), panelWidth()));
+          designer.sizes().isEmpty() ? "" : designer.sizes().get(designer.sizeIndex())), panelWidth));
     }
     if(row < height - 3) {
       graphics.putString(x, row++, cut(marker(1) + Functions.StringVars(Strings.DesignerTemplate,
-          designer.templates().isEmpty() ? "" : designer.templates().get(designer.templateIndex())), panelWidth()));
+          designer.templates().isEmpty() ? "" : designer.templates().get(designer.templateIndex())), panelWidth));
     }
     if(row < height - 3) {
-      graphics.putString(x, row++, cut(marker(2) + Functions.StringVars(Strings.DesignerName, designer.name()), panelWidth()));
+      graphics.putString(x, row++, cut(marker(2) + Functions.StringVars(Strings.DesignerName, designer.name()), panelWidth));
     }
     String[] labels = {Strings.DesignerCargo, Strings.DesignerFuel, Strings.DesignerHull, Strings.DesignerWeapon,
         Strings.DesignerShield, Strings.DesignerGadget, Strings.DesignerCrew};
@@ -829,23 +860,23 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       } else {
         text = Functions.StringVars(Strings.DesignerNumericValue, labels[i], "" + numeric.value());
       }
-      graphics.putString(x, row++, cut(marker(3 + i) + text, panelWidth()));
+      graphics.putString(x, row++, cut(marker(3 + i) + text, panelWidth));
     }
     if(row < height - 3) {
-      graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerUnits, designer.unitsUsed(), designer.percent()), panelWidth()));
+      graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerUnits, designer.unitsUsed(), designer.percent()), panelWidth));
     }
     if(row < height - 3) {
       graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerCost, new String[]{
-          designer.shipCost(), designer.designFee(), designer.penalty(), designer.tradeIn()}), panelWidth()));
+          designer.shipCost(), designer.designFee(), designer.penalty(), designer.tradeIn()}), panelWidth));
     }
     if(row < height - 3) {
-      graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerTotal, designer.totalCost()), panelWidth()));
+      graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerTotal, designer.totalCost()), panelWidth));
     }
     if(row < height - 3) {
-      graphics.putString(x, row++, cut(marker(10) + Strings.DesignerConstruct, panelWidth()));
+      graphics.putString(x, row++, cut(marker(10) + Strings.DesignerConstruct, panelWidth));
     }
     if(row < height - 3) {
-      graphics.putString(x, row, cut(marker(11) + Strings.DesignerSave, panelWidth()));
+      graphics.putString(x, row, cut(marker(11) + Strings.DesignerSave, panelWidth));
     }
   }
 
@@ -857,15 +888,65 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return designerField == field ? "> " : "  ";
   }
 
+  public void menu(List<String> lines, List<Boolean> selectable) {
+    menuLines.clear();
+    menuLines.addAll(lines);
+    menuSelectable.clear();
+    menuSelectable.addAll(selectable);
+    menuIndex = firstSelectable();
+    invalidate();
+  }
+
+  public int menuIndex() {
+    return menuIndex;
+  }
+
+  public void moveMenuSelection(int delta) {
+    int count = menuSelectable.size();
+    if(count == 0 || menuIndex < 0) {
+      return;
+    }
+    int index = menuIndex;
+    do {
+      index = Math.floorMod(index + delta, count);
+    } while(!Boolean.TRUE.equals(menuSelectable.get(index)) && index != menuIndex);
+    menuIndex = index;
+    invalidate();
+  }
+
+  public void openMenu() {
+    panel = MainPanel.Menu;
+    invalidate();
+  }
+
+  private int firstSelectable() {
+    for(int i = 0; i < menuSelectable.size(); i++) {
+      if(Boolean.TRUE.equals(menuSelectable.get(i))) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  private void drawMenuPanel(TextGUIGraphics graphics, int x, int height) {
+    graphics.putString(x, 3, Strings.MenuTitle);
+    int row = 5;
+    for(int i = 0; i < menuLines.size() && row < height - 3; i++) {
+      boolean selectable = Boolean.TRUE.equals(menuSelectable.get(i));
+      String marker = selectable ? (i == menuIndex ? "> " : "  ") : "  ";
+      graphics.putString(x, row++, cut(marker + menuLines.get(i), panelWidth));
+    }
+  }
+
   private void drawNewsPanel(TextGUIGraphics graphics, int x, int height) {
-    graphics.putString(x, 3, cut(Strings.NewsTitle + " · " + newsHead, panelWidth()));
+    graphics.putString(x, 3, cut(Strings.NewsTitle + " · " + newsHead, panelWidth));
     int row = 5;
     int last = Math.min(newsLines.size(), newsScroll + (height - 9));
     for(int i = newsScroll; i < last; i++) {
-      graphics.putString(x, row++, cut(newsLines.get(i), panelWidth()));
+      graphics.putString(x, row++, cut(newsLines.get(i), panelWidth));
     }
     graphics.putString(x, height - 4, cut(Functions.StringVars(Strings.NewsPosition,
-        "" + (newsLines.isEmpty() ? 0 : newsScroll + 1), "" + newsLines.size()), panelWidth()));
+        "" + (newsLines.isEmpty() ? 0 : newsScroll + 1), "" + newsLines.size()), panelWidth));
   }
 
   private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
@@ -875,9 +956,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       return;
     }
     List<String> lines = new ArrayList<>();
-    wrap(lines, quests.text(), panelWidth());
+    wrap(lines, quests.text(), panelWidth);
     for(int i = 0; i < lines.size() && row < height - 3; i++) {
-      graphics.putString(x, row++, cut(lines.get(i), panelWidth()));
+      graphics.putString(x, row++, cut(lines.get(i), panelWidth));
     }
   }
 
@@ -885,7 +966,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     graphics.putString(x, 3, Strings.TradeTitle);
     int row = 4;
     graphics.putString(x, row++, cut(String.format("%s %-11s %10s %10s %5s %5s", " ",
-        Strings.TradeItem, Strings.TradeBuy, Strings.TradeSell, Strings.TradeCargo, Strings.TradeHere), panelWidth()));
+        Strings.TradeItem, Strings.TradeBuy, Strings.TradeSell, Strings.TradeCargo, Strings.TradeHere), panelWidth));
     if(cargo == null) {
       return;
     }
@@ -894,7 +975,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       String name = cut(Consts.TradeItems.get(i).Name(), 11);
       graphics.putString(x, row++, cut(String.format("%s %-11s %10s %10s %5s %5s",
           i == selectedItem ? ">" : " ", name, item.buyPrice(), item.sellPrice(), item.sellQty(), item.buyQty()),
-          panelWidth()));
+          panelWidth));
     }
   }
 
@@ -908,19 +989,19 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       row++;
     }
     if(dock != null) {
-      graphics.putString(x, row++, cut(dock.fuelStatus() + (dock.fuelButtonVisible() ? " · " + dock.fuelCost() : ""), PANEL_WIDTH));
-      graphics.putString(x, row++, cut(dock.hullStatus() + (dock.repairButtonVisible() ? " · " + dock.repairCost() : ""), PANEL_WIDTH));
+      graphics.putString(x, row++, cut(dock.fuelStatus() + (dock.fuelButtonVisible() ? " · " + dock.fuelCost() : ""), panelWidth));
+      graphics.putString(x, row++, cut(dock.hullStatus() + (dock.repairButtonVisible() ? " · " + dock.repairCost() : ""), panelWidth));
       row++;
     }
     if(target != null && target.navigationVisible() && !target.name().isEmpty()) {
-      graphics.putString(x, row++, cut(Functions.StringVars(Strings.MainTarget, target.name(), target.distance()), PANEL_WIDTH));
+      graphics.putString(x, row++, cut(Functions.StringVars(Strings.MainTarget, target.name(), target.distance()), panelWidth));
       row++;
     }
     if(cargo != null) {
       for(int i = 0; i < cargo.rows().size() && row < height - 3; i++) {
         CargoRowViewModel item = cargo.rows().get(i);
         String name = Consts.TradeItems.get(i).Name();
-        graphics.putString(x, row++, cut(name + "  " + item.sellPrice() + " / " + item.buyPrice(), PANEL_WIDTH));
+        graphics.putString(x, row++, cut(name + "  " + item.sellPrice() + " / " + item.buyPrice(), panelWidth));
       }
     }
   }
@@ -968,6 +1049,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case News:
         keys = Strings.NewsKeys;
+        break;
+      case Menu:
+        keys = Strings.MenuKeys;
         break;
       default:
         keys = Strings.MainKeys;
