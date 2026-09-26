@@ -105,6 +105,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private boolean menuVisible;
   private int menuIndex;
   private int panelWidth = NAVIGATION_PANEL_WIDTH;
+  private int galacticViewX = -1;
+  private int galacticViewY = -1;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -493,10 +495,10 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     TerminalSize size = new TerminalSize(chartWidth, chartHeight);
     LanternaChartView chart = new LanternaChartView(
         graphics.newTextGraphics(new TerminalPosition(1, 4), size), size);
-    chart.render(chartModel(game, cmdr));
+    chart.render(chartModel(game, cmdr, chartWidth, chartHeight));
   }
 
-  private ChartViewModel chartModel(Game game, Commander cmdr) {
+  private ChartViewModel chartModel(Game game, Commander cmdr, int chartWidth, int chartHeight) {
     StarSystem[] universe = game.Universe();
     StarSystem current = cmdr.CurrentSystem();
     StarSystem chosen = game.SelectedSystem() == null ? current : game.SelectedSystem();
@@ -511,8 +513,13 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     int fuel = cmdr.getShip().getFuel();
     if(chartType == ChartType.GALACTIC) {
-      return ChartViewModel.galactic(systems, current.X(), current.Y(), chosen.X(), chosen.Y(),
-          fuel, UniverseGenerator.GalaxyWidth, UniverseGenerator.GalaxyHeight);
+      int galaxyWidth = UniverseGenerator.GalaxyWidth;
+      int galaxyHeight = UniverseGenerator.GalaxyHeight;
+      galacticViewX = scrollTo(galacticViewX, chosen.X(), chartWidth, galaxyWidth, chartMargin(chartWidth));
+      galacticViewY = scrollTo(galacticViewY, chosen.Y(), chartHeight, galaxyHeight, chartMargin(chartHeight));
+      return ChartViewModel.galactic(systems, current.X(), current.Y(),
+          galacticViewX + chartWidth / 2, galacticViewY + chartHeight / 2,
+          fuel, galaxyWidth, galaxyHeight);
     }
     String trackedText = null;
     if(game.TrackedSystem() != null && game.Options().getShowTrackedRange()) {
@@ -520,6 +527,30 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
           "" + Functions.Distance(current, game.TrackedSystem()));
     }
     return ChartViewModel.shortRange(systems, current.X(), current.Y(), fuel, Consts.MaxRange, trackedText);
+  }
+
+  /**
+   * Keeps the galactic-chart viewport still while the selected system stays inside it,
+   * and scrolls just enough to keep it {@code margin} cells away from the edges, so
+   * moving the cursor does not drag the whole map. A negative {@code view} centres the
+   * viewport on the selection the first time.
+   */
+  static int scrollTo(int view, int selected, int size, int galaxySize, int margin) {
+    int next;
+    if(view < 0) {
+      next = selected - size / 2;
+    } else if(selected < view + margin) {
+      next = selected - margin;
+    } else if(selected > view + size - 1 - margin) {
+      next = selected - (size - 1 - margin);
+    } else {
+      next = view;
+    }
+    return Math.max(0, Math.min(next, Math.max(0, galaxySize - size)));
+  }
+
+  private static int chartMargin(int size) {
+    return Math.max(2, size / 8);
   }
 
   private static int panelWidthFor(MainPanel panel) {

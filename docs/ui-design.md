@@ -163,9 +163,10 @@ chart is hidden; the chart comes back when the panel closes.
     (the current fuel), so the systems inside it are green too.
   - *Galactic chart*: known systems, current position, selected destination, routes
     and wormholes, visited marks.
-  - Both charts draw one character per sector; the galactic one pans with the
-    selection and the local one is centred on the current system. Discrete zoom
-    levels could be added later.
+  - Both charts draw one character per sector; the local one is centred on the
+    current system, and the galactic one keeps its viewport still while the cursor
+    moves inside it, scrolling only when the cursor gets close to an edge. Discrete
+    zoom levels could be added later.
   - `TAB` switches between both charts.
 - **Context panel (right):** one panel at a time, no new windows.
   - *Navigation* (default): current/selected system data, prices at a glance and the

@@ -33,4 +33,22 @@ class MainTextComponentTest {
     component.moveNewsScroll(1000);
     assertEquals(component.newsLineCount() - 1, component.newsScroll());
   }
+
+  @Test
+  void scrollToKeepsTheViewStillUntilTheSelectionReachesTheMargin() {
+    // First time: the view is centred on the selection.
+    assertEquals(30, MainTextComponent.scrollTo(-1, 60, 60, 154, 6));
+    // Moving inside the still area does not move the view.
+    assertEquals(30, MainTextComponent.scrollTo(30, 40, 60, 154, 6));
+    assertEquals(30, MainTextComponent.scrollTo(30, 80, 60, 154, 6));
+    // Close to the left edge the view scrolls just enough to keep the margin.
+    assertEquals(28, MainTextComponent.scrollTo(30, 34, 60, 154, 6));
+    // And the same on the right edge.
+    assertEquals(37, MainTextComponent.scrollTo(30, 90, 60, 154, 6));
+    // The view never leaves the galaxy.
+    assertEquals(0, MainTextComponent.scrollTo(30, 3, 60, 154, 6));
+    assertEquals(94, MainTextComponent.scrollTo(30, 153, 60, 154, 6));
+    // A galaxy smaller than the chart keeps the view at the origin.
+    assertEquals(0, MainTextComponent.scrollTo(0, 10, 60, 40, 6));
+  }
 }
