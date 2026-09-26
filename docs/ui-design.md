@@ -220,6 +220,7 @@ chart is hidden; the chart comes back when the panel closes.
 | TAB | Local chart / galactic chart |
 | ENTER / T | Confirm / track the selected system (T again stops tracking it) |
 | ESC | Close the panel / go back / quit |
+| SPACE | Close a read-only panel (commander, ship, quests, high scores) |
 | C | Trade panel |
 | B | Bank panel |
 | Q | Quests panel |

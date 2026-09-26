@@ -329,6 +329,19 @@ public final class LanternaMainWindow
     refresh();
   }
 
+  /** The panels that only show information: they close with space (or escape). */
+  private static boolean isReadOnlyPanel(MainPanel panel) {
+    switch(panel) {
+      case Quests:
+      case Commander:
+      case Ship:
+      case HighScores:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   private boolean handleKey(KeyStroke key) {
     Game game = gameSupplier.get();
     if(game == null) {
@@ -353,6 +366,10 @@ public final class LanternaMainWindow
         return true;
       }
       window.close();
+      return true;
+    }
+    if(key.getKeyType() == KeyType.Character && key.getCharacter() == ' ' && isReadOnlyPanel(content.panel())) {
+      content.closePanel();
       return true;
     }
     if(content.panel() == MainPanel.Trade) {
