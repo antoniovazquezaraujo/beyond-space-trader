@@ -1163,31 +1163,40 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   private void drawNavigationPanel(TextGUIGraphics graphics, int x, int height) {
     int row = 3;
-    if(system != null && !system.name().isEmpty()) {
-      UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.MainSystem, system.name(), system.size()),
-          UiPalette.ACCENT, x + panelWidth);
-      UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.MainTech, system.tech(), system.polSys()), panelWidth);
-      UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.MainResource, system.resource()), panelWidth);
-      UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.MainPolice, system.police(), system.pirates()), panelWidth);
-      row++;
-    }
-    if(dock != null) {
-      int column = UiPalette.draw(graphics, x, row, dock.fuelStatus(), UiPalette.TEXT, x + panelWidth);
-      if(dock.fuelButtonVisible()) {
-        UiPalette.draw(graphics, column, row, " · " + dock.fuelCost(), UiPalette.MONEY, x + panelWidth);
+    if(targetSelected()) {
+      row = drawSystemBlock(graphics, x, row, target.name(), target.size(), target.tech(), target.polSys(),
+          target.resource(), target.police(), target.pirates());
+      String distance = Functions.StringVars(Strings.MainTargetDistance, target.distance());
+      if(target.outOfRangeVisible()) {
+        distance += " · " + Strings.MainTargetOffRange;
       }
+      UiPalette.draw(graphics, x, row++, distance,
+          target.outOfRangeVisible() ? UiPalette.BAD : UiPalette.ACCENT, x + panelWidth);
       row++;
-      column = UiPalette.draw(graphics, x, row, dock.hullStatus(), UiPalette.TEXT, x + panelWidth);
-      if(dock.repairButtonVisible()) {
-        UiPalette.draw(graphics, column, row, " · " + dock.repairCost(), UiPalette.MONEY, x + panelWidth);
+    } else {
+      if(system != null && !system.name().isEmpty()) {
+        row = drawSystemBlock(graphics, x, row, system.name(), system.size(), system.tech(), system.polSys(),
+            system.resource(), system.police(), system.pirates());
+        row++;
       }
-      row++;
-      row++;
-    }
-    if(target != null && target.navigationVisible() && !target.name().isEmpty()) {
-      UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.MainTarget, target.name(), target.distance()),
-          UiPalette.ACCENT, x + panelWidth);
-      row++;
+      if(dock != null) {
+        int column = UiPalette.draw(graphics, x, row, dock.fuelStatus(), UiPalette.TEXT, x + panelWidth);
+        if(dock.fuelButtonVisible()) {
+          UiPalette.draw(graphics, column, row, " · " + dock.fuelCost(), UiPalette.MONEY, x + panelWidth);
+        }
+        row++;
+        column = UiPalette.draw(graphics, x, row, dock.hullStatus(), UiPalette.TEXT, x + panelWidth);
+        if(dock.repairButtonVisible()) {
+          UiPalette.draw(graphics, column, row, " · " + dock.repairCost(), UiPalette.MONEY, x + panelWidth);
+        }
+        row++;
+        row++;
+      }
+      if(target != null && target.navigationVisible() && !target.name().isEmpty()) {
+        UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.MainTarget, target.name(), target.distance()),
+            UiPalette.ACCENT, x + panelWidth);
+        row++;
+      }
     }
     if(cargo != null) {
       for(int i = 0; i < cargo.rows().size() && row < height - 5; i++) {
@@ -1199,6 +1208,24 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         row++;
       }
     }
+  }
+
+  /**
+   * Whether the panel must show the selected system instead of the current one.
+   */
+  private boolean targetSelected() {
+    return target != null && target.navigationVisible() && !target.name().isEmpty()
+        && (system == null || !target.name().equals(system.name()));
+  }
+
+  private int drawSystemBlock(TextGUIGraphics graphics, int x, int row, String name, String size, String tech,
+      String polSys, String resource, String police, String pirates) {
+    UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.MainSystem, name, size),
+        UiPalette.ACCENT, x + panelWidth);
+    UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.MainTech, tech, polSys), panelWidth);
+    UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.MainResource, resource), panelWidth);
+    UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.MainPoliceActivity, police, pirates), panelWidth);
+    return row;
   }
 
   private void drawFooter(TextGUIGraphics graphics, int width, int height) {

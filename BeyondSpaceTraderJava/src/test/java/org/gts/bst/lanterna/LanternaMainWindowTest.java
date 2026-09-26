@@ -774,6 +774,52 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theNavigationPanelShowsTheTargetDetailsWhenAnotherSystemIsSelected() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      String dockLine = Functions.StringVars(Strings.DockHullStatus, "100");
+      assertTrue(screenText(screen).contains(current.Name()), screenText(screen));
+      assertTrue(screenText(screen).contains(dockLine), screenText(screen));
+
+      // Selecting another system shows its data instead of the current one.
+      StarSystem target = current;
+      int best = -1;
+      for(StarSystem system : holder[0].Universe()) {
+        int distance = Functions.Distance(current, system);
+        if(distance > best) {
+          best = distance;
+          target = system;
+        }
+      }
+      holder[0].SelectedSystemId(target.Id());
+      presenter.updateAll();
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains(Functions.StringVars(Strings.MainTech, target.TechLevel().name,
+          target.PoliticalSystem().Name())), text);
+      assertTrue(text.contains(Strings.MainTargetOffRange), text);
+      assertFalse(text.contains(dockLine), "the dock data belongs to the current system");
+      assertFalse(text.contains(current.Name()), text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theGalacticChartScrollsToBringTheSelectedSystemIntoView() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
