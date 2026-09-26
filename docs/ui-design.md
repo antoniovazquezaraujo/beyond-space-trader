@@ -175,7 +175,7 @@ chart is hidden; the chart comes back when the panel closes.
     current system is drawn inverted (its colour becomes the cell background), the
     selected/target system carries parentheses, the tracked system brackets (nested
     as `[(·)]` when both apply) and a system with a wormhole is drawn as a circled
-    dot (`⊙`) instead of its size glyph. When the selected system has a wormhole,
+    dot (`◉`) instead of its size glyph. When the selected system has a wormhole,
     the chart draws the link to its
     pair as a magenta L (a horizontal and a vertical segment) under the stars, and
     the navigation panel shows `Wormhole to <system>`. Names go under their stars;

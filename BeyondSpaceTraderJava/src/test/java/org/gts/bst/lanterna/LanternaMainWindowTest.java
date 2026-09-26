@@ -61,7 +61,7 @@ class LanternaMainWindowTest {
       assertTrue(header.contains("Antonio"), header);
       assertTrue(header.contains(Strings.MainDay.substring(0, 3)), header);
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
-      assertTrue(areaContains(screen, 1, 4, 60, 26, "·•◦✧✦✶⊙"), "no chart markers");
+      assertTrue(areaContains(screen, 1, 4, 60, 26, "·•◦✧✦✶◉"), "no chart markers");
       assertTrue(screenText(screen).contains("[TAB] map · [C] trade · [B] bank"), screenText(screen));
       assertTrue(screenText(screen).contains("[T] track"), screenText(screen));
       assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),

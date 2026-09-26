@@ -22,7 +22,7 @@ import java.util.List;
  * the current system is drawn inverted (its colour becomes the cell background), the
  * selected/target system carries parentheses, the tracked system brackets (outside
  * the parentheses when both apply, {@code [(·)]}) and a system with a wormhole is
- * drawn as a circled dot ({@code ⊙}) instead of its size glyph. The short-range chart also draws the names just under
+ * drawn as a circled dot ({@code ◉}) instead of its size glyph. The short-range chart also draws the names just under
  * their stars, skipping (or truncating with an ellipsis) the ones that do not fit.
  *
  * <p>The galactic chart scales the whole galaxy down so that it always fits in the
@@ -32,7 +32,7 @@ import java.util.List;
  * falls outside the view, an arrow at the edge points to it.
  */
 public final class ChartRenderer {
-  static final char WORMHOLE = '⊙';
+  static final char WORMHOLE = '◉';
   static final char BRAILLE_BASE = '\u2800';
   static final char TARGET_OPEN = '(';
   static final char TARGET_CLOSE = ')';
@@ -225,9 +225,11 @@ public final class ChartRenderer {
 
   private static char corner(int stepX, int stepY) {
     if(stepX > 0) {
-      return stepY > 0 ? '┌' : '└';
+      // The horizontal segment arrives from the left.
+      return stepY > 0 ? '┐' : '┘';
     }
-    return stepY > 0 ? '┐' : '┘';
+    // The horizontal segment arrives from the right.
+    return stepY > 0 ? '┌' : '└';
   }
 
   /**

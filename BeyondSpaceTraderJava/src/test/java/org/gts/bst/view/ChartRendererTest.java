@@ -59,7 +59,7 @@ class ChartRendererTest {
     assertEquals(']', canvas.at(4, 2));
     assertEquals(ChartColor.WHITE, canvas.colorAt(2, 2));
     // A wormhole system is drawn as a circled dot.
-    assertEquals('⊙', canvas.at(5, 4));
+    assertEquals('◉', canvas.at(5, 4));
     assertEquals(ChartColor.WHITE, canvas.colorAt(5, 4));
     assertEquals(' ', canvas.at(6, 4));
   }
@@ -207,12 +207,12 @@ class ChartRendererTest {
     assertEquals('─', canvas.at(7, 2));
     assertEquals('─', canvas.at(8, 2));
     assertEquals(ChartColor.MAGENTA, canvas.colorAt(7, 2));
-    assertEquals('┌', canvas.at(9, 2));
+    assertEquals('┐', canvas.at(9, 2));
     assertEquals('│', canvas.at(9, 3));
     assertEquals('│', canvas.at(9, 4));
     // The ends of the link are the circled-dot systems.
-    assertEquals('⊙', canvas.at(5, 2));
-    assertEquals('⊙', canvas.at(9, 5));
+    assertEquals('◉', canvas.at(5, 2));
+    assertEquals('◉', canvas.at(9, 5));
   }
 
   @Test
@@ -227,9 +227,9 @@ class ChartRendererTest {
 
     assertEquals('─', canvas.at(7, 2));
     assertEquals(ChartColor.MAGENTA, canvas.colorAt(7, 2));
-    assertEquals('┌', canvas.at(8, 2));
+    assertEquals('┐', canvas.at(8, 2));
     assertEquals('│', canvas.at(8, 3));
-    assertEquals('⊙', canvas.at(8, 4));
+    assertEquals('◉', canvas.at(8, 4));
   }
 
   @Test
