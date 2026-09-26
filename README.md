@@ -66,6 +66,16 @@ translate the game, copy the file to `Strings_<language>.properties` next to it
 the placeholders. Drop the file in the resources directory and run the game with that
 locale (`java -Duser.language=es ...`).
 
+## Credits
+
+- Original game: **Space Trader** (Palm OS), by Pieter Spronck, with artwork by
+  Alexander Lawrence.
+- Windows port: **Space Trader for Windows**, by Jay French, with additional
+  coding by David Pierron; original coding by Pieter Spronck, Sam Anderson,
+  Samuel Goldstein and Matt Lee.
+- Java port: **SpaceTrader for Java**, the upstream snapshot this repository
+  continues (see `NOTICE` for the full provenance chain).
+
 ## License
 
 GNU General Public License v3.0 or later (`GPL-3.0-or-later`).
