@@ -77,6 +77,9 @@ import spacetrader.StarSystem;
 import spacetrader.Strings;
 import org.gts.bst.ship.equip.EquipmentType;
 import spacetrader.GameOptions;
+import spacetrader.enums.GameEndType;
+import spacetrader.HighScoreRecord;
+import spacetrader.HighScores;
 import spacetrader.enums.AlertType;
 
 
@@ -101,6 +104,7 @@ public final class LanternaMainWindow
   private ShipListPresenter shipListPresenter;
   private EquipmentPresenter equipmentPresenter;
   private ShipyardPresenter shipyardPresenter;
+  private boolean gameOver;
   private Runnable newGameAction;
   private Runnable saveGameAction;
   private Runnable loadGameAction;
@@ -136,6 +140,7 @@ public final class LanternaMainWindow
    * Called after the current game changed (new game or loaded game).
    */
   public void gameChanged() {
+    gameOver = false;
     bankPresenter = null;
     questsPresenter = null;
     personnelPresenter = null;
@@ -233,9 +238,16 @@ public final class LanternaMainWindow
         action -> dispatch(presenter[0], action), () -> presenter[0].tick(), this::showCargoTransfer);
     presenter[0] = new EncounterPresenter(game, view);
     gui.addWindow(view.asWindow());
-    presenter[0].start();
-    gui.waitForWindowToClose(view.asWindow());
-    return presenter[0].result();
+    try {
+      presenter[0].start();
+      gui.waitForWindowToClose(view.asWindow());
+      return presenter[0].result();
+    } catch(GameEndException e) {
+      // The game ended inside the encounter (killed in combat): close the window and
+      // let the travel flow show the game end.
+      view.close();
+      throw e;
+    }
   }
 
   private static void dispatch(EncounterPresenter presenter, EncounterAction action) {
@@ -309,6 +321,9 @@ public final class LanternaMainWindow
     Game game = gameSupplier.get();
     if(game == null) {
       return false;
+    }
+    if(gameOver) {
+      return handleGameOverKey(key);
     }
     if(key.getKeyType() == KeyType.Escape) {
       if(content.panel() != MainPanel.Navigation) {
@@ -1149,11 +1164,74 @@ public final class LanternaMainWindow
       game.setCanSuperWarp(false);
       game.Warp(true);
     } catch(GameEndException e) {
-      content.log(Strings.MainGameOver);
-      window.close();
+      showGameEnd(game);
       return;
     }
     refresh();
+  }
+
+  private boolean handleGameOverKey(KeyStroke key) {
+    switch(key.getKeyType()) {
+      case F2:
+        return runAction(newGameAction, Strings.MainNewGameUnavailable);
+      case F3:
+        openHighScores();
+        return true;
+      case Escape:
+        window.close();
+        return true;
+      case Character:
+        if(Character.toLowerCase(key.getCharacter()) == 'q') {
+          window.close();
+          return true;
+        }
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * The game ended: show the result, insert the score in the table and leave the
+   * high scores on the panel. Only the new game, the scores and quitting work now.
+   */
+  private void showGameEnd(Game game) {
+    gameOver = true;
+    game.Dialogs().alert(endAlert(game.getEndStatus()));
+    int score = game.Score();
+    game.Dialogs().alert(AlertType.GameEndScore,
+        Functions.FormatNumber(score / 10), Functions.FormatNumber(score % 10));
+    HighScoreRecord candidate = new HighScoreRecord(game.Commander().Name(), score, game.getEndStatus(),
+        game.Commander().getDays(), game.Commander().Worth(), game.Difficulty());
+    if(HighScores.Qualifies(candidate, Functions.GetHighScores(game.Dialogs()))) {
+      if(game.getCheatEnabled()) {
+        game.Dialogs().alert(AlertType.GameEndHighScoreCheat);
+      } else {
+        HighScores.Add(Consts.HighScoreFile, candidate, game.Dialogs());
+        game.Dialogs().alert(AlertType.GameEndHighScoreAchieved);
+      }
+    } else {
+      game.Dialogs().alert(AlertType.GameEndHighScoreMissed);
+    }
+    new HighScoresPresenter(Functions.GetHighScores(game.Dialogs()), this).update();
+    content.openHighScores();
+    content.log(Strings.MainGameOver);
+    content.invalidate();
+  }
+
+  private static AlertType endAlert(GameEndType status) {
+    switch(status) {
+      case Killed:
+        return AlertType.GameEndKilled;
+      case Retired:
+        return AlertType.GameEndRetired;
+      case BoughtMoon:
+        return AlertType.GameEndBoughtMoon;
+      case BoughtMoonGirl:
+        return AlertType.GameEndBoughtMoonGirl;
+      default:
+        return AlertType.Alert;
+    }
   }
 
   private void buyRepairs() {
