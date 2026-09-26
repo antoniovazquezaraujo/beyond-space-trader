@@ -159,7 +159,7 @@ chart is hidden; the chart comes back when the panel closes.
   board, wanted...).
 - **Map (center):** the axis of the screen.
   - *Local chart*: the current system, its planet/station, the own ship and the
-    other ships, with a cursor. A green dotted circle marks the actual jump range
+    other ships, with a cursor. A green braille ring marks the actual jump range
     (the current fuel), so the systems inside it are green too.
   - *Galactic chart*: known systems, current position, selected destination, routes
     and wormholes, visited marks.
