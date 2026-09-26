@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextCharacter;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
@@ -53,6 +55,23 @@ class LanternaEncounterViewTest {
       assertTrue(text.contains("[A]Attack"), text);
       assertTrue(text.contains("[F]Flee"), text);
       assertTrue(text.contains("[S]Surrender"), text);
+
+      boolean keyYellow = false;
+      boolean frameCyan = false;
+      for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
+        for(int x = 0; x < screen.getTerminalSize().getColumns(); x++) {
+          TextCharacter character = screen.getBackCharacter(x, y);
+          if(character.getCharacter() == '[' && character.getForegroundColor() == TextColor.ANSI.YELLOW) {
+            keyYellow = true;
+          }
+          if("┌┐└┘".indexOf(character.getCharacter()) >= 0
+              && character.getForegroundColor() == TextColor.ANSI.CYAN) {
+            frameCyan = true;
+          }
+        }
+      }
+      assertTrue(keyYellow, "the action keys must be yellow:\n" + text);
+      assertTrue(frameCyan, "the window frame must be cyan:\n" + text);
 
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('i', false, false));
       assertTrue(executed.isEmpty(), "an unavailable action must be ignored");

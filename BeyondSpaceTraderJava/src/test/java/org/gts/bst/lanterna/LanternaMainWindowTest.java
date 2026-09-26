@@ -55,7 +55,7 @@ class LanternaMainWindowTest {
       assertTrue(header.contains(Strings.MainDay.substring(0, 3)), header);
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
       assertTrue(areaContains(screen, 1, 4, 60, 26, "*o@+"), "no chart markers");
-      assertTrue(screenText(screen).contains("TAB map · C trade · B bank"), screenText(screen));
+      assertTrue(screenText(screen).contains("[TAB] map · [C] trade · [B] bank"), screenText(screen));
       assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
           "the window background must be black");
       assertTrue(screenText(screen).contains(holder[0].Commander().CurrentSystem().Name()),
@@ -91,8 +91,8 @@ class LanternaMainWindowTest {
       String trade = screenText(screen);
       assertTrue(trade.contains(Strings.TradeTitle), trade);
       assertTrue(trade.contains("> Water"), trade);
-      assertTrue(trade.contains("B buy"), trade);
-      assertTrue(trade.contains("Shift all"), trade);
+      assertTrue(trade.contains("[B] buy"), trade);
+      assertTrue(trade.contains("[Shift]"), trade);
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
       gui.updateScreen();
@@ -126,11 +126,11 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('b', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.BankTitle), screenText(screen));
-      assertTrue(screenText(screen).contains("[G]et loan"), screenText(screen));
+      assertTrue(screenText(screen).contains("[G] get loan"), screenText(screen));
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
-      assertFalse(screenText(screen).contains("[G]et loan"), screenText(screen));
+      assertFalse(screenText(screen).contains("[G] get loan"), screenText(screen));
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
       gui.updateScreen();
@@ -427,6 +427,51 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void paintsTheScreenWithTheAnsiPalette() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      assertEquals(TextColor.ANSI.CYAN, foregroundAt(screen, 1, 3), "the chart title is cyan");
+      int[] key = find(screen, "[C]");
+      assertNotNull(key, screenText(screen));
+      assertEquals(TextColor.ANSI.YELLOW, foregroundAt(screen, key[0], key[1]), "the keys are yellow");
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('l', false, false));
+      gui.updateScreen();
+      int[] title = find(screen, Strings.ShipListTitle);
+      assertNotNull(title, screenText(screen));
+      assertEquals(TextColor.ANSI.CYAN, foregroundAt(screen, title[0], title[1]), "the panel title is cyan");
+      int[] selected = find(screen, "> Flea");
+      assertNotNull(selected, screenText(screen));
+      assertEquals(TextColor.ANSI.CYAN, screen.getBackCharacter(selected[0], selected[1]).getBackgroundColor(),
+          "the selected row is highlighted");
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F10));
+      gui.updateScreen();
+      int[] item = find(screen, Strings.MenuScores);
+      assertNotNull(item, screenText(screen));
+      assertEquals(TextColor.ANSI.CYAN, screen.getBackCharacter(item[0], item[1]).getBackgroundColor(),
+          "the selected menu entry is highlighted");
+      assertEquals(TextColor.ANSI.CYAN, foregroundAt(screen, 4, 3), "the menu frame is cyan");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void panelsKeepTheMapVisibleAndUseTheirOwnWidth() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -454,6 +499,20 @@ class LanternaMainWindowTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  private static TextColor foregroundAt(Screen screen, int x, int y) {
+    return screen.getBackCharacter(x, y).getForegroundColor();
+  }
+
+  private static int[] find(Screen screen, String needle) {
+    for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
+      int x = row(screen, y).indexOf(needle);
+      if(x >= 0) {
+        return new int[] {x, y};
+      }
+    }
+    return null;
   }
 
   private static String screenText(Screen screen) {
