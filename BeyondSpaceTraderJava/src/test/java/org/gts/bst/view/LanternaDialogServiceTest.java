@@ -9,7 +9,6 @@
 package org.gts.bst.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -44,12 +43,14 @@ class LanternaDialogServiceTest {
   }
 
   @Test
-  void ignoresTheImageAlerts() {
+  void showsTheImageAlertsWithAnOkButton() {
     FakeHost host = new FakeHost();
 
-    assertEquals(DialogResult.None, new LanternaDialogService(host).alert(AlertType.GameEndKilled));
+    assertEquals(DialogResult.OK, new LanternaDialogService(host).alert(AlertType.GameEndKilled));
 
-    assertNull(host.title);
+    assertEquals("You Are Dead", host.title);
+    assertEquals(1, host.buttons.size());
+    assertEquals("Ok", host.buttons.get(0).text());
   }
 
   private static class FakeHost implements AlertDialogHost {
