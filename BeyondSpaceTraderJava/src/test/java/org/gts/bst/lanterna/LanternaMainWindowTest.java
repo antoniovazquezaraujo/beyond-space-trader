@@ -32,6 +32,7 @@ import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.DialogService;
 import org.gts.bst.view.GameWindow;
 import org.junit.jupiter.api.Test;
+import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.StarSystem;
@@ -687,6 +688,89 @@ class LanternaMainWindowTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void showsTheTargetPriceOfTheSelectedItemInTheTradePanel() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem target = reachableSystemTradingWater(holder[0]);
+      assertNotNull(target, "the galaxy must have a reachable system trading Water");
+      holder[0].SelectedSystemId(target.Id());
+      presenter.updateAll();
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+
+      int price = Consts.TradeItems.get(0).StandardPrice(target);
+      int buy = holder[0].PriceCargoBuy()[0];
+      int diff = price - buy;
+      String pct = buy > 0 ? (diff > 0 ? "+" : "") + Functions.FormatNumber(100 * diff / buy) + "%"
+          : Strings.CargoTargetPctUnknown;
+      String line = Functions.StringVars(Strings.TradeTargetLine, new String[]{
+          Consts.TradeItems.get(0).Name(), target.Name(), Functions.FormatMoney(price), pct});
+      assertTrue(screenText(screen).contains(line), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void showsTheTargetColumnsWhenThereIsRoom() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(130, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem target = reachableSystemTradingWater(holder[0]);
+      assertNotNull(target, "the galaxy must have a reachable system trading Water");
+      holder[0].SelectedSystemId(target.Id());
+      presenter.updateAll();
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains(Strings.TradeTarget), text);
+      assertTrue(text.contains(Strings.TradeDiff), text);
+      assertTrue(text.contains(Strings.TradePct), text);
+      assertTrue(text.contains(Functions.FormatMoney(Consts.TradeItems.get(0).StandardPrice(target))), text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static StarSystem reachableSystemTradingWater(Game game) {
+    StarSystem current = game.Commander().CurrentSystem();
+    for(StarSystem system : game.Universe()) {
+      if(system != current && system.DestOk() && Consts.TradeItems.get(0).StandardPrice(system) > 0) {
+        return system;
+      }
+    }
+    return null;
   }
 
   @Test

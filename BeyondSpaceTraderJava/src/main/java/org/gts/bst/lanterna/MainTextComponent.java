@@ -68,6 +68,10 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private static final int NAVIGATION_PANEL_WIDTH = 42;
+  private static final int TRADE_PANEL_WIDTH = 48;
+  private static final int TRADE_PANEL_TARGET_WIDTH = 75;
+  /** From this screen width the trade panel shows the target columns. */
+  private static final int TRADE_TARGET_COLUMNS_SCREEN = 120;
 
   private final Supplier<Game> gameSupplier;
   private final KeyHandler keyHandler;
@@ -424,7 +428,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
     drawHeader(graphics, width, cmdr);
-    panelWidth = Math.max(20, Math.min(width - 24, panelWidthFor(panel)));
+    panelWidth = Math.max(20, Math.min(width - 24, panelWidthFor(panel, width)));
     int chartWidth = width - panelWidth - 2;
     int chartHeight = height - 7;
     drawChart(graphics, chartWidth, chartHeight, game, cmdr);
@@ -553,10 +557,12 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return Math.max(2, size / 8);
   }
 
-  private static int panelWidthFor(MainPanel panel) {
+  private static int panelWidthFor(MainPanel panel, int screenWidth) {
     switch(panel) {
       case Trade:
-        return 48;
+        // With room for it, the target columns (price, +/- and %) fit in the table;
+        // on smaller screens they move to the detail line of the selected item.
+        return screenWidth >= TRADE_TARGET_COLUMNS_SCREEN ? TRADE_PANEL_TARGET_WIDTH : TRADE_PANEL_WIDTH;
       case Bank:
         return 38;
       case Quests:
@@ -1075,19 +1081,26 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   private void drawTradePanel(TextGUIGraphics graphics, int x, int height) {
     UiPalette.title(graphics, x, 3, Strings.TradeTitle, panelWidth);
+    boolean wide = panelWidth >= TRADE_PANEL_TARGET_WIDTH;
     int row = 4;
-    UiPalette.title(graphics, x, row++, String.format("%s %-11s %10s %10s %5s %5s", " ",
-        Strings.TradeItem, Strings.TradeBuy, Strings.TradeSell, Strings.TradeCargo, Strings.TradeHere), panelWidth);
+    if(wide) {
+      UiPalette.title(graphics, x, row++, String.format("%s %-11s %10s %10s %5s %5s %10s %10s %5s", " ",
+          Strings.TradeItem, Strings.TradeBuy, Strings.TradeSell, Strings.TradeCargo, Strings.TradeHere,
+          Strings.TradeTarget, Strings.TradeDiff, Strings.TradePct), panelWidth);
+    } else {
+      UiPalette.title(graphics, x, row++, String.format("%s %-11s %10s %10s %5s %5s", " ",
+          Strings.TradeItem, Strings.TradeBuy, Strings.TradeSell, Strings.TradeCargo, Strings.TradeHere), panelWidth);
+    }
     if(cargo == null) {
       return;
     }
-    for(int i = 0; i < cargo.rows().size() && row < height - 5; i++) {
+    int limit = wide ? height - 5 : height - 6;
+    for(int i = 0; i < cargo.rows().size() && row < limit; i++) {
       CargoRowViewModel item = cargo.rows().get(i);
       String name = cut(Consts.TradeItems.get(i).Name(), 11);
       String marker = i == selectedItem ? ">" : " ";
       if(i == selectedItem) {
-        drawRow(graphics, x, row++, true, String.format("%s %-11s %10s %10s %5s %5s",
-            marker, name, item.buyPrice(), item.sellPrice(), item.sellQty(), item.buyQty()));
+        drawRow(graphics, x, row++, true, tradeRow(marker, name, item, wide));
       } else {
         int column = UiPalette.draw(graphics, x, row, String.format("%s %-11s", marker, name),
             UiPalette.TEXT, x + panelWidth);
@@ -1095,11 +1108,57 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
             UiPalette.MONEY, x + panelWidth);
         column = UiPalette.draw(graphics, column, row, String.format(" %10s", item.sellPrice()),
             UiPalette.GOOD, x + panelWidth);
-        UiPalette.draw(graphics, column, row, String.format(" %5s %5s", item.sellQty(), item.buyQty()),
+        column = UiPalette.draw(graphics, column, row, String.format(" %5s %5s", item.sellQty(), item.buyQty()),
             UiPalette.TEXT, x + panelWidth);
+        if(wide) {
+          column = UiPalette.draw(graphics, column, row, String.format(" %10s", cut(item.targetPrice(), 10)),
+              UiPalette.ACCENT, x + panelWidth);
+          column = UiPalette.draw(graphics, column, row, String.format(" %10s", cut(item.targetDiff(), 10)),
+              UiPalette.MONEY, x + panelWidth);
+          UiPalette.draw(graphics, column, row, String.format(" %5s", cut(item.targetPct(), 5)),
+              pctColor(item.targetPct()), x + panelWidth);
+        }
         row++;
       }
     }
+    if(!wide) {
+      drawTradeTargetLine(graphics, x, row, height);
+    }
+  }
+
+  private static String tradeRow(String marker, String name, CargoRowViewModel item, boolean wide) {
+    if(wide) {
+      return String.format("%s %-11s %10s %10s %5s %5s %10s %10s %5s", marker, name,
+          item.buyPrice(), item.sellPrice(), item.sellQty(), item.buyQty(),
+          cut(item.targetPrice(), 10), cut(item.targetDiff(), 10), cut(item.targetPct(), 5));
+    }
+    return String.format("%s %-11s %10s %10s %5s %5s", marker, name,
+        item.buyPrice(), item.sellPrice(), item.sellQty(), item.buyQty());
+  }
+
+  /**
+   * On narrow panels the target columns do not fit: the selected item shows its
+   * target price and margin in a single line under the table.
+   */
+  private void drawTradeTargetLine(TextGUIGraphics graphics, int x, int row, int height) {
+    if(row >= height - 5 || selectedItem < 0 || selectedItem >= cargo.rows().size()) {
+      return;
+    }
+    CargoRowViewModel item = cargo.rows().get(selectedItem);
+    if(target == null || target.name().isEmpty()) {
+      UiPalette.line(graphics, x, row, Strings.TradeNoTarget, panelWidth);
+      return;
+    }
+    UiPalette.draw(graphics, x, row, Functions.StringVars(Strings.TradeTargetLine, new String[]{
+        Consts.TradeItems.get(selectedItem).Name(), target.name(), item.targetPrice(), item.targetPct()}),
+        UiPalette.ACCENT, x + panelWidth);
+  }
+
+  private static TextColor pctColor(String pct) {
+    if(pct.startsWith("+")) {
+      return UiPalette.GOOD;
+    }
+    return pct.startsWith("-") ? UiPalette.BAD : UiPalette.TEXT;
   }
 
   private void drawNavigationPanel(TextGUIGraphics graphics, int x, int height) {
