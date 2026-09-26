@@ -54,6 +54,11 @@ Override the size with `-Dbst.uiFontSize=<points>` (`0` disables the adjustment)
 java -Dbst.uiFontSize=11 -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
 ```
 
+## Design
+
+The Lanterna interface design (one window, panels, keyboard first) is described in
+[docs/ui-design.md](docs/ui-design.md).
+
 ## Translations
 
 The game texts live in
