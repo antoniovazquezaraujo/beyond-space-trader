@@ -65,6 +65,7 @@ import org.gts.bst.view.ChartsViewModel;
 import org.gts.bst.view.DialogService;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.view.MainStatusViewModel;
+import org.gts.bst.view.GameWindow;
 import org.gts.bst.view.MainView;
 import org.gts.bst.view.MainWindow;
 import org.gts.bst.view.ShipyardViewModel;
@@ -116,7 +117,7 @@ import spacetrader.util.SettingsFile;
 import spacetrader.util.Util;
 
 
-public class ApplicationST extends WinformWindow implements MainView, MainWindow, TravelView {
+public class ApplicationST extends WinformWindow implements MainView, MainWindow, TravelView, GameWindow {
   private Button btnDesign;
   private Button btnNews;
   private Button btnSpecial;

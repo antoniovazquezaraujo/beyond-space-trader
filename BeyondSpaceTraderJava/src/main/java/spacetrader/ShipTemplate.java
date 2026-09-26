@@ -1,6 +1,6 @@
 package spacetrader;
 import jwinforms.WfImage;
-import org.gts.bst.ApplicationST;
+import org.gts.bst.view.GameWindow;
 import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
 import spacetrader.util.Hashtable;
@@ -36,7 +36,7 @@ public class ShipTemplate extends STSerializableObject implements Comparable<Shi
   public ShipTemplate(ShipSize s, String t) {
     _size = s;
     _name = t;
-    ApplicationST parent = Game.CurrentGame().getParentWindow();
+    GameWindow parent = Game.CurrentGame().getParentWindow();
     _images = parent == null ? null : parent.CustomShipImages();
   }
 
@@ -52,7 +52,7 @@ public class ShipTemplate extends STSerializableObject implements Comparable<Shi
     _fuelTanks = s.FuelTanks();
     _hullStrength = s.HullStrength();
     if(_imageIndex == Consts.ShipImgUseDefault) {
-      ApplicationST parent = Game.CurrentGame().getParentWindow();
+      GameWindow parent = Game.CurrentGame().getParentWindow();
       _images = parent == null ? null : parent.CustomShipImages();
     }
   }
