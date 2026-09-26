@@ -289,7 +289,6 @@ public final class Strings {
   public static final String MainDebt = text("MainDebt");
   public static final String MainFuel = text("MainFuel");
   public static final String MainHull = text("MainHull");
-  public static final String MainKeys = text("MainKeys");
   public static final String MainNoGame = text("MainNoGame");
   public static final String MainPolice = text("MainPolice");
   public static final String MainResource = text("MainResource");
@@ -457,14 +456,10 @@ public final class Strings {
   public static final String NewsTitle = text("NewsTitle");
 
   public static final String MenuBank = text("MenuBank");
-  public static final String MenuBar = text("MenuBar");
   public static final String MenuCommander = text("MenuCommander");
-  public static final String MenuCrew = text("MenuCrew");
   public static final String MenuDesign = text("MenuDesign");
   public static final String MenuEquipment = text("MenuEquipment");
   public static final String MenuFuel = text("MenuFuel");
-  public static final String MenuGame = text("MenuGame");
-  public static final String MenuKeys = text("MenuKeys");
   public static final String MenuLoad = text("MenuLoad");
   public static final String MenuNewGame = text("MenuNewGame");
   public static final String MenuNews = text("MenuNews");
@@ -476,11 +471,24 @@ public final class Strings {
   public static final String MenuRepairs = text("MenuRepairs");
   public static final String MenuSave = text("MenuSave");
   public static final String MenuScores = text("MenuScores");
-  public static final String MenuShip = text("MenuShip");
   public static final String MenuShipInfo = text("MenuShipInfo");
   public static final String MenuShipList = text("MenuShipList");
   public static final String MenuTitle = text("MenuTitle");
-  public static final String MenuTrade = text("MenuTrade");
   public static final String MenuTradePanel = text("MenuTradePanel");
+
+  public static final String NavBank = text("NavBank");
+  public static final String NavChart = text("NavChart");
+  public static final String NavCrew = text("NavCrew");
+  public static final String NavDesign = text("NavDesign");
+  public static final String NavEquip = text("NavEquip");
+  public static final String NavFuel = text("NavFuel");
+  public static final String NavJump = text("NavJump");
+  public static final String NavMenu = text("NavMenu");
+  public static final String NavNews = text("NavNews");
+  public static final String NavPod = text("NavPod");
+  public static final String NavQuests = text("NavQuests");
+  public static final String NavRepairs = text("NavRepairs");
+  public static final String NavShips = text("NavShips");
+  public static final String NavTrade = text("NavTrade");
 
 }
