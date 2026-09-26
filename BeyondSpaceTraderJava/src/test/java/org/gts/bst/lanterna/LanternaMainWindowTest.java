@@ -765,9 +765,8 @@ class LanternaMainWindowTest {
       StarSystem target = reachableSystemTradingWater(holder[0]);
       assertNotNull(target, "the galaxy must have a reachable system trading Water");
       holder[0].SelectedSystemId(target.Id());
-      presenter.updateAll();
-      gui.updateScreen();
 
+      // The real flow: select in the chart and open the trade panel (no manual refresh).
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
       gui.updateScreen();
 
@@ -807,6 +806,8 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.TradeNoTarget), screenText(screen));
+      assertFalse(screenText(screen).contains(Strings.CargoTargetPriceUnknown),
+          "the unknown values must not be drawn as dashes:\n" + screenText(screen));
 
       // With a target out of range it says that instead.
       StarSystem far = null;
@@ -821,6 +822,39 @@ class LanternaMainWindowTest {
       presenter.updateAll();
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.TradeTargetOutOfRange), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void leavesTheTargetColumnsBlankWhenThereIsNoTarget() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(130, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      holder[0].SelectedSystemId(StarSystemId.NA);
+      presenter.updateAll();
+      gui.updateScreen();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains(Strings.TradeNoTarget), text);
+      assertTrue(text.contains(Strings.TradeTarget), text);
+      assertFalse(text.contains(Strings.CargoTargetPriceUnknown), "no dashes:\n" + text);
+      assertFalse(text.contains(Strings.CargoTargetDiffUnknown), "no dashes:\n" + text);
+      assertFalse(text.contains(Strings.CargoTargetPctUnknown), "no dashes:\n" + text);
     } finally {
       screen.stopScreen();
       screen.close();
@@ -845,9 +879,8 @@ class LanternaMainWindowTest {
       StarSystem target = reachableSystemTradingWater(holder[0]);
       assertNotNull(target, "the galaxy must have a reachable system trading Water");
       holder[0].SelectedSystemId(target.Id());
-      presenter.updateAll();
-      gui.updateScreen();
 
+      // The real flow: select in the chart and open the trade panel (no manual refresh).
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
       gui.updateScreen();
 

@@ -1122,11 +1122,14 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         column = UiPalette.draw(graphics, column, row, String.format(" %5s %5s", item.sellQty(), item.buyQty()),
             UiPalette.TEXT, x + panelWidth);
         if(wide) {
-          column = UiPalette.draw(graphics, column, row, String.format(" %10s", cut(item.targetPrice(), 10)),
+          column = UiPalette.draw(graphics, column, row, String.format(" %10s",
+              cut(tradeValue(item.targetPrice(), Strings.CargoTargetPriceUnknown), 10)),
               UiPalette.ACCENT, x + panelWidth);
-          column = UiPalette.draw(graphics, column, row, String.format(" %10s", cut(item.targetDiff(), 10)),
+          column = UiPalette.draw(graphics, column, row, String.format(" %10s",
+              cut(tradeValue(item.targetDiff(), Strings.CargoTargetDiffUnknown), 10)),
               UiPalette.MONEY, x + panelWidth);
-          UiPalette.draw(graphics, column, row, String.format(" %5s", cut(item.targetPct(), 5)),
+          UiPalette.draw(graphics, column, row, String.format(" %5s",
+              cut(tradeValue(item.targetPct(), Strings.CargoTargetPctUnknown), 5)),
               pctColor(item.targetPct()), x + panelWidth);
         }
         row++;
@@ -1143,7 +1146,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     if(wide) {
       return String.format("%s %-11s %10s %10s %5s %5s %10s %10s %5s", marker, name,
           item.buyPrice(), item.sellPrice(), item.sellQty(), item.buyQty(),
-          cut(item.targetPrice(), 10), cut(item.targetDiff(), 10), cut(item.targetPct(), 5));
+          cut(tradeValue(item.targetPrice(), Strings.CargoTargetPriceUnknown), 10),
+          cut(tradeValue(item.targetDiff(), Strings.CargoTargetDiffUnknown), 10),
+          cut(tradeValue(item.targetPct(), Strings.CargoTargetPctUnknown), 5));
     }
     return String.format("%s %-11s %10s %10s %5s %5s", marker, name,
         item.buyPrice(), item.sellPrice(), item.sellQty(), item.buyQty());
@@ -1159,6 +1164,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       return;
     }
     String note = tradeTargetNote();
+    if(note == null && Strings.CargoTargetPriceUnknown.equals(cargo.rows().get(selectedItem).targetPrice())) {
+      note = Strings.TradeTargetNotTraded;
+    }
     if(note != null) {
       UiPalette.line(graphics, x, row, note, panelWidth);
       return;
@@ -1167,6 +1175,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     UiPalette.draw(graphics, x, row, Functions.StringVars(Strings.TradeTargetLine, new String[]{
         Consts.TradeItems.get(selectedItem).Name(), target.name(), item.targetPrice(), item.targetPct()}),
         UiPalette.ACCENT, x + panelWidth);
+  }
+
+  /** The unknown-values marker, drawn as a blank cell instead of dashes. */
+  private static String tradeValue(String value, String unknown) {
+    return unknown.equals(value) ? "" : value;
   }
 
   /**
