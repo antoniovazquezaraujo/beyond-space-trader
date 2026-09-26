@@ -301,4 +301,6 @@ the new views.
 
 The player types the number (with backspace) and `ENTER` confirms. Holding `Shift`
 while buying or selling (`Shift+B` / `Shift+S` in the trade panel) does the operation
-for the maximum amount without asking. No separate input mode.
+for the maximum amount without asking; as most terminals do not report the shift
+modifier, the uppercase letter works the same. In the cargo transfer, `Shift+digit`
+(arriving as the shifted symbol) does it for that slot. No separate input mode.

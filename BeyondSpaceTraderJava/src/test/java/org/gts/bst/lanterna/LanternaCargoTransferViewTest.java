@@ -27,6 +27,15 @@ import spacetrader.Game;
 
 class LanternaCargoTransferViewTest {
   @Test
+  void digitIndexAcceptsTheShiftedSymbols() {
+    assertEquals(0, LanternaCargoTransferView.digitIndex('1'));
+    assertEquals(0, LanternaCargoTransferView.digitIndex('!'));
+    assertEquals(9, LanternaCargoTransferView.digitIndex('0'));
+    assertEquals(9, LanternaCargoTransferView.digitIndex(')'));
+    assertTrue(LanternaCargoTransferView.digitIndex('x') < 0);
+  }
+
+  @Test
   void showsTheOpponentCargoAndTakesItWithShiftDigit() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
