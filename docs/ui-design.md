@@ -169,8 +169,10 @@ chart is hidden; the chart comes back when the panel closes.
     zoom levels could be added later.
   - `TAB` switches between both charts.
 - **Context panel (right):** one panel at a time, no new windows.
-  - *Navigation* (default): current/selected system data, prices at a glance and the
-    action keys.
+  - *Navigation* (default): data of the current system (dock and local prices) or,
+    when another system is selected in the chart, of that system (technology,
+    politics, resource, police and pirates) with its distance and the out-of-range
+    warning.
   - *Trade*: buy/sell offers for every item, the ship cargo and the cash. On wide
     screens the table adds the prices at the target system (price, +/- and %); on
     narrow ones the selected item shows them in a line under the table.
