@@ -99,7 +99,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private final List<String> newsLines = new ArrayList<>();
   private String newsHead = "";
   private int newsScroll;
-  private final List<String> navigationKeys = new ArrayList<>();
+  private String directKeys = "";
   private final List<String> menuItems = new ArrayList<>();
   private boolean menuVisible;
   private int menuIndex;
@@ -424,7 +424,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     drawHeader(graphics, width, cmdr);
     panelWidth = Math.max(20, Math.min(width - 24, panelWidthFor(panel)));
     int chartWidth = width - panelWidth - 2;
-    int chartHeight = height - 8;
+    int chartHeight = height - 7;
     drawChart(graphics, chartWidth, chartHeight, game, cmdr);
     drawPanel(graphics, width - panelWidth, chartWidth, height);
     drawFooter(graphics, width, height);
@@ -568,39 +568,18 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawPanelKeys(TextGUIGraphics graphics, int x, int height) {
-    List<String> lines;
     if(panel == MainPanel.Navigation) {
-      lines = wrapTokens(navigationKeys, panelWidth);
-    } else {
-      lines = new ArrayList<>();
-      String keys = keysFor(panel);
-      if(keys != null) {
-        wrap(lines, keys, panelWidth);
-      }
+      return;
+    }
+    List<String> lines = new ArrayList<>();
+    String keys = keysFor(panel);
+    if(keys != null) {
+      wrap(lines, keys, panelWidth);
     }
     int row = height - 4 - Math.max(0, lines.size() - 1);
     for(String line : lines) {
       graphics.putString(x, row++, cut(line, panelWidth));
     }
-  }
-
-  private static List<String> wrapTokens(List<String> tokens, int width) {
-    List<String> lines = new ArrayList<>();
-    StringBuilder line = new StringBuilder();
-    for(String token : tokens) {
-      if(line.length() > 0 && line.length() + 2 + token.length() > width) {
-        lines.add(line.toString());
-        line.setLength(0);
-      }
-      if(line.length() > 0) {
-        line.append("  ");
-      }
-      line.append(token);
-    }
-    if(line.length() > 0) {
-      lines.add(line.toString());
-    }
-    return lines;
   }
 
   private void drawBankPanel(TextGUIGraphics graphics, int x, int height) {
@@ -900,9 +879,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return designerField == field ? "> " : "  ";
   }
 
-  public void navigationKeys(List<String> tokens) {
-    navigationKeys.clear();
-    navigationKeys.addAll(tokens);
+  public void directKeys(String keys) {
+    directKeys = keys;
     invalidate();
   }
 
@@ -1036,9 +1014,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.drawLine(0, height - 3, width - 1, height - 3, '─');
     if(!log.isEmpty()) {
-      graphics.putString(1, height - 2, cut(log.get(log.size() - 1), width - 2));
+      graphics.putString(2, height - 3, cut(" " + log.get(log.size() - 1) + " ", width - 2));
     }
-    graphics.putString(1, height - 1, cut(Strings.DirectKeys, width - 2));
+    if(panel == MainPanel.Navigation && !directKeys.isEmpty()) {
+      List<String> lines = new ArrayList<>();
+      wrap(lines, directKeys, width - 2);
+      int row = height - 1 - Math.max(0, lines.size() - 1);
+      for(String line : lines) {
+        graphics.putString(1, row++, cut(line, width - 2));
+      }
+    }
   }
 
   private static String keysFor(MainPanel panel) {

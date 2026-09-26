@@ -179,7 +179,7 @@ public final class LanternaMainWindow
   @Override
   public void renderSystemInfo(SystemInfoViewModel model) {
     content.system(model);
-    content.navigationKeys(navigationKeys());
+    content.directKeys(directKeys());
   }
 
   @Override
@@ -1257,29 +1257,32 @@ public final class LanternaMainWindow
     }
   }
 
-  private List<String> navigationKeys() {
+  private String directKeys() {
     Game game = gameSupplier.get();
     if(game == null || game.Commander().CurrentSystem() == null) {
-      return List.of();
+      return Strings.DirectKeys;
     }
     StarSystem system = game.Commander().CurrentSystem();
     boolean noTech = system.TechLevel().ordinal()
         < Consts.ShipSpecs.get(ShipType.Flea.CastToInt()).MinimumTechLevel().ordinal();
-    List<String> tokens = new ArrayList<>();
+    List<String> contextual = new ArrayList<>();
     if(!noTech) {
-      tokens.add(Strings.NavShips);
-      tokens.add(Strings.NavEquip);
+      contextual.add(Strings.NavShips);
+      contextual.add(Strings.NavEquip);
       if(system.Shipyard() != null) {
-        tokens.add(Strings.NavDesign);
+        contextual.add(Strings.NavDesign);
       }
       if(!game.Commander().getShip().getEscapePod()) {
-        tokens.add(Strings.NavPod);
+        contextual.add(Strings.NavPod);
       }
     }
     if(hasCrew(game)) {
-      tokens.add(Strings.NavCrew);
+      contextual.add(Strings.NavCrew);
     }
-    return tokens;
+    if(contextual.isEmpty()) {
+      return Strings.DirectKeys;
+    }
+    return Strings.DirectKeys + " · " + String.join(" · ", contextual);
   }
 
   private static boolean hasCrew(Game game) {
