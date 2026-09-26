@@ -216,6 +216,39 @@ class ChartRendererTest {
   }
 
   @Test
+  void shortRangeMarksOverwriteACloseStar() {
+    TestChartCanvas canvas = new TestChartCanvas(11, 5);
+    List<ChartSystem> systems = List.of(
+        system(0, 0, "Here", ShipSize.Medium, ChartColor.CYAN, false),
+        system(6, 2, "Near", ShipSize.Small, ChartColor.WHITE, false),
+        new ChartSystem(5, 2, "End", false, false, false, false, true, ShipSize.Small, ChartColor.WHITE));
+
+    ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 0, 0, 0, 0, 0, null));
+
+    // The marks win over a close star, so the parentheses are never cut in half.
+    assertEquals('(', canvas.at(4, 2));
+    assertEquals(')', canvas.at(6, 2));
+    assertEquals(ChartColor.YELLOW, canvas.colorAt(6, 2));
+  }
+
+  @Test
+  void shortRangeMovesTheMarksThatReachTheCurrentSystem() {
+    TestChartCanvas canvas = new TestChartCanvas(11, 5);
+    List<ChartSystem> systems = List.of(
+        system(4, 2, "Here", ShipSize.Medium, ChartColor.CYAN, false),
+        new ChartSystem(5, 2, "End", false, false, false, false, true, ShipSize.Small, ChartColor.WHITE));
+
+    ChartRenderer.render(canvas, ChartViewModel.shortRange(systems, 4, 2, 0, 0, 0, null));
+
+    // The left parenthesis would fall on the current system: it moves one cell out
+    // instead of hiding it.
+    assertEquals('(', canvas.at(3, 2));
+    assertEquals(')', canvas.at(6, 2));
+    assertEquals('◦', canvas.at(4, 2));
+    assertTrue(canvas.invertedAt(4, 2));
+  }
+
+  @Test
   void shortRangeDrawsTheWormholeCornerWhenThePairIsOneRowAway() {
     TestChartCanvas canvas = new TestChartCanvas(21, 9);
     List<ChartSystem> systems = List.of(
