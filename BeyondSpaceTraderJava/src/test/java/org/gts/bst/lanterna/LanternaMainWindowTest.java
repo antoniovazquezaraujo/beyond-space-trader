@@ -854,7 +854,7 @@ class LanternaMainWindowTest {
       assertNotNull(after, "the whole galaxy must fit:\n" + screenText(screen));
       assertEquals(before[0], after[0]);
       assertEquals(before[1], after[1]);
-      assertTrue(chartHasCrosshair(screen), "the selected system must be visible:\n" + screenText(screen));
+      assertTrue(chartHasTarget(screen), "the selected system must be visible:\n" + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -887,7 +887,7 @@ class LanternaMainWindowTest {
       presenter.updateAll();
       gui.updateScreen();
 
-      assertTrue(chartHasCrosshair(screen), "the chart must follow the selection:\n" + screenText(screen));
+      assertTrue(chartHasTarget(screen), "the chart must follow the selection:\n" + screenText(screen));
       int[] after = findInverted(screen);
       assertTrue(after == null || after[0] != before[0] || after[1] != before[1],
           "the chart must have scrolled:\n" + screenText(screen));
@@ -939,11 +939,11 @@ class LanternaMainWindowTest {
     return far;
   }
 
-  /** The selected system is marked with a cross: its horizontal arm is a dash. */
-  private static boolean chartHasCrosshair(Screen screen) {
+  /** The selected system is marked with parentheses. */
+  private static boolean chartHasTarget(Screen screen) {
     for(int y = 4; y < 27; y++) {
       for(int x = 1; x < 64; x++) {
-        if(screen.getBackCharacter(x, y).getCharacter() == '─') {
+        if(screen.getBackCharacter(x, y).getCharacter() == '(') {
           return true;
         }
       }
