@@ -109,8 +109,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private boolean menuVisible;
   private int menuIndex;
   private int panelWidth = NAVIGATION_PANEL_WIDTH;
-  private int galacticViewX = -1;
-  private int galacticViewY = -1;
+  private int viewX = -1;
+  private int viewY = -1;
+  private int viewSystemId = -1;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -517,20 +518,24 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     int fuel = cmdr.getShip().getFuel();
     if(chartType == ChartType.GALACTIC) {
-      int galaxyWidth = UniverseGenerator.GalaxyWidth;
-      int galaxyHeight = UniverseGenerator.GalaxyHeight;
-      galacticViewX = scrollTo(galacticViewX, chosen.X(), chartWidth, galaxyWidth, chartMargin(chartWidth));
-      galacticViewY = scrollTo(galacticViewY, chosen.Y(), chartHeight, galaxyHeight, chartMargin(chartHeight));
-      return ChartViewModel.galactic(systems, current.X(), current.Y(),
-          galacticViewX + chartWidth / 2, galacticViewY + chartHeight / 2,
-          fuel, galaxyWidth, galaxyHeight);
+      return ChartViewModel.galactic(systems, current.X(), current.Y(), fuel,
+          UniverseGenerator.GalaxyWidth, UniverseGenerator.GalaxyHeight);
     }
+    // The short-range chart follows the cursor: its view only scrolls when the
+    // selected system gets close to an edge, and it re-centres after a trip.
+    if(current.Id().CastToInt() != viewSystemId) {
+      viewSystemId = current.Id().CastToInt();
+      viewX = -1;
+      viewY = -1;
+    }
+    viewX = scrollTo(viewX, chosen.X(), chartWidth, UniverseGenerator.GalaxyWidth, chartMargin(chartWidth));
+    viewY = scrollTo(viewY, chosen.Y(), chartHeight, UniverseGenerator.GalaxyHeight, chartMargin(chartHeight));
     String trackedText = null;
     if(game.TrackedSystem() != null && game.Options().getShowTrackedRange()) {
       trackedText = Functions.StringVars(Strings.MainTarget, game.TrackedSystem().Name(),
           "" + Functions.Distance(current, game.TrackedSystem()));
     }
-    return ChartViewModel.shortRange(systems, current.X(), current.Y(), fuel, Consts.MaxRange, trackedText);
+    return ChartViewModel.shortRange(systems, current.X(), current.Y(), viewX, viewY, fuel, trackedText);
   }
 
   /**

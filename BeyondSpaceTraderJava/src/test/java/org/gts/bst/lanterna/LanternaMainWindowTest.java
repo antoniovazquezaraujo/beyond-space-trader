@@ -828,7 +828,7 @@ class LanternaMainWindowTest {
   }
 
   @Test
-  void theGalacticChartScrollsToBringTheSelectedSystemIntoView() throws IOException {
+  void theGalacticChartAlwaysShowsTheWholeGalaxy() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
@@ -845,28 +845,110 @@ class LanternaMainWindowTest {
       int[] before = findInChart(screen, '+');
       assertNotNull(before, "the current system must be on the galactic chart:\n" + screenText(screen));
 
-      // Selecting the farthest system scrolls the viewport to show it.
-      StarSystem current = holder[0].Commander().CurrentSystem();
-      StarSystem far = current;
-      int bestDistance = -1;
-      for(StarSystem system : holder[0].Universe()) {
-        int distance = Functions.Distance(current, system);
-        if(distance > bestDistance) {
-          bestDistance = distance;
-          far = system;
-        }
-      }
-      holder[0].SelectedSystemId(far.Id());
+      // The whole galaxy fits, so selecting the farthest system does not scroll it.
+      holder[0].SelectedSystemId(farthestSystem(holder[0]).Id());
       presenter.updateAll();
       gui.updateScreen();
 
       int[] after = findInChart(screen, '+');
-      assertTrue(after == null || after[0] != before[0] || after[1] != before[1],
-          "the chart must scroll when the selection leaves the viewport:\n" + screenText(screen));
+      assertNotNull(after, "the whole galaxy must fit:\n" + screenText(screen));
+      assertEquals(before[0], after[0]);
+      assertEquals(before[1], after[1]);
+      assertTrue(chartHasSelected(screen), "the selected system must be visible:\n" + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void theLocalChartFollowsTheCursor() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Tab));
+      gui.updateScreen();
+      assertTrue(row(screen, 3).contains(Strings.MainChartShortRange), row(screen, 3));
+      int[] before = findInChart(screen, '+');
+      assertNotNull(before, "the current system must be on the short-range chart:\n" + screenText(screen));
+      assertFalse(chartHasSelected(screen), "the current system is not the selection");
+
+      // Selecting a system outside the view makes the chart follow it.
+      holder[0].SelectedSystemId(farthestSystem(holder[0]).Id());
+      presenter.updateAll();
+      gui.updateScreen();
+
+      assertTrue(chartHasSelected(screen), "the chart must follow the selection:\n" + screenText(screen));
+      int[] after = findInChart(screen, '+');
+      assertTrue(after == null || after[0] != before[0] || after[1] != before[1],
+          "the chart must have scrolled:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void tracksTheCurrentSystemWhenNothingIsSelectedYet() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('t', false, false));
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      assertEquals(current.Id().CastToInt(), holder[0].getTrackedSystemId().CastToInt());
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.MainTracking, current.Name())),
+          screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static StarSystem farthestSystem(Game game) {
+    StarSystem current = game.Commander().CurrentSystem();
+    StarSystem far = current;
+    int bestDistance = -1;
+    for(StarSystem system : game.Universe()) {
+      int distance = Functions.Distance(current, system);
+      if(distance > bestDistance) {
+        bestDistance = distance;
+        far = system;
+      }
+    }
+    return far;
+  }
+
+  private static boolean chartHasSelected(Screen screen) {
+    for(int y = 4; y < 27; y++) {
+      for(int x = 1; x < 64; x++) {
+        if(screen.getBackCharacter(x, y).getBackgroundColor() == TextColor.ANSI.WHITE) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private static int[] findInChart(Screen screen, char character) {

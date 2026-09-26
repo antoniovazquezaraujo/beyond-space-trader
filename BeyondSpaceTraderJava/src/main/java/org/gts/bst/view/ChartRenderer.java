@@ -17,10 +17,12 @@ package org.gts.bst.view;
  * {@code ~} a wormhole next to its system. Systems within the fuel range are green;
  * the selected one uses {@link ChartColor#SELECTED}.
  *
- * <p>The galactic chart is a viewport of the whole galaxy centred on
- * {@code viewX/viewY}; the short-range chart is centred on the current system and
- * scales the distances to fit. The short-range chart also draws a green braille ring
- * at the current fuel distance, so the jump range is visible at a glance.
+ * <p>The galactic chart scales the whole galaxy down so that it always fits in the
+ * chart area: it is a situation map with no scrolling (and no names, which would not
+ * fit). The short-range chart is a 1:1 map (one sector per character) with names and
+ * its own viewport; its fuel range is drawn as a green braille ring, and when the
+ * current or the tracked system falls outside the view an arrow at the edge points
+ * to it.
  */
 public final class ChartRenderer {
   static final char CURRENT = '+';
@@ -50,11 +52,33 @@ public final class ChartRenderer {
   }
 
   private static void renderGalactic(ChartCanvas canvas, ChartViewModel model) {
-    int panX = pan(model.viewX(), canvas.width(), model.galaxyWidth());
-    int panY = pan(model.viewY(), canvas.height(), model.galaxyHeight());
+    double scale = galacticScale(canvas, model);
+    int mapWidth = (int)Math.round(model.galaxyWidth() / scale);
+    int mapHeight = (int)Math.round(model.galaxyHeight() / scale);
+    int left = Math.max(0, (canvas.width() - mapWidth) / 2);
+    int top = Math.max(0, (canvas.height() - mapHeight) / 2);
+    drawRangeRing(canvas, left + (int)Math.round(model.currentX() / scale),
+        top + (int)Math.round(model.currentY() / scale), model.fuel() / scale);
+    // The special systems (current, target, tracked, selected) are drawn last, so a
+    // close neighbour cannot paint over them.
+    drawGalacticSystems(canvas, model, left, top, scale, false);
+    drawGalacticSystems(canvas, model, left, top, scale, true);
+  }
+
+  private static double galacticScale(ChartCanvas canvas, ChartViewModel model) {
+    int width = Math.max(1, canvas.width() - 1);
+    int height = Math.max(1, canvas.height() - 1);
+    return Math.max((double)model.galaxyWidth() / width, (double)model.galaxyHeight() / height);
+  }
+
+  private static void drawGalacticSystems(ChartCanvas canvas, ChartViewModel model, int left, int top,
+      double scale, boolean special) {
     for(ChartSystem system : model.systems()) {
-      int x = system.x() - panX;
-      int y = system.y() - panY;
+      if(isSpecial(system, model) != special) {
+        continue;
+      }
+      int x = left + (int)Math.round(system.x() / scale);
+      int y = top + (int)Math.round(system.y() / scale);
       if(!inside(canvas, x, y)) {
         continue;
       }
@@ -63,16 +87,19 @@ public final class ChartRenderer {
     }
   }
 
+  private static boolean isSpecial(ChartSystem system, ChartViewModel model) {
+    return isCurrent(system, model) || system.warp() || system.tracked() || system.selected();
+  }
+
   private static void renderShortRange(ChartCanvas canvas, ChartViewModel model) {
-    int centerX = canvas.width() / 2;
-    int centerY = canvas.height() / 2;
-    int delta = Math.max(1, canvas.height() / (model.maxRange() * 2));
-    drawRangeRing(canvas, centerX, centerY, delta, model.fuel());
+    int currentX = model.currentX() - model.viewX();
+    int currentY = model.currentY() - model.viewY();
+    drawRangeRing(canvas, currentX, currentY, model.fuel());
     // First the names, then the systems: the markers stop the names from hiding them.
     for(int pass = 0; pass < 2; pass++) {
       for(ChartSystem system : model.systems()) {
-        int x = centerX + (system.x() - model.currentX()) * delta;
-        int y = centerY + (system.y() - model.currentY()) * delta;
+        int x = system.x() - model.viewX();
+        int y = system.y() - model.viewY();
         if(pass == 0) {
           drawName(canvas, system.name(), x, y);
         } else if(inside(canvas, x, y)) {
@@ -81,8 +108,11 @@ public final class ChartRenderer {
         }
       }
     }
-    canvas.put(centerX, centerY, CURRENT, ChartColor.CYAN);
-    drawTrackingArrow(canvas, model, centerX, centerY, delta);
+    if(inside(canvas, currentX, currentY)) {
+      canvas.put(currentX, currentY, CURRENT, ChartColor.CYAN);
+    }
+    drawEdgeArrow(canvas, currentX, currentY, ChartColor.CYAN);
+    drawTrackingArrow(canvas, model);
     if(model.trackedRangeText() != null) {
       drawText(canvas, 0, canvas.height() - 1, model.trackedRangeText(), ChartColor.DEFAULT);
     }
@@ -94,12 +124,11 @@ public final class ChartRenderer {
    * sector counts as one cell, that is, two dots across and four dots down. The ring
    * is drawn first, so names, systems and arrows paint over it.
    */
-  private static void drawRangeRing(ChartCanvas canvas, int centerX, int centerY, int delta, int fuel) {
-    if(fuel <= 0) {
+  private static void drawRangeRing(ChartCanvas canvas, int centerX, int centerY, double radius) {
+    if(radius < 0.5) {
       return;
     }
-    int radius = fuel * delta;
-    int steps = Math.max(360, radius * 24);
+    int steps = Math.max(360, (int)Math.round(radius * 24));
     int[][] masks = new int[canvas.height()][canvas.width()];
     for(int i = 0; i < steps; i++) {
       double angle = 2 * Math.PI * i / steps;
@@ -189,7 +218,7 @@ public final class ChartRenderer {
     }
   }
 
-  private static void drawTrackingArrow(ChartCanvas canvas, ChartViewModel model, int centerX, int centerY, int delta) {
+  private static void drawTrackingArrow(ChartCanvas canvas, ChartViewModel model) {
     ChartSystem tracked = null;
     for(ChartSystem system : model.systems()) {
       if(system.tracked()) {
@@ -197,30 +226,32 @@ public final class ChartRenderer {
         break;
       }
     }
-    if(tracked == null || isCurrent(tracked, model)) {
-      return;
+    if(tracked != null && !isCurrent(tracked, model)) {
+      drawEdgeArrow(canvas, tracked.x() - model.viewX(), tracked.y() - model.viewY(), ChartColor.RED);
     }
-    int x = centerX + (tracked.x() - model.currentX()) * delta;
-    int y = centerY + (tracked.y() - model.currentY()) * delta;
+  }
+
+  /**
+   * When a point falls outside the view, an arrow at the edge of the chart points to
+   * it (nothing is drawn when the point is inside).
+   */
+  private static void drawEdgeArrow(ChartCanvas canvas, int x, int y, ChartColor color) {
     if(inside(canvas, x, y)) {
       return;
     }
-    int clampedX = Math.max(0, Math.min(x, canvas.width() - 1));
+    int centerX = canvas.width() / 2;
+    int centerY = canvas.height() / 2;
     int clampedY = Math.max(0, Math.min(y, canvas.height() - 1));
+    int clampedX = Math.max(0, Math.min(x, canvas.width() - 1));
     char arrow;
     if(Math.abs(x - centerX) >= Math.abs(y - centerY)) {
       arrow = x >= centerX ? '>' : '<';
+      clampedX = x >= centerX ? canvas.width() - 1 : 0;
     } else {
       arrow = y >= centerY ? 'v' : '^';
+      clampedY = y >= centerY ? canvas.height() - 1 : 0;
     }
-    canvas.put(clampedX, clampedY, arrow, ChartColor.RED);
-  }
-
-  private static int pan(int center, int canvasSize, int galaxySize) {
-    if(canvasSize >= galaxySize) {
-      return 0;
-    }
-    return Math.max(0, Math.min(center - canvasSize / 2, galaxySize - canvasSize));
+    canvas.put(clampedX, clampedY, arrow, color);
   }
 
   private static boolean inside(ChartCanvas canvas, int x, int y) {

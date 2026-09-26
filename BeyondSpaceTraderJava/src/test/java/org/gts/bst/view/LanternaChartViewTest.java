@@ -33,7 +33,7 @@ class LanternaChartViewTest {
           new ChartSystem(0, 0, "Here", true, false, false, false),
           new ChartSystem(3, 0, "Sol", false, false, false, false));
 
-      view.render(ChartViewModel.shortRange(systems, 0, 0, 5, 20, null));
+      view.render(ChartViewModel.shortRange(systems, 0, 0, -10, -4, 5, null));
 
       TextCharacter current = screen.getBackCharacter(10, 4);
       assertEquals('+', current.getCharacter());

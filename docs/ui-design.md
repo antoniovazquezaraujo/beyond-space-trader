@@ -158,16 +158,19 @@ chart is hidden; the chart comes back when the panel closes.
   cargo bays, police record and any active warning (low fuel/hull, quest item on
   board, wanted...).
 - **Map (center):** the axis of the screen.
-  - *Local chart*: the current system, its planet/station, the own ship and the
-    other ships, with a cursor. A green braille ring marks the actual jump range
-    (the current fuel), so the systems inside it are green too.
-  - *Galactic chart*: known systems, current position, selected destination, routes
-    and wormholes, visited marks.
-  - Both charts draw one character per sector; the local one is centred on the
-    current system, and the galactic one keeps its viewport still while the cursor
-    moves inside it, scrolling only when the cursor gets close to an edge. Discrete
-    zoom levels could be added later.
-  - `TAB` switches between both charts.
+  - *Short-range chart (detail)*: a 1:1 map (one sector per character) with the
+    system names. Its view follows the cursor, scrolling only when the selection
+    gets close to an edge (and re-centring after a trip), so it is never lost; when
+    the current system falls outside the view, an arrow at the edge points to it.
+    A green braille ring marks the actual jump range (the current fuel), so the
+    systems inside it are green too.
+  - *Galactic chart (situation)*: the whole galaxy scaled down to fit the chart
+    area, so it never scrolls and every system is always visible. Systems are shown
+    as markers (no names at that scale) with the current position, the selected
+    destination, the tracked system, the wormholes, the visited marks and the small
+    fuel circle around the current system.
+  - `TAB` switches between the detail chart (names) and the situation chart (the
+    whole galaxy).
 - **Context panel (right):** one panel at a time, no new windows.
   - *Navigation* (default): data of the current system (dock and the item/sell/buy
     price table) or, when another system is selected in the chart, of that system
