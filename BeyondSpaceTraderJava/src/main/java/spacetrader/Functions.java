@@ -11,7 +11,6 @@ import java.util.Random;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.view.DialogService;
 import spacetrader.enums.AlertType;
-import spacetrader.util.Hashtable;
 import spacetrader.util.SettingsFile;
 import spacetrader.util.Util;
 
@@ -66,12 +65,7 @@ public class Functions {
   
 
   public static HighScoreRecord[] GetHighScores(DialogService dialogs) {
-    HighScoreRecord[] highScores = new HighScoreRecord[3];
-    Object obj = LoadFile(Consts.HighScoreFile, true, dialogs);
-    if(obj != null) {
-      highScores = (HighScoreRecord[])STSerializableObject.ArrayListToArray((ArrayList<Hashtable>)obj, "HighScoreRecord");
-    }
-    return highScores;
+    return HighScores.Load(Consts.HighScoreFile, dialogs);
   }
 
   public static int GetRandom(int max) {

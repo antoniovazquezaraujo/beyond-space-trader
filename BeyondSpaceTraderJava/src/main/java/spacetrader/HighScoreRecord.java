@@ -25,10 +25,10 @@ public class HighScoreRecord extends STSerializableObject implements Comparable<
     super(hash);
     _name = GetValueFromHash(hash, "_name", String.class);
     _score = GetValueFromHash(hash, "_score", Integer.class);
-    _type = GetValueFromHash(hash, "_type", GameEndType.class);
+    _type = GameEndType.FromInt(GetValueFromHash(hash, "_type", Integer.class));
     _days = GetValueFromHash(hash, "_days", Integer.class);
     _worth = GetValueFromHash(hash, "_worth", Integer.class);
-    _difficulty = GetValueFromHash(hash, "_difficulty", Difficulty.class);
+    _difficulty = Difficulty.FromInt(GetValueFromHash(hash, "_difficulty", Integer.class));
   }
 
   public int CompareTo(HighScoreRecord value) {
