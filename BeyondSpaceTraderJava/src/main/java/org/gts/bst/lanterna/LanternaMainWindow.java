@@ -1235,8 +1235,6 @@ public final class LanternaMainWindow
     }
     List<String> items = new ArrayList<>();
     menuActions.clear();
-    addMenuItem(items, Strings.MenuCommander, this::openCommander);
-    addMenuItem(items, Strings.MenuShipInfo, this::openShip);
     addMenuItem(items, Strings.MenuScores, this::openHighScores);
     addMenuItem(items, Strings.MenuOptions, this::openOptions);
     addMenuItem(items, Strings.MenuSave, () -> runAction(saveGameAction, Strings.MainSaveUnavailable));
@@ -1268,13 +1266,6 @@ public final class LanternaMainWindow
     boolean noTech = system.TechLevel().ordinal()
         < Consts.ShipSpecs.get(ShipType.Flea.CastToInt()).MinimumTechLevel().ordinal();
     List<String> tokens = new ArrayList<>();
-    tokens.add(Strings.NavTrade);
-    tokens.add(Strings.NavBank);
-    if(hasCrew(game)) {
-      tokens.add(Strings.NavCrew);
-    }
-    tokens.add(Strings.NavQuests);
-    tokens.add(Strings.NavNews);
     if(!noTech) {
       tokens.add(Strings.NavShips);
       tokens.add(Strings.NavEquip);
@@ -1285,13 +1276,9 @@ public final class LanternaMainWindow
         tokens.add(Strings.NavPod);
       }
     }
-    tokens.add(Strings.NavFuel);
-    tokens.add(Strings.NavRepairs);
-    if(game.WarpSystem() != null && game.WarpSystem() != system) {
-      tokens.add(Strings.NavJump);
+    if(hasCrew(game)) {
+      tokens.add(Strings.NavCrew);
     }
-    tokens.add(Strings.NavChart);
-    tokens.add(Strings.NavMenu);
     return tokens;
   }
 

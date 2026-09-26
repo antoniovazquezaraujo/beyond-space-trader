@@ -55,8 +55,7 @@ class LanternaMainWindowTest {
       assertTrue(header.contains(Strings.MainDay.substring(0, 3)), header);
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
       assertTrue(areaContains(screen, 1, 4, 60, 26, "*o@+"), "no chart markers");
-      assertTrue(screenText(screen).contains(Strings.NavTrade), screenText(screen));
-      assertTrue(screenText(screen).contains(Strings.NavChart), screenText(screen));
+      assertTrue(row(screen, 29).contains(Strings.DirectKeys), row(screen, 29));
       assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
           "the window background must be black");
       assertTrue(screenText(screen).contains(holder[0].Commander().CurrentSystem().Name()),
@@ -92,7 +91,8 @@ class LanternaMainWindowTest {
       String trade = screenText(screen);
       assertTrue(trade.contains(Strings.TradeTitle), trade);
       assertTrue(trade.contains("> Water"), trade);
-      assertTrue(trade.contains(Strings.TradeKeys), trade);
+      assertTrue(trade.contains("B buy"), trade);
+      assertTrue(trade.contains("Shift all"), trade);
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
       gui.updateScreen();
@@ -126,11 +126,11 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('b', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.BankTitle), screenText(screen));
-      assertTrue(screenText(screen).contains(Strings.BankKeys), screenText(screen));
+      assertTrue(screenText(screen).contains("[G]et loan"), screenText(screen));
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
-      assertFalse(screenText(screen).contains(Strings.BankKeys));
+      assertFalse(screenText(screen).contains("[G]et loan"), screenText(screen));
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
       gui.updateScreen();
@@ -408,15 +408,16 @@ class LanternaMainWindowTest {
       gui.updateScreen();
       String menu = screenText(screen);
       assertTrue(menu.contains(Strings.MenuTitle), menu);
-      assertTrue(menu.contains(Strings.MenuCommander), menu);
-      assertTrue(menu.contains(Strings.MenuShipInfo), menu);
+      assertTrue(menu.contains(Strings.MenuScores), menu);
+      assertTrue(menu.contains(Strings.MenuQuit), menu);
+      assertFalse(menu.contains("Commander"), menu);
 
-      // The cursor starts on "Commander (I)"; moving down goes to "Ship (V)"
+      // The cursor starts on "High scores"; moving down goes to "Options"
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains(Strings.ShipTitle), screenText(screen));
-      assertFalse(screenText(screen).contains(Strings.MenuCommander), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.OptionsTitle), screenText(screen));
+      assertFalse(screenText(screen).contains(Strings.MenuQuit), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -424,7 +425,7 @@ class LanternaMainWindowTest {
   }
 
   @Test
-  void panelsTakeTheWholeScreen() throws IOException {
+  void panelsKeepTheMapVisibleAndUseTheirOwnWidth() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
@@ -440,12 +441,13 @@ class LanternaMainWindowTest {
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
       gui.updateScreen();
-      assertFalse(screenText(screen).contains(Strings.MainChartGalactic), screenText(screen));
-      assertTrue(row(screen, 3).trim().startsWith(Strings.TradeTitle), row(screen, 3));
+      assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
+      assertTrue(row(screen, 3).contains(Strings.TradeTitle), row(screen, 3));
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertTrue(row(screen, 3).contains(Strings.MainChartGalactic), row(screen, 3));
+      assertFalse(row(screen, 3).contains(Strings.TradeTitle), row(screen, 3));
     } finally {
       screen.stopScreen();
       screen.close();

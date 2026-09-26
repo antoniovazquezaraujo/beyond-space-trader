@@ -20,18 +20,18 @@ and the presenters stay.
   stays visible behind.
 - **Options, save/load and confirmations:** panels in the same window, not a
   separate menu screen.
-- **Menu:** hybrid. Direct shortcuts for the daily actions (chart, track, trade,
-  bank, quests, newspaper, jump, fuel and repairs) plus a **dropdown menu** (F10)
-  with the system screens and actions (commander, ship, high scores, options,
-  save/load, new game and quit). The menu is an overlay that only exists while it is
-  open: there is no permanent menu bar.
-- **Keys inside the panels:** every screen shows its own keys at the bottom of the
-  panel, and the navigation panel shows the actions available in the current system
-  (ships, equipment, designer, crew...), so the player never has to look at the other
-  side of the screen to choose something.
-- **Full screens:** every screen that is not the navigation one (trade, bank, quests,
-  ships, equipment, commander, personnel, designer, newspaper...) takes the whole
-  width under the header; the chart comes back when it closes.
+- **Direct menu at the bottom:** the last line of the screen always shows the direct
+  keys (chart, trade, bank, quests, newspaper, jump, fuel/repairs, commander, ship
+  and menu).
+- **F10 menu, program only:** a dropdown overlay (only while it is open) with the
+  program actions: high scores, options, save, load, new game and quit. Commander and
+  ship status are direct keys (I and V).
+- **Keys inside the panels:** each panel shows its own keys at the bottom of the
+  panel; the navigation panel shows only the actions available in the current system
+  (ships, equipment, designer, escape pod, crew), so the player never has to look at
+  the other side of the screen to choose something.
+- **The map is always visible:** panels use their own width on the right and never
+  take the whole screen, so the chart stays visible behind them.
 
 ## Layout
 
@@ -45,12 +45,41 @@ and the presenters stay.
 |        (local / galactic)           | Water  30/ 35   buy/sell           |
 |                                     | Furs  250/265   buy/sell           |
 |                                     |                                    |
-|                                     | [C] Trade  [B] Bank  [Q] Quests    |
-|                                     | [N] News  [L] Ships  [E] Equipment |
-|                                     | [J] Jump  [F] Fuel  [H] Repairs    |
+|                                     | [L] Ships  [E] Equipment           |
+|                                     | [P] Crew   [D] Design              |
 +-------------------------------------+------------------------------------+
 | Last message / news                                                      |
+| TAB map · C trade · B bank · Q quests · N news · J jump · F/H dock · ... |
 +--------------------------------------------------------------------------+
+```
+
+Any panel (trade, bank, quests, ships, equipment, commander, ship, personnel,
+designer, newspaper...) opens on the right with the width it needs, with its own keys
+at the bottom of the panel and the map still visible:
+
+```
++-------------------------------------+------------------------------------+
+|              MAP                    | Trade                              |
+|                                     | item          buy      sell  cargo |
+|                                     | > Water      30 cr.   35 cr.   0   |
+|                                     |   Furs      250 cr.  265 cr.   3   |
+|                                     |                                    |
+|                                     | [arrows] select [B] buy [S] sell   |
+|                                     | [Shift] all [ESC] close            |
++-------------------------------------+------------------------------------+
+```
+
+The F10 menu is a small dropdown over the content with the program actions:
+
+```
+┌─ Menu ──────────────┐
+│ > High scores (F3)  │
+│   Options     (F8)  │
+│   Save        (F5)  │
+│   Load        (F9)  │
+│   New game    (F2)  │
+│   Quit              │
+└─────────────────────┘
 ```
 
 A screen that is not the navigation one takes the whole width (its own keys at the
@@ -127,15 +156,17 @@ chart is hidden; the chart comes back when the panel closes.
 | N | Newspaper panel |
 | J | Jump (travel) to the selected system |
 | F / H | Buy fuel / repair the hull |
-| F10 | Dropdown menu (commander, ship, scores, options, save/load/new game, quit) |
+| F10 | Dropdown menu (scores, options, save/load, new game, quit) |
+| I / V | Commander / ship status |
 | F2 / F5 / F9 | New game / save / load |
 | F3 / F8 | High scores / options |
 | Digits | Quantities in the trade panels and cargo transfer |
 
-Encounter keys are shown in the encounter panel itself. Every screen lists its own
-keys at the bottom of the panel; the navigation panel shows the actions available in
-the current system, and the F10 menu holds the system screens (commander, ship, high
-scores, options, save/load, new game and quit).
+Encounter keys are shown in the encounter panel itself. The bottom line of the screen
+always shows the direct keys; each panel shows its own keys at the bottom of the
+panel, and the navigation panel shows the actions available in the current system.
+The F10 menu holds the program actions (high scores, options, save/load, new game and
+quit).
 
 ## Screens and states
 
