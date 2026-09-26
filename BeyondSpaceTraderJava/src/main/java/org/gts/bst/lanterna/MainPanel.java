@@ -16,5 +16,8 @@ public enum MainPanel {
   Navigation,
   Trade,
   Bank,
-  Quests
+  Quests,
+  Personnel,
+  Commander,
+  Ship
 }
