@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -219,7 +220,7 @@ class LanternaMainWindowTest {
       gui.addWindow(window.asWindow());
       gui.updateScreen();
 
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('l', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('s', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.ShipListTitle), screenText(screen));
       assertTrue(screenText(screen).contains("> Flea"), screenText(screen));
@@ -238,6 +239,36 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertFalse(screenText(screen).contains(Strings.EquipmentKeys));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void vimKeysMoveTheChartCursor() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      String before = row(screen, 3);
+      for(char key : new char[] {'h', 'j', 'k', 'l'}) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(key, false, false));
+        gui.updateScreen();
+        if(!row(screen, 3).equals(before)) {
+          break;
+        }
+      }
+      assertNotEquals(before, row(screen, 3), "hjkl must move the chart cursor:\n" + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -509,7 +540,7 @@ class LanternaMainWindowTest {
       assertNotNull(key, screenText(screen));
       assertEquals(TextColor.ANSI.YELLOW, foregroundAt(screen, key[0], key[1]), "the keys are yellow");
 
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('l', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('s', false, false));
       gui.updateScreen();
       int[] title = find(screen, Strings.ShipListTitle);
       assertNotNull(title, screenText(screen));
@@ -694,7 +725,7 @@ class LanternaMainWindowTest {
       assertNotNull(far, "the galaxy must have a system out of range");
       holder[0].SelectedSystemId(far.Id());
 
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('j', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('g', false, false));
       gui.updateScreen();
       assertSame(current, holder[0].Commander().CurrentSystem());
       assertTrue(screenText(screen).contains(Strings.MainJumpNoSingularity), screenText(screen));
@@ -721,7 +752,7 @@ class LanternaMainWindowTest {
       presenter.updateAll();
       gui.addWindow(window.asWindow());
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("[J] Jump"), screenText(screen));
+      assertTrue(screenText(screen).contains("[G] Jump"), screenText(screen));
 
       StarSystem current = holder[0].Commander().CurrentSystem();
       StarSystem far = null;
@@ -735,7 +766,7 @@ class LanternaMainWindowTest {
       holder[0].SelectedSystemId(far.Id());
 
       int fuel = holder[0].Commander().getShip().getFuel();
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('j', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('g', false, false));
       gui.updateScreen();
 
       assertSame(far, holder[0].Commander().CurrentSystem(), screenText(screen));
@@ -1113,11 +1144,11 @@ class LanternaMainWindowTest {
       gui.updateScreen();
 
       String text = screenText(screen);
-      assertTrue(text.contains("[J] Jump"), text);
+      assertTrue(text.contains("[G] Jump"), text);
       assertTrue(text.contains("[F] fuel"), text);
-      assertTrue(text.contains("[H] repairs"), text);
+      assertTrue(text.contains("[R] repairs"), text);
       assertTrue(text.contains("[F10] menu"), text);
-      assertTrue(text.indexOf("[F10] menu") > text.indexOf("[J] Jump"),
+      assertTrue(text.indexOf("[F10] menu") > text.indexOf("[G] Jump"),
           "the program menu goes after the contextual actions:\n" + text);
     } finally {
       screen.stopScreen();

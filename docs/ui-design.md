@@ -55,7 +55,7 @@ and the presenters stay.
 +-------------------------------------+------------------------------------+
 | Last message (embedded in the separator line)                            |
 | [TAB] map · [C] trade · [B] bank · [Q] quests · [N] news · [W] warp ...  |
-| ... [T] track · [F] fuel · [H] repairs · [I] cmdr · [V] ship ...         |
+| ... [T] track · [F] fuel · [R] repairs · [I] cmdr · [V] ship ...         |
 | ... plus the actions available here ([L] Ships, [E] Equipment, ...)      |
 | ... and the program menu ([F10] menu) last                               |
 +--------------------------------------------------------------------------+
@@ -217,6 +217,7 @@ chart is hidden; the chart comes back when the panel closes.
 | Key | Action |
 | --- | --- |
 | Arrows | Move the cursor on the map or in the panel |
+| hjkl | Move the cursor on the map (vim style) |
 | TAB | Local chart / galactic chart |
 | ENTER / T | Confirm / track the selected system (T again stops tracking it) |
 | ESC | Close the panel / go back / quit |
@@ -226,8 +227,8 @@ chart is hidden; the chart comes back when the panel closes.
 | Q | Quests panel |
 | N | Newspaper panel |
 | W | Warp to the selected system (normal trip: spends fuel and a day) |
-| J | Jump with the Portable Singularity, only while it is on board |
-| F / H | Buy fuel / repair the hull |
+| G | Jump with the Portable Singularity, only while it is on board |
+| F / R | Buy fuel / repair the hull |
 | F10 | Dropdown menu (scores, options, save/load, new game, quit) |
 | I / V | Commander / ship status |
 | F2 / F5 / F9 | New game / save / load |

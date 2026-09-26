@@ -1129,7 +1129,7 @@ public final class LanternaMainWindow
       case 'i':
         openCommander();
         return true;
-      case 'l':
+      case 's':
         openShipList();
         return true;
       case 'e':
@@ -1147,14 +1147,26 @@ public final class LanternaMainWindow
       case 'f':
         buyFuel();
         return true;
-      case 'j':
+      case 'g':
         jump();
         return true;
       case 'w':
         warp();
         return true;
-      case 'h':
+      case 'r':
         buyRepairs();
+        return true;
+      case 'h':
+        moveSelection(game, -1, 0);
+        return true;
+      case 'j':
+        moveSelection(game, 0, 1);
+        return true;
+      case 'k':
+        moveSelection(game, 0, -1);
+        return true;
+      case 'l':
+        moveSelection(game, 1, 0);
         return true;
       default:
         return false;
