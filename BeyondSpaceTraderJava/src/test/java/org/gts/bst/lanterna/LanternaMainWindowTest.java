@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
@@ -24,8 +26,11 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
 import org.gts.bst.difficulty.Difficulty;
+import org.gts.bst.events.EncounterResult;
 import org.gts.bst.presenter.MainPresenter;
+import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.DialogService;
+import org.gts.bst.view.GameWindow;
 import org.junit.jupiter.api.Test;
 import spacetrader.Functions;
 import spacetrader.Game;
@@ -513,6 +518,198 @@ class LanternaMainWindowTest {
       }
     }
     return null;
+  }
+
+  @Test
+  void warpsToTheSelectedSystemAndSpendsFuel() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].setAutoSave(false);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      StarSystem target = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != current && system.DestOk()) {
+          target = system;
+          break;
+        }
+      }
+      assertNotNull(target, "the galaxy must have a reachable system");
+      holder[0].SelectedSystemId(target.Id());
+      presenter.updateAll();
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("[W] warp"), screenText(screen));
+
+      int fuel = holder[0].Commander().getShip().getFuel();
+      boolean wormhole = Functions.WormholeExists(current, target);
+      int distance = Functions.Distance(current, target);
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('w', false, false));
+      gui.updateScreen();
+
+      assertSame(target, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertEquals(wormhole ? fuel : fuel - distance, holder[0].Commander().getShip().getFuel(),
+          "the fuel of the distance must be spent");
+      assertEquals(1, holder[0].Commander().getDays(), "the trip must advance a day");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void doesNotWarpOutOfRangeOrToTheCurrentSystem() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].setAutoSave(false);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      StarSystem far = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != current && !system.DestOk()) {
+          far = system;
+          break;
+        }
+      }
+      assertNotNull(far, "the galaxy must have a system out of range");
+      holder[0].SelectedSystemId(far.Id());
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('w', false, false));
+      gui.updateScreen();
+      assertSame(current, holder[0].Commander().CurrentSystem());
+      assertTrue(screenText(screen).contains(Strings.MainWarpOutOfRange), screenText(screen));
+
+      holder[0].SelectedSystemId(current.Id());
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('w', false, false));
+      gui.updateScreen();
+      assertSame(current, holder[0].Commander().CurrentSystem());
+      assertTrue(screenText(screen).contains(Strings.MainWarpCurrent), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void doesNotJumpWithoutThePortableSingularity() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].setAutoSave(false);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      StarSystem far = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != current && !system.DestOk()) {
+          far = system;
+          break;
+        }
+      }
+      assertNotNull(far, "the galaxy must have a system out of range");
+      holder[0].SelectedSystemId(far.Id());
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('j', false, false));
+      gui.updateScreen();
+      assertSame(current, holder[0].Commander().CurrentSystem());
+      assertTrue(screenText(screen).contains(Strings.MainJumpNoSingularity), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void jumpsWithThePortableSingularityWithoutSpendingFuel() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(),
+          (type, messageArgs) -> DialogResult.Yes);
+      holder[0].setAutoSave(false);
+      holder[0].setCanSuperWarp(true);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("[J] Jump"), screenText(screen));
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      StarSystem far = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != current && !system.DestOk()) {
+          far = system;
+          break;
+        }
+      }
+      assertNotNull(far, "the galaxy must have a system out of range");
+      holder[0].SelectedSystemId(far.Id());
+
+      int fuel = holder[0].Commander().getShip().getFuel();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('j', false, false));
+      gui.updateScreen();
+
+      assertSame(far, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertEquals(fuel, holder[0].Commander().getShip().getFuel(), "the singularity spends no fuel");
+      assertFalse(holder[0].getCanSuperWarp(), "the singularity is used only once");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /**
+   * A game host that resolves every encounter immediately, so travel can be tested
+   * without blocking on the encounter window.
+   */
+  private static final class QuietHost implements GameWindow {
+    @Override
+    public EncounterResult showEncounter() {
+      return EncounterResult.Normal;
+    }
+
+    @Override
+    public void showNewspaper() {
+    }
+
+    @Override
+    public void UpdateStatusBar() {
+    }
+
+    @Override
+    public void UpdateAll() {
+    }
   }
 
   private static String screenText(Screen screen) {

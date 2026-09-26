@@ -297,6 +297,9 @@ public final class Strings {
   public static final String MainTarget = text("MainTarget");
   public static final String MainTech = text("MainTech");
   public static final String MainTracking = text("MainTracking");
+  public static final String MainWarpCurrent = text("MainWarpCurrent");
+  public static final String MainWarpNoTarget = text("MainWarpNoTarget");
+  public static final String MainWarpOutOfRange = text("MainWarpOutOfRange");
 
   public static final String CargoJettisonTitle = text("CargoJettisonTitle");
   public static final String CargoPlunderTitle = text("CargoPlunderTitle");
@@ -317,6 +320,7 @@ public final class Strings {
   public static final String EncounterTitle = text("EncounterTitle");
   public static final String MainGameOver = text("MainGameOver");
   public static final String MainJump = text("MainJump");
+  public static final String MainJumpNoSingularity = text("MainJumpNoSingularity");
 
   public static final String TradeBuy = text("TradeBuy");
   public static final String TradeCargo = text("TradeCargo");
@@ -477,6 +481,7 @@ public final class Strings {
   public static final String NavCrew = text("NavCrew");
   public static final String NavDesign = text("NavDesign");
   public static final String NavEquip = text("NavEquip");
+  public static final String NavJump = text("NavJump");
   public static final String NavPod = text("NavPod");
   public static final String NavShips = text("NavShips");
 
