@@ -751,6 +751,48 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void explainsWhenTheTargetPricesAreUnknown() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // With no target selected the panel says so.
+      holder[0].SelectedSystemId(StarSystemId.NA);
+      presenter.updateAll();
+      gui.updateScreen();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.TradeNoTarget), screenText(screen));
+
+      // With a target out of range it says that instead.
+      StarSystem far = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != holder[0].Commander().CurrentSystem() && !system.DestOk()) {
+          far = system;
+          break;
+        }
+      }
+      assertNotNull(far, "the galaxy must have a system out of range");
+      holder[0].SelectedSystemId(far.Id());
+      presenter.updateAll();
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.TradeTargetOutOfRange), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void showsTheTargetColumnsWhenThereIsRoom() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(130, 30)));
     screen.startScreen();
