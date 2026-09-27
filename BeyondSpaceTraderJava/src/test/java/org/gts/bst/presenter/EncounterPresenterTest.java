@@ -18,6 +18,7 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
+import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
@@ -107,13 +108,15 @@ class EncounterPresenterTest {
   void theModelCarriesTheRoundResult() {
     Game game = newGame();
     game.encounter().setEncounterType(EncounterType.PirateAttack);
+    // The starting Gnat carries a pulse laser: without it the player's shot can never
+    // hit, so the round result is deterministic.
+    game.Commander().getShip().RemoveEquipment(EquipmentType.Weapon, 0);
     FakeView view = new FakeView();
     EncounterPresenter presenter = new EncounterPresenter(game, view);
     presenter.start();
 
     presenter.tick();
 
-    // The starting ship has no weapons, so its shot can never hit.
     assertFalse(view.model.youHit());
     assertEquals(0, view.model.youDamage());
     assertTrue(view.model.oppDamage() >= 0);
