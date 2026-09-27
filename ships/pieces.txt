@@ -1,0 +1,56 @@
+; Piezas de nave. Editable a mano; recarga con R en el compositor.
+; Una linea [nombre] abre una pieza; color= es opcional (blanco por defecto).
+; '.' es vacio; cualquier otra cosa (incluido unicode) es pieza.
+
+[antena]
+color=cian
+.|
+∫
+.|
+
+[motor]
+color=naranja
+.##..##.
+.######.
+..####..
+
+[torreta laser]
+color=rojo
+...##...
+..####..
+...##...
+;#######
+...##...
+..####...
+
+[torreta disruptor]
+color=magenta
+.#####..
+;#...##.
+;.....#.
+;#...##.
+.#####..
+...##...
+
+[vaina de carga]
+color=amarillo
+;#######
+;..##..#
+;..##..#
+;#######
+
+[cabina]
+color=cian
+.####...
+;#..##..
+;....#..
+;#####..
+
+[deposito]
+color=verde
+.####.
+;#####
+;....#
+;....#
+;#####
+.####.
