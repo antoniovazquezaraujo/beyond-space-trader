@@ -335,6 +335,7 @@ public final class LanternaMainWindow
       case Commander:
       case Ship:
       case HighScores:
+      case About:
         return true;
       default:
         return false;
@@ -394,7 +395,8 @@ public final class LanternaMainWindow
     if(content.panel() == MainPanel.Personnel) {
       return handlePersonnelKey(key);
     }
-    if(content.panel() == MainPanel.Commander || content.panel() == MainPanel.Ship) {
+    if(content.panel() == MainPanel.Commander || content.panel() == MainPanel.Ship
+        || content.panel() == MainPanel.About) {
       return false;
     }
     if(content.panel() == MainPanel.ShipList) {
@@ -1084,6 +1086,10 @@ public final class LanternaMainWindow
     content.openCommander();
   }
 
+  private void openAbout() {
+    content.openAbout();
+  }
+
   private void openShip() {
     Game game = gameSupplier.get();
     if(game == null) {
@@ -1128,6 +1134,9 @@ public final class LanternaMainWindow
 
   private boolean handleCharacter(Game game, char character) {
     switch(character) {
+      case 'a':
+        openAbout();
+        return true;
       case 'c':
         openTrade();
         return true;
@@ -1357,6 +1366,7 @@ public final class LanternaMainWindow
     addMenuItem(items, Strings.MenuSave, () -> runAction(saveGameAction, Strings.MainSaveUnavailable));
     addMenuItem(items, Strings.MenuLoad, () -> runAction(loadGameAction, Strings.MainLoadUnavailable));
     addMenuItem(items, Strings.MenuNewGame, () -> runAction(newGameAction, Strings.MainNewGameUnavailable));
+    addMenuItem(items, Strings.MenuAbout, this::openAbout);
     addMenuItem(items, Strings.MenuQuit, window::close);
     content.showMenu(items);
   }

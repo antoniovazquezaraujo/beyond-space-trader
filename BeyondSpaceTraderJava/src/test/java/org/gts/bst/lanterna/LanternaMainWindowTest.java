@@ -324,6 +324,37 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void opensTheAboutPanelWithTheCredits() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('a', false, false));
+      gui.updateScreen();
+      String text = screenText(screen);
+      assertTrue(text.contains(Strings.AboutTitle), text);
+      assertTrue(text.contains("Space Trader (Palm OS"), text);
+      assertTrue(text.contains("General Public License"), text);
+      assertTrue(text.contains("Pieter"), text);
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains(Strings.AboutTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void wrapsTheLongLinesOfTheCommanderPanel() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
