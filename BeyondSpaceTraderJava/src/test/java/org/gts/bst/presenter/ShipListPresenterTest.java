@@ -65,7 +65,7 @@ class ShipListPresenterTest {
 
     new ShipListPresenter(game, view).update();
 
-    assertTrue(view.model.rows().stream().anyMatch(row -> "not sold".equals(row.price())));
+    assertTrue(view.model.rows().stream().anyMatch(row -> Strings.NotSold.equals(row.price())));
   }
 
   @Test

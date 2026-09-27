@@ -12,12 +12,13 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.ActionListDialog;
+import com.googlecode.lanterna.gui2.dialogs.ActionListDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.FileDialog;
-import com.googlecode.lanterna.gui2.dialogs.TextInputDialog;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.DialogResult;
@@ -84,7 +85,7 @@ public final class LanternaApp {
     if(!confirmAbandon(game[0])) {
       return;
     }
-    String name = TextInputDialog.showDialog(gui, Strings.DialogNewNameTitle, Strings.DialogNewNamePrompt, "Antonio");
+    String name = InputDialog.show(gui, Strings.DialogNewNameTitle, Strings.DialogNewNamePrompt, "Antonio");
     if(name == null || name.trim().isEmpty()) {
       return;
     }
@@ -112,12 +113,21 @@ public final class LanternaApp {
 
   private static Difficulty askDifficulty(WindowBasedTextGUI gui) {
     Difficulty[] chosen = {null};
-    ActionListDialog.showDialog(gui, Strings.DialogDifficultyTitle, Strings.DialogDifficultyPrompt,
+    List<Runnable> choices = List.of(
         () -> chosen[0] = Difficulty.Beginner,
         () -> chosen[0] = Difficulty.Easy,
         () -> chosen[0] = Difficulty.Normal,
         () -> chosen[0] = Difficulty.Hard,
         () -> chosen[0] = Difficulty.Impossible);
+    ActionListDialogBuilder builder = new ActionListDialogBuilder()
+        .setTitle(Strings.DialogDifficultyTitle)
+        .setDescription(Strings.DialogDifficultyPrompt);
+    for(int i = 0; i < choices.size(); i++) {
+      builder.addAction(Strings.DifficultyLevels.get(i), choices.get(i));
+    }
+    ActionListDialog dialog = builder.build();
+    dialog.setCloseWindowWithEscape(true);
+    dialog.showDialog(gui);
     return chosen[0];
   }
 
@@ -127,6 +137,7 @@ public final class LanternaApp {
     }
     FileDialog dialog = new FileDialog(Strings.DialogSaveTitle, Strings.DialogSaveDescription,
         Strings.DialogSaveAction, new TerminalSize(60, 15), false, new File(Consts.SaveDirectory));
+    dialog.setCloseWindowWithEscape(true);
     File file = dialog.showDialog(gui);
     if(file == null) {
       return;
@@ -146,6 +157,7 @@ public final class LanternaApp {
     }
     FileDialog dialog = new FileDialog(Strings.DialogLoadTitle, Strings.DialogLoadDescription,
         Strings.DialogLoadAction, new TerminalSize(60, 15), false, new File(Consts.SaveDirectory));
+    dialog.setCloseWindowWithEscape(true);
     File file = dialog.showDialog(gui);
     if(file == null) {
       return;
