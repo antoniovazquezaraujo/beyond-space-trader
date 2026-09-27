@@ -40,6 +40,19 @@ class ShipPixelArtTest {
   }
 
   @Test
+  void encodesThePixelsAsBlocks() {
+    boolean[][] pixels = new boolean[4][2];
+    pixels[0][0] = true;
+    pixels[1][0] = true;
+    ShipPixelArt art = new ShipPixelArt(pixels, new char[][]{{'H'}});
+    assertEquals("\u2598", art.toBlockArt().lines().get(0).trim(), "top left quadrant");
+    pixels[2][0] = true;
+    pixels[3][0] = true;
+    assertEquals("\u258C", new ShipPixelArt(pixels, new char[][]{{'H'}}).toBlockArt().lines().get(0).trim(),
+        "left half");
+  }
+
+  @Test
   void drawsTheSameShipEveryTime() {
     assertEquals(ShipPixelArtGenerator.of(ShipType.Gnat, 3).toShipArt(),
         ShipPixelArtGenerator.of(ShipType.Gnat, 3).toShipArt());

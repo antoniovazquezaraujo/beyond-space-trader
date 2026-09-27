@@ -52,6 +52,7 @@ public final class ShipArtView extends BasicWindow {
       ShipArt.ENGINE};
   private static final String[] ZONE_NAMES = {"casco", "cabina", "armas", "bodegas", "motores"};
   private static final TextColor DARK = new TextColor.Indexed(238);
+  private static final String[] VIEW_NAMES = {"ascii", "braille", "bloques"};
 
   private final List<ShipType> ships = List.of(ShipType.values());
   private final ShipCanvas canvas = new ShipCanvas();
@@ -61,7 +62,7 @@ public final class ShipArtView extends BasicWindow {
   private int variant;
   private String lastSaved = "";
   private boolean mirrored;
-  private boolean braille;
+  private int view;
   private boolean showZones;
   private boolean enginesOff;
   private int paletteIndex;
@@ -110,7 +111,7 @@ public final class ShipArtView extends BasicWindow {
         } else if(character == 'm') {
           mirrored = !mirrored;
         } else if(character == 'b') {
-          braille = !braille;
+          view = (view + 1) % VIEW_NAMES.length;
         } else if(character == 'r') {
           variant++;
           updateTitle();
@@ -152,9 +153,10 @@ public final class ShipArtView extends BasicWindow {
   }
 
   private ShipArt art() {
-    if(braille) {
+    if(view > 0) {
       ShipPixelArt pixels = ShipPixelArtGenerator.of(ships.get(shipIndex), variant);
-      return (mirrored ? pixels.mirrored() : pixels).toShipArt();
+      ShipPixelArt shown = mirrored ? pixels.mirrored() : pixels;
+      return view == 1 ? shown.toShipArt() : shown.toBlockArt();
     }
     ShipArt art = ShipArtGenerator.of(ships.get(shipIndex), variant);
     return mirrored ? art.mirrored() : art;
@@ -251,8 +253,8 @@ public final class ShipArtView extends BasicWindow {
       }
       drawLegend(graphics, 1, size.getRows() - 2);
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
-      String state = "[z] zonas " + (showZones ? "(si)" : "(no)") + " · [b] braille "
-          + (braille ? "(si)" : "(no)") + " · [d] motores "
+      String state = "[z] zonas " + (showZones ? "(si)" : "(no)") + " · [b] vista: " + VIEW_NAMES[view]
+          + " · [d] motores "
           + (enginesOff ? "(apagados)" : "(en marcha)") + " · [c] paleta: " + PALETTE_NAMES[paletteIndex]
           + " · [r] otra version" + (variant > 0 ? " (#" + (variant + 1) + ")" : "")
           + " · [s] guardar · [flechas] mover · [n/p] nave · [m] espejo · [ESC] salir"

@@ -20,6 +20,10 @@ import java.util.List;
 public final class ShipPixelArt {
   /** Braille dots: bit per (column, row) inside a cell. */
   private static final int[][] BITS = {{0x01, 0x02, 0x04, 0x40}, {0x08, 0x10, 0x20, 0x80}};
+  /** Block elements for the 16 quadrant combinations (TL, TR, BL, BR bits). */
+  private static final char[] BLOCK_QUADRANTS = {
+      ' ', '\u2598', '\u259D', '\u2580', '\u2596', '\u258C', '\u259E', '\u259B',
+      '\u2597', '\u259A', '\u2590', '\u259C', '\u2584', '\u2599', '\u259F', '\u2588'};
   private final boolean[][] pixels;
   private final char[][] zones;
 
@@ -55,6 +59,29 @@ public final class ShipPixelArt {
       }
     }
     return new ShipPixelArt(mirroredPixels, mirroredZones);
+  }
+
+  /** Encodes the pixels as block elements: 2x2 quadrants per cell, solid shapes. */
+  public ShipArt toBlockArt() {
+    List<String> lines = new ArrayList<>(cellHeight());
+    List<String> zoneLines = new ArrayList<>(cellHeight());
+    for(int cellRow = 0; cellRow < cellHeight(); cellRow++) {
+      StringBuilder line = new StringBuilder(cellWidth());
+      for(int cellColumn = 0; cellColumn < cellWidth(); cellColumn++) {
+        int quadrants = 0;
+        for(int quadrant = 0; quadrant < 4; quadrant++) {
+          int x = cellColumn * 2 + quadrant % 2;
+          int y = cellRow * 4 + quadrant / 2 * 2;
+          if(pixels[y][x] && pixels[y + 1][x]) {
+            quadrants |= 1 << quadrant;
+          }
+        }
+        line.append(BLOCK_QUADRANTS[quadrants]);
+      }
+      lines.add(line.toString());
+      zoneLines.add(new String(zones[cellRow]));
+    }
+    return new ShipArt(lines, zoneLines);
   }
 
   /** Encodes the pixels as braille characters, one per 2x4 block. */
