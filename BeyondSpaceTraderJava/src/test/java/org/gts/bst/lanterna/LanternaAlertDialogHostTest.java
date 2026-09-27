@@ -10,6 +10,7 @@ package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -47,6 +48,48 @@ class LanternaAlertDialogHostTest {
     DialogResult answer = answerWith(new KeyStroke(KeyType.Escape),
         List.of(new AlertButton("Ok", DialogResult.OK)));
     assertEquals(DialogResult.OK, answer);
+  }
+
+  @Test
+  void longMessagesAreWrappedInsteadOfCut() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaAlertDialogHost host = new LanternaAlertDialogHost(gui);
+      String message = "This is a long alert message that would not fit in the dialog without "
+          + "wrapping, so the host has to wrap it into several lines that fit in the terminal. "
+          + "The end of the message.";
+      DialogResult[] answer = new DialogResult[1];
+      Thread worker = new Thread(() -> answer[0] = host.show("Title", message,
+          List.of(new AlertButton("Ok", DialogResult.OK))));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui);
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains("The end of the message."), text);
+      assertTrue(text.contains("long alert"), text);
+      dialog.handleInput(new KeyStroke(KeyType.Escape));
+      worker.join(5000);
+      assertEquals(DialogResult.OK, answer[0]);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static String screenText(Screen screen) {
+    StringBuilder text = new StringBuilder();
+    for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
+      StringBuilder line = new StringBuilder();
+      for(int x = 0; x < screen.getTerminalSize().getColumns(); x++) {
+        line.append(screen.getBackCharacter(x, y).getCharacter());
+      }
+      text.append(line.toString().stripTrailing()).append('\n');
+    }
+    return text.toString();
   }
 
   private static DialogResult answerWith(KeyStroke key, List<AlertButton> buttons)

@@ -19,6 +19,7 @@ import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
+import java.util.ArrayList;
 import java.util.List;
 import org.gts.bst.view.AlertButton;
 import org.gts.bst.view.AlertDialogHost;
@@ -59,7 +60,7 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
       }
     };
     Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
-    panel.addComponent(new Label(message));
+    panel.addComponent(new Label(wrapped(message)));
     panel.addComponent(new EmptySpace(TerminalSize.ONE));
     Panel row = new Panel(new LinearLayout(Direction.HORIZONTAL));
     Button first = null;
@@ -81,6 +82,14 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
     gui.addWindow(dialog);
     gui.waitForWindowToClose(dialog);
     return chosen[0];
+  }
+
+  /** The message wrapped to a width that fits in the terminal. */
+  private String wrapped(String message) {
+    int columns = gui.getScreen() == null ? 70 : gui.getScreen().getTerminalSize().getColumns();
+    List<String> lines = new ArrayList<>();
+    MainTextComponent.wrap(lines, message, Math.max(20, Math.min(72, columns - 8)));
+    return String.join("\n", lines);
   }
 
   /**
