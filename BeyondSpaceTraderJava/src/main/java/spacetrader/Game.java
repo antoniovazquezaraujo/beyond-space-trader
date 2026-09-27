@@ -1239,12 +1239,12 @@ public final class Game extends STSerializableObject {
   public String EncounterAction() {
     String action;
     if(getOpponentDisabled()) {
-      action = Functions.StringVars("The ^1 has been disabled.", EncounterShipText());
+      action = Functions.StringVars(Strings.EncounterOppDisabled, EncounterShipText());
     } else if(getEncounterOppFleeing()) {
       if(getEncounterType() == EncounterType.PirateSurrender || getEncounterType() == EncounterType.TraderSurrender) {
-        action = Functions.StringVars("The ^1 hails that they wish to surrender to you.", EncounterShipText());
+        action = Functions.StringVars(Strings.EncounterOppSurrender, EncounterShipText());
       } else {
-        action = Functions.StringVars("The ^1 is fleeing.", EncounterShipText());
+        action = Functions.StringVars(Strings.EncounterOppFleeing, EncounterShipText());
       }
     } else {
       action = Functions.StringVars(Strings.EncounterActionOppAttacks, EncounterShipText());
@@ -1352,19 +1352,19 @@ public final class Game extends STSerializableObject {
   public String EncounterText() {
     String cmdrStatus;
     if(getEncounterCmdrFleeing()) {
-      cmdrStatus = Functions.StringVars("The ^1 is still following you.", EncounterShipText());
+      cmdrStatus = Functions.StringVars(Strings.EncounterOppFollowing, EncounterShipText());
     } else if(getEncounterOppHit()) {
-      cmdrStatus = Functions.StringVars("You hit the ^1.", EncounterShipText());
+      cmdrStatus = Functions.StringVars(Strings.EncounterYouHit, EncounterShipText());
     } else {
-      cmdrStatus = Functions.StringVars("You missed the ^1.", EncounterShipText());
+      cmdrStatus = Functions.StringVars(Strings.EncounterYouMissed, EncounterShipText());
     }
     String oppStatus;
     if(getEncounterOppFleeingPrev()) {
-      oppStatus = Functions.StringVars("The ^1 didn't get away.", EncounterShipText());
+      oppStatus = Functions.StringVars(Strings.EncounterOppNoEscape, EncounterShipText());
     } else if(getEncounterCmdrHit()) {
-      oppStatus = Functions.StringVars("The ^1 hits you.", EncounterShipText());
+      oppStatus = Functions.StringVars(Strings.EncounterOppHits, EncounterShipText());
     } else {
-      oppStatus = Functions.StringVars("The ^1 missed you.", EncounterShipText());
+      oppStatus = Functions.StringVars(Strings.EncounterOppMissed, EncounterShipText());
     }
     return cmdrStatus + Strings.newline + oppStatus;
   }
