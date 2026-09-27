@@ -48,7 +48,10 @@ class ShipArtViewTest {
 
       view.handleKey(new KeyStroke('b', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("[b] braille (si)"), screenText(screen));
+      assertTrue(screenText(screen).contains("[b] vista: braille"), screenText(screen));
+      view.handleKey(new KeyStroke('b', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("[b] vista: bloques"), screenText(screen));
       view.handleKey(new KeyStroke('b', false, false));
       view.handleKey(new KeyStroke('z', false, false));
       view.handleKey(new KeyStroke('c', false, false));
