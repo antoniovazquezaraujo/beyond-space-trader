@@ -43,24 +43,19 @@ public final class Game extends STSerializableObject {
   private Ship _scarab = new Ship(ShipType.Scarab);
   private Ship _scorpion = new Ship(ShipType.Scorpion);
   private Ship _spaceMonster = new Ship(ShipType.SpaceMonster);
-  private Ship _opponent = new Ship(ShipType.Gnat);
-  private boolean _opponentDisabled = false;
   private int _chanceOfTradeInOrbit = 100;
   private int _clicks = 0; // Distance from target system, 0 = arrived
-  private boolean _raided = false; // True when the commander has been raided during the trip
-  private boolean _inspected = false; // True when the commander has been inspected during the trip
   private boolean _tribbleMessage = false; // Is true if the Ship Yard on the current system informed you about the tribbles
   private boolean _arrivedViaWormhole = false; // flag to indicate whether player arrived on current planet via wormhole
   private boolean _paidForNewspaper = false; // once you buy a paper on a system, you don't have to pay again.
-  private boolean _litterWarning = false; // Warning against littering has been issued.
   private ArrayList<Integer> _newsEvents = new ArrayList<>(30);
   // Current Selections
   private Difficulty _difficulty = Difficulty.Normal; // Difficulty level
   private boolean _cheatEnabled = false;
   private boolean _autoSave = false;
   private boolean _easyEncounters = false;
+  private Encounter _encounter;
   private GameEndType _endStatus = GameEndType.NA;
-  private EncounterType _encounterType = EncounterType.FromInt(0); // Type of current encounter
   private StarSystemId _selectedSystemId = StarSystemId.NA; // Current system on chart
   private StarSystemId _warpSystemId = StarSystemId.NA; // Target system for warp
   private StarSystemId _trackedSystemId = StarSystemId.NA; // The short-range chart will display an arrow towards this system if the value is not null
@@ -82,7 +77,6 @@ public final class Game extends STSerializableObject {
   private int _questStatusSpaceMonster = 0; // 0 = not available, 1 = Space monster is in Acamar system, 2 = Space monster is destroyed, 3 = Claimed reward
   private int _questStatusWild = 0; // 0 = not delivered, 1-11 = on board, 12 = delivered
   private int _fabricRipProbability = 0; // if Experiment = 12, this is the probability of being warped to a random planet.
-  private boolean _justLootedMarie = false; // flag to indicate whether player looted Marie Celeste
   private boolean _canSuperWarp = false; // Do you have the Portable Singularity on board?
   private int _chanceOfVeryRareEncounter = 5;
   private ArrayList<VeryRareEncounter> _veryRareEncounters = new ArrayList<>(6); // Array of Very Rare encounters not done yet.
@@ -91,13 +85,6 @@ public final class Game extends STSerializableObject {
   // The rest of the member variables are not saved between games.
   private GameWindow _parentWin = null;
   private final DialogService _dialogs;
-  private boolean _encounterContinueFleeing = false;
-  private boolean _encounterContinueAttacking = false;
-  private boolean _encounterCmdrFleeing = false;
-  private boolean _encounterCmdrHit = false;
-  private boolean _encounterOppFleeingPrev = false;
-  private boolean _encounterOppFleeing = false;
-  private boolean _encounterOppHit = false;
 
   public Game(String name, Difficulty difficulty, int pilot, int fighter, int trader, int engineer, GameWindow parentWin,
       DialogService dialogs) {
@@ -140,22 +127,22 @@ public final class Game extends STSerializableObject {
     _scarab = new Ship(GetValueFromHash(hash, "_scarab", _scarab.Serialize(), Hashtable.class));
     _scorpion = new Ship(GetValueFromHash(hash, "_scorpion", _scorpion.Serialize(), Hashtable.class));
     _spaceMonster = new Ship(GetValueFromHash(hash, "_spaceMonster", _spaceMonster.Serialize(), Hashtable.class));
-    _opponent = new Ship(GetValueFromHash(hash, "_opponent", _opponent.Serialize(), Hashtable.class));
+    setOpponent(new Ship(GetValueFromHash(hash, "_opponent", getOpponent().Serialize(), Hashtable.class)));
     _chanceOfTradeInOrbit = GetValueFromHash(hash, "_chanceOfTradeInOrbit", _chanceOfTradeInOrbit);
     _clicks = GetValueFromHash(hash, "_clicks", _clicks);
-    _raided = GetValueFromHash(hash, "_raided", _raided);
-    _inspected = GetValueFromHash(hash, "_inspected", _inspected);
+    setRaided(GetValueFromHash(hash, "_raided", getRaided()));
+    setInspected(GetValueFromHash(hash, "_inspected", getInspected()));
     _tribbleMessage = GetValueFromHash(hash, "_tribbleMessage", _tribbleMessage);
     _arrivedViaWormhole = GetValueFromHash(hash, "_arrivedViaWormhole", _arrivedViaWormhole);
     _paidForNewspaper = GetValueFromHash(hash, "_paidForNewspaper", _paidForNewspaper);
-    _litterWarning = GetValueFromHash(hash, "_litterWarning", _litterWarning);
+    setLitterWarning(GetValueFromHash(hash, "_litterWarning", getLitterWarning()));
     _newsEvents = new ArrayList<>(Arrays.asList(GetValueFromHash(hash, "_newsEvents", _newsEvents.toArray(new Integer[0]))));
     _difficulty = Difficulty.FromInt(GetValueFromHash(hash, "_difficulty", _difficulty, Integer.class));
     _cheatEnabled = GetValueFromHash(hash, "_cheatEnabled", _cheatEnabled);
     _autoSave = GetValueFromHash(hash, "_autoSave", _autoSave);
     _easyEncounters = GetValueFromHash(hash, "_easyEncounters", _easyEncounters);
     _endStatus = GameEndType.FromInt(GetValueFromHash(hash, "_endStatus", _endStatus, Integer.class));
-    _encounterType = EncounterType.FromInt(GetValueFromHash(hash, "_encounterType", _encounterType, Integer.class));
+    setEncounterType(EncounterType.FromInt(GetValueFromHash(hash, "_encounterType", getEncounterType(), Integer.class)));
     _selectedSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_selectedSystemId", _selectedSystemId, Integer.class));
     _warpSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_warpSystemId", _warpSystemId, Integer.class));
     _trackedSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_trackedSystemId", _trackedSystemId, Integer.class));
@@ -176,7 +163,7 @@ public final class Game extends STSerializableObject {
     _questStatusSpaceMonster = GetValueFromHash(hash, "_questStatusSpaceMonster", _questStatusSpaceMonster);
     _questStatusWild = GetValueFromHash(hash, "_questStatusWild", _questStatusWild);
     _fabricRipProbability = GetValueFromHash(hash, "_fabricRipProbability", _fabricRipProbability);
-    _justLootedMarie = GetValueFromHash(hash, "_justLootedMarie", _justLootedMarie);
+    setJustLootedMarie(GetValueFromHash(hash, "_justLootedMarie", getJustLootedMarie()));
     _canSuperWarp = GetValueFromHash(hash, "_canSuperWarp", _canSuperWarp);
     _chanceOfVeryRareEncounter = GetValueFromHash(hash, "_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
     Integer[] veryRareIds = GetValueFromHash(hash, "_veryRareEncounters", new Integer[0]);
@@ -199,22 +186,22 @@ public final class Game extends STSerializableObject {
     ht.add("_scarab", _scarab.Serialize());
     ht.add("_scorpion", _scorpion.Serialize());
     ht.add("_spaceMonster", _spaceMonster.Serialize());
-    ht.add("_opponent", _opponent.Serialize());
+    ht.add("_opponent", getOpponent().Serialize());
     ht.add("_chanceOfTradeInOrbit", _chanceOfTradeInOrbit);
     ht.add("_clicks", _clicks);
-    ht.add("_raided", _raided);
-    ht.add("_inspected", _inspected);
+    ht.add("_raided", getRaided());
+    ht.add("_inspected", getInspected());
     ht.add("_tribbleMessage", _tribbleMessage);
     ht.add("_arrivedViaWormhole", _arrivedViaWormhole);
     ht.add("_paidForNewspaper", _paidForNewspaper);
-    ht.add("_litterWarning", _litterWarning);
+    ht.add("_litterWarning", getLitterWarning());
     ht.add("_newsEvents", _newsEvents.toArray(new Integer[0]));
     ht.add("_difficulty", _difficulty.CastToInt());
     ht.add("_cheatEnabled", _cheatEnabled);
     ht.add("_autoSave", _autoSave);
     ht.add("_easyEncounters", _easyEncounters);
     ht.add("_endStatus", _endStatus.CastToInt());
-    ht.add("_encounterType", _encounterType.CastToInt());
+    ht.add("_encounterType", getEncounterType().CastToInt());
     ht.add("_selectedSystemId", _selectedSystemId.CastToInt());
     ht.add("_warpSystemId", _warpSystemId.CastToInt());
     ht.add("_trackedSystemId", _trackedSystemId.CastToInt());
@@ -235,7 +222,7 @@ public final class Game extends STSerializableObject {
     ht.add("_questStatusSpaceMonster", _questStatusSpaceMonster);
     ht.add("_questStatusWild", _questStatusWild);
     ht.add("_fabricRipProbability", _fabricRipProbability);
-    ht.add("_justLootedMarie", _justLootedMarie);
+    ht.add("_justLootedMarie", getJustLootedMarie());
     ht.add("_canSuperWarp", _canSuperWarp);
     ht.add("_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
     ht.add("_veryRareEncounters", ArrayListToIntArray(_veryRareEncounters));
@@ -243,77 +230,6 @@ public final class Game extends STSerializableObject {
     return ht;
   }
 
-  private boolean EncounterExecuteAttack(Ship attacker, Ship defender, boolean fleeing) {
-    boolean hit = false;
-    // On beginner level, if you flee, you will escape unharmed.
-    // Otherwise, Fighterskill attacker is pitted against pilotskill defender;
-    // if defender is fleeing the attacker has a free shot, but the chance to hit is smaller
-    // JAF - if the opponent is disabled and attacker has targeting system, they WILL be hit.
-    if(!(_difficulty == Difficulty.Beginner && defender.CommandersShip() && fleeing) && (attacker.CommandersShip() && getOpponentDisabled()
-        && attacker.HasGadget(GadgetType.TargetingSystem) || Functions.GetRandom(attacker.Fighter() + defender.getSize().CastToInt()) >= (fleeing ? 2 : 1)
-        * Functions.GetRandom(5 + defender.Pilot() / 2))) {
-      // If the defender is disabled, it only takes one shot to destroy it completely.
-      if(attacker.CommandersShip() && getOpponentDisabled()) {
-        defender.setHull(0);
-      } else {
-        int attackerLasers = attacker.WeaponStrength(WeaponType.PulseLaser, WeaponType.MorgansLaser);
-        int attackerDisruptors = attacker.WeaponStrength(WeaponType.PhotonDisruptor, WeaponType.QuantumDistruptor);
-        if(defender.Type() == ShipType.Scarab) {
-          attackerLasers -= attacker.WeaponStrength(WeaponType.BeamLaser, WeaponType.MilitaryLaser);
-          attackerDisruptors -= attacker.WeaponStrength(WeaponType.PhotonDisruptor, WeaponType.PhotonDisruptor);
-        }
-        int attackerWeapons = attackerLasers + attackerDisruptors;
-        int disrupt = 0;
-        // Attempt to disable the opponent if they're not already disabled, their shields are down, we have disabling weapons, and the option is checked.
-        if(defender.Disableable() && defender.ShieldCharge() == 0 && !getOpponentDisabled()
-            && _options.getDisableOpponents() && attackerDisruptors > 0) {
-          disrupt = Functions.GetRandom(attackerDisruptors * (100 + 2 * attacker.Fighter()) / 100);
-        } else {
-          int damage = attackerWeapons == 0 ? 0 : Functions.GetRandom(attackerWeapons * (100 + 2 * attacker.Fighter()) / 100);
-          if(damage > 0) {
-            hit = true;
-            // Reactor on board -- damage is boosted!
-            if(defender.ReactorOnBoard()) {
-              damage *= (int)(1 + (_difficulty.CastToInt() + 1) * (_difficulty.CastToInt() < Difficulty.Normal.CastToInt() ? 0.25 : 0.33));
-            }
-            // First, shields are depleted
-            for(int i = 0; i < defender.Shields().length && defender.Shields()[i] != null && damage > 0; i++) {
-              int applied = Math.min(defender.Shields()[i].getCharge(), damage);
-              defender.Shields()[i].setCharge(defender.Shields()[i].getCharge() - applied);
-              damage -= applied;
-            }
-            // If there still is damage after the shields have been depleted, this is subtracted from the hull, modified by the engineering skill of the defender.
-            // JAF - If the player only has disabling weapons, no damage will be done to the hull.
-            if(damage > 0) {
-              damage = Math.max(1, damage - Functions.GetRandom(defender.Engineer()));
-              disrupt = damage * attackerDisruptors / attackerWeapons;
-              // Only that damage coming from Lasers will deplete the hull.
-              damage -= disrupt;
-              // At least 2 shots on Normal level are needed to destroy the hull
-              // (3 on Easy, 4 on Beginner, 1 on Hard or Impossible). For opponents, it is always 2.
-              damage = Math.min(damage, defender.HullStrength() / (defender.CommandersShip() ? Math.max(1, Difficulty.Impossible.CastToInt()
-                  - _difficulty.CastToInt()) : 2));
-              // If the hull is hardened, damage is halved.
-              if(getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
-                damage /= 2;
-              }
-              defender.setHull(Math.max(0, defender.getHull() - damage));
-            }
-          }
-        }
-        // Did the opponent get disabled? (Disruptors are 3 times more effective against the ship's systems than they are against the shields).
-        if(defender.getHull() > 0 && defender.Disableable() && Functions.GetRandom(100) < disrupt * Consts.DisruptorSystemsMultiplier * 100 / defender.getHull()) {
-          setOpponentDisabled(true);
-        }
-        // Make sure the Scorpion doesn't get destroyed.
-        if(defender.Type() == ShipType.Scorpion && defender.getHull() == 0) {
-          defender.setHull(1);
-          setOpponentDisabled(true);
-        }
-      }
-    }
-    return hit;
-  }
 
   private void Arrival() {
     cmdr.CurrentSystem(WarpSystem());
@@ -501,169 +417,11 @@ public final class Game extends STSerializableObject {
     RecalculateBuyPrices(system);
   }
 
-  private void EncounterDefeatDragonfly() {
-    cmdr.setKillsPirate(cmdr.getKillsPirate() + 1);
-    cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillPirate);
-    setQuestStatusDragonfly(SpecialEvent.StatusDragonflyDestroyed);
-  }
 
-  private void EncounterDefeatScarab() {
-    cmdr.setKillsPirate(cmdr.getKillsPirate() + 1);
-    cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillPirate);
-    setQuestStatusScarab(SpecialEvent.StatusScarabDestroyed);
-  }
 
-  private void EncounterDefeatScorpion() {
-    cmdr.setKillsPirate(cmdr.getKillsPirate() + 1);
-    cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillPirate);
-    setQuestStatusPrincess(SpecialEvent.StatusPrincessRescued);
-  }
 
-  private void EncounterScoop(EncounterDialogHost host) {
-    // Chance 50% to pick something up on Normal level, 33% on Hard level, 25% on Impossible level, and 100% on Easy or Beginner.
-    if((_difficulty.CastToInt() < Difficulty.Normal.CastToInt() || Functions.GetRandom(_difficulty.CastToInt()) == 0)
-        && getOpponent().FilledCargoBays() > 0) {
-      // Changed this to actually pick a good that was in the opponent's cargo hold - JAF.
-      int index = Functions.GetRandom(getOpponent().FilledCargoBays());
-      int tradeItem = -1;
-      for(int sum = 0; sum <= index; sum += getOpponent().Cargo()[++tradeItem]) {
-      }
-      if(Dialogs().alert(AlertType.EncounterScoop, Consts.TradeItems.get(tradeItem).Name()) == DialogResult.Yes) {
-        boolean jettisoned = false;
-        if(cmdr.getShip().FreeCargoBays() == 0 && Dialogs().alert(AlertType.EncounterScoopNoRoom) == DialogResult.Yes) {
-          host.showJettison();
-          jettisoned = true;
-        }
-        if(cmdr.getShip().FreeCargoBays() > 0) {
-          cmdr.getShip().Cargo()[tradeItem]++;
-        } else if(jettisoned) {
-          Dialogs().alert(AlertType.EncounterScoopNoScoop);
-        }
-      }
-    }
-  }
 
-  private void EncounterUpdateEncounterType(int prevCmdrHull, int prevOppHull) {
-    int chance = Functions.GetRandom(100);
-    if(getOpponent().getHull() < prevOppHull || getOpponentDisabled()) {
-      switch(getEncounterType()) {
-        case FamousCaptainAttack:
-          if(getOpponentDisabled()) {
-            setEncounterType(EncounterType.FamousCaptDisabled);
-          }
-          break;
-        case PirateAttack:
-        case PirateFlee:
-        case PirateSurrender:
-          if(getOpponentDisabled()) {
-            setEncounterType(EncounterType.PirateDisabled);
-          } else if(getOpponent().getHull() < (prevOppHull * 2) / 3) {
-            if(cmdr.getShip().getHull() < (prevCmdrHull * 2) / 3) {
-              if(chance < 60) {
-                setEncounterType(EncounterType.PirateFlee);
-              }
-            } else {
-              if(chance < 10 && getOpponent().Type() != ShipType.Mantis) {
-                setEncounterType(EncounterType.PirateSurrender);
-              } else {
-                setEncounterType(EncounterType.PirateFlee);
-              }
-            }
-          }
-          break;
-        case PoliceAttack:
-        case PoliceFlee:
-          if(getOpponentDisabled()) {
-            setEncounterType(EncounterType.PoliceDisabled);
-          } else if(getOpponent().getHull() < prevOppHull / 2 && (cmdr.getShip().getHull() >= prevCmdrHull / 2 || chance < 40)) {
-            setEncounterType(EncounterType.PoliceFlee);
-          }
-          break;
-        case TraderAttack:
-        case TraderFlee:
-        case TraderSurrender:
-          if(getOpponentDisabled()) {
-            setEncounterType(EncounterType.TraderDisabled);
-          } else if(getOpponent().getHull() < (prevOppHull * 2) / 3) {
-            if(chance < 60) {
-              setEncounterType(EncounterType.TraderSurrender);
-            } else {
-              setEncounterType(EncounterType.TraderFlee);
-            }
-          } else if(getOpponent().getHull() < (prevOppHull * 9) / 10 && (cmdr.getShip().getHull() < (prevCmdrHull * 2) / 3 && chance < 20
-              || cmdr.getShip().getHull() < (prevCmdrHull * 9) / 10 && chance < 60 || cmdr.getShip().getHull() >= (prevCmdrHull * 9) / 10)) {
-            // If you get damaged a lot, the trader tends to keep shooting;
-            // if you get damaged a little, the trader may keep shooting;
-            // if you get damaged very little or not at all, the trader will flee.
-            setEncounterType(EncounterType.TraderFlee);
-          }
-          break;
-        default:
-          break;
-      }
-    }
-  }
 
-  private void EncounterWon(EncounterDialogHost host) {
-    if(getEncounterType().CastToInt() >= EncounterType.PirateAttack.CastToInt()
-        && getEncounterType().CastToInt() <= EncounterType.PirateDisabled.CastToInt()
-        && getOpponent().Type() != ShipType.Mantis
-        && cmdr.getPoliceRecordScore() >= Consts.PoliceRecordScoreDubious) {
-      Dialogs().alert(AlertType.EncounterPiratesBounty, Strings.EncounterPiratesDestroyed, "", Functions.Multiples(getOpponent().Bounty(), Strings.MoneyUnit));
-    } else {
-      Dialogs().alert(AlertType.EncounterYouWin);
-    }
-    switch(getEncounterType()) {
-      case FamousCaptainAttack:
-        cmdr.setKillsTrader(cmdr.getKillsTrader() + 1);
-        if(cmdr.getReputationScore() < Consts.ReputationScoreDangerous) {
-          cmdr.setReputationScore(Consts.ReputationScoreDangerous);
-        } else {
-          cmdr.setReputationScore(cmdr.getReputationScore() + Consts.ScoreKillCaptain);
-        }
-        // bump news flag from attacked to ship destroyed
-        NewsReplaceEvent(NewsLatestEvent(), NewsEvent.FromInt(NewsLatestEvent() + 1).CastToInt());
-        break;
-      case DragonflyAttack:
-        EncounterDefeatDragonfly();
-        break;
-      case PirateAttack:
-      case PirateFlee:
-      case PirateSurrender:
-        cmdr.setKillsPirate(cmdr.getKillsPirate() + 1);
-        if(getOpponent().Type() != ShipType.Mantis) {
-          if(cmdr.getPoliceRecordScore() >= Consts.PoliceRecordScoreDubious) {
-            cmdr.setCash(cmdr.getCash() + getOpponent().Bounty());
-          }
-          cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillPirate);
-          EncounterScoop(host);
-        }
-        break;
-      case PoliceAttack:
-      case PoliceFlee:
-        cmdr.setKillsPolice(cmdr.getKillsPolice() + 1);
-        cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillPolice);
-        break;
-      case ScarabAttack:
-        EncounterDefeatScarab();
-        break;
-      case SpaceMonsterAttack:
-        cmdr.setKillsPirate(cmdr.getKillsPirate() + 1);
-        cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillPirate);
-        setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterDestroyed);
-        break;
-      case TraderAttack:
-      case TraderFlee:
-      case TraderSurrender:
-        cmdr.setKillsTrader(cmdr.getKillsTrader() + 1);
-        cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillTrader);
-        EncounterScoop(host);
-        break;
-      default:
-        break;
-    }
-    cmdr.setReputationScore(cmdr.getReputationScore() + (getOpponent().Type().CastToInt() / 2 + 1));
-  }
 
   private void NormalDeparture(int fuel) {
     cmdr.setCash(cmdr.getCash() - (MercenaryCosts() + InsuranceCosts() + WormholeCosts()));
@@ -692,220 +450,9 @@ public final class Game extends STSerializableObject {
     return _difficulty;
   }
 
-  public EncounterResult EncounterExecuteAction(EncounterDialogHost host) {
-    EncounterResult result = EncounterResult.Continue;
-    int prevCmdrHull = cmdr.getShip().getHull();
-    int prevOppHull = getOpponent().getHull();
-    setEncounterCmdrHit(false);
-    setEncounterOppHit(false);
-    setEncounterOppFleeingPrev(getEncounterOppFleeing());
-    setEncounterOppFleeing(false);
-    // Fire shots
-    switch(getEncounterType()) {
-      case DragonflyAttack:
-      case FamousCaptainAttack:
-      case MarieCelestePolice:
-      case PirateAttack:
-      case PoliceAttack:
-      case ScarabAttack:
-      case ScorpionAttack:
-      case SpaceMonsterAttack:
-      case TraderAttack:
-        setEncounterCmdrHit(EncounterExecuteAttack(getOpponent(), cmdr.getShip(), getEncounterCmdrFleeing()));
-        setEncounterOppHit(!getEncounterCmdrFleeing() && EncounterExecuteAttack(cmdr.getShip(), getOpponent(), false));
-        break;
-      case PirateFlee:
-      case PirateSurrender:
-      case PoliceFlee:
-      case TraderFlee:
-      case TraderSurrender:
-        setEncounterOppHit(!getEncounterCmdrFleeing() && EncounterExecuteAttack(cmdr.getShip(), getOpponent(), true));
-        setEncounterOppFleeing(true);
-        break;
-      default:
-        setEncounterOppHit(!getEncounterCmdrFleeing() && EncounterExecuteAttack(cmdr.getShip(), getOpponent(), false));
-        break;
-    }
-    // Determine whether someone gets destroyed
-    if(cmdr.getShip().getHull() <= 0) {
-      if(cmdr.getShip().getEscapePod()) {
-        result = EncounterResult.EscapePod;
-      } else {
-        Dialogs().alert(getOpponent().getHull() <= 0 ? AlertType.EncounterBothDestroyed : AlertType.EncounterYouLose);
-        result = EncounterResult.Killed;
-      }
-    } else if(getOpponentDisabled()) {
-      if(getOpponent().Type() == ShipType.Dragonfly || getOpponent().Type() == ShipType.Scarab || getOpponent().Type() == ShipType.Scorpion) {
-        String str2 = "";
-        switch(getOpponent().Type()) {
-          case Dragonfly:
-            EncounterDefeatDragonfly();
-            break;
-          case Scarab:
-            EncounterDefeatScarab();
-            break;
-          case Scorpion:
-            str2 = Strings.EncounterPrincessRescued;
-            EncounterDefeatScorpion();
-            break;
-          default:
-            break;
-        }
-        Dialogs().alert(AlertType.EncounterDisabledOpponent, EncounterShipText(), str2);
-        cmdr.setReputationScore(cmdr.getReputationScore() + (getOpponent().Type().CastToInt() / 2 + 1));
-        result = EncounterResult.Normal;
-      } else {
-        EncounterUpdateEncounterType(prevCmdrHull, prevOppHull);
-        setEncounterOppFleeing(false);
-      }
-    } else if(getOpponent().getHull() <= 0) {
-      EncounterWon(host);
-      result = EncounterResult.Normal;
-    } else {
-      boolean escaped = false;
-      // Determine whether someone gets away.
-      if(getEncounterCmdrFleeing()
-          && (_difficulty == Difficulty.Beginner || (Functions.GetRandom(7) + cmdr.getShip().Pilot() / 3) * 2 >= Functions.GetRandom(getOpponent().Pilot())
-          * (2 + _difficulty.CastToInt()))) {
-        Dialogs().alert(getEncounterCmdrHit() ? AlertType.EncounterEscapedHit : AlertType.EncounterEscaped);
-        escaped = true;
-      } else if(getEncounterOppFleeing() && Functions.GetRandom(cmdr.getShip().Pilot()) * 4 <= Functions.GetRandom(7 + getOpponent().Pilot() / 3) * 2) {
-        Dialogs().alert(AlertType.EncounterOpponentEscaped);
-        escaped = true;
-      }
 
-      if(escaped) {
-        result = EncounterResult.Normal;
-      } else {
-        // Determine whether the opponent's actions must be changed
-        EncounterType prevEncounter = getEncounterType();
-        EncounterUpdateEncounterType(prevCmdrHull, prevOppHull);
-        // Update the opponent fleeing flag.
-        switch(getEncounterType()) {
-          case PirateFlee:
-          case PirateSurrender:
-          case PoliceFlee:
-          case TraderFlee:
-          case TraderSurrender:
-            setEncounterOppFleeing(true);
-            break;
-          default:
-            setEncounterOppFleeing(false);
-            break;
-        }
-        if(_options.getContinuousAttack()
-            && (getEncounterCmdrFleeing() || !getEncounterOppFleeing() || _options.getContinuousAttackFleeing()
-            && (getEncounterType() == prevEncounter || getEncounterType() != EncounterType.PirateSurrender
-            && getEncounterType() != EncounterType.TraderSurrender))) {
-          if(getEncounterCmdrFleeing()) {
-            setEncounterContinueFleeing(true);
-          } else {
-            setEncounterContinueAttacking(true);
-          }
-        }
-      }
-    }
-    return result;
-  }
 
-  public EncounterResult EncounterVerifySurrender() {
-    EncounterResult result = EncounterResult.Continue;
-    if(getOpponent().Type() == ShipType.Mantis) {
-      if(cmdr.getShip().ArtifactOnBoard()) {
-        if(Dialogs().alert(AlertType.EncounterAliensSurrender) == DialogResult.Yes) {
-          Dialogs().alert(AlertType.ArtifactRelinquished);
-          setQuestStatusArtifact(SpecialEvent.StatusArtifactNotStarted);
-          result = EncounterResult.Normal;
-        }
-      } else {
-        Dialogs().alert(AlertType.EncounterSurrenderRefused);
-      }
-    } else if(getEncounterType() == EncounterType.PoliceAttack || getEncounterType() == EncounterType.PoliceSurrender) {
-      if(cmdr.getPoliceRecordScore() <= Consts.PoliceRecordScorePsychopath) {
-        Dialogs().alert(AlertType.EncounterSurrenderRefused);
-      } else if(Dialogs().alert(AlertType.EncounterPoliceSurrender, new String[]{
-            cmdr.getShip().IllegalSpecialCargoDescription(Strings.EncounterPoliceSurrenderCargo, true, false),
-            cmdr.getShip().IllegalSpecialCargoActions()}) == DialogResult.Yes) {
-        result = EncounterResult.Arrested;
-      }
-    } else if(cmdr.getShip().PrincessOnBoard() && !cmdr.getShip().HasGadget(GadgetType.HiddenCargoBays)) {
-      Dialogs().alert(AlertType.EncounterPiratesSurrenderPrincess);
-    } else {
-      setRaided(true);
-      if(cmdr.getShip().HasGadget(GadgetType.HiddenCargoBays)) {
-        ArrayList<String> precious = new ArrayList<>();
-        if(cmdr.getShip().PrincessOnBoard()) {
-          precious.add(Strings.EncounterHidePrincess);
-        }
-        if(cmdr.getShip().SculptureOnBoard()) {
-          precious.add(Strings.EncounterHideSculpture);
-        }
-        Dialogs().alert(AlertType.PreciousHidden, Functions.StringVars(Strings.ListStrings.get(precious.size()), precious.toArray(new String[0])));
-      } else if(cmdr.getShip().SculptureOnBoard()) {
-        setQuestStatusSculpture(SpecialEvent.StatusSculptureNotStarted);
-        Dialogs().alert(AlertType.EncounterPiratesTakeSculpture);
-      }
-      ArrayList<Integer> cargoToSteal = cmdr.getShip().StealableCargo();
-      if(cargoToSteal.size() == 0) {
-        int blackmail = Math.min(25000, Math.max(500, cmdr.Worth() / 20));
-        int cashPayment = Math.min(cmdr.getCash(), blackmail);
-        cmdr.setDebt(cmdr.getDebt() + (blackmail - cashPayment));
-        cmdr.setCash(cmdr.getCash() - cashPayment);
-        Dialogs().alert(AlertType.EncounterPiratesFindNoCargo, Functions.Multiples(blackmail, Strings.MoneyUnit));
-      } else {
-        Dialogs().alert(AlertType.EncounterLooting);
-        // Pirates steal as much as they have room for, which could be everything - JAF.
-        // Take most high-priced items - JAF.
-        while(getOpponent().FreeCargoBays() > 0 && cargoToSteal.size() > 0) {
-          int item = cargoToSteal.get(0);
-          cmdr.PriceCargo()[item] -= cmdr.PriceCargo()[item] / cmdr.getShip().Cargo()[item];
-          cmdr.getShip().Cargo()[item]--;
-          getOpponent().Cargo()[item]++;
-          cargoToSteal.remove(0);
-        }
-      }
-      if(cmdr.getShip().WildOnBoard()) {
-        if(getOpponent().getCrewQuarters() > 1) { // Wild hops onto Pirate Ship
-          setQuestStatusWild(SpecialEvent.StatusWildNotStarted);
-          Dialogs().alert(AlertType.WildGoesPirates);
-        } else { // no room on pirate ship
-          Dialogs().alert(AlertType.WildChatsPirates);
-        }
-      }
-      // pirates puzzled by reactor
-      if(cmdr.getShip().ReactorOnBoard()) {
-        Dialogs().alert(AlertType.EncounterPiratesExamineReactor);
-      }
-      result = EncounterResult.Normal;
-    }
-    return result;
-  }
 
-  public EncounterResult EncounterVerifyYield() {
-    EncounterResult result = EncounterResult.Continue;
-    if(cmdr.getShip().IllegalSpecialCargo()) {
-      if(Dialogs().alert(AlertType.EncounterPoliceSurrender, new String[]{
-            cmdr.getShip().IllegalSpecialCargoDescription(Strings.EncounterPoliceSurrenderCargo, true, true),
-            cmdr.getShip().IllegalSpecialCargoActions()}) == DialogResult.Yes) {
-        result = EncounterResult.Arrested;
-      }
-    } else {
-      String str1 = cmdr.getShip().IllegalSpecialCargoDescription("", false, true);
-      if(Dialogs().alert(AlertType.EncounterPoliceSubmit, str1, "") == DialogResult.Yes) {
-        // Police Record becomes dubious, if it wasn't already.
-        if(cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreDubious) {
-          cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreDubious);
-        }
-        cmdr.getShip().RemoveIllegalGoods();
-        result = EncounterResult.Normal;
-      }
-    }
-    return result;
-  }
-
-  public EncounterType getEncounterType() {
-    return _encounterType;
-  }
 
   public GameEndType getEndStatus() {
     return _endStatus;
@@ -923,9 +470,6 @@ public final class Game extends STSerializableObject {
     return _dragonfly;
   }
 
-  public Ship getOpponent() {
-    return _opponent;
-  }
 
   public Ship Scarab() {
     return _scarab;
@@ -971,211 +515,10 @@ public final class Game extends STSerializableObject {
     return _selectedSystemId;
   }
 
-  public String EncounterAction() {
-    String action;
-    if(getOpponentDisabled()) {
-      action = Functions.StringVars(Strings.EncounterOppDisabled, EncounterShipText());
-    } else if(getEncounterOppFleeing()) {
-      if(getEncounterType() == EncounterType.PirateSurrender || getEncounterType() == EncounterType.TraderSurrender) {
-        action = Functions.StringVars(Strings.EncounterOppSurrender, EncounterShipText());
-      } else {
-        action = Functions.StringVars(Strings.EncounterOppFleeing, EncounterShipText());
-      }
-    } else {
-      action = Functions.StringVars(Strings.EncounterActionOppAttacks, EncounterShipText());
-    }
-    return action;
-  }
 
-  public String EncounterActionInitial() {
-    String text = "";
-    // Set up the fleeing variable initially.
-    setEncounterOppFleeing(false);
-    switch(getEncounterType()) {
-      case BottleGood:
-      case BottleOld:
-        text = Strings.EncounterTextBottle;
-        break;
-      case CaptainAhab:
-      case CaptainConrad:
-      case CaptainHuie:
-        text = Strings.EncounterTextFamousCaptain;
-        break;
-      case DragonflyAttack:
-      case PirateAttack:
-      case PoliceAttack:
-      case ScarabAttack:
-      case ScorpionAttack:
-      case SpaceMonsterAttack:
-        text = Strings.EncounterTextOpponentAttack;
-        break;
-      case DragonflyIgnore:
-      case PirateIgnore:
-      case PoliceIgnore:
-      case ScarabIgnore:
-      case ScorpionIgnore:
-      case SpaceMonsterIgnore:
-      case TraderIgnore:
-        text = cmdr.getShip().Cloaked() ? Strings.EncounterTextOpponentNoNotice : Strings.EncounterTextOpponentIgnore;
-        break;
-      case MarieCeleste:
-        text = Strings.EncounterTextMarieCeleste;
-        break;
-      case MarieCelestePolice:
-        text = Strings.EncounterTextPolicePostMarie;
-        break;
-      case PirateFlee:
-      case PoliceFlee:
-      case TraderFlee:
-        text = Strings.EncounterTextOpponentFlee;
-        setEncounterOppFleeing(true);
-        break;
-      case PoliceInspect:
-        text = Strings.EncounterTextPoliceInspection;
-        break;
-      case PoliceSurrender:
-        text = Strings.EncounterTextPoliceSurrender;
-        break;
-      case TraderBuy:
-      case TraderSell:
-        text = Strings.EncounterTextTrader;
-        break;
-      case FamousCaptainAttack:
-      case FamousCaptDisabled:
-      case PoliceDisabled:
-      case PirateDisabled:
-      case PirateSurrender:
-      case TraderAttack:
-      case TraderDisabled:
-      case TraderSurrender:
-        // These should never be the initial encounter type.
-        break;
-    }
-    return text;
-  }
 
-  public String EncounterShipText() {
-    String shipText = getOpponent().Name();
-    switch(getEncounterType()) {
-      case FamousCaptainAttack:
-      case FamousCaptDisabled:
-        shipText = Strings.EncounterShipCaptain;
-        break;
-      case PirateAttack:
-      case PirateDisabled:
-      case PirateFlee:
-      case PirateSurrender:
-        shipText = getOpponent().Type() == ShipType.Mantis ? Strings.EncounterShipMantis : Strings.EncounterShipPirate;
-        break;
-      case PoliceAttack:
-      case PoliceDisabled:
-      case PoliceFlee:
-        shipText = Strings.EncounterShipPolice;
-        break;
-      case TraderAttack:
-      case TraderDisabled:
-      case TraderFlee:
-      case TraderSurrender:
-        shipText = Strings.EncounterShipTrader;
-        break;
-      default:
-        break;
-    }
-    return shipText;
-  }
 
-  public String EncounterText() {
-    String cmdrStatus;
-    if(getEncounterCmdrFleeing()) {
-      cmdrStatus = Functions.StringVars(Strings.EncounterOppFollowing, EncounterShipText());
-    } else if(getEncounterOppHit()) {
-      cmdrStatus = Functions.StringVars(Strings.EncounterYouHit, EncounterShipText());
-    } else {
-      cmdrStatus = Functions.StringVars(Strings.EncounterYouMissed, EncounterShipText());
-    }
-    String oppStatus;
-    if(getEncounterOppFleeingPrev()) {
-      oppStatus = Functions.StringVars(Strings.EncounterOppNoEscape, EncounterShipText());
-    } else if(getEncounterCmdrHit()) {
-      oppStatus = Functions.StringVars(Strings.EncounterOppHits, EncounterShipText());
-    } else {
-      oppStatus = Functions.StringVars(Strings.EncounterOppMissed, EncounterShipText());
-    }
-    return cmdrStatus + Strings.newline + oppStatus;
-  }
 
-  public String EncounterTextInitial() {
-    String encounterPretext = "";
-    switch(getEncounterType()) {
-      case BottleGood:
-      case BottleOld:
-        encounterPretext = Strings.EncounterPretextBottle;
-        break;
-      case DragonflyAttack:
-      case DragonflyIgnore:
-      case ScarabAttack:
-      case ScarabIgnore:
-        encounterPretext = Strings.EncounterPretextStolen;
-        break;
-      case CaptainAhab:
-        encounterPretext = Strings.EncounterPretextCaptainAhab;
-        break;
-      case CaptainConrad:
-        encounterPretext = Strings.EncounterPretextCaptainConrad;
-        break;
-      case CaptainHuie:
-        encounterPretext = Strings.EncounterPretextCaptainHuie;
-        break;
-      case MarieCeleste:
-        encounterPretext = Strings.EncounterPretextMarie;
-        break;
-      case MarieCelestePolice:
-      case PoliceAttack:
-      case PoliceFlee:
-      case PoliceIgnore:
-      case PoliceInspect:
-      case PoliceSurrender:
-        encounterPretext = Strings.EncounterPretextPolice;
-        break;
-      case PirateAttack:
-      case PirateFlee:
-      case PirateIgnore:
-        if(getOpponent().Type() == ShipType.Mantis) {
-          encounterPretext = Strings.EncounterPretextAlien;
-        } else {
-          encounterPretext = Strings.EncounterPretextPirate;
-        }
-        break;
-      case ScorpionAttack:
-      case ScorpionIgnore:
-        encounterPretext = Strings.EncounterPretextScorpion;
-        break;
-      case SpaceMonsterAttack:
-      case SpaceMonsterIgnore:
-        encounterPretext = Strings.EncounterPretextSpaceMonster;
-        break;
-      case TraderBuy:
-      case TraderFlee:
-      case TraderIgnore:
-      case TraderSell:
-        encounterPretext = Strings.EncounterPretextTrader;
-        break;
-      case FamousCaptainAttack:
-      case FamousCaptDisabled:
-      case PoliceDisabled:
-      case PirateDisabled:
-      case PirateSurrender:
-      case TraderAttack:
-      case TraderDisabled:
-      case TraderSurrender:
-        // These should never be the initial encounter type.
-        break;
-    }
-    return Functions.StringVars(Strings.EncounterText,
-        new String[]{
-          Functions.Multiples(getClicks(), "click"), WarpSystem().Name(), encounterPretext, getOpponent().Name().toLowerCase()
-        });
-  }
 
   public String NewspaperHead() {
     List<String> heads = Strings.NewsMastheads.get(cmdr.CurrentSystem().PoliticalSystemType().CastToInt());
@@ -1246,191 +589,10 @@ public final class Game extends STSerializableObject {
   }
 
   @SuppressWarnings("fallthrough")
-  public boolean EncounterVerifyAttack() {
-    boolean attack = true;
-    if(cmdr.getShip().WeaponStrength() == 0) {
-      Dialogs().alert(AlertType.EncounterAttackNoWeapons);
-      attack = false;
-    } else if(!getOpponent().Disableable() && cmdr.getShip().WeaponStrength(WeaponType.PulseLaser, WeaponType.MorgansLaser) == 0) {
-      Dialogs().alert(AlertType.EncounterAttackNoLasers);
-      attack = false;
-    } else if(getOpponent().Type() == ShipType.Scorpion && cmdr.getShip().WeaponStrength(WeaponType.PhotonDisruptor, WeaponType.QuantumDistruptor) == 0) {
-      Dialogs().alert(AlertType.EncounterAttackNoDisruptors);
-      attack = false;
-    } else {
-      switch(getEncounterType()) {
-        case DragonflyIgnore:
-        case PirateIgnore:
-        case ScarabIgnore:
-        case ScorpionIgnore:
-        case SpaceMonsterIgnore:
-          setEncounterType(EncounterType.FromInt(getEncounterType().CastToInt() - 1));
-          break;
-        case PoliceInspect:
-          if(!cmdr.getShip().DetectableIllegalCargoOrPassengers() && Dialogs().alert(AlertType.EncounterPoliceNothingIllegal) != DialogResult.Yes) {
-            attack = false;
-          }
-          // Fall through...
-          if(!attack) {
-            break;
-          } // goto case PoliceIgnore;
-        case MarieCelestePolice:
-        case PoliceFlee:
-        case PoliceIgnore:
-        case PoliceSurrender:
-          if(cmdr.getPoliceRecordScore() <= Consts.PoliceRecordScoreCriminal || Dialogs().alert(AlertType.EncounterAttackPolice) == DialogResult.Yes) {
-            if(cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
-              cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreCriminal);
-            }
-            cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreAttackPolice);
-            if(getEncounterType() != EncounterType.PoliceFlee) {
-              setEncounterType(EncounterType.PoliceAttack);
-            }
-          } else {
-            attack = false;
-          }
-          break;
-        case TraderBuy:
-        case TraderIgnore:
-        case TraderSell:
-          if(cmdr.getPoliceRecordScore() < Consts.PoliceRecordScoreClean) {
-            cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreAttackTrader);
-          } else if(Dialogs().alert(AlertType.EncounterAttackTrader) == DialogResult.Yes) {
-            cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreDubious);
-          } else {
-            attack = false;
-          }
-          // Fall through...
-          if(!attack) {
-            break;
-          }// else goto case TraderAttack;
-        case TraderAttack:
-        case TraderSurrender:
-          if(Functions.GetRandom(Consts.ReputationScoreElite) <= cmdr.getReputationScore() * 10 / (getOpponent().Type().CastToInt() + 1)
-              || getOpponent().WeaponStrength() == 0) {
-            setEncounterType(EncounterType.TraderFlee);
-          } else {
-            setEncounterType(EncounterType.TraderAttack);
-          }
-          break;
-        case CaptainAhab:
-        case CaptainConrad:
-        case CaptainHuie:
-          if(Dialogs().alert(AlertType.EncounterAttackCaptain) == DialogResult.Yes) {
-            if(cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreVillain) {
-              cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreVillain);
-            }
-            cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreAttackTrader);
-            switch(getEncounterType()) {
-              case CaptainAhab:
-                NewsAddEvent(NewsEvent.CaptAhabAttacked);
-                break;
-              case CaptainConrad:
-                NewsAddEvent(NewsEvent.CaptConradAttacked);
-                break;
-              case CaptainHuie:
-                NewsAddEvent(NewsEvent.CaptHuieAttacked);
-                break;
-              default:
-                break;
-            }
-            setEncounterType(EncounterType.FamousCaptainAttack);
-          } else {
-            attack = false;
-          }
-          break;
-        default:
-          break;
-      }
-      // Make sure the fleeing flag isn't set if we're attacking.
-      if(attack) {
-        setEncounterCmdrFleeing(false);
-      }
-    }
-    return attack;
-  }
 
-  public boolean EncounterVerifyBoard(EncounterDialogHost host) {
-    boolean board = false;
-    if(Dialogs().alert(AlertType.EncounterMarieCeleste) == DialogResult.Yes) {
-      board = true;
-      int narcs = cmdr.getShip().Cargo()[TradeItemType.Narcotics.CastToInt()];
-      host.showPlunder();
-      if(cmdr.getShip().Cargo()[TradeItemType.Narcotics.CastToInt()] > narcs) {
-        setJustLootedMarie(true);
-      }
-    }
-    return board;
-  }
 
-  public boolean EncounterVerifyBribe() {
-    boolean bribed = false;
-    if(getEncounterType() == EncounterType.MarieCelestePolice) {
-      Dialogs().alert(AlertType.EncounterMarieCelesteNoBribe);
-    } else if(WarpSystem().PoliticalSystem().BribeLevel() <= 0) {
-      Dialogs().alert(AlertType.EncounterPoliceBribeCant);
-    } else if(cmdr.getShip().DetectableIllegalCargoOrPassengers() || Dialogs().alert(AlertType.EncounterPoliceNothingIllegal) == DialogResult.Yes) {
-      // Bribe depends on how easy it is to bribe the police and commander's current worth
-      int diffMod = 10 + 5 * (Difficulty.Impossible.CastToInt() - _difficulty.CastToInt());
-      int passMod = cmdr.getShip().IllegalSpecialCargo() ? (_difficulty.CastToInt() <= Difficulty.Normal.CastToInt() ? 2 : 3) : 1;
-      int bribe = Math.max(100, Math.min(10000, (int)Math.ceil((double)cmdr.Worth() / WarpSystem().PoliticalSystem().BribeLevel() / diffMod / 100) * 100 * passMod));
-      if(Dialogs().alert(AlertType.EncounterPoliceBribe, Functions.Multiples(bribe, Strings.MoneyUnit)) == DialogResult.Yes) {
-        if(cmdr.getCash() >= bribe) {
-          cmdr.setCash(cmdr.getCash() - bribe);
-          bribed = true;
-        } else {
-          Dialogs().alert(AlertType.EncounterPoliceBribeLowCash);
-        }
-      }
-    }
-    return bribed;
-  }
 
-  public boolean EncounterVerifyFlee() {
-    setEncounterCmdrFleeing(false);
-    if(getEncounterType() != EncounterType.PoliceInspect || cmdr.getShip().DetectableIllegalCargoOrPassengers()
-        || Dialogs().alert(AlertType.EncounterPoliceNothingIllegal) == DialogResult.Yes) {
-      setEncounterCmdrFleeing(true);
-      if(getEncounterType() == EncounterType.MarieCelestePolice && Dialogs().alert(AlertType.EncounterPostMarieFlee) == DialogResult.No) {
-        setEncounterCmdrFleeing(false);
-      } else if(getEncounterType() == EncounterType.PoliceInspect || getEncounterType() == EncounterType.MarieCelestePolice) {
-        int scoreMod = getEncounterType() == EncounterType.PoliceInspect ? Consts.ScoreFleePolice : Consts.ScoreAttackPolice;
-        int scoreMin = getEncounterType() == EncounterType.PoliceInspect
-            ? Consts.PoliceRecordScoreDubious - (_difficulty.CastToInt() < Difficulty.Normal.CastToInt() ? 0 : 1) : Consts.PoliceRecordScoreCriminal;
-        setEncounterType(EncounterType.PoliceAttack);
-        cmdr.setPoliceRecordScore(Math.min(cmdr.getPoliceRecordScore() + scoreMod, scoreMin));
-      }
-    }
-    return getEncounterCmdrFleeing();
-  }
 
-  public boolean EncounterVerifySubmit() {
-    boolean submit = false;
-    if(cmdr.getShip().DetectableIllegalCargoOrPassengers()) {
-      String str1 = cmdr.getShip().IllegalSpecialCargoDescription("", true, true);
-      String str2 = cmdr.getShip().IllegalSpecialCargo() ? Strings.EncounterPoliceSubmitArrested : "";
-      if(Dialogs().alert(AlertType.EncounterPoliceSubmit, str1, str2) == DialogResult.Yes) {
-        submit = true;
-        // If you carry illegal goods, they are impounded and you are fined
-        if(cmdr.getShip().DetectableIllegalCargo()) {
-          cmdr.getShip().RemoveIllegalGoods();
-          int fine = (int)Math.max(100, Math.min(10000,
-              Math.ceil((double)cmdr.Worth() / ((Difficulty.Impossible.CastToInt() - _difficulty.CastToInt() + 2) * 10) / 50) * 50));
-          int cashPayment = Math.min(cmdr.getCash(), fine);
-          cmdr.setDebt(cmdr.getDebt() + (fine - cashPayment));
-          cmdr.setCash(cmdr.getCash() - cashPayment);
-          Dialogs().alert(AlertType.EncounterPoliceFine, Functions.Multiples(fine, Strings.MoneyUnit));
-          cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreTrafficking);
-        }
-      }
-    } else {
-      submit = true;
-      // If you aren't carrying illegal cargo or passengers, the police will increase your lawfulness record
-      Dialogs().alert(AlertType.EncounterPoliceNothingFound);
-      cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() - Consts.ScoreTrafficking);
-    }
-    return submit;
-  }
 
   public boolean getArrivedViaWormhole() {
     return _arrivedViaWormhole;
@@ -1452,67 +614,23 @@ public final class Game extends STSerializableObject {
     return _easyEncounters;
   }
 
-  public boolean getEncounterCmdrFleeing() {
-    return _encounterCmdrFleeing;
-  }
 
-  public boolean getEncounterCmdrHit() {
-    return _encounterCmdrHit;
-  }
 
-  public boolean getEncounterContinueAttacking() {
-    return _encounterContinueAttacking;
-  }
 
-  public boolean setEncounterContinueAttacking(boolean encounterContinueAttacking) {
-    _encounterContinueAttacking = encounterContinueAttacking;
-    return encounterContinueAttacking;
-  }
 
-  public boolean getEncounterContinueFleeing() {
-    return _encounterContinueFleeing;
-  }
 
-  public boolean getEncounterOppFleeing() {
-    return _encounterOppFleeing;
-  }
 
-  public boolean getEncounterOppFleeingPrev() {
-    return _encounterOppFleeingPrev;
-  }
 
-  public boolean getEncounterOppHit() {
-    return _encounterOppHit;
-  }
 
-  public boolean getInspected() {
-    return _inspected;
-  }
 
-  public boolean getJustLootedMarie() {
-    return _justLootedMarie;
-  }
 
-  public boolean getLitterWarning() {
-    return _litterWarning;
-  }
 
-  public boolean getOpponentDisabled() {
-    return _opponentDisabled;
-  }
 
-  public boolean setOpponentDisabled(boolean opponentDisabled) {
-    _opponentDisabled = opponentDisabled;
-    return opponentDisabled;
-  }
 
   public boolean getPaidForNewspaper() {
     return _paidForNewspaper;
   }
 
-  public boolean getRaided() {
-    return _raided;
-  }
 
   public boolean getTribbleMessage() {
     return _tribbleMessage;
@@ -1567,65 +685,6 @@ public final class Game extends STSerializableObject {
     return InsuranceCosts() + InterestCosts() + MercenaryCosts() + WormholeCosts();
   }
 
-  public int EncounterImageIndex() {
-    int encounterImage = -1;
-    switch(getEncounterType()) {
-      case BottleGood:
-      case BottleOld:
-      case CaptainAhab:
-      case CaptainConrad:
-      case CaptainHuie:
-      case MarieCeleste:
-        encounterImage = Consts.EncounterImgSpecial;
-        break;
-      case DragonflyAttack:
-      case DragonflyIgnore:
-      case ScarabAttack:
-      case ScarabIgnore:
-      case ScorpionAttack:
-      case ScorpionIgnore:
-        encounterImage = Consts.EncounterImgPirate;
-        break;
-      case MarieCelestePolice:
-      case PoliceAttack:
-      case PoliceFlee:
-      case PoliceIgnore:
-      case PoliceInspect:
-      case PoliceSurrender:
-        encounterImage = Consts.EncounterImgPolice;
-        break;
-      case PirateAttack:
-      case PirateFlee:
-      case PirateIgnore:
-        if(getOpponent().Type() == ShipType.Mantis) {
-          encounterImage = Consts.EncounterImgAlien;
-        } else {
-          encounterImage = Consts.EncounterImgPirate;
-        }
-        break;
-      case SpaceMonsterAttack:
-      case SpaceMonsterIgnore:
-        encounterImage = Consts.EncounterImgAlien;
-        break;
-      case TraderBuy:
-      case TraderFlee:
-      case TraderIgnore:
-      case TraderSell:
-        encounterImage = Consts.EncounterImgTrader;
-        break;
-      case FamousCaptainAttack:
-      case FamousCaptDisabled:
-      case PoliceDisabled:
-      case PirateDisabled:
-      case PirateSurrender:
-      case TraderAttack:
-      case TraderDisabled:
-      case TraderSurrender:
-        // These should never be the initial encounter type.
-        break;
-    }
-    return encounterImage;
-  }
 
   public int getChanceOfTradeInOrbit() {
     return _chanceOfTradeInOrbit;
@@ -1834,102 +893,10 @@ public final class Game extends STSerializableObject {
     cmdr.NoClaim(0);
   }
 
-  public void EncounterBegin() {
-    // Set up the encounter variables.
-    setEncounterContinueFleeing(setEncounterContinueAttacking(setOpponentDisabled(false)));
-  }
 
-  public void EncounterDrink() {
-    if(Dialogs().alert(AlertType.EncounterDrinkContents) == DialogResult.Yes) {
-      if(getEncounterType() == EncounterType.BottleGood) {
-        // two points if you're on beginner-normal, one otherwise
-        cmdr.IncreaseRandomSkill();
-        if(_difficulty.CastToInt() <= Difficulty.Normal.CastToInt()) {
-          cmdr.IncreaseRandomSkill();
-        }
-        Dialogs().alert(AlertType.EncounterTonicConsumedGood);
-      } else {
-        cmdr.TonicTweakRandomSkill();
-        Dialogs().alert(AlertType.EncounterTonicConsumedStrange);
-      }
-    }
-  }
 
-  public void EncounterMeet() {
-    AlertType initialAlert = AlertType.Alert;
-    int skill = 0;
-    EquipmentType equipType = EquipmentType.Gadget;
-    Object equipSubType = null;
 
-    switch(getEncounterType()) {
-      case CaptainAhab:
-        // Trade a reflective shield for skill points in piloting?
-        initialAlert = AlertType.MeetCaptainAhab;
-        equipType = EquipmentType.Shield;
-        equipSubType = ShieldType.Reflective;
-        skill = SkillType.Pilot.CastToInt();
-        break;
-      case CaptainConrad:
-        // Trade a military laser for skill points in engineering?
-        initialAlert = AlertType.MeetCaptainConrad;
-        equipType = EquipmentType.Weapon;
-        equipSubType = WeaponType.MilitaryLaser;
-        skill = SkillType.Engineer.CastToInt();
-        break;
-      case CaptainHuie:
-        // Trade a military laser for skill points in trading?
-        initialAlert = AlertType.MeetCaptainHuie;
-        equipType = EquipmentType.Weapon;
-        equipSubType = WeaponType.MilitaryLaser;
-        skill = SkillType.Trader.CastToInt();
-        break;
-      default:
-        break;
-    }
-    if(Dialogs().alert(initialAlert) == DialogResult.Yes) {
-      // Remove the equipment we're trading.
-      cmdr.getShip().RemoveEquipment(equipType, equipSubType);
-      // Add points to the appropriate skill - two points if beginner-normal, one otherwise.
-      cmdr.Skills()[skill] = Math.min(Consts.MaxSkill, cmdr.Skills()[skill] + (_difficulty.CastToInt() <= Difficulty.Normal.CastToInt() ? 2 : 1));
-      Dialogs().alert(AlertType.SpecialTrainingCompleted);
-    }
-  }
 
-  public void EncounterPlunder(EncounterDialogHost host) {
-    host.showPlunder();
-    if(getEncounterType().CastToInt() >= EncounterType.TraderAttack.CastToInt()) {
-      cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScorePlunderTrader);
-      if(getOpponentDisabled()) {
-        cmdr.setKillsTrader(cmdr.getKillsTrader() + 1);
-      }
-    } else if(getOpponentDisabled()) {
-      if(cmdr.getPoliceRecordScore() >= Consts.PoliceRecordScoreDubious) {
-        Dialogs().alert(AlertType.EncounterPiratesBounty, Strings.EncounterPiratesDisabled,
-            Strings.EncounterPiratesLocation, Functions.Multiples(getOpponent().Bounty(), Strings.MoneyUnit));
-        cmdr.setCash(cmdr.getCash() + getOpponent().Bounty());
-      }
-      cmdr.setKillsPirate(cmdr.getKillsPirate() + 1);
-      cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScoreKillPirate);
-    } else {
-      cmdr.setPoliceRecordScore(cmdr.getPoliceRecordScore() + Consts.ScorePlunderPirate);
-    }
-    cmdr.setReputationScore(cmdr.getReputationScore() + (getOpponent().Type().CastToInt() / 2 + 1));
-  }
-
-  public void EncounterTrade(EncounterDialogHost host) {
-    boolean buy = (getEncounterType() == EncounterType.TraderBuy);
-    int item = (buy ? cmdr.getShip() : getOpponent()).GetRandomTradeableItem();
-    String alertStr = buy ? Strings.TradeSelling : Strings.TradeBuying;
-    int cash = cmdr.getCash();
-    if(getEncounterType() == EncounterType.TraderBuy) {
-      host.sellTraderCargo(item);
-    } else { // EncounterType.TraderSell
-      host.buyTraderCargo(item);
-    }
-    if(cmdr.getCash() != cash) {
-      Dialogs().alert(AlertType.EncounterTradeCompleted, alertStr, Consts.TradeItems.get(item).Name());
-    }
-  }
 
   public void EscapeWithPod() {
     Dialogs().alert(AlertType.EncounterEscapePodActivated);
@@ -2591,33 +1558,12 @@ public final class Game extends STSerializableObject {
     _clicks = clicks;
   }
 
-  public void setEncounterCmdrFleeing(boolean encounterCmdrFleeing) {
-    _encounterCmdrFleeing = encounterCmdrFleeing;
-  }
 
-  public void setEncounterCmdrHit(boolean encounterCmdrHit) {
-    _encounterCmdrHit = encounterCmdrHit;
-  }
 
-  public void setEncounterContinueFleeing(boolean encounterContinueFleeing) {
-    _encounterContinueFleeing = encounterContinueFleeing;
-  }
 
-  public void setEncounterOppFleeing(boolean encounterOppFleeing) {
-    _encounterOppFleeing = encounterOppFleeing;
-  }
 
-  public void setEncounterOppFleeingPrev(boolean encounterOppFleeingPrev) {
-    _encounterOppFleeingPrev = encounterOppFleeingPrev;
-  }
 
-  public void setEncounterOppHit(boolean encounterOppHit) {
-    _encounterOppHit = encounterOppHit;
-  }
 
-  public void setEncounterType(EncounterType encounterType) {
-    _encounterType = encounterType;
-  }
 
   public void setEndStatus(GameEndType endStatus) {
     _endStatus = endStatus;
@@ -2627,21 +1573,9 @@ public final class Game extends STSerializableObject {
     _fabricRipProbability = fabricRipProbability;
   }
 
-  public void setInspected(boolean inspected) {
-    _inspected = inspected;
-  }
 
-  public void setJustLootedMarie(boolean justLootedMarie) {
-    _justLootedMarie = justLootedMarie;
-  }
 
-  public void setLitterWarning(boolean litterWarning) {
-    _litterWarning = litterWarning;
-  }
 
-  public void setOpponent(Ship opponent) {
-    _opponent = opponent;
-  }
 
   public void setPaidForNewspaper(boolean paidForNewspaper) {
     _paidForNewspaper = paidForNewspaper;
@@ -2699,9 +1633,6 @@ public final class Game extends STSerializableObject {
     _questStatusWild = questStatusWild;
   }
 
-  public void setRaided(boolean raided) {
-    _raided = raided;
-  }
 
   public void setSelectedSystemByName(String value) {
     String nameToFind = value;
@@ -2730,4 +1661,201 @@ public final class Game extends STSerializableObject {
   public static void CurrentGame(Game g) {
     game = g;
   }
+
+  /** The encounter of the current trip: its state and its rules. */
+  public Encounter encounter() {
+    if(_encounter == null) {
+      _encounter = new Encounter(this);
+    }
+    return _encounter;
+  }
+
+  public EncounterResult EncounterExecuteAction(EncounterDialogHost host) {
+    return encounter().EncounterExecuteAction(host);
+  }
+
+  public EncounterResult EncounterVerifySurrender() {
+    return encounter().EncounterVerifySurrender();
+  }
+
+  public EncounterResult EncounterVerifyYield() {
+    return encounter().EncounterVerifyYield();
+  }
+
+  public EncounterType getEncounterType() {
+    return encounter().getEncounterType();
+  }
+
+  public Ship getOpponent() {
+    return encounter().getOpponent();
+  }
+
+  public String EncounterAction() {
+    return encounter().EncounterAction();
+  }
+
+  public String EncounterActionInitial() {
+    return encounter().EncounterActionInitial();
+  }
+
+  public String EncounterShipText() {
+    return encounter().EncounterShipText();
+  }
+
+  public String EncounterText() {
+    return encounter().EncounterText();
+  }
+
+  public String EncounterTextInitial() {
+    return encounter().EncounterTextInitial();
+  }
+
+  public boolean EncounterVerifyAttack() {
+    return encounter().EncounterVerifyAttack();
+  }
+
+  public boolean EncounterVerifyBoard(EncounterDialogHost host) {
+    return encounter().EncounterVerifyBoard(host);
+  }
+
+  public boolean EncounterVerifyBribe() {
+    return encounter().EncounterVerifyBribe();
+  }
+
+  public boolean EncounterVerifyFlee() {
+    return encounter().EncounterVerifyFlee();
+  }
+
+  public boolean EncounterVerifySubmit() {
+    return encounter().EncounterVerifySubmit();
+  }
+
+  public boolean getEncounterCmdrFleeing() {
+    return encounter().getEncounterCmdrFleeing();
+  }
+
+  public boolean getEncounterCmdrHit() {
+    return encounter().getEncounterCmdrHit();
+  }
+
+  public boolean getEncounterContinueAttacking() {
+    return encounter().getEncounterContinueAttacking();
+  }
+
+  public boolean setEncounterContinueAttacking(boolean encounterContinueAttacking) {
+    return encounter().setEncounterContinueAttacking(encounterContinueAttacking);
+  }
+
+  public boolean getEncounterContinueFleeing() {
+    return encounter().getEncounterContinueFleeing();
+  }
+
+  public boolean getEncounterOppFleeing() {
+    return encounter().getEncounterOppFleeing();
+  }
+
+  public boolean getEncounterOppFleeingPrev() {
+    return encounter().getEncounterOppFleeingPrev();
+  }
+
+  public boolean getEncounterOppHit() {
+    return encounter().getEncounterOppHit();
+  }
+
+  public boolean getInspected() {
+    return encounter().getInspected();
+  }
+
+  public boolean getJustLootedMarie() {
+    return encounter().getJustLootedMarie();
+  }
+
+  public boolean getLitterWarning() {
+    return encounter().getLitterWarning();
+  }
+
+  public boolean getOpponentDisabled() {
+    return encounter().getOpponentDisabled();
+  }
+
+  public boolean setOpponentDisabled(boolean opponentDisabled) {
+    return encounter().setOpponentDisabled(opponentDisabled);
+  }
+
+  public boolean getRaided() {
+    return encounter().getRaided();
+  }
+
+  public int EncounterImageIndex() {
+    return encounter().EncounterImageIndex();
+  }
+
+  public void EncounterBegin() {
+    encounter().EncounterBegin();
+  }
+
+  public void EncounterDrink() {
+    encounter().EncounterDrink();
+  }
+
+  public void EncounterMeet() {
+    encounter().EncounterMeet();
+  }
+
+  public void EncounterPlunder(EncounterDialogHost host) {
+    encounter().EncounterPlunder(host);
+  }
+
+  public void EncounterTrade(EncounterDialogHost host) {
+    encounter().EncounterTrade(host);
+  }
+
+  public void setEncounterCmdrFleeing(boolean encounterCmdrFleeing) {
+    encounter().setEncounterCmdrFleeing(encounterCmdrFleeing);
+  }
+
+  public void setEncounterCmdrHit(boolean encounterCmdrHit) {
+    encounter().setEncounterCmdrHit(encounterCmdrHit);
+  }
+
+  public void setEncounterContinueFleeing(boolean encounterContinueFleeing) {
+    encounter().setEncounterContinueFleeing(encounterContinueFleeing);
+  }
+
+  public void setEncounterOppFleeing(boolean encounterOppFleeing) {
+    encounter().setEncounterOppFleeing(encounterOppFleeing);
+  }
+
+  public void setEncounterOppFleeingPrev(boolean encounterOppFleeingPrev) {
+    encounter().setEncounterOppFleeingPrev(encounterOppFleeingPrev);
+  }
+
+  public void setEncounterOppHit(boolean encounterOppHit) {
+    encounter().setEncounterOppHit(encounterOppHit);
+  }
+
+  public void setEncounterType(EncounterType encounterType) {
+    encounter().setEncounterType(encounterType);
+  }
+
+  public void setInspected(boolean inspected) {
+    encounter().setInspected(inspected);
+  }
+
+  public void setJustLootedMarie(boolean justLootedMarie) {
+    encounter().setJustLootedMarie(justLootedMarie);
+  }
+
+  public void setLitterWarning(boolean litterWarning) {
+    encounter().setLitterWarning(litterWarning);
+  }
+
+  public void setOpponent(Ship opponent) {
+    encounter().setOpponent(opponent);
+  }
+
+  public void setRaided(boolean raided) {
+    encounter().setRaided(raided);
+  }
+
 }
