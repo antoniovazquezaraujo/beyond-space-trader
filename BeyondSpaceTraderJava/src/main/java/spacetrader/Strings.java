@@ -301,6 +301,7 @@ public final class Strings {
   public static final String MainFuel = text("MainFuel");
   public static final String MainHull = text("MainHull");
   public static final String MainNoGame = text("MainNoGame");
+  public static final String MainBanner = text("MainBanner");
   public static final String MainPolice = text("MainPolice");
   public static final String MainPoliceActivity = text("MainPoliceActivity");
   public static final String MainResource = text("MainResource");

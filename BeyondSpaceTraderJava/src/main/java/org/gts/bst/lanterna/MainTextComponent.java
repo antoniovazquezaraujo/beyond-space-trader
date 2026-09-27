@@ -538,12 +538,24 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     String title = chartType == ChartType.GALACTIC ? Strings.MainChartGalactic : Strings.MainChartShortRange;
     UiPalette.title(graphics, 1, contentTop, title, chartWidth);
     if(game == null || cmdr == null) {
+      drawBanner(graphics, chartWidth, chartHeight);
       return;
     }
     TerminalSize size = new TerminalSize(chartWidth, chartHeight);
     LanternaChartView chart = new LanternaChartView(
         graphics.newTextGraphics(new TerminalPosition(1, contentTop + 1), size), size);
     chart.render(chartModel(game, cmdr, chartWidth, chartHeight));
+  }
+
+  /** The project logo, centred, on the empty screen. */
+  private void drawBanner(TextGUIGraphics graphics, int chartWidth, int chartHeight) {
+    List<String> lines = new ArrayList<>();
+    wrap(lines, Strings.MainBanner, Math.max(10, chartWidth - 4));
+    int top = contentTop + 1 + Math.max(0, (chartHeight - lines.size()) / 2);
+    for(String line : lines) {
+      int left = 1 + Math.max(0, (chartWidth - line.length()) / 2);
+      UiPalette.draw(graphics, left, top++, line, UiPalette.TITLE, 1 + chartWidth);
+    }
   }
 
   private ChartViewModel chartModel(Game game, Commander cmdr, int chartWidth, int chartHeight) {
