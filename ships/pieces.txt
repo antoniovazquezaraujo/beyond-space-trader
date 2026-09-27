@@ -8,7 +8,8 @@ color=cian
  ⦅
 ∫
 [motor]
-color=naranja
+color=#3399AA
+blink=yes
 ⧯
 [torreta laser]
 color=rojo
