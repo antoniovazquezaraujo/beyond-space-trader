@@ -1,6 +1,6 @@
-; Piezas de nave. Editable a mano; recarga con R en el compositor.
-; Una linea [nombre] abre una pieza; color= es opcional (blanco por defecto).
-; '.' es vacio; cualquier otra cosa (incluido unicode) es pieza.
+;; Piezas de nave. Editable a mano; recarga con R en el compositor.
+;; Una linea [nombre] abre una pieza; color= es opcional (blanco por defecto).
+;; '.' es vacio; cualquier otra cosa (incluido unicode) es pieza.
 
 [antena]
 color=cian

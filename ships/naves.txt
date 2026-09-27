@@ -1,4 +1,4 @@
-; Montaje guardado por el compositor (./run-composer.sh).
+;; Montaje guardado por el compositor (./run-composer.sh).
 [nave de ejemplo]
 chasis=insecto-diminuto
 pieza=antena x=5 y=0 color=cian

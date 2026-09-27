@@ -64,7 +64,7 @@ public record ShipArtFile(String name, String color, List<String> lines) {
     BufferedReader buffered = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader);
     for(String line = buffered.readLine(); line != null; line = buffered.readLine()) {
       String trimmed = line.strip();
-      if(trimmed.isEmpty() || trimmed.startsWith(";")) {
+      if(trimmed.isEmpty() || trimmed.startsWith(";;")) {
         continue;
       }
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
@@ -77,7 +77,7 @@ public record ShipArtFile(String name, String color, List<String> lines) {
       } else if(name != null && trimmed.startsWith("color=")) {
         color = trimmed.substring("color=".length()).strip();
       } else if(name != null) {
-        lines.add(line.replace('.', ' '));
+        lines.add(line.replace('.', ' ').replace('\t', ' '));
       }
     }
     if(name != null) {
