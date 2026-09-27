@@ -1,11 +1,9 @@
-[nave de ejemplo]
-chasis=bloque-grande
-pieza=antena x=5 y=0 color=cian
-pieza=motor x=0 y=2 color=naranja
-pieza=torreta laser x=9 y=4 color=rojo
-pieza=motor x=3 y=2 color=naranja
-pieza=torreta laser x=9 y=0 color=rojo
-pieza=torreta disruptor x=19 y=4 color=magenta
-pieza=vaina de carga x=13 y=4 color=amarillo
-pieza=cabina x=27 y=1 color=cian
-pieza=deposito x=8 y=4 color=verde
+[borrador]
+chasis=insecto-diminuto
+pieza=antena x=3 y=0 color=rojo
+pieza=motor x=6 y=2 color=naranja
+pieza=torreta laser x=2 y=0 color=rojo
+pieza=torreta disruptor x=5 y=3 color=magenta
+pieza=vaina de carga x=7 y=3 color=amarillo
+pieza=vaina de carga x=8 y=3 color=amarillo
+pieza=cabina x=7 y=1 color=cian
