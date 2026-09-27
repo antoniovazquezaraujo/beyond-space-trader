@@ -268,12 +268,17 @@ public final class ShipComposerView extends BasicWindow {
       overlay(cells, colors, hull, 1, 1, hull.color());
       for(ShipAssembly.ShipPlacement placement : assembly.pieces()) {
         ShipArtFile piece = findPiece(placement.piece());
-        if(piece != null && (!piece.blink() || blinkOn)) {
-          overlay(cells, colors, piece, placement.x() + 1, placement.y() + 1, placement.color());
+        if(piece != null) {
+          String color = piece.blink() && !blinkOn ? (piece.bgColor().isEmpty() ? "black" : piece.bgColor())
+              : placement.color();
+          overlay(cells, colors, piece, placement.x() + 1, placement.y() + 1, color);
         }
       }
-      if(!pieces.isEmpty() && showPending && (!pieces.get(pieceIndex).blink() || blinkOn)) {
-        overlay(cells, colors, pieces.get(pieceIndex), cursorX + 1, cursorY + 1, pendingColor);
+      if(!pieces.isEmpty() && showPending) {
+        ShipArtFile pending = pieces.get(pieceIndex);
+        String color = pending.blink() && !blinkOn ? (pending.bgColor().isEmpty() ? "black" : pending.bgColor())
+            : pendingColor;
+        overlay(cells, colors, pending, cursorX + 1, cursorY + 1, color);
       }
       int left = Math.max(0, (size.getColumns() - width) / 2);
       int top = Math.max(0, (size.getRows() - height - 2) / 2);
