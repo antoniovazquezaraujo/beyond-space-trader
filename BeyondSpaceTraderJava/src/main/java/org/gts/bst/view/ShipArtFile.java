@@ -26,7 +26,7 @@ import java.util.List;
 public record ShipArtFile(String name, String color, List<String> lines) {
   /** Loads the parts of a file, looking for it in the usual places. */
   public static List<ShipArtFile> load(String fileName) throws IOException {
-    File file = find(fileName);
+    File file = resolve(fileName).toFile();
     if(file == null) {
       throw new IOException("no encuentro " + fileName + " (¿ejecutas desde la raíz del repositorio?)");
     }
@@ -35,19 +35,28 @@ public record ShipArtFile(String name, String color, List<String> lines) {
     }
   }
 
-  private static File find(String fileName) {
-    for(String candidate : new String[] {"ships/" + fileName, "../ships/" + fileName,
-        "BeyondSpaceTraderJava/ships/" + fileName}) {
-      File file = new File(candidate);
-      if(file.isFile()) {
-        return file;
+  /**
+   * The path of a definition file: the first candidate that exists, or the first
+   * one whose folder exists (so saving also lands next to the repository).
+   */
+  public static java.nio.file.Path resolve(String fileName) {
+    String[] candidates = {"ships/" + fileName, "../ships/" + fileName, "BeyondSpaceTraderJava/ships/" + fileName};
+    for(String candidate : candidates) {
+      if(new File(candidate).isFile()) {
+        return java.nio.file.Path.of(candidate);
       }
     }
-    return null;
+    for(String candidate : candidates) {
+      File folder = new File(candidate).getParentFile();
+      if(folder != null && folder.isDirectory()) {
+        return java.nio.file.Path.of(candidate);
+      }
+    }
+    return java.nio.file.Path.of(candidates[0]);
   }
 
   /** Parses the parts of a reader: sections, optional colours and art lines. */
-  static List<ShipArtFile> parse(Reader reader) throws IOException {
+  public static List<ShipArtFile> parse(Reader reader) throws IOException {
     List<ShipArtFile> parts = new ArrayList<>();
     String name = null;
     String color = "blanco";

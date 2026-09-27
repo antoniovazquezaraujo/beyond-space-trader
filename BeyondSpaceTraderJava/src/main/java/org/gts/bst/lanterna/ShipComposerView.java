@@ -22,28 +22,43 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import org.gts.bst.view.ShipArtFile;
+import org.gts.bst.view.ShipAssembly;
 
 
 /**
- * The chassis viewer of the ship composer: pick a chassis from ships/chassis.txt
- * (N/P), reload the file (R) and see it in its colour. Pieces come next.
+ * The ship composer: a chassis from ships/chassis.txt with pieces (from
+ * ships/pieces.txt) placed on top, each in its colour; whatever is placed covers
+ * the chassis. The assembly saves to and loads from ships/naves.txt, and R
+ * reloads the definitions so they can be edited with any editor.
  */
 public final class ShipComposerView extends BasicWindow {
+  private static final String[] COLORS = {"blanco", "cian", "rojo", "amarillo", "verde", "magenta", "azul"};
   private final ComposerCanvas canvas = new ComposerCanvas();
   private List<ShipArtFile> chassis;
-  private int index;
+  private List<ShipArtFile> pieces;
+  private ShipAssembly assembly;
+  private int chassisIndex;
+  private int pieceIndex;
+  private int cursorX = 2;
+  private int cursorY = 2;
+  private String pendingColor;
   private String message = "";
 
-  public ShipComposerView(List<ShipArtFile> chassis) {
+  public ShipComposerView(List<ShipArtFile> chassis, List<ShipArtFile> pieces, ShipAssembly saved) {
     setHints(Set.of(Window.Hint.FULL_SCREEN));
     setComponent(canvas);
     setFocusedInteractable(canvas);
     this.chassis = chassis;
+    this.pieces = pieces;
+    this.assembly = saved != null && !saved.chassis().isEmpty()
+        ? saved : ShipAssembly.empty(chassis.isEmpty() ? "" : chassis.get(0).name());
+    chassisIndex = Math.max(0, indexOf(chassis, assembly.chassis()));
+    pendingColor = pieces.isEmpty() ? "blanco" : pieces.get(0).color();
     updateTitle();
   }
 
-  public int chassisIndex() {
-    return index;
+  public int placedCount() {
+    return assembly.pieces().size();
   }
 
   boolean handleKey(KeyStroke key) {
@@ -52,48 +67,123 @@ public final class ShipComposerView extends BasicWindow {
       return true;
     }
     if(key.getKeyType() == KeyType.Tab) {
-      move(1);
+      chassisIndex = chassis.isEmpty() ? 0 : (chassisIndex + 1) % chassis.size();
+      assembly = assembly.withChassis(chassis.get(chassisIndex).name());
+      updateTitle();
+      canvas.invalidate();
       return true;
     }
-    if(key.getKeyType() == KeyType.Character) {
-      char character = Character.toLowerCase(key.getCharacter());
-      if(character == 'n' || character == ' ') {
-        move(1);
-      } else if(character == 'p') {
-        move(-1);
-      } else if(character == 'r') {
-        reload();
-      } else if(character == 'q') {
-        close();
-      }
+    if(key.getKeyType() == KeyType.Enter) {
+      place();
+      return true;
+    }
+    switch(key.getKeyType()) {
+      case ArrowLeft:
+        cursorX--;
+        break;
+      case ArrowRight:
+        cursorX++;
+        break;
+      case ArrowUp:
+        cursorY--;
+        break;
+      case ArrowDown:
+        cursorY++;
+        break;
+      case Character:
+        character(Character.toLowerCase(key.getCharacter()));
+        break;
+      default:
+        break;
     }
     canvas.invalidate();
     return true;
   }
 
-  private void move(int step) {
-    if(!chassis.isEmpty()) {
-      index = (chassis.size() + index + step) % chassis.size();
-      updateTitle();
+  private void character(char character) {
+    if(character == 'n') {
+      pieceIndex = pieces.isEmpty() ? 0 : (pieceIndex + 1) % pieces.size();
+      pendingColor = pieces.isEmpty() ? "blanco" : pieces.get(pieceIndex).color();
+    } else if(character == 'p') {
+      pieceIndex = pieces.isEmpty() ? 0 : (pieces.size() + pieceIndex - 1) % pieces.size();
+      pendingColor = pieces.isEmpty() ? "blanco" : pieces.get(pieceIndex).color();
+    } else if(character == ' ' || character == 'o') {
+      place();
+    } else if(character == 'c') {
+      pendingColor = COLORS[(java.util.Arrays.asList(COLORS).indexOf(pendingColor) + 1) % COLORS.length];
+    } else if(character == 'u') {
+      assembly = assembly.withoutLast();
+    } else if(character == 's') {
+      save();
+    } else if(character == 'l') {
+      loadAssembly();
+    } else if(character == 'r') {
+      reload();
+    } else if(character == 'q') {
+      close();
+    }
+  }
+
+  private void place() {
+    if(!pieces.isEmpty()) {
+      assembly = assembly.with(new ShipAssembly.ShipPlacement(pieces.get(pieceIndex).name(), cursorX, cursorY,
+          pendingColor));
+    }
+  }
+
+  private void save() {
+    try {
+      ShipAssembly.save(ShipArtFile.resolve("naves.txt").toString(), assembly);
+      message = "montaje guardado en " + ShipArtFile.resolve("naves.txt");
+    } catch(IOException e) {
+      message = "no se pudo guardar: " + e.getMessage();
+    }
+  }
+
+  private void loadAssembly() {
+    try {
+      ShipAssembly saved = ShipAssembly.load(ShipArtFile.resolve("naves.txt").toString());
+      if(saved != null) {
+        assembly = saved;
+        chassisIndex = Math.max(0, indexOf(chassis, assembly.chassis()));
+        updateTitle();
+        message = "montaje cargado (" + assembly.pieces().size() + " piezas)";
+      }
+    } catch(IOException e) {
+      message = "no se pudo cargar: " + e.getMessage();
     }
   }
 
   private void reload() {
     try {
-      List<ShipArtFile> loaded = ShipArtFile.load("chassis.txt");
-      if(!loaded.isEmpty()) {
-        chassis = loaded;
-        index = Math.min(index, chassis.size() - 1);
+      List<ShipArtFile> loadedChassis = ShipArtFile.load("chassis.txt");
+      List<ShipArtFile> loadedPieces = ShipArtFile.load("pieces.txt");
+      if(!loadedChassis.isEmpty()) {
+        chassis = loadedChassis;
+        chassisIndex = Math.min(chassisIndex, chassis.size() - 1);
         updateTitle();
-        message = "chassis.txt recargado";
       }
+      if(!loadedPieces.isEmpty()) {
+        pieces = loadedPieces;
+        pieceIndex = Math.min(pieceIndex, pieces.size() - 1);
+      }
+      message = "chassis.txt y pieces.txt recargados";
     } catch(IOException e) {
       message = e.getMessage();
     }
   }
 
+  private static int indexOf(List<ShipArtFile> parts, String name) {
+    for(int i = 0; i < parts.size(); i++) {
+      if(parts.get(i).name().equals(name)) {
+        return i;
+      }
+    }
+    return 0;
+  }
+
   private void updateTitle() {
-    setTitle(chassis.isEmpty() ? "chasis" : "chasis: " + chassis.get(index).name());
+    setTitle("compositor: " + assembly.chassis() + " (" + assembly.pieces().size() + " piezas)");
   }
 
   /** Maps the colour names of the files to the terminal palette. */
@@ -151,28 +241,82 @@ public final class ShipComposerView extends BasicWindow {
       for(int row = 0; row < size.getRows(); row++) {
         graphics.putString(0, row, " ".repeat(size.getColumns()));
       }
-      if(!chassis.isEmpty()) {
-        ShipArtFile part = chassis.get(index);
-        int left = Math.max(1, (size.getColumns() - part.width()) / 2);
-        int top = Math.max(1, (size.getRows() - part.height()) / 2);
-        for(int row = 0; row < part.height(); row++) {
-          for(int column = 0; column < part.width(); column++) {
-            char character = part.at(row, column);
-            if(character != ' ') {
-              graphics.setForegroundColor(color(part.color()));
-              graphics.setCharacter(left + column, top + row, character);
-            }
+      if(chassis.isEmpty()) {
+        graphics.putString(1, 1, "No hay chasis en ships/chassis.txt");
+        return;
+      }
+      // el montaje: chasis de fondo y las piezas encima, tapando lo de debajo
+      int width = chassis.get(chassisIndex).width() + 2;
+      int height = chassis.get(chassisIndex).height() + 2;
+      for(ShipAssembly.ShipPlacement placement : assembly.pieces()) {
+        ShipArtFile piece = findPiece(placement.piece());
+        if(piece != null) {
+          width = Math.max(width, placement.x() + piece.width() + 2);
+          height = Math.max(height, placement.y() + piece.height() + 2);
+        }
+      }
+      if(!pieces.isEmpty()) {
+        width = Math.max(width, cursorX + pieces.get(pieceIndex).width() + 2);
+        height = Math.max(height, cursorY + pieces.get(pieceIndex).height() + 2);
+      }
+      char[][] cells = new char[height][width];
+      TextColor[][] colors = new TextColor[height][width];
+      for(int row = 0; row < height; row++) {
+        for(int column = 0; column < width; column++) {
+          cells[row][column] = ' ';
+          colors[row][column] = TextColor.ANSI.WHITE;
+        }
+      }
+      ShipArtFile hull = chassis.get(chassisIndex);
+      overlay(cells, colors, hull, 1, 1, hull.color());
+      for(ShipAssembly.ShipPlacement placement : assembly.pieces()) {
+        ShipArtFile piece = findPiece(placement.piece());
+        if(piece != null) {
+          overlay(cells, colors, piece, placement.x() + 1, placement.y() + 1, placement.color());
+        }
+      }
+      if(!pieces.isEmpty()) {
+        overlay(cells, colors, pieces.get(pieceIndex), cursorX + 1, cursorY + 1, pendingColor);
+      }
+      int left = Math.max(0, (size.getColumns() - width) / 2);
+      int top = Math.max(0, (size.getRows() - height - 2) / 2);
+      for(int row = 0; row < height && top + row < size.getRows() - 2; row++) {
+        for(int column = 0; column < width && left + column < size.getColumns(); column++) {
+          if(cells[row][column] != ' ') {
+            graphics.setForegroundColor(colors[row][column]);
+            graphics.setCharacter(left + column, top + row, cells[row][column]);
           }
         }
-        graphics.setForegroundColor(TextColor.ANSI.WHITE);
-        graphics.putString(1, size.getRows() - 2, part.name() + "  ·  color: " + part.color() + "  ·  "
-            + part.width() + "x" + part.height() + "  ·  " + (index + 1) + "/" + chassis.size());
-      } else {
-        graphics.putString(1, 1, "No hay chasis en ships/chassis.txt");
       }
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
-      graphics.putString(1, size.getRows() - 1, "[n/p] chasis · [r] recargar fichero · [ESC] salir"
+      String pieceName = pieces.isEmpty() ? "-" : pieces.get(pieceIndex).name();
+      graphics.putString(1, size.getRows() - 2, hull.name() + " [" + hull.color() + "]  ·  pieza: " + pieceName
+          + " (" + (pieces.isEmpty() ? 0 : pieceIndex + 1) + "/" + pieces.size() + ") x=" + cursorX + " y=" + cursorY
+          + " [" + pendingColor + "]  ·  " + assembly.pieces().size() + " colocadas");
+      graphics.putString(1, size.getRows() - 1, "[flechas] mover · [ENTER] colocar · [n/p] pieza · [TAB] chasis"
+          + " · [c] color · [u] deshacer · [s] guardar · [l] cargar · [r] recargar · [ESC] salir"
           + (message.isEmpty() ? "" : "   ||   " + message));
     }
+
+    private void overlay(char[][] cells, TextColor[][] colors, ShipArtFile part, int x, int y, String colorName) {
+      for(int row = 0; row < part.height(); row++) {
+        for(int column = 0; column < part.width(); column++) {
+          char character = part.at(row, column);
+          if(character != ' ' && y + row < cells.length && x + column < cells[0].length) {
+            cells[y + row][x + column] = character;
+            colors[y + row][x + column] = color(colorName);
+          }
+        }
+      }
+    }
+  }
+
+  private ShipArtFile findPiece(String name) {
+    for(ShipArtFile piece : pieces) {
+      if(piece.name().equals(name)) {
+        return piece;
+      }
+    }
+    return null;
   }
 }
