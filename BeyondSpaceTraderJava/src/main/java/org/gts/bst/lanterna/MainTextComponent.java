@@ -337,6 +337,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     invalidate();
   }
 
+  public void openAbout() {
+    panel = MainPanel.About;
+    invalidate();
+  }
+
   public void openShipList() {
     panel = MainPanel.ShipList;
     invalidate();
@@ -629,6 +634,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       case Designer:
         return 60;
       case News:
+      case About:
         return 60;
       default:
         return NAVIGATION_PANEL_WIDTH;
@@ -674,6 +680,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         break;
       case News:
         drawNewsPanel(graphics, x, height);
+        break;
+      case About:
+        drawAboutPanel(graphics, x, height);
         break;
       default:
         drawNavigationPanel(graphics, x, height);
@@ -1235,6 +1244,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     return pct.startsWith("-") ? UiPalette.BAD : UiPalette.TEXT;
   }
 
+  /** The provenance and the license, mirroring the NOTICE file. */
+  private void drawAboutPanel(TextGUIGraphics graphics, int x, int height) {
+    UiPalette.title(graphics, x, contentTop, Strings.AboutTitle, panelWidth);
+    int row = contentTop + 2;
+    row = drawWrapped(graphics, x, row, Strings.AboutOrigin, UiPalette.TEXT) + 1;
+    row = drawWrapped(graphics, x, row, Strings.AboutPorts, UiPalette.TEXT) + 1;
+    row = drawWrapped(graphics, x, row, Strings.AboutLicense, UiPalette.TEXT) + 1;
+    drawWrapped(graphics, x, row, Strings.AboutHome, UiPalette.ACCENT);
+  }
+
   private void drawNavigationPanel(TextGUIGraphics graphics, int x, int height) {
     int row = contentTop;
     if(targetSelected()) {
@@ -1369,6 +1388,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         return Strings.DesignerKeys;
       case News:
         return Strings.NewsKeys;
+      case About:
+        return Strings.AboutKeys;
       default:
         return null;
     }

@@ -426,6 +426,12 @@ public final class Strings {
   public static final String DialogLeaveEmptyPrompt = text("DialogLeaveEmptyPrompt");
   public static final String DialogLeaveEmptyTitle = text("DialogLeaveEmptyTitle");
   public static final String HighScoresKeys = text("HighScoresKeys");
+  public static final String AboutTitle = text("AboutTitle");
+  public static final String AboutKeys = text("AboutKeys");
+  public static final String AboutOrigin = text("AboutOrigin");
+  public static final String AboutPorts = text("AboutPorts");
+  public static final String AboutLicense = text("AboutLicense");
+  public static final String AboutHome = text("AboutHome");
   public static final String HighScoresTitle = text("HighScoresTitle");
   public static final String OptionsKeys = text("OptionsKeys");
   public static final String OptionsOff = text("OptionsOff");
@@ -488,6 +494,7 @@ public final class Strings {
   public static final String MenuPersonnel = text("MenuPersonnel");
   public static final String MenuPod = text("MenuPod");
   public static final String MenuQuests = text("MenuQuests");
+  public static final String MenuAbout = text("MenuAbout");
   public static final String MenuQuit = text("MenuQuit");
   public static final String MenuRepairs = text("MenuRepairs");
   public static final String MenuSave = text("MenuSave");

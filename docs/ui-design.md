@@ -211,6 +211,8 @@ chart is hidden; the chart comes back when the panel closes.
   - *Bank*: cash, debt, loans, insurance.
   - *Personnel*: crew/mercenaries, skills, hire/dismiss.
   - *Quests & news*: active quests, latest news, newspaper.
+  - *About*: where the game comes from, the authors and the license (it mirrors the
+    NOTICE file); in the menu and on the `A` key.
   - *Encounter*: replaces the panel (map dimmed); actions offered with keys
     (attack, flee, surrender, bribe, submit, board...).
   - *Options* and *save/load* as panels too.
