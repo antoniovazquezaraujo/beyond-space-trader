@@ -29,6 +29,7 @@ import org.gts.bst.view.ShipArt;
 import org.gts.bst.view.ShipArtGenerator;
 import org.gts.bst.view.ShipPixelArt;
 import org.gts.bst.view.ShipPixelArtGenerator;
+import org.gts.bst.view.ShipPieces;
 import spacetrader.Consts;
 import spacetrader.Strings;
 
@@ -63,6 +64,8 @@ public final class ShipArtView extends BasicWindow {
   private String lastSaved = "";
   private boolean mirrored;
   private int view;
+  private boolean pieces;
+  private int pieceIndex;
   private boolean showZones;
   private boolean enginesOff;
   private int paletteIndex;
@@ -104,7 +107,13 @@ public final class ShipArtView extends BasicWindow {
         break;
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
-        if(character == 'n' || character == ' ') {
+        if(pieces && (character == 'n' || character == ' ')) {
+          pieceIndex = (pieceIndex + 1) % ShipPieces.all().size();
+        } else if(pieces && character == 'p') {
+          pieceIndex = (ShipPieces.all().size() + pieceIndex - 1) % ShipPieces.all().size();
+        } else if(character == 'v') {
+          pieces = !pieces;
+        } else if(character == 'n' || character == ' ') {
           nextShip(1);
         } else if(character == 'p') {
           nextShip(-1);
@@ -233,12 +242,16 @@ public final class ShipArtView extends BasicWindow {
 
     private void paint(TextGUIGraphics graphics) {
       TerminalSize size = getSize();
-      ShipArt art = art();
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
       for(int row = 0; row < size.getRows(); row++) {
         graphics.putString(0, row, " ".repeat(size.getColumns()));
       }
+      if(pieces) {
+        paintPieces(graphics, size);
+        return;
+      }
+      ShipArt art = art();
       int left = Math.max(0, Math.min(shipX, size.getColumns() - art.width()));
       int top = Math.max(0, Math.min(shipY, size.getRows() - art.height() - 3));
       for(int row = 0; row < art.height(); row++) {
@@ -261,6 +274,38 @@ public final class ShipArtView extends BasicWindow {
           + (lastSaved.isEmpty() ? "" : "  ||  " + lastSaved);
       graphics.putString(1, size.getRows() - 1,
           state.substring(0, Math.min(state.length(), size.getColumns() - 2)));
+    }
+
+    private void paintPieces(TextGUIGraphics graphics, TerminalSize size) {
+      ShipPieces.Piece piece = ShipPieces.all().get(pieceIndex);
+      ShipPixelArt pixels = piece.toPixelArt();
+      ShipArt braille = pixels.toShipArt();
+      ShipArt blocks = pixels.toBlockArt();
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      graphics.putString(1, 1, "PIEZAS " + (pieceIndex + 1) + "/" + ShipPieces.all().size() + ": " + piece.name()
+          + "   zona " + piece.zone() + "   " + piece.width() + "x" + piece.height() + " px");
+      int column = drawPiece(graphics, 3, 3, "ASCII " + piece.width() + "x" + piece.height(), piece.asAscii(),
+          piece.zone()) + 5;
+      column = drawPiece(graphics, column, 3, "BRAILLE " + braille.width() + "x" + braille.height(), braille,
+          piece.zone()) + 5;
+      drawPiece(graphics, column, 3, "BLOQUES " + blocks.width() + "x" + blocks.height(), blocks, piece.zone());
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      graphics.putString(1, size.getRows() - 1, "[n/p] pieza · [v] volver a las naves · [c] paleta · [ESC] salir");
+    }
+
+    private int drawPiece(TextGUIGraphics graphics, int x, int row, String title, ShipArt art, char zone) {
+      graphics.setForegroundColor(TextColor.ANSI.CYAN);
+      graphics.putString(x, row, title);
+      for(int r = 0; r < art.height(); r++) {
+        for(int c = 0; c < art.width(); c++) {
+          char character = art.at(r, c);
+          if(character != ' ') {
+            graphics.setForegroundColor(zoneColor(zone));
+            graphics.setCharacter(x + c, row + 1 + r, character);
+          }
+        }
+      }
+      return x + Math.max(title.length(), art.width());
     }
 
     private void drawLegend(TextGUIGraphics graphics, int x, int row) {
