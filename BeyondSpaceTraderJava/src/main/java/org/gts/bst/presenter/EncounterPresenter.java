@@ -43,8 +43,8 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void start() {
-    game.EncounterBegin();
-    view.render(model(game.EncounterTextInitial(), game.EncounterActionInitial()));
+    game.encounter().EncounterBegin();
+    view.render(model(game.encounter().EncounterTextInitial(), game.encounter().EncounterActionInitial()));
   }
 
   public EncounterResult result() {
@@ -60,31 +60,31 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   public void attack() {
     disableAuto();
-    if(game.EncounterVerifyAttack()) {
+    if(game.encounter().EncounterVerifyAttack()) {
       executeAction();
     }
   }
 
   public void board() {
-    if(game.EncounterVerifyBoard(this)) {
+    if(game.encounter().EncounterVerifyBoard(this)) {
       exit(EncounterResult.Normal);
     }
   }
 
   public void bribe() {
-    if(game.EncounterVerifyBribe()) {
+    if(game.encounter().EncounterVerifyBribe()) {
       exit(EncounterResult.Normal);
     }
   }
 
   public void drink() {
-    game.EncounterDrink();
+    game.encounter().EncounterDrink();
     exit(EncounterResult.Normal);
   }
 
   public void flee() {
     disableAuto();
-    if(game.EncounterVerifyFlee()) {
+    if(game.encounter().EncounterVerifyFlee()) {
       executeAction();
     }
   }
@@ -100,37 +100,37 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void meet() {
-    game.EncounterMeet();
+    game.encounter().EncounterMeet();
     exit(EncounterResult.Normal);
   }
 
   public void plunder() {
     disableAuto();
-    game.EncounterPlunder(this);
+    game.encounter().EncounterPlunder(this);
     exit(EncounterResult.Normal);
   }
 
   public void submit() {
-    if(game.EncounterVerifySubmit()) {
+    if(game.encounter().EncounterVerifySubmit()) {
       exit(cmdrship.IllegalSpecialCargo() ? EncounterResult.Arrested : EncounterResult.Normal);
     }
   }
 
   public void surrender() {
     disableAuto();
-    result = game.EncounterVerifySurrender();
+    result = game.encounter().EncounterVerifySurrender();
     if(result != EncounterResult.Continue) {
       view.close();
     }
   }
 
   public void trade() {
-    game.EncounterTrade(this);
+    game.encounter().EncounterTrade(this);
     exit(EncounterResult.Normal);
   }
 
   public void yield() {
-    result = game.EncounterVerifyYield();
+    result = game.encounter().EncounterVerifyYield();
     if(result != EncounterResult.Continue) {
       view.close();
     }
@@ -177,13 +177,13 @@ public class EncounterPresenter implements EncounterDialogHost {
     }
     running = true;
     try {
-      result = game.EncounterExecuteAction(this);
+      result = game.encounter().EncounterExecuteAction(this);
     } finally {
       running = false;
     }
     if(result == EncounterResult.Continue) {
       update();
-      if(game.getEncounterContinueFleeing() || game.getEncounterContinueAttacking()) {
+      if(game.encounter().getEncounterContinueFleeing() || game.encounter().getEncounterContinueAttacking()) {
         view.startTimer();
       }
     } else {
@@ -192,7 +192,7 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void update() {
-    view.render(model(game.EncounterText(), game.EncounterAction()));
+    view.render(model(game.encounter().EncounterText(), game.encounter().EncounterAction()));
   }
 
   private void exit(EncounterResult result) {
@@ -202,23 +202,25 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   private void disableAuto() {
     view.stopTimer();
-    game.setEncounterContinueFleeing(false);
-    game.setEncounterContinueAttacking(false);
+    game.encounter().setEncounterContinueFleeing(false);
+    game.encounter().setEncounterContinueAttacking(false);
   }
 
   private EncounterViewModel model(String encounterText, String actionText) {
     return new EncounterViewModel(actions(),
-        game.getEncounterContinueAttacking() || game.getEncounterContinueFleeing(),
-        game.EncounterImageIndex(),
+        game.encounter().getEncounterContinueAttacking() || game.encounter().getEncounterContinueFleeing(),
+        game.encounter().EncounterImageIndex(),
         cmdrship.Name(), cmdrship.HullText(), cmdrship.ShieldText(),
-        game.getOpponent().Name(), game.getOpponent().HullText(), game.getOpponent().ShieldText(),
+        game.encounter().getOpponent().Name(), game.encounter().getOpponent().HullText(), game.encounter().getOpponent().ShieldText(),
         encounterText, actionText,
-        cmdrship.Type(), game.getOpponent().Type());
+        cmdrship.Type(), game.encounter().getOpponent().Type(),
+        game.encounter().getEncounterOppHit(), game.encounter().getEncounterCmdrHit(),
+        game.encounter().getEncounterOppDamage(), game.encounter().getEncounterCmdrDamage());
   }
 
   private Set<EncounterAction> actions() {
     Set<EncounterAction> actions = EnumSet.noneOf(EncounterAction.class);
-    switch(game.getEncounterType()) {
+    switch(game.encounter().getEncounterType()) {
       case BottleGood:
       case BottleOld:
         actions.add(EncounterAction.Drink);
@@ -292,7 +294,7 @@ public class EncounterPresenter implements EncounterDialogHost {
         actions.add(EncounterAction.Trade);
         break;
     }
-    if(game.getEncounterContinueAttacking() || game.getEncounterContinueFleeing()) {
+    if(game.encounter().getEncounterContinueAttacking() || game.encounter().getEncounterContinueFleeing()) {
       actions.add(EncounterAction.Interrupt);
     }
     return actions;

@@ -38,7 +38,7 @@ class CargoTransferPresenterTest {
   @Test
   void plunderShowsTheOpponentQuantities() {
     Game game = newGame(new TestDialogService());
-    game.getOpponent().Cargo()[0] = 4;
+    game.encounter().getOpponent().Cargo()[0] = 4;
     FakeView view = new FakeView();
 
     new CargoTransferPresenter(game, view, Mode.Plunder).update();
@@ -65,7 +65,7 @@ class CargoTransferPresenterTest {
   @Test
   void plunderTransfersTheAskedAmount() {
     Game game = newGame(new TestDialogService());
-    game.getOpponent().Cargo()[0] = 4;
+    game.encounter().getOpponent().Cargo()[0] = 4;
     FakeView view = new FakeView();
     view.buyAnswer = 2;
     CargoTransferPresenter presenter = new CargoTransferPresenter(game, view, Mode.Plunder);
@@ -73,7 +73,7 @@ class CargoTransferPresenterTest {
     presenter.transfer(0, false);
 
     assertEquals(2, game.Commander().getShip().Cargo()[0]);
-    assertEquals(2, game.getOpponent().Cargo()[0]);
+    assertEquals(2, game.encounter().getOpponent().Cargo()[0]);
   }
 
   private static Game newGame(TestDialogService dialogs) {

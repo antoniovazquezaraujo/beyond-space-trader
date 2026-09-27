@@ -39,14 +39,14 @@ public final class Trade {
         cashToSpend = game.Commander().CashToSpend();
         break;
       case BuyTrader:
-        items = game.getOpponent().Cargo();
+        items = game.encounter().getOpponent().Cargo();
         TradeItem item = Consts.TradeItems.get(tradeItem);
         int chance = item.Illegal() ? 45 : 10;
         double adj = Functions.GetRandom(100) < chance ? 1.1 : (item.Illegal() ? 0.8 : 0.9);
         unitPrice = Math.min(item.MaxTradePrice(), Math.max(item.MinTradePrice(), (int)Math.round(game.PriceCargoBuy()[tradeItem] * adj / item.RoundOff()) * item.RoundOff()));
         break;
       case InPlunder:
-        items = game.getOpponent().Cargo();
+        items = game.encounter().getOpponent().Cargo();
         break;
     }
     if(op == CargoBuyOp.BuySystem && game.Commander().getDebt() > Consts.DebtTooLarge) {
@@ -77,7 +77,7 @@ public final class Trade {
       return;
     }
     int tradeItem = offer.tradeItem();
-    int[] items = offer.op() == CargoBuyOp.BuySystem ? game.Commander().CurrentSystem().TradeItems() : game.getOpponent().Cargo();
+    int[] items = offer.op() == CargoBuyOp.BuySystem ? game.Commander().CurrentSystem().TradeItems() : game.encounter().getOpponent().Cargo();
     int totalPrice = qty * offer.unitPrice();
     game.Commander().getShip().Cargo()[tradeItem] += qty;
     items[tradeItem] -= qty;
@@ -110,12 +110,12 @@ public final class Trade {
       game.Dialogs().alert(AlertType.CargoNotInterested);
       return null;
     }
-    if(op == CargoSellOp.Jettison && !game.getLitterWarning() && game.Commander().getPoliceRecordScore() > Consts.PoliceRecordScoreDubious
+    if(op == CargoSellOp.Jettison && !game.encounter().getLitterWarning() && game.Commander().getPoliceRecordScore() > Consts.PoliceRecordScoreDubious
         && game.Dialogs().alert(AlertType.EncounterDumpWarning) != DialogResult.Yes) {
       return null;
     }
     int unitCost = 0;
-    int maxAmount = op == CargoSellOp.SellTrader ? Math.min(qtyInHand, game.getOpponent().FreeCargoBays()) : qtyInHand;
+    int maxAmount = op == CargoSellOp.SellTrader ? Math.min(qtyInHand, game.encounter().getOpponent().FreeCargoBays()) : qtyInHand;
     if(op == CargoSellOp.Dump) {
       unitCost = 5 * (game.Difficulty().CastToInt() + 1);
       maxAmount = Math.min(maxAmount, game.Commander().CashToSpend() / unitCost);

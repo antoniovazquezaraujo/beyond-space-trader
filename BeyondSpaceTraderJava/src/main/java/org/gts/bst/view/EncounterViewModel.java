@@ -29,6 +29,10 @@ public record EncounterViewModel(
     String encounterText,
     String actionText,
     ShipType youType,
-    ShipType opponentType) {
+    ShipType opponentType,
+    boolean youHit,
+    boolean oppHit,
+    int youDamage,
+    int oppDamage) {
 }
 

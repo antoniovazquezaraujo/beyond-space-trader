@@ -43,7 +43,7 @@ class LanternaCargoTransferViewTest {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
       Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, DialogService.NONE);
-      game.getOpponent().Cargo()[0] = 7;
+      game.encounter().getOpponent().Cargo()[0] = 7;
       LanternaCargoTransferView view = new LanternaCargoTransferView(gui, game, CargoTransferPresenter.Mode.Plunder);
       gui.addWindow(view.asWindow());
       gui.updateScreen();
@@ -53,7 +53,7 @@ class LanternaCargoTransferViewTest {
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('1', false, false, true));
 
       assertEquals(7, game.Commander().getShip().Cargo()[0]);
-      assertEquals(0, game.getOpponent().Cargo()[0]);
+      assertEquals(0, game.encounter().getOpponent().Cargo()[0]);
     } finally {
       screen.stopScreen();
       screen.close();

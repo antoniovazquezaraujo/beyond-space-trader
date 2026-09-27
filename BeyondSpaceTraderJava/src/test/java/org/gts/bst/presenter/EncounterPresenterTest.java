@@ -33,7 +33,7 @@ class EncounterPresenterTest {
   void showsTheActionsOfAPirateAttack() {
     Game game = newGame();
     FakeView view = new FakeView();
-    game.setEncounterType(EncounterType.PirateAttack);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
 
     new EncounterPresenter(game, view).start();
 
@@ -45,7 +45,7 @@ class EncounterPresenterTest {
   void showsTheActionsOfAnAbandonedShip() {
     Game game = newGame();
     FakeView view = new FakeView();
-    game.setEncounterType(EncounterType.MarieCeleste);
+    game.encounter().setEncounterType(EncounterType.MarieCeleste);
 
     new EncounterPresenter(game, view).start();
 
@@ -56,7 +56,7 @@ class EncounterPresenterTest {
   void showsTheActionsOfATrader() {
     Game game = newGame();
     FakeView view = new FakeView();
-    game.setEncounterType(EncounterType.TraderBuy);
+    game.encounter().setEncounterType(EncounterType.TraderBuy);
 
     new EncounterPresenter(game, view).start();
 
@@ -67,11 +67,11 @@ class EncounterPresenterTest {
   void showsTheInterruptWhileRepeatingAnAction() {
     Game game = newGame();
     FakeView view = new FakeView();
-    game.setEncounterType(EncounterType.PirateAttack);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
     EncounterPresenter presenter = new EncounterPresenter(game, view);
     presenter.start();
 
-    game.setEncounterContinueAttacking(true);
+    game.encounter().setEncounterContinueAttacking(true);
     presenter.update();
 
     assertTrue(view.model.continueVisible());
@@ -82,7 +82,7 @@ class EncounterPresenterTest {
   void ignoringTheEncounterClosesItAsNormal() {
     Game game = newGame();
     FakeView view = new FakeView();
-    game.setEncounterType(EncounterType.PirateAttack);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
     EncounterPresenter presenter = new EncounterPresenter(game, view);
     presenter.start();
 
@@ -104,11 +104,45 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void theModelCarriesTheRoundResult() {
+    Game game = newGame();
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+    presenter.start();
+
+    presenter.tick();
+
+    // The starting ship has no weapons, so its shot can never hit.
+    assertFalse(view.model.youHit());
+    assertEquals(0, view.model.youDamage());
+    assertTrue(view.model.oppDamage() >= 0);
+  }
+
+  @Test
+  void fleeingAtBeginnerDifficultyEscapesUnhurt() {
+    TestDialogService dialogs = new TestDialogService();
+    Game game = new Game("Antonio", Difficulty.Beginner, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+    presenter.start();
+    int hull = game.Commander().getShip().getHull();
+
+    presenter.flee();
+
+    assertEquals(hull, game.Commander().getShip().getHull(), "on Beginner fleeing is unharmed");
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterEscaped), dialogs.alerts().toString());
+    assertTrue(view.closed);
+  }
+
+  @Test
   void ignoresLateTicksOnceTheEncounterEnded() {
     TestDialogService dialogs = new TestDialogService();
     Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
     game.SelectedSystemId(StarSystemId.FromInt(0));
-    game.setEncounterType(EncounterType.PirateAttack);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
     game.Commander().getShip().setHull(0);
     FakeView view = new FakeView();
     EncounterPresenter presenter = new EncounterPresenter(game, view);
@@ -125,7 +159,7 @@ class EncounterPresenterTest {
   @Test
   void buyingFromTheTraderUsesTheCargoOffer() {
     Game game = newGame();
-    game.getOpponent().Cargo()[0] = 3;
+    game.encounter().getOpponent().Cargo()[0] = 3;
     game.Commander().setCash(10000);
     FakeView view = new FakeView();
     view.cargoBuyAnswer = 1;
@@ -133,7 +167,7 @@ class EncounterPresenterTest {
 
     presenter.buyTraderCargo(0);
 
-    assertEquals(2, game.getOpponent().Cargo()[0]);
+    assertEquals(2, game.encounter().getOpponent().Cargo()[0]);
     assertEquals(1, game.Commander().getShip().Cargo()[0]);
   }
 

@@ -590,7 +590,7 @@ public class Ship extends ShipSpec {
 
   public void PerformRepairs() {
     // A disabled ship cannot be repaired.
-    if(CommandersShip() || !Game.CurrentGame().getOpponentDisabled()) {
+    if(CommandersShip() || !Game.CurrentGame().encounter().getOpponentDisabled()) {
       // Engineer may do some repairs
       int repairs = Functions.GetRandom(Engineer());
       if(repairs > 0) {
@@ -726,7 +726,7 @@ public class Ship extends ShipSpec {
   }
 
   public boolean Cloaked() {
-    int oppEng = CommandersShip() ? Game.CurrentGame().getOpponent().Engineer() : Game.CurrentGame().Commander().getShip().Engineer();
+    int oppEng = CommandersShip() ? Game.CurrentGame().encounter().getOpponent().Engineer() : Game.CurrentGame().Commander().getShip().Engineer();
     return HasGadget(GadgetType.CloakingDevice) && Engineer() > oppEng;
   }
 

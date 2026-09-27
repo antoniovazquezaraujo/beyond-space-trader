@@ -44,7 +44,7 @@ class LanternaEncounterViewTest {
           false, 0, "Flea", "Hull at 100%", "Shields at 100%",
           "Pirate", "Hull at 100%", "Shields at 100%",
           "The pirate attacks.", "Choose an action.",
-          ShipType.Flea, ShipType.Scorpion));
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0));
       gui.addWindow(view.asWindow());
       gui.updateScreen();
 
