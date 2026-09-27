@@ -45,6 +45,15 @@ class ShipArtViewTest {
       gui.updateScreen();
       assertEquals(1, view.shipIndex());
       assertTrue(screenText(screen).contains(Strings.ShipNames.get(1)), screenText(screen));
+
+      view.handleKey(new KeyStroke('z', false, false));
+      view.handleKey(new KeyStroke('c', false, false));
+      view.handleKey(new KeyStroke('d', false, false));
+      gui.updateScreen();
+      String text = screenText(screen);
+      assertTrue(text.contains("[z] zonas (si)"), text);
+      assertTrue(text.contains("paleta: pirata"), text);
+      assertTrue(text.contains("[d] motores (apagados)"), text);
     } finally {
       screen.stopScreen();
       screen.close();
