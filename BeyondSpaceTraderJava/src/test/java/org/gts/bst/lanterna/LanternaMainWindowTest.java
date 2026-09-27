@@ -102,7 +102,7 @@ class LanternaMainWindowTest {
       assertTrue(areaContains(screen, 1, 4, 60, 26, "·•◦✧✦✶◉"), "no chart markers");
       assertTrue(screenText(screen).contains("[TAB] map · [C] trade · [B] bank"), screenText(screen));
       assertTrue(screenText(screen).contains("[T] track"), screenText(screen));
-      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(5, 10).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, 0).getBackgroundColor(),
           "the window background must be black");
       assertTrue(screenText(screen).contains(holder[0].Commander().CurrentSystem().Name()),
           "current system not in the panel");
