@@ -1232,10 +1232,6 @@ public final class Game extends STSerializableObject {
     return _selectedSystemId;
   }
 
-  public StarSystemId WarpSystemId() {
-    return _warpSystemId;
-  }
-
   public String EncounterAction() {
     String action;
     if(getOpponentDisabled()) {
@@ -2784,24 +2780,6 @@ public final class Game extends STSerializableObject {
     _veryRareEncounters.add(VeryRareEncounter.BottleGood);
   }
 
-  public void SelectNextSystemWithinRange(boolean forward) {
-    int[] dest = Destinations();
-    if(dest.length > 0) {
-      int index = Util.BruteSeek(dest, _warpSystemId.CastToInt());
-      if(index < 0) {
-        index = forward ? 0 : dest.length - 1;
-      } else {
-        index = (dest.length + index + (forward ? 1 : -1)) % dest.length;
-      }
-      if(Functions.WormholeExists(cmdr.CurrentSystem(), _universe[dest[index]])) {
-        SelectedSystemId(cmdr.getCurrentSystemId());
-        TargetWormhole(true);
-      } else {
-        SelectedSystemId(StarSystemId.FromInt(dest[index]));
-      }
-    }
-  }
-
   public void SelectedSystemId(StarSystemId value) {
     _selectedSystemId = value;
     _warpSystemId = value;
@@ -2863,25 +2841,13 @@ public final class Game extends STSerializableObject {
         cmdr.CurrentSystem().CountDown(CountDownStart());
         NewsResetEvents();
         CalculatePrices(WarpSystem());
-        if(Travel()) {
-          // Clicks will be -1 if we were arrested or used the escape pod.
-					/*
-           * if (Clicks == 0) Dialogs().alert(AlertType.TravelArrival);
-           */
-        } else {
+        // Clicks will be -1 if we were arrested or used the escape pod.
+        if(!Travel()) {
           Dialogs().alert(AlertType.TravelUneventfulTrip);
         }
         Arrival();
       }
     }
-  }
-
-  public void WarpDirect() {
-    _warpSystemId = _selectedSystemId;
-    cmdr.CurrentSystem().CountDown(CountDownStart());
-    NewsResetEvents();
-    CalculatePrices(WarpSystem());
-    Arrival();
   }
 
   public void setArrivedViaWormhole(boolean arrivedViaWormhole) {
@@ -2896,24 +2862,8 @@ public final class Game extends STSerializableObject {
     _canSuperWarp = canSuperWarp;
   }
 
-  public void setChanceOfTradeInOrbit(int chanceOfTradeInOrbit) {
-    _chanceOfTradeInOrbit = chanceOfTradeInOrbit;
-  }
-
-  public void setChanceOfVeryRareEncounter(int chanceOfVeryRareEncounter) {
-    _chanceOfVeryRareEncounter = chanceOfVeryRareEncounter;
-  }
-
-  public void setCheatEnabled(boolean cheatEnabled) {
-    _cheatEnabled = cheatEnabled;
-  }
-
   public void setClicks(int clicks) {
     _clicks = clicks;
-  }
-
-  public void setEasyEncounters(boolean easyEncounters) {
-    _easyEncounters = easyEncounters;
   }
 
   public void setEncounterCmdrFleeing(boolean encounterCmdrFleeing) {
@@ -2970,10 +2920,6 @@ public final class Game extends STSerializableObject {
 
   public void setPaidForNewspaper(boolean paidForNewspaper) {
     _paidForNewspaper = paidForNewspaper;
-  }
-
-  public void setParentWindow(GameWindow parentWindow) {
-    _parentWin = parentWindow;
   }
 
   public void setQuestStatusArtifact(int questStatusArtifact) {
