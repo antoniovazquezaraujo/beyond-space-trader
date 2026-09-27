@@ -61,6 +61,15 @@ public final class Strings {
   public static final String CargoUnit = text("CargoUnit");
   public static final String DistanceUnit = text("DistanceUnit");
   public static final String EncounterActionOppAttacks = text("EncounterActionOppAttacks");
+  public static final String EncounterOppDisabled = text("EncounterOppDisabled");
+  public static final String EncounterOppSurrender = text("EncounterOppSurrender");
+  public static final String EncounterOppFleeing = text("EncounterOppFleeing");
+  public static final String EncounterOppFollowing = text("EncounterOppFollowing");
+  public static final String EncounterYouHit = text("EncounterYouHit");
+  public static final String EncounterYouMissed = text("EncounterYouMissed");
+  public static final String EncounterOppNoEscape = text("EncounterOppNoEscape");
+  public static final String EncounterOppHits = text("EncounterOppHits");
+  public static final String EncounterOppMissed = text("EncounterOppMissed");
   public static final String EncounterHidePrincess = text("EncounterHidePrincess");
   public static final String EncounterHideSculpture = text("EncounterHideSculpture");
   public static final String EncounterHullStrength = text("EncounterHullStrength");
