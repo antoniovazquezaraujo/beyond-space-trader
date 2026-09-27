@@ -5,35 +5,23 @@
 
 [antena]
 color=cian
-.⦅
+ ⦅
 ∫
-
 [motor]
 color=naranja
-⍠⧮⍠
 ⍠⧯⍠
-
 [torreta laser]
 color=rojo
 .⍡
-⦤ ⦥
-
 [torreta disruptor]
 color=magenta
-⧼⦾⎅⧊⎅⦾⧽
-⧼⦾⦻⦼⦽⦾⧽ 
-
+⧼⎅⧽
 [vaina de carga]
 color=amarillo
-⏌⏌⏌
-⏌⏌⏌
-
+⏌⏌
 [cabina]
 color=cian
-.⦋⎚.⦌
-⧸...⧹
-
+⦋⎚.⦌
 [deposito]
 color=verde
-⛁ ⛁
-⛁ ⛁
+⛁

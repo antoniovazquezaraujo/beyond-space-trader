@@ -47,6 +47,14 @@ class ShipComposerViewTest {
       view.handleKey(new KeyStroke('u', false, false));
       assertEquals(0, view.placedCount());
 
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      assertEquals(1, view.placedCount());
+      view.handleKey(new KeyStroke('x', false, false));
+      assertEquals(0, view.placedCount(), "x clears the assembly");
+      view.handleKey(new KeyStroke('h', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("[h] pieza (no)"), screenText(screen));
+
       // moverse mas alla del borde no debe reventar el dibujo
       for(int i = 0; i < 30; i++) {
         view.handleKey(new KeyStroke(KeyType.ArrowLeft));
