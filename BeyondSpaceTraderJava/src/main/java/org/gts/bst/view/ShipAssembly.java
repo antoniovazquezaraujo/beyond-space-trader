@@ -71,6 +71,26 @@ public record ShipAssembly(String name, String chassis, List<ShipPlacement> piec
     }
   }
 
+  /**
+   * Parses "name x=1 y=2 color=red" from the right, so the piece name can have
+   * spaces (torreta laser); a malformed line returns null and is skipped.
+   */
+  static ShipPlacement parsePlacement(String text) {
+    String[] parts = text.strip().split("\\s+");
+    if(parts.length < 4 || !parts[parts.length - 3].startsWith("x=") || !parts[parts.length - 2].startsWith("y=")
+        || !parts[parts.length - 1].startsWith("color=")) {
+      return null;
+    }
+    try {
+      String name = String.join(" ", java.util.Arrays.copyOf(parts, parts.length - 3));
+      return new ShipPlacement(name, Integer.parseInt(parts[parts.length - 3].substring(2)),
+          Integer.parseInt(parts[parts.length - 2].substring(2)),
+          parts[parts.length - 1].substring("color=".length()));
+    } catch(NumberFormatException e) {
+      return null;
+    }
+  }
+
   /** Parses the first assembly of a reader. */
   static ShipAssembly parse(Reader reader) throws IOException {
     BufferedReader buffered = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader);
@@ -87,10 +107,9 @@ public record ShipAssembly(String name, String chassis, List<ShipPlacement> piec
       } else if(trimmed.startsWith("chasis=")) {
         chassis = trimmed.substring("chasis=".length()).strip();
       } else if(trimmed.startsWith("pieza=")) {
-        String[] parts = trimmed.substring("pieza=".length()).split("\\s+");
-        if(parts.length >= 4) {
-          pieces.add(new ShipPlacement(parts[0], Integer.parseInt(parts[1].substring(2)),
-              Integer.parseInt(parts[2].substring(2)), parts[3].substring("color=".length())));
+        ShipPlacement placement = parsePlacement(trimmed.substring("pieza=".length()));
+        if(placement != null) {
+          pieces.add(placement);
         }
       }
     }

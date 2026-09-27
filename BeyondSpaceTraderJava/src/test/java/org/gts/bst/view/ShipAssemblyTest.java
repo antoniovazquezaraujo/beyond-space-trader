@@ -33,6 +33,21 @@ class ShipAssemblyTest {
   }
 
   @Test
+  void keepsNamesWithSpacesAndSkipsBrokenLines() throws IOException {
+    ShipAssembly assembly = ShipAssembly.parse(new java.io.StringReader(
+        "[prueba]\n"
+        + "chasis=uno\n"
+        + "pieza=torreta laser x=9 y=4 color=rojo\n"
+        + "pieza=vaina x=1 y=1\n"
+        + "pieza=motor x=0 y=2 color=naranja\n"));
+
+    assertEquals(2, assembly.pieces().size(), "the broken line is skipped");
+    assertEquals("torreta laser", assembly.pieces().get(0).piece());
+    assertEquals(9, assembly.pieces().get(0).x());
+    assertEquals("naranja", assembly.pieces().get(1).color());
+  }
+
+  @Test
   void addsAndUndoesPieces() {
     ShipAssembly assembly = ShipAssembly.empty("bloque-mediano");
     assembly = assembly.with(new ShipAssembly.ShipPlacement("motor", 1, 1, "rojo"));
