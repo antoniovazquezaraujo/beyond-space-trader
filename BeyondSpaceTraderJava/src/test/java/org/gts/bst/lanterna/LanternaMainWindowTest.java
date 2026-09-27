@@ -16,16 +16,20 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
+import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.presenter.MainPresenter;
@@ -348,6 +352,132 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertFalse(screenText(screen).contains(Strings.AboutTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void findsASystemByNameAndSelectsIt() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+
+      StarSystem target = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != holder[0].Commander().CurrentSystem()) {
+          target = system;
+          break;
+        }
+      }
+      assertNotNull(target);
+      String name = uniqueName(holder[0], target);
+
+      Thread worker = new Thread(() -> window.asWindow().getFocusedInteractable()
+          .handleInput(new KeyStroke('/', false, false)));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui, window.asWindow());
+      type(dialog, name);
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the find should end when the name is accepted");
+      gui.updateScreen();
+
+      assertSame(target, holder[0].WarpSystem(), "the found system is the target");
+      assertTrue(screenText(screen).contains(target.Name()), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void asksWhichSystemWhenSeveralMatchTheName() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+
+      StarSystem first = null;
+      String prefix = null;
+      for(StarSystem system : holder[0].Universe()) {
+        String candidate = system.Name().substring(0, Math.min(3, system.Name().length()));
+        List<StarSystem> found = matches(holder[0], candidate);
+        if(found.size() > 1) {
+          first = found.get(0);
+          prefix = candidate;
+          break;
+        }
+      }
+      assertNotNull(prefix, "the galaxy must have two systems starting with the same letters");
+
+      Thread worker = new Thread(() -> window.asWindow().getFocusedInteractable()
+          .handleInput(new KeyStroke('/', false, false)));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui, window.asWindow());
+      type(dialog, prefix);
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      worker.join(5000);
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.FindTitle), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertSame(first, holder[0].WarpSystem(), "the first match is selected");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void logsWhenNoSystemMatchesTheName() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+
+      String text = "zzz";
+      while(!matches(holder[0], text).isEmpty()) {
+        text += "z";
+      }
+
+      Thread worker = new Thread(() -> window.asWindow().getFocusedInteractable()
+          .handleInput(new KeyStroke('/', false, false)));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui, window.asWindow());
+      type(dialog, text);
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      worker.join(5000);
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains(Strings.FindNone), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -1361,6 +1491,46 @@ class LanternaMainWindowTest {
     @Override
     public void UpdateAll() {
     }
+  }
+
+  /** A prefix of the system name that matches no other system. */
+  private static String uniqueName(Game game, StarSystem system) {
+    String name = system.Name();
+    for(int length = 1; length <= name.length(); length++) {
+      if(matches(game, name.substring(0, length)).size() == 1) {
+        return name.substring(0, length);
+      }
+    }
+    return name;
+  }
+
+  private static List<StarSystem> matches(Game game, String text) {
+    List<StarSystem> found = new ArrayList<>();
+    for(StarSystem system : game.Universe()) {
+      if(system.Name().toLowerCase().startsWith(text.toLowerCase())) {
+        found.add(system);
+      }
+    }
+    return found;
+  }
+
+  private static void type(Window dialog, String text) {
+    for(char character : text.toCharArray()) {
+      dialog.handleInput(new KeyStroke(character, false, false));
+    }
+  }
+
+  private static Window waitForDialog(MultiWindowTextGUI gui, Window main) throws InterruptedException {
+    for(int i = 0; i < 500; i++) {
+      for(Window window : gui.getWindows()) {
+        if(window != main) {
+          return window;
+        }
+      }
+      Thread.sleep(10);
+    }
+    fail("the dialog was not shown");
+    return null;
   }
 
   private static String screenText(Screen screen) {

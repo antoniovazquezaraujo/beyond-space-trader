@@ -108,6 +108,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private String directKeys = "";
   private final List<String> menuItems = new ArrayList<>();
   private boolean menuVisible;
+  private String menuTitle = Strings.MenuTitle;
   private int menuIndex;
   private int panelWidth = NAVIGATION_PANEL_WIDTH;
   /** Row where the chart and the panel start; the header takes one line when it fits. */
@@ -1056,6 +1057,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   public void showMenu(List<String> items) {
+    showMenu(Strings.MenuTitle, items);
+  }
+
+  public void showMenu(String title, List<String> items) {
+    menuTitle = title;
     menuItems.clear();
     menuItems.addAll(items);
     menuIndex = 0;
@@ -1080,7 +1086,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     if(!menuVisible || menuItems.isEmpty()) {
       return;
     }
-    int boxWidth = Strings.MenuTitle.length();
+    int boxWidth = menuTitle.length();
     for(String item : menuItems) {
       boxWidth = Math.max(boxWidth, item.length() + 2);
     }
@@ -1094,7 +1100,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     for(int y = top; y < top + boxHeight && y < height; y++) {
       graphics.putString(left, y, blank);
     }
-    String title = " " + Strings.MenuTitle + " ";
+    String title = " " + menuTitle + " ";
     UiPalette.title(graphics, left, top,
         "┌─" + title + "─".repeat(Math.max(0, boxWidth - 3 - title.length())) + "┐", boxWidth);
     for(int i = 0; i < menuItems.size(); i++) {
