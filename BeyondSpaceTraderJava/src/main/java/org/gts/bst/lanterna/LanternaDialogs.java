@@ -9,7 +9,6 @@
 package org.gts.bst.lanterna;
 
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
-import com.googlecode.lanterna.gui2.dialogs.TextInputDialog;
 
 
 /**
@@ -24,7 +23,7 @@ public final class LanternaDialogs {
    * player cancels or types something invalid.
    */
   public static Integer askAmount(WindowBasedTextGUI gui, String title, String prompt, int maxAmount) {
-    String input = TextInputDialog.showDialog(gui, title, prompt, "0");
+    String input = InputDialog.show(gui, title, prompt, "0");
     if(input == null) {
       return null;
     }

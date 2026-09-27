@@ -13,7 +13,6 @@ import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.FileDialog;
-import com.googlecode.lanterna.gui2.dialogs.TextInputDialog;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.io.File;
@@ -590,6 +589,7 @@ public final class LanternaMainWindow
   public String askSaveTemplateFile() {
     FileDialog dialog = new FileDialog(Strings.DesignerSave, Strings.DialogSaveDescription,
         Strings.DialogSaveAction, new TerminalSize(60, 15), false, new File(Consts.CustomTemplatesDirectory));
+    dialog.setCloseWindowWithEscape(true);
     File file = dialog.showDialog(gui);
     if(file == null) {
       return null;
@@ -704,7 +704,7 @@ public final class LanternaMainWindow
   }
 
   private void askDesignerName(ShipyardDesignerViewModel model) {
-    String name = TextInputDialog.showDialog(gui, Strings.DialogShipNameTitle, Strings.DialogShipNamePrompt, model.name());
+    String name = InputDialog.show(gui, Strings.DialogShipNameTitle, Strings.DialogShipNamePrompt, model.name());
     if(name != null && !name.trim().isEmpty()) {
       shipyardPresenter.onNameChanged(name.trim());
     }

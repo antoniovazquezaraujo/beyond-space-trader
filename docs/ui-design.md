@@ -203,7 +203,8 @@ chart is hidden; the chart comes back when the panel closes.
     screens the table adds the prices at the target system (price, +/- and %); on
     narrow ones the selected item shows them in a line under the table. The target
     prices need a system within range selected in the chart; when they cannot be
-    computed the cells stay blank and the panel says why.
+    computed the cells stay blank and the panel says why. Items not traded or not
+    sold at a system show `-`.
   - *Shipyard*: repairs, fuel, ships for sale, equipment (sections of the panel).
   - *Bank*: cash, debt, loans, insurance.
   - *Personnel*: crew/mercenaries, skills, hire/dismiss.
@@ -301,7 +302,8 @@ the new views.
 
 ## Quantities in trade
 
-The player types the number (with backspace) and `ENTER` confirms. Holding `Shift`
+The player types the number (with backspace) and `ENTER` confirms (as in every
+dialog, `ESC` cancels it, like the Cancel button). Holding `Shift`
 while buying or selling (`Shift+B` / `Shift+S` in the trade panel) does the operation
 for the maximum amount without asking; as most terminals do not report the shift
 modifier, the uppercase letter works the same. In the cargo transfer, `Shift+digit`

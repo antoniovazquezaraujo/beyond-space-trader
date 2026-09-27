@@ -17,6 +17,8 @@ import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import java.util.List;
 import org.gts.bst.view.AlertButton;
 import org.gts.bst.view.AlertDialogHost;
@@ -40,7 +42,22 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
       return DialogResult.None;
     }
     DialogResult[] chosen = {buttons.get(0).result()};
-    BasicWindow dialog = new BasicWindow(title);
+    BasicWindow dialog = new BasicWindow(title) {
+      @Override
+      public boolean handleInput(KeyStroke key) {
+        if(key.getKeyType() == KeyType.Escape) {
+          chosen[0] = cancelResult(buttons);
+          close();
+          return true;
+        }
+        if(key.getKeyType() == KeyType.Enter && !(getFocusedInteractable() instanceof Button)) {
+          chosen[0] = buttons.get(0).result();
+          close();
+          return true;
+        }
+        return super.handleInput(key);
+      }
+    };
     Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
     panel.addComponent(new Label(message));
     panel.addComponent(new EmptySpace(TerminalSize.ONE));
@@ -64,5 +81,18 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
     gui.addWindow(dialog);
     gui.waitForWindowToClose(dialog);
     return chosen[0];
+  }
+
+  /**
+   * The result of Escape: the Cancel or No button when there is one, the default
+   * button otherwise (a dialog that only says "Ok" closes with it).
+   */
+  private static DialogResult cancelResult(List<AlertButton> buttons) {
+    for(AlertButton button : buttons) {
+      if(button.result() == DialogResult.Cancel || button.result() == DialogResult.No) {
+        return button.result();
+      }
+    }
+    return buttons.get(0).result();
   }
 }
