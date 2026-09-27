@@ -25,10 +25,12 @@ public record CargoRowViewModel(
     String targetDiff,
     String targetPct,
     boolean sellBold,
-    boolean buyBold) {
+    boolean buyBold,
+    String targetSellPrice,
+    String targetBuyPrice) {
 
   public static CargoRowViewModel empty() {
-    return new CargoRowViewModel("", "", "", false, "", "", false, "", "", "", false, false);
+    return new CargoRowViewModel("", "", "", false, "", "", false, "", "", "", false, false, "", "");
   }
 }
 

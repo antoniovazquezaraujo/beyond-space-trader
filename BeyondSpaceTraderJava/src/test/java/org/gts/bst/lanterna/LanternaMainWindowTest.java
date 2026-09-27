@@ -39,6 +39,7 @@ import spacetrader.Game;
 import spacetrader.StarSystem;
 import spacetrader.enums.StarSystemId;
 import spacetrader.Strings;
+import spacetrader.TradeCalculator;
 
 
 class LanternaMainWindowTest {
@@ -953,6 +954,48 @@ class LanternaMainWindowTest {
       }
     }
     return null;
+  }
+
+  @Test
+  void theNavigationPanelShowsThePricesOfTheSelectedSystem() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      StarSystem target = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != current) {
+          target = system;
+          break;
+        }
+      }
+      assertNotNull(target);
+      holder[0].SelectedSystemId(target.Id());
+      presenter.updateAll();
+      gui.updateScreen();
+
+      int[] targetSell = TradeCalculator.CalculateStandardSellPrices(target,
+          holder[0].Commander().getPoliceRecordScore());
+      int[] targetBuy = TradeCalculator.CalculateBuyPrices(target, targetSell,
+          holder[0].Commander().getPoliceRecordScore(), holder[0].Commander().getShip().Trader());
+      String expected = String.format("%-10s %10s %10s", Consts.TradeItems.get(0).Name(),
+          targetSell[0] > 0 ? Functions.FormatMoney(targetSell[0]) : Strings.NoTrade,
+          targetBuy[0] > 0 ? Functions.FormatMoney(targetBuy[0]) : Strings.NotSold);
+      assertTrue(screenText(screen).contains(expected), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
   }
 
   @Test
