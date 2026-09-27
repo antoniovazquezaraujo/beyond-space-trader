@@ -34,6 +34,7 @@ public class EncounterPresenter implements EncounterDialogHost {
   private final Ship cmdrship;
   private final EncounterView view;
   private EncounterResult result = EncounterResult.Continue;
+  private boolean running;
 
   public EncounterPresenter(Game game, EncounterView view) {
     this.game = game;
@@ -168,7 +169,18 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   private void executeAction() {
-    result = game.EncounterExecuteAction(this);
+    // The auto-attack timer can leave ticks queued, and resolving a round may open a
+    // modal alert (which keeps pumping the GUI loop): ignore late and re-entrant ticks
+    // once the round is running or the encounter has ended.
+    if(running || result != EncounterResult.Continue) {
+      return;
+    }
+    running = true;
+    try {
+      result = game.EncounterExecuteAction(this);
+    } finally {
+      running = false;
+    }
     if(result == EncounterResult.Continue) {
       update();
       if(game.getEncounterContinueFleeing() || game.getEncounterContinueAttacking()) {

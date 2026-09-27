@@ -24,6 +24,7 @@ import org.gts.bst.view.EncounterViewModel;
 import org.junit.jupiter.api.Test;
 import spacetrader.Game;
 import spacetrader.TestDialogService;
+import spacetrader.enums.AlertType;
 import spacetrader.enums.StarSystemId;
 
 
@@ -100,6 +101,25 @@ class EncounterPresenterTest {
     presenter.showJettison();
 
     assertTrue(view.jettisonShown);
+  }
+
+  @Test
+  void ignoresLateTicksOnceTheEncounterEnded() {
+    TestDialogService dialogs = new TestDialogService();
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    game.setEncounterType(EncounterType.PirateAttack);
+    game.Commander().getShip().setHull(0);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.start();
+    presenter.tick();
+    presenter.tick();
+
+    assertEquals(1, dialogs.alerts().stream().filter(alert -> alert == AlertType.EncounterYouLose).count(),
+        dialogs.alerts().toString());
+    assertTrue(view.closed);
   }
 
   @Test
