@@ -52,6 +52,27 @@ import spacetrader.TradeCalculator;
 
 class LanternaMainWindowTest {
   @Test
+  void showsTheBannerOnTheEmptyScreen() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
+      MainPresenter presenter = new MainPresenter(() -> null, window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains("Beyond"), screenText(screen));
+      assertTrue(screenText(screen).contains("Space Trader"), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theHeaderFitsInOneLineOnWideScreens() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(140, 30)));
     screen.startScreen();

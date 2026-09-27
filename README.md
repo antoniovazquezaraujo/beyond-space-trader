@@ -1,3 +1,12 @@
+```
+___ ___ _____
+| _ ) __|_   _|
+| _ \__ \ | |
+|___/___/ |_|
+    Beyond
+ Space Trader
+```
+
 # Beyond Space Trader
 
 A Java port of the classic Palm OS game **Space Trader**, based on the C# port
