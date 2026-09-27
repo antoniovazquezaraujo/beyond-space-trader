@@ -20,7 +20,6 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.util.List;
 import java.util.Set;
-import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.ShipArt;
 import org.gts.bst.view.ShipArtGenerator;
@@ -30,12 +29,23 @@ import spacetrader.Strings;
 
 /**
  * Standalone viewer to play with the generated ship art: pick a ship with N/P
- * (or Tab), move it with the arrows and mirror it with M. A design tool, not the
- * game: it only draws the art and the zones.
+ * (or Tab), move it with the arrows, mirror it with M, see the zone map with Z,
+ * cycle the palette with C (yours, pirate, police, abandoned) and switch the
+ * engines off with D. A design tool, not the game.
  */
 public final class ShipArtView extends BasicWindow {
-  private static final TextColor[] ZONE_COLORS = {
-      TextColor.ANSI.WHITE, TextColor.ANSI.CYAN, TextColor.ANSI.RED, TextColor.ANSI.YELLOW, TextColor.ANSI.GREEN};
+  /** Colours per zone, as H, K, W, C, E. */
+  private static final TextColor[][] PALETTES = {
+      {TextColor.ANSI.WHITE, TextColor.ANSI.CYAN, TextColor.ANSI.RED, TextColor.ANSI.YELLOW, TextColor.ANSI.GREEN},
+      {TextColor.ANSI.RED, TextColor.ANSI.YELLOW, TextColor.ANSI.MAGENTA, TextColor.ANSI.RED, TextColor.ANSI.YELLOW},
+      {TextColor.ANSI.WHITE, TextColor.ANSI.BLUE, TextColor.ANSI.CYAN, TextColor.ANSI.WHITE, TextColor.ANSI.BLUE},
+      {TextColor.ANSI.WHITE, TextColor.ANSI.WHITE, TextColor.ANSI.WHITE, TextColor.ANSI.WHITE, TextColor.ANSI.WHITE},
+  };
+  private static final String[] PALETTE_NAMES = {"tu nave", "pirata", "policia", "abandonada"};
+  private static final char[] ZONES = {ShipArt.HULL, ShipArt.COCKPIT, ShipArt.WEAPON, ShipArt.CARGO,
+      ShipArt.ENGINE};
+  private static final String[] ZONE_NAMES = {"casco", "cabina", "armas", "bodegas", "motores"};
+  private static final TextColor DARK = new TextColor.Indexed(238);
 
   private final List<ShipType> ships = List.of(ShipType.values());
   private final ShipCanvas canvas = new ShipCanvas();
@@ -43,6 +53,9 @@ public final class ShipArtView extends BasicWindow {
   private int shipX = 3;
   private int shipY = 3;
   private boolean mirrored;
+  private boolean showZones;
+  private boolean enginesOff;
+  private int paletteIndex;
 
   public ShipArtView() {
     setHints(Set.of(Window.Hint.FULL_SCREEN));
@@ -87,6 +100,12 @@ public final class ShipArtView extends BasicWindow {
           nextShip(-1);
         } else if(character == 'm') {
           mirrored = !mirrored;
+        } else if(character == 'z') {
+          showZones = !showZones;
+        } else if(character == 'c') {
+          paletteIndex = (paletteIndex + 1) % PALETTES.length;
+        } else if(character == 'd') {
+          enginesOff = !enginesOff;
         } else if(character == 'q') {
           close();
         }
@@ -121,18 +140,21 @@ public final class ShipArtView extends BasicWindow {
     return mirrored ? art.mirrored() : art;
   }
 
-  private static TextColor zoneColor(char zone) {
+  private TextColor zoneColor(char zone) {
+    if(enginesOff && zone == ShipArt.ENGINE) {
+      return DARK;
+    }
     switch(zone) {
       case ShipArt.COCKPIT:
-        return ZONE_COLORS[1];
+        return PALETTES[paletteIndex][1];
       case ShipArt.WEAPON:
-        return ZONE_COLORS[2];
+        return PALETTES[paletteIndex][2];
       case ShipArt.CARGO:
-        return ZONE_COLORS[3];
+        return PALETTES[paletteIndex][3];
       case ShipArt.ENGINE:
-        return ZONE_COLORS[4];
+        return PALETTES[paletteIndex][4];
       default:
-        return ZONE_COLORS[0];
+        return PALETTES[paletteIndex][0];
     }
   }
 
@@ -171,21 +193,39 @@ public final class ShipArtView extends BasicWindow {
         graphics.putString(0, row, " ".repeat(size.getColumns()));
       }
       int left = Math.max(0, Math.min(shipX, size.getColumns() - art.width()));
-      int top = Math.max(0, Math.min(shipY, size.getRows() - art.height() - 2));
+      int top = Math.max(0, Math.min(shipY, size.getRows() - art.height() - 3));
       for(int row = 0; row < art.height(); row++) {
         for(int col = 0; col < art.width(); col++) {
-          char character = art.at(row, col);
+          char zone = art.zoneAt(row, col);
+          char character = showZones ? zone : art.at(row, col);
           if(character != ' ') {
-            graphics.setForegroundColor(zoneColor(art.zoneAt(row, col)));
+            graphics.setForegroundColor(zoneColor(zone));
             graphics.setCharacter(left + col, top + row, character);
           }
         }
       }
+      drawLegend(graphics, 1, size.getRows() - 2);
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
-      graphics.putString(1, size.getRows() - 2, shipName(ships.get(shipIndex)) + "  (" + art.width() + "x"
-          + art.height() + ")  zonas: H casco · K cabina · W armas · C bodegas · E motores");
+      String state = "[z] zonas " + (showZones ? "(si)" : "(no)") + " · [d] motores "
+          + (enginesOff ? "(apagados)" : "(en marcha)") + " · [c] paleta: " + PALETTE_NAMES[paletteIndex]
+          + " · [flechas] mover · [n/p] nave · [m] espejo · [ESC] salir";
       graphics.putString(1, size.getRows() - 1,
-          "[flechas] mover · [n/p] nave · [m] espejo " + (mirrored ? "(sí)" : "(no)") + " · [ESC] salir");
+          state.substring(0, Math.min(state.length(), size.getColumns() - 2)));
+    }
+
+    private void drawLegend(TextGUIGraphics graphics, int x, int row) {
+      int column = x;
+      for(int i = 0; i < ZONES.length; i++) {
+        graphics.setForegroundColor(zoneColor(ZONES[i]));
+        graphics.setCharacter(column++, row, ZONES[i]);
+        graphics.setForegroundColor(TextColor.ANSI.WHITE);
+        String text = " " + ZONE_NAMES[i] + "  ";
+        graphics.putString(column, row, text);
+        column += text.length();
+      }
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      String palette = "paleta: " + PALETTE_NAMES[paletteIndex];
+      graphics.putString(Math.max(column + 2, x), row, palette);
     }
   }
 }
