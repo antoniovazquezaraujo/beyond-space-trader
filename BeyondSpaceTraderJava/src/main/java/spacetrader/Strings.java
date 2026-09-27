@@ -301,6 +301,8 @@ public final class Strings {
   public static final String MainTargetDistance = text("MainTargetDistance");
   public static final String MainTargetOffRange = text("MainTargetOffRange");
   public static final String MainWormhole = text("MainWormhole");
+  public static final String MainSpecial = text("MainSpecial");
+  public static final String MainSpecialNone = text("MainSpecialNone");
   public static final String MainTech = text("MainTech");
   public static final String MainTracking = text("MainTracking");
   public static final String MainUntracking = text("MainUntracking");
@@ -511,6 +513,7 @@ public final class Strings {
   public static final String NavDesign = text("NavDesign");
   public static final String NavEquip = text("NavEquip");
   public static final String NavJump = text("NavJump");
+  public static final String NavSpecial = text("NavSpecial");
   public static final String NavPod = text("NavPod");
   public static final String NavShips = text("NavShips");
 

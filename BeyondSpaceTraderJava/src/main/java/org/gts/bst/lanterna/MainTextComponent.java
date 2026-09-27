@@ -1280,6 +1280,10 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       if(system != null && !system.name().isEmpty()) {
         row = drawSystemBlock(graphics, x, row, system.name(), system.size(), system.tech(), system.polSys(),
             system.resource(), system.police(), system.pirates());
+        if(system.specialVisible() && !system.specialTooltip().isEmpty()) {
+          row = drawWrapped(graphics, x, row, Functions.StringVars(Strings.MainSpecial, system.specialTooltip()),
+              UiPalette.ACCENT);
+        }
         row++;
       }
       if(dock != null) {
