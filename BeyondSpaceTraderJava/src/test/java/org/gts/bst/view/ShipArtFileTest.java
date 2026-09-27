@@ -28,6 +28,7 @@ class ShipArtFileTest {
         + "#..#\n"
         + "\n"
         + "[dos]\n"
+        + ";arte\n"
         + "∫\n"));
 
     assertEquals(2, parts.size());
@@ -39,6 +40,7 @@ class ShipArtFileTest {
     assertEquals('#', parts.get(0).at(0, 2));
     assertEquals('#', parts.get(0).at(1, 0));
     assertEquals("blanco", parts.get(1).color(), "white is the default");
-    assertEquals('∫', parts.get(1).at(0, 0), "unicode is allowed");
+    assertEquals(';', parts.get(1).at(0, 0), "an art line can start with a semicolon");
+    assertEquals('∫', parts.get(1).at(1, 0), "unicode is allowed");
   }
 }

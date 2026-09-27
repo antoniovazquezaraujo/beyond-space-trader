@@ -1,6 +1,6 @@
-; Chasis de naves. Editable a mano; recarga con R en el compositor.
-; Una linea [nombre] abre un chasis; color= es opcional (blanco por defecto).
-; '.' es vacio; cualquier otra cosa (incluido unicode) es chasis.
+;; Chasis de naves. Editable a mano; recarga con R en el compositor.
+;; Una linea [nombre] abre un chasis; color= es opcional (blanco por defecto).
+;; '.' es vacio; cualquier otra cosa (incluido unicode) es chasis.
 
 [insecto-diminuto]
 color=blanco
