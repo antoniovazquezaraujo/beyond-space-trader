@@ -1997,20 +1997,6 @@ public final class Game extends STSerializableObject {
     return Functions.WormholeExists(cmdr.CurrentSystem(), WarpSystem()) ? Consts.WormDist * cmdr.getShip().getFuelCost() : 0;
   }
 
-  public int[] Destinations() {
-    ArrayList<Integer> list = new ArrayList<>();
-    for(int i = 0; i < _universe.length; i++) {
-      if(_universe[i].DestOk()) {
-        list.add(i);
-      }
-    }
-    int[] ids = new int[list.size()];
-    for(int i = 0; i < ids.length; i++) {
-      ids[i] = list.get(i);
-    }
-    return ids;
-  }
-
   public int[] PriceCargoBuy() {
     return _priceCargoBuy;
   }
