@@ -66,8 +66,10 @@ The game texts live in
 keys (`Name.0`, `Name.1`..., `Name.row.col` for the two-dimensional ones). To
 translate the game, copy the file to `Strings_<language>.properties` next to it
 (for example `Strings_es.properties`) and translate the values, keeping the keys and
-the placeholders. Drop the file in the resources directory and run the game with that
-locale (`java -Duser.language=es ...`).
+the placeholders. Drop the file in the resources directory and the game picks it up:
+it follows the system locale automatically (for example `LANG=es_ES.UTF-8`) and the
+`--lang` argument overrides it (`./run.sh --lang es`, `--lang es_ES`, `--lang=en`).
+Texts without a translation fall back to English.
 
 ## Credits
 

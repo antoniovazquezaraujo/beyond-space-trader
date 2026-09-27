@@ -19,6 +19,7 @@ import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.DialogResult;
@@ -44,6 +45,11 @@ public final class LanternaApp {
   }
 
   public static void main(String[] args) throws IOException {
+    Locale locale = languageFrom(args);
+    if(locale != null) {
+      // The texts are loaded once at startup, so the language is chosen before Strings.
+      Locale.setDefault(locale);
+    }
     createDirectories();
     Screen screen = new DefaultTerminalFactory().createScreen();
     screen.startScreen();
@@ -66,6 +72,26 @@ public final class LanternaApp {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  /**
+   * The locale of the optional {@code --lang} argument ({@code --lang es}, {@code --lang=es},
+   * also with a country: {@code es_ES} or {@code es-ES}); {@code null} for the system locale.
+   */
+  static Locale languageFrom(String[] args) {
+    for(int i = 0; i < args.length; i++) {
+      String code = null;
+      if(args[i].startsWith("--lang=")) {
+        code = args[i].substring("--lang=".length());
+      } else if("--lang".equals(args[i]) && i + 1 < args.length) {
+        code = args[++i];
+      }
+      if(code != null && !code.isEmpty()) {
+        String[] parts = code.replace('-', '_').split("_");
+        return parts.length > 1 ? new Locale(parts[0], parts[1]) : new Locale(parts[0]);
+      }
+    }
+    return null;
   }
 
   private static void createDirectories() {

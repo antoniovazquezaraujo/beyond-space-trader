@@ -6,6 +6,7 @@
 # command line); otherwise it falls back to the current terminal.
 #
 #   ./run-fixed-font.sh              -> starts the game in a fixed-font terminal
+#   ./run-fixed-font.sh --lang es    -> ... and in Spanish
 #
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -22,7 +23,7 @@ if command -v kitty >/dev/null 2>&1; then
 fi
 
 if command -v xfce4-terminal >/dev/null 2>&1; then
-  exec xfce4-terminal --font="$FONT $SIZE" --command="java -cp '$JAR' $MAIN"
+  exec xfce4-terminal --font="$FONT $SIZE" --command="java -cp '$JAR' $MAIN$(printf ' %q' "$@")"
 fi
 
 if command -v alacritty >/dev/null 2>&1; then

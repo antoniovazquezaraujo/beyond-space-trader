@@ -45,6 +45,9 @@
           <!-- The model tests must not create windows; keep local and CI runs consistent. -->
           <systemPropertyVariables>
             <java.awt.headless>true</java.awt.headless>
+            <!-- The tests run against the English bundle whatever the machine locale is. -->
+            <user.language>en</user.language>
+            <user.country>US</user.country>
           </systemPropertyVariables>
         </configuration>
       </plugin>
