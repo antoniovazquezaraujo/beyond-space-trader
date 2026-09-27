@@ -33,6 +33,7 @@ import spacetrader.Game;
 import spacetrader.Trade;
 import spacetrader.Ship;
 import spacetrader.StarSystem;
+import spacetrader.TradeCalculator;
 import spacetrader.Strings;
 
 
@@ -210,6 +211,14 @@ public class MainPresenter {
     int[] buy = game.PriceCargoBuy();
     int[] sell = game.PriceCargoSell();
     StarSystem warpSys = game.WarpSystem();
+    // The navigation panel shows the prices of the selected system; TradeCalculator
+    // is pure, so they can be computed without touching the current system ones.
+    int[] targetSell = null;
+    int[] targetBuy = null;
+    if(warpSys != null && warpSys != cmdr.CurrentSystem()) {
+      targetSell = TradeCalculator.CalculateStandardSellPrices(warpSys, cmdr.getPoliceRecordScore());
+      targetBuy = TradeCalculator.CalculateBuyPrices(warpSys, targetSell, cmdr.getPoliceRecordScore(), ship.Trader());
+    }
     List<CargoRowViewModel> rows = new ArrayList<>(Consts.TradeItems.size());
     for(int i = 0; i < Consts.TradeItems.size(); i++) {
       int price = warpSys == null ? 0 : Consts.TradeItems.get(i).StandardPrice(warpSys);
@@ -229,7 +238,9 @@ public class MainPresenter {
           targetKnown && buy[i] > 0 ? (diff > 0 ? "+" : "") + Functions.FormatMoney(diff) : Strings.CargoTargetDiffUnknown,
           targetKnown && buy[i] > 0 ? (diff > 0 ? "+" : "") + Functions.FormatNumber(100 * diff / buy[i]) + "%" : Strings.CargoTargetPctUnknown,
           sell[i] * cargo > cmdr.PriceCargo()[i],
-          targetKnown && buy[i] > 0 && diff > 0 && stock > 0));
+          targetKnown && buy[i] > 0 && diff > 0 && stock > 0,
+          targetSell == null ? "" : targetSell[i] > 0 ? Functions.FormatMoney(targetSell[i]) : Strings.NoTrade,
+          targetBuy == null ? "" : targetBuy[i] > 0 ? Functions.FormatMoney(targetBuy[i]) : Strings.NotSold));
     }
     view.renderCargo(new CargoViewModel(rows));
   }

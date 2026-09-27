@@ -1246,15 +1246,18 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         UiPalette.title(graphics, x, row++, String.format("%-10s %10s %10s",
             Strings.TradeItem, Strings.TradeSell, Strings.TradeBuy), panelWidth);
       }
+      // When another system is shown, the table lists its prices.
+      boolean targetPrices = targetSelected() && !cargo.rows().isEmpty()
+          && !cargo.rows().get(0).targetSellPrice().isEmpty();
       for(int i = 0; i < cargo.rows().size() && row < height - 5; i++) {
         CargoRowViewModel item = cargo.rows().get(i);
         String name = cut(Consts.TradeItems.get(i).Name(), 10);
         int column = UiPalette.draw(graphics, x, row, String.format("%-10s", name),
             UiPalette.TEXT, x + panelWidth);
-        column = UiPalette.draw(graphics, column, row, String.format(" %10s", item.sellPrice()),
-            UiPalette.GOOD, x + panelWidth);
-        UiPalette.draw(graphics, column, row, String.format(" %10s", item.buyPrice()),
-            UiPalette.MONEY, x + panelWidth);
+        column = UiPalette.draw(graphics, column, row, String.format(" %10s",
+            targetPrices ? item.targetSellPrice() : item.sellPrice()), UiPalette.GOOD, x + panelWidth);
+        UiPalette.draw(graphics, column, row, String.format(" %10s",
+            targetPrices ? item.targetBuyPrice() : item.buyPrice()), UiPalette.MONEY, x + panelWidth);
         row++;
       }
     }

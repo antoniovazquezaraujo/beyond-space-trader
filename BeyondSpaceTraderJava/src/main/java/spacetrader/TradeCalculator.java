@@ -43,6 +43,30 @@ public final class TradeCalculator {
   }
 
   /**
+   * The sell price of every trade item without the random fluctuation, so the prices
+   * of a system other than the current one can be shown without changing between
+   * frames; 0 when the item is not traded.
+   */
+  public static int[] CalculateStandardSellPrices(StarSystem system, int policeRecordScore) {
+    int[] sellPrices = new int[Consts.TradeItems.size()];
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      int price = Consts.TradeItems.get(i).StandardPrice(system);
+      if(price > 0) {
+        // In case of a special status, adapt price accordingly
+        if(Consts.TradeItems.get(i).PressurePriceHike() == system.SystemPressure()) {
+          price = price * 3 / 2;
+        }
+        // Criminals have to pay off an intermediary
+        if(policeRecordScore < Consts.PoliceRecordScoreDubious) {
+          price = price * 90 / 100;
+        }
+      }
+      sellPrices[i] = price;
+    }
+    return sellPrices;
+  }
+
+  /**
    * The buy price of every trade item; 0 when the item is not traded there.
    */
   public static int[] CalculateBuyPrices(StarSystem system, int[] sellPrices, int policeRecordScore, int traderSkill) {

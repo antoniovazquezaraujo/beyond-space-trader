@@ -195,8 +195,9 @@ chart is hidden; the chart comes back when the panel closes.
 - **Context panel (right):** one panel at a time, no new windows.
   - *Navigation* (default): data of the current system (dock and the item/sell/buy
     price table) or, when another system is selected in the chart, of that system
-    (technology, politics, resource, police and pirates) with its distance and the
-    out-of-range warning.
+    (technology, politics, resource, police and pirates) with its distance, the
+    out-of-range warning and its own buy/sell prices (the table follows the
+    selection; they are the standard prices, without the local fluctuation).
   - *Trade*: buy/sell offers for every item, the ship cargo and the cash. On wide
     screens the table adds the prices at the target system (price, +/- and %); on
     narrow ones the selected item shows them in a line under the table. The target
