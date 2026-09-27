@@ -324,6 +324,32 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void wrapsTheLongLinesOfTheCommanderPanel() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('i', false, false));
+      gui.updateScreen();
+
+      // The skills and the cash do not fit in the 42-column panel: they wrap.
+      assertTrue(screenText(screen).contains("Engineer 4 (4)"), screenText(screen));
+      assertTrue(screenText(screen).contains("Net worth:"), screenText(screen));
+      assertTrue(screenText(screen).contains("11,000 cr."), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void spaceClosesTheReadOnlyPanels() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();

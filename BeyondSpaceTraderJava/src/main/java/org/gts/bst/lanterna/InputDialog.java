@@ -14,13 +14,13 @@ import com.googlecode.lanterna.gui2.Direction;
 import com.googlecode.lanterna.gui2.EmptySpace;
 import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
-import com.googlecode.lanterna.gui2.LocalizedString;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.TextBox;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
+import spacetrader.Strings;
 
 
 /**
@@ -40,8 +40,8 @@ public final class InputDialog extends DialogWindow {
     panel.addComponent(textBox);
     panel.addComponent(new EmptySpace(TerminalSize.ONE));
     Panel buttons = new Panel(new LinearLayout(Direction.HORIZONTAL));
-    buttons.addComponent(new Button(LocalizedString.OK.toString(), this::accept));
-    buttons.addComponent(new Button(LocalizedString.Cancel.toString(), this::cancel));
+    buttons.addComponent(new Button(Strings.ButtonOk, this::accept));
+    buttons.addComponent(new Button(Strings.ButtonCancel, this::cancel));
     buttons.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.End));
     panel.addComponent(buttons);
     setComponent(panel);

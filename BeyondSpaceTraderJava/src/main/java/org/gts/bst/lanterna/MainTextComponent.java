@@ -421,7 +421,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     int width = size.getColumns();
     int height = size.getRows();
     if(width < 60 || height < 15) {
-      graphics.putString(0, 0, "Window too small");
+      graphics.putString(0, 0, Strings.WindowTooSmall);
       return;
     }
     UiPalette.reset(graphics);
@@ -759,20 +759,21 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       return;
     }
     int row = contentTop + 1;
-    UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.CommanderHeader,
-        commander.name(), commander.difficulty()), panelWidth);
-    UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.CommanderTime, commander.time()),
-        UiPalette.ACCENT, x + panelWidth);
-    UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.CommanderSkills, new String[]{
-        commander.pilot(), commander.fighter(), commander.trader(), commander.engineer()}), panelWidth);
-    UiPalette.money(graphics, x, row++, Functions.StringVars(Strings.CommanderCash, new String[]{
-        commander.cash(), commander.debt(), commander.netWorth()}), panelWidth);
-    UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.CommanderKills, commander.kills()), panelWidth);
-    UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.CommanderRecord, commander.record(),
-        commander.reputation()), UiPalette.ACCENT, x + panelWidth);
+    row = drawWrapped(graphics, x, row, Functions.StringVars(Strings.CommanderHeader,
+        commander.name(), commander.difficulty()), UiPalette.TEXT);
+    row = drawWrapped(graphics, x, row, Functions.StringVars(Strings.CommanderTime, commander.time()),
+        UiPalette.ACCENT);
+    row = drawWrapped(graphics, x, row, Functions.StringVars(Strings.CommanderSkills, new String[]{
+        commander.pilot(), commander.fighter(), commander.trader(), commander.engineer()}), UiPalette.TEXT);
+    row = drawWrapped(graphics, x, row, Functions.StringVars(Strings.CommanderCash, new String[]{
+        commander.cash(), commander.debt(), commander.netWorth()}), UiPalette.MONEY);
+    row = drawWrapped(graphics, x, row, Functions.StringVars(Strings.CommanderKills, commander.kills()),
+        UiPalette.TEXT);
+    row = drawWrapped(graphics, x, row, Functions.StringVars(Strings.CommanderRecord, commander.record(),
+        commander.reputation()), UiPalette.ACCENT);
     if(commander.bounty().visible()) {
-      UiPalette.draw(graphics, x, row, Functions.StringVars(Strings.CommanderBounty, commander.bounty().label(),
-          commander.bounty().amount()), UiPalette.BAD, x + panelWidth);
+      drawWrapped(graphics, x, row, Functions.StringVars(Strings.CommanderBounty, commander.bounty().label(),
+          commander.bounty().amount()), UiPalette.BAD);
     }
   }
 
@@ -1257,16 +1258,14 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         row++;
       }
       if(dock != null) {
-        int column = UiPalette.draw(graphics, x, row, dock.fuelStatus(), UiPalette.TEXT, x + panelWidth);
+        row = drawWrapped(graphics, x, row, dock.fuelStatus(), UiPalette.TEXT);
         if(dock.fuelButtonVisible()) {
-          UiPalette.draw(graphics, column, row, " · " + dock.fuelCost(), UiPalette.MONEY, x + panelWidth);
+          row = drawWrapped(graphics, x, row, dock.fuelCost(), UiPalette.MONEY);
         }
-        row++;
-        column = UiPalette.draw(graphics, x, row, dock.hullStatus(), UiPalette.TEXT, x + panelWidth);
+        row = drawWrapped(graphics, x, row, dock.hullStatus(), UiPalette.TEXT);
         if(dock.repairButtonVisible()) {
-          UiPalette.draw(graphics, column, row, " · " + dock.repairCost(), UiPalette.MONEY, x + panelWidth);
+          row = drawWrapped(graphics, x, row, dock.repairCost(), UiPalette.MONEY);
         }
-        row++;
         row++;
       }
       if(target != null && target.navigationVisible() && !target.name().isEmpty()) {
@@ -1412,6 +1411,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       }
       lines.add(rest);
     }
+  }
+
+  /** Draws a text wrapped to the panel width and returns the next free row. */
+  private int drawWrapped(TextGUIGraphics graphics, int x, int row, String text, TextColor color) {
+    List<String> lines = new ArrayList<>();
+    wrap(lines, text, panelWidth);
+    for(String line : lines) {
+      UiPalette.draw(graphics, x, row++, line, color, x + panelWidth);
+    }
+    return row;
   }
 
   private static String cut(String text, int max) {
