@@ -110,6 +110,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private boolean menuVisible;
   private int menuIndex;
   private int panelWidth = NAVIGATION_PANEL_WIDTH;
+  /** Row where the chart and the panel start; the header takes one line when it fits. */
+  private int contentTop = 3;
   private int viewX = -1;
   private int viewY = -1;
   private int viewSystemId = -1;
@@ -430,52 +432,84 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
     List<String> footerKeys = panel == MainPanel.Navigation ? footerKeys(width - 2) : new ArrayList<>();
-    drawHeader(graphics, width, cmdr);
+    contentTop = drawHeader(graphics, width, cmdr) + 1;
     panelWidth = Math.max(20, Math.min(width - 24, panelWidthFor(panel, width)));
     int chartWidth = width - panelWidth - 2;
     // The footer keeps two menu rows (the usual case); a longer menu takes one more.
-    int chartHeight = height - 5 - Math.max(2, footerKeys.size());
+    int chartHeight = height - contentTop - Math.max(2, footerKeys.size()) - 2;
     drawChart(graphics, chartWidth, chartHeight, game, cmdr);
     drawPanel(graphics, width - panelWidth, chartWidth, height);
     drawFooter(graphics, width, height, footerKeys);
     drawMenu(graphics, width, height);
   }
 
-  private void drawHeader(TextGUIGraphics graphics, int width, Commander cmdr) {
+  /**
+   * Draws the header and returns its height: one line when every field fits,
+   * the commander data and the ship data on one line each otherwise.
+   */
+  private int drawHeader(TextGUIGraphics graphics, int width, Commander cmdr) {
     if(cmdr == null) {
       UiPalette.line(graphics, 1, 0, Strings.MainNoGame, width - 2);
-      return;
+      UiPalette.reset(graphics);
+      graphics.drawLine(0, 1, width - 1, 1, '─');
+      return 1;
     }
     Ship ship = cmdr.getShip();
     int maxX = width - 2;
-    int x = 1;
-    x = UiPalette.draw(graphics, x, 0, cmdr.Name(), UiPalette.TEXT, maxX);
-    x = UiPalette.draw(graphics, x, 0, " · ", UiPalette.TEXT, maxX);
-    x = UiPalette.draw(graphics, x, 0, Functions.StringVars(Strings.MainDay, "" + cmdr.getDays()),
-        UiPalette.ACCENT, maxX);
-    x = UiPalette.draw(graphics, x, 0, " · ", UiPalette.TEXT, maxX);
-    x = UiPalette.draw(graphics, x, 0, Functions.FormatMoney(cmdr.getCash()), UiPalette.MONEY, maxX);
-    x = UiPalette.draw(graphics, x, 0, " · ", UiPalette.TEXT, maxX);
-    UiPalette.draw(graphics, x, 0, Functions.StringVars(Strings.MainDebt, Functions.FormatMoney(cmdr.getDebt())),
-        cmdr.getDebt() > 0 ? UiPalette.BAD : UiPalette.TEXT, maxX);
-    x = 1;
-    x = UiPalette.draw(graphics, x, 1, Functions.StringVars(Strings.MainFuel, "" + ship.getFuel(),
-        "" + ship.FuelTanks()), UiPalette.statusColor(ship.getFuel(), ship.FuelTanks()), maxX);
-    x = UiPalette.draw(graphics, x, 1, " · ", UiPalette.TEXT, maxX);
-    x = UiPalette.draw(graphics, x, 1, Functions.StringVars(Strings.MainHull, "" + ship.getHull(),
-        "" + ship.HullStrength()), UiPalette.statusColor(ship.getHull(), ship.HullStrength()), maxX);
-    x = UiPalette.draw(graphics, x, 1, " · ", UiPalette.TEXT, maxX);
-    x = UiPalette.draw(graphics, x, 1, Functions.StringVars(Strings.MainShields, "" + ship.ShieldCharge(),
-        "" + ship.ShieldStrength()), UiPalette.statusColor(ship.ShieldCharge(), ship.ShieldStrength()), maxX);
-    x = UiPalette.draw(graphics, x, 1, " · ", UiPalette.TEXT, maxX);
-    x = UiPalette.draw(graphics, x, 1, Functions.StringVars(Strings.MainCargo, "" + ship.FilledCargoBays(),
-        "" + ship.CargoBays()), UiPalette.TEXT, maxX);
-    x = UiPalette.draw(graphics, x, 1, " · ", UiPalette.TEXT, maxX);
-    UiPalette.draw(graphics, x, 1, Functions.StringVars(Strings.MainPolice,
-        PoliceRecord.GetPoliceRecordFromScore(cmdr.getPoliceRecordScore()).Name()),
-        policeColor(cmdr.getPoliceRecordScore()), maxX);
+    List<HeaderField> commanderFields = List.of(
+        new HeaderField(cmdr.Name(), UiPalette.TEXT),
+        new HeaderField(Functions.StringVars(Strings.MainDay, "" + cmdr.getDays()), UiPalette.ACCENT),
+        new HeaderField(Functions.FormatMoney(cmdr.getCash()), UiPalette.MONEY),
+        new HeaderField(Functions.StringVars(Strings.MainDebt, Functions.FormatMoney(cmdr.getDebt())),
+            cmdr.getDebt() > 0 ? UiPalette.BAD : UiPalette.TEXT));
+    List<HeaderField> shipFields = List.of(
+        new HeaderField(Functions.StringVars(Strings.MainFuel, "" + ship.getFuel(), "" + ship.FuelTanks()),
+            UiPalette.statusColor(ship.getFuel(), ship.FuelTanks())),
+        new HeaderField(Functions.StringVars(Strings.MainHull, "" + ship.getHull(), "" + ship.HullStrength()),
+            UiPalette.statusColor(ship.getHull(), ship.HullStrength())),
+        new HeaderField(Functions.StringVars(Strings.MainShields, "" + ship.ShieldCharge(),
+            "" + ship.ShieldStrength()), UiPalette.statusColor(ship.ShieldCharge(), ship.ShieldStrength())),
+        new HeaderField(Functions.StringVars(Strings.MainCargo, "" + ship.FilledCargoBays(),
+            "" + ship.CargoBays()), UiPalette.TEXT),
+        new HeaderField(Functions.StringVars(Strings.MainPolice,
+            PoliceRecord.GetPoliceRecordFromScore(cmdr.getPoliceRecordScore()).Name()),
+            policeColor(cmdr.getPoliceRecordScore())));
+    boolean oneLine = fieldsWidth(commanderFields) + 3 + fieldsWidth(shipFields) <= maxX;
+    int headerHeight = oneLine ? 1 : 2;
+    if(oneLine) {
+      List<HeaderField> fields = new ArrayList<>(commanderFields);
+      fields.addAll(shipFields);
+      drawFields(graphics, 1, 0, fields, maxX);
+    } else {
+      drawFields(graphics, 1, 0, commanderFields, maxX);
+      drawFields(graphics, 1, 1, shipFields, maxX);
+    }
     UiPalette.reset(graphics);
-    graphics.drawLine(0, 2, width - 1, 2, '─');
+    graphics.drawLine(0, headerHeight, width - 1, headerHeight, '─');
+    return headerHeight;
+  }
+
+  private static int fieldsWidth(List<HeaderField> fields) {
+    int width = 0;
+    for(HeaderField field : fields) {
+      width += field.text().length() + 3;
+    }
+    return Math.max(0, width - 3);
+  }
+
+  private static void drawFields(TextGUIGraphics graphics, int x, int row, List<HeaderField> fields, int maxX) {
+    boolean first = true;
+    for(HeaderField field : fields) {
+      if(!first) {
+        x = UiPalette.draw(graphics, x, row, " · ", UiPalette.TEXT, maxX);
+      }
+      x = UiPalette.draw(graphics, x, row, field.text(), field.color(), maxX);
+      first = false;
+    }
+  }
+
+  /** One field of the header: its text and its colour. */
+  private record HeaderField(String text, TextColor color) {
   }
 
   private static TextColor policeColor(int score) {
@@ -496,13 +530,13 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   private void drawChart(TextGUIGraphics graphics, int chartWidth, int chartHeight, Game game, Commander cmdr) {
     String title = chartType == ChartType.GALACTIC ? Strings.MainChartGalactic : Strings.MainChartShortRange;
-    UiPalette.title(graphics, 1, 3, title, chartWidth);
+    UiPalette.title(graphics, 1, contentTop, title, chartWidth);
     if(game == null || cmdr == null) {
       return;
     }
     TerminalSize size = new TerminalSize(chartWidth, chartHeight);
     LanternaChartView chart = new LanternaChartView(
-        graphics.newTextGraphics(new TerminalPosition(1, 4), size), size);
+        graphics.newTextGraphics(new TerminalPosition(1, contentTop + 1), size), size);
     chart.render(chartModel(game, cmdr, chartWidth, chartHeight));
   }
 
@@ -603,7 +637,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   private void drawPanel(TextGUIGraphics graphics, int x, int chartWidth, int height) {
     UiPalette.reset(graphics);
-    graphics.drawLine(chartWidth + 1, 3, chartWidth + 1, height - 4, '│');
+    graphics.drawLine(chartWidth + 1, contentTop, chartWidth + 1, height - 4, '│');
     switch(panel) {
       case Trade:
         drawTradePanel(graphics, x, height);
@@ -664,8 +698,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawBankPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.BankTitle, panelWidth);
-    int row = 4;
+    UiPalette.title(graphics, x, contentTop, Strings.BankTitle, panelWidth);
+    int row = contentTop + 1;
     if(bank == null) {
       return;
     }
@@ -678,11 +712,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawPersonnelPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.PersonnelTitle, panelWidth);
+    UiPalette.title(graphics, x, contentTop, Strings.PersonnelTitle, panelWidth);
     if(personnel == null) {
       return;
     }
-    int row = 4;
+    int row = contentTop + 1;
     UiPalette.title(graphics, x, row++, Strings.PersonnelCrew, panelWidth);
     int index = 0;
     for(String entry : personnel.crewEntries()) {
@@ -720,11 +754,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawCommanderPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.CommanderTitle, panelWidth);
+    UiPalette.title(graphics, x, contentTop, Strings.CommanderTitle, panelWidth);
     if(commander == null) {
       return;
     }
-    int row = 4;
+    int row = contentTop + 1;
     UiPalette.line(graphics, x, row++, Functions.StringVars(Strings.CommanderHeader,
         commander.name(), commander.difficulty()), panelWidth);
     UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.CommanderTime, commander.time()),
@@ -743,11 +777,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawShipPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.ShipTitle, panelWidth);
+    UiPalette.title(graphics, x, contentTop, Strings.ShipTitle, panelWidth);
     if(ship == null) {
       return;
     }
-    int row = 4;
+    int row = contentTop + 1;
     UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.ShipType, ship.type()), UiPalette.ACCENT, x + panelWidth);
     for(String artLine : ShipSprites.of(ship.typeId())) {
       if(row >= height - 5) {
@@ -774,7 +808,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawShipListPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.ShipListTitle, panelWidth);
+    UiPalette.title(graphics, x, contentTop, Strings.ShipListTitle, panelWidth);
     if(shipList == null) {
       return;
     }
@@ -784,7 +818,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     // first, so the list scrolls instead of pushing the sprite out of the panel.
     int visible = shipInfo == null ? limit - 4 : Math.max(1, limit - 14);
     int start = Math.max(0, Math.min(shipListIndex - visible + 1, Math.max(0, rows.size() - visible)));
-    int row = 4;
+    int row = contentTop + 1;
     for(int i = start; i < rows.size() && i < start + visible && row < limit; i++) {
       ShipListViewModel.Row item = rows.get(i);
       drawRow(graphics, x, row++, i == shipListIndex, String.format("%s %-14s %14s",
@@ -832,11 +866,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawEquipmentPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.EquipmentTitle, panelWidth);
+    UiPalette.title(graphics, x, contentTop, Strings.EquipmentTitle, panelWidth);
     if(equipment == null) {
       return;
     }
-    int row = 4;
+    int row = contentTop + 1;
     row = drawEquipmentSection(graphics, x, row, height, Strings.EquipmentBuySection, 0,
         equipment.buyWeapons().size() + equipment.buyShields().size() + equipment.buyGadgets().size());
     if(row < height - 5) {
@@ -903,19 +937,19 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawOptionsPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.OptionsTitle, panelWidth);
-    int row = 4;
+    UiPalette.title(graphics, x, contentTop, Strings.OptionsTitle, panelWidth);
+    int row = contentTop + 1;
     for(int i = 0; i < optionsLines.size() && row < height - 5; i++) {
       drawRow(graphics, x, row++, i == optionsIndex, (i == optionsIndex ? "> " : "  ") + optionsLines.get(i));
     }
   }
 
   private void drawHighScoresPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.HighScoresTitle, panelWidth);
+    UiPalette.title(graphics, x, contentTop, Strings.HighScoresTitle, panelWidth);
     if(highScores == null) {
       return;
     }
-    int row = 5;
+    int row = contentTop + 2;
     for(HighScoresViewModel.Row score : highScores.rows()) {
       if(!score.filled() || row >= height - 5) {
         continue;
@@ -939,7 +973,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     if(designer == null) {
       return;
     }
-    int row = 3;
+    int row = contentTop;
     UiPalette.title(graphics, x, row++, designer.title(), panelWidth);
     List<String> welcome = new ArrayList<>();
     wrap(welcome, designer.welcome(), panelWidth);
@@ -1044,7 +1078,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     boxWidth = Math.min(boxWidth, width - 4);
     int boxHeight = menuItems.size() + 2;
     int left = 2;
-    int top = 3;
+    int top = contentTop;
     UiPalette.reset(graphics);
     String blank = " ".repeat(boxWidth);
     for(int y = top; y < top + boxHeight && y < height; y++) {
@@ -1067,8 +1101,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawNewsPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.NewsTitle + " · " + newsHead, panelWidth);
-    int row = 5;
+    UiPalette.title(graphics, x, contentTop, Strings.NewsTitle + " · " + newsHead, panelWidth);
+    int row = contentTop + 2;
     int last = Math.min(newsLines.size(), newsScroll + (height - 9));
     for(int i = newsScroll; i < last; i++) {
       graphics.putString(x, row++, cut(newsLines.get(i), panelWidth));
@@ -1078,8 +1112,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.QuestsTitle, panelWidth);
-    int row = 4;
+    UiPalette.title(graphics, x, contentTop, Strings.QuestsTitle, panelWidth);
+    int row = contentTop + 1;
     if(quests == null) {
       return;
     }
@@ -1091,9 +1125,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawTradePanel(TextGUIGraphics graphics, int x, int height) {
-    UiPalette.title(graphics, x, 3, Strings.TradeTitle, panelWidth);
+    UiPalette.title(graphics, x, contentTop, Strings.TradeTitle, panelWidth);
     boolean wide = panelWidth >= TRADE_PANEL_TARGET_WIDTH;
-    int row = 4;
+    int row = contentTop + 1;
     if(wide) {
       UiPalette.title(graphics, x, row++, String.format("%s %-11s %10s %10s %5s %5s %10s %10s %5s", " ",
           Strings.TradeItem, Strings.TradeBuy, Strings.TradeSell, Strings.TradeCargo, Strings.TradeHere,
@@ -1201,7 +1235,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawNavigationPanel(TextGUIGraphics graphics, int x, int height) {
-    int row = 3;
+    int row = contentTop;
     if(targetSelected()) {
       row = drawSystemBlock(graphics, x, row, target.name(), target.size(), target.tech(), target.polSys(),
           target.resource(), target.police(), target.pirates());

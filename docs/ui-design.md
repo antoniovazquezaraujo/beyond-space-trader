@@ -158,7 +158,9 @@ chart is hidden; the chart comes back when the panel closes.
 
 - **Header (always visible):** commander, day, credits, debt, fuel, hull, shields,
   cargo bays, police record and any active warning (low fuel/hull, quest item on
-  board, wanted...).
+  board, wanted...). It takes one line when every field fits in the screen and two
+  otherwise (commander data and ship data on one line each), and the content starts
+  right under it.
 - **Map (center):** the axis of the screen.
   - *Short-range chart (detail)*: a 1:1 map (one sector per character) with the
     system names. Its view follows the cursor, scrolling only when the selection

@@ -44,6 +44,34 @@ import spacetrader.TradeCalculator;
 
 class LanternaMainWindowTest {
   @Test
+  void theHeaderFitsInOneLineOnWideScreens() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(140, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      String header = row(screen, 0);
+      assertTrue(header.contains(holder[0].Commander().Name()), header);
+      assertTrue(header.contains(Strings.MainFuel.substring(0, 4)), header);
+      assertTrue(header.contains(Strings.MainCargo.substring(0, 5)), header);
+      assertTrue(header.contains(Strings.MainPolice.substring(0, 7)), header);
+      assertTrue(row(screen, 1).startsWith("─"), row(screen, 1));
+      assertTrue(row(screen, 2).contains(Strings.MainChartGalactic), row(screen, 2));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void rendersTheGameStateAndSwitchesCharts() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
