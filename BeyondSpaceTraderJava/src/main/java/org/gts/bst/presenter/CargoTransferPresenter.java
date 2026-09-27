@@ -45,7 +45,7 @@ public class CargoTransferPresenter {
   }
 
   public void update() {
-    Ship source = mode == Mode.Plunder ? game.getOpponent() : ship;
+    Ship source = mode == Mode.Plunder ? game.encounter().getOpponent() : ship;
     List<String> quantities = new ArrayList<>(Consts.TradeItems.size());
     for(int i = 0; i < Consts.TradeItems.size(); i++) {
       quantities.add("" + source.Cargo()[i]);

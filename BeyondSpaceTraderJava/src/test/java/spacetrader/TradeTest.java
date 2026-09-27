@@ -47,14 +47,14 @@ class TradeTest {
   @Test
   void plunderMovesTheCargoFromTheOpponent() {
     Game game = newGame(new TestDialogService());
-    game.getOpponent().Cargo()[0] = 5;
+    game.encounter().getOpponent().Cargo()[0] = 5;
 
     CargoBuyOffer offer = Trade.CargoBuyOffer(game, 0, CargoBuyOp.InPlunder);
     assertNotNull(offer);
     Trade.CargoBuy(game, offer, 2);
 
     assertEquals(2, game.Commander().getShip().Cargo()[0]);
-    assertEquals(3, game.getOpponent().Cargo()[0]);
+    assertEquals(3, game.encounter().getOpponent().Cargo()[0]);
   }
 
   private static Game newGame(TestDialogService dialogs) {

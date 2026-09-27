@@ -127,22 +127,22 @@ public final class Game extends STSerializableObject {
     _scarab = new Ship(GetValueFromHash(hash, "_scarab", _scarab.Serialize(), Hashtable.class));
     _scorpion = new Ship(GetValueFromHash(hash, "_scorpion", _scorpion.Serialize(), Hashtable.class));
     _spaceMonster = new Ship(GetValueFromHash(hash, "_spaceMonster", _spaceMonster.Serialize(), Hashtable.class));
-    setOpponent(new Ship(GetValueFromHash(hash, "_opponent", getOpponent().Serialize(), Hashtable.class)));
+    encounter().setOpponent(new Ship(GetValueFromHash(hash, "_opponent", encounter().getOpponent().Serialize(), Hashtable.class)));
     _chanceOfTradeInOrbit = GetValueFromHash(hash, "_chanceOfTradeInOrbit", _chanceOfTradeInOrbit);
     _clicks = GetValueFromHash(hash, "_clicks", _clicks);
-    setRaided(GetValueFromHash(hash, "_raided", getRaided()));
-    setInspected(GetValueFromHash(hash, "_inspected", getInspected()));
+    encounter().setRaided(GetValueFromHash(hash, "_raided", encounter().getRaided()));
+    encounter().setInspected(GetValueFromHash(hash, "_inspected", encounter().getInspected()));
     _tribbleMessage = GetValueFromHash(hash, "_tribbleMessage", _tribbleMessage);
     _arrivedViaWormhole = GetValueFromHash(hash, "_arrivedViaWormhole", _arrivedViaWormhole);
     _paidForNewspaper = GetValueFromHash(hash, "_paidForNewspaper", _paidForNewspaper);
-    setLitterWarning(GetValueFromHash(hash, "_litterWarning", getLitterWarning()));
+    encounter().setLitterWarning(GetValueFromHash(hash, "_litterWarning", encounter().getLitterWarning()));
     _newsEvents = new ArrayList<>(Arrays.asList(GetValueFromHash(hash, "_newsEvents", _newsEvents.toArray(new Integer[0]))));
     _difficulty = Difficulty.FromInt(GetValueFromHash(hash, "_difficulty", _difficulty, Integer.class));
     _cheatEnabled = GetValueFromHash(hash, "_cheatEnabled", _cheatEnabled);
     _autoSave = GetValueFromHash(hash, "_autoSave", _autoSave);
     _easyEncounters = GetValueFromHash(hash, "_easyEncounters", _easyEncounters);
     _endStatus = GameEndType.FromInt(GetValueFromHash(hash, "_endStatus", _endStatus, Integer.class));
-    setEncounterType(EncounterType.FromInt(GetValueFromHash(hash, "_encounterType", getEncounterType(), Integer.class)));
+    encounter().setEncounterType(EncounterType.FromInt(GetValueFromHash(hash, "_encounterType", encounter().getEncounterType(), Integer.class)));
     _selectedSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_selectedSystemId", _selectedSystemId, Integer.class));
     _warpSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_warpSystemId", _warpSystemId, Integer.class));
     _trackedSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_trackedSystemId", _trackedSystemId, Integer.class));
@@ -163,7 +163,7 @@ public final class Game extends STSerializableObject {
     _questStatusSpaceMonster = GetValueFromHash(hash, "_questStatusSpaceMonster", _questStatusSpaceMonster);
     _questStatusWild = GetValueFromHash(hash, "_questStatusWild", _questStatusWild);
     _fabricRipProbability = GetValueFromHash(hash, "_fabricRipProbability", _fabricRipProbability);
-    setJustLootedMarie(GetValueFromHash(hash, "_justLootedMarie", getJustLootedMarie()));
+    encounter().setJustLootedMarie(GetValueFromHash(hash, "_justLootedMarie", encounter().getJustLootedMarie()));
     _canSuperWarp = GetValueFromHash(hash, "_canSuperWarp", _canSuperWarp);
     _chanceOfVeryRareEncounter = GetValueFromHash(hash, "_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
     Integer[] veryRareIds = GetValueFromHash(hash, "_veryRareEncounters", new Integer[0]);
@@ -186,22 +186,22 @@ public final class Game extends STSerializableObject {
     ht.add("_scarab", _scarab.Serialize());
     ht.add("_scorpion", _scorpion.Serialize());
     ht.add("_spaceMonster", _spaceMonster.Serialize());
-    ht.add("_opponent", getOpponent().Serialize());
+    ht.add("_opponent", encounter().getOpponent().Serialize());
     ht.add("_chanceOfTradeInOrbit", _chanceOfTradeInOrbit);
     ht.add("_clicks", _clicks);
-    ht.add("_raided", getRaided());
-    ht.add("_inspected", getInspected());
+    ht.add("_raided", encounter().getRaided());
+    ht.add("_inspected", encounter().getInspected());
     ht.add("_tribbleMessage", _tribbleMessage);
     ht.add("_arrivedViaWormhole", _arrivedViaWormhole);
     ht.add("_paidForNewspaper", _paidForNewspaper);
-    ht.add("_litterWarning", getLitterWarning());
+    ht.add("_litterWarning", encounter().getLitterWarning());
     ht.add("_newsEvents", _newsEvents.toArray(new Integer[0]));
     ht.add("_difficulty", _difficulty.CastToInt());
     ht.add("_cheatEnabled", _cheatEnabled);
     ht.add("_autoSave", _autoSave);
     ht.add("_easyEncounters", _easyEncounters);
     ht.add("_endStatus", _endStatus.CastToInt());
-    ht.add("_encounterType", getEncounterType().CastToInt());
+    ht.add("_encounterType", encounter().getEncounterType().CastToInt());
     ht.add("_selectedSystemId", _selectedSystemId.CastToInt());
     ht.add("_warpSystemId", _warpSystemId.CastToInt());
     ht.add("_trackedSystemId", _trackedSystemId.CastToInt());
@@ -222,7 +222,7 @@ public final class Game extends STSerializableObject {
     ht.add("_questStatusSpaceMonster", _questStatusSpaceMonster);
     ht.add("_questStatusWild", _questStatusWild);
     ht.add("_fabricRipProbability", _fabricRipProbability);
-    ht.add("_justLootedMarie", getJustLootedMarie());
+    ht.add("_justLootedMarie", encounter().getJustLootedMarie());
     ht.add("_canSuperWarp", _canSuperWarp);
     ht.add("_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
     ht.add("_veryRareEncounters", ArrayListToIntArray(_veryRareEncounters));
@@ -649,9 +649,9 @@ public final class Game extends STSerializableObject {
       SelectedSystemId(StarSystemId.FromInt(Functions.GetRandom(_universe.length)));
     }
     boolean uneventful = true;
-    setRaided(false);
-    setInspected(false);
-    setLitterWarning(false);
+    encounter().setRaided(false);
+    encounter().setInspected(false);
+    encounter().setLitterWarning(false);
     setClicks(Consts.StartClicks);
     while(getClicks() > 0) {
       cmdr.getShip().PerformRepairs();
@@ -1669,193 +1669,4 @@ public final class Game extends STSerializableObject {
     }
     return _encounter;
   }
-
-  public EncounterResult EncounterExecuteAction(EncounterDialogHost host) {
-    return encounter().EncounterExecuteAction(host);
-  }
-
-  public EncounterResult EncounterVerifySurrender() {
-    return encounter().EncounterVerifySurrender();
-  }
-
-  public EncounterResult EncounterVerifyYield() {
-    return encounter().EncounterVerifyYield();
-  }
-
-  public EncounterType getEncounterType() {
-    return encounter().getEncounterType();
-  }
-
-  public Ship getOpponent() {
-    return encounter().getOpponent();
-  }
-
-  public String EncounterAction() {
-    return encounter().EncounterAction();
-  }
-
-  public String EncounterActionInitial() {
-    return encounter().EncounterActionInitial();
-  }
-
-  public String EncounterShipText() {
-    return encounter().EncounterShipText();
-  }
-
-  public String EncounterText() {
-    return encounter().EncounterText();
-  }
-
-  public String EncounterTextInitial() {
-    return encounter().EncounterTextInitial();
-  }
-
-  public boolean EncounterVerifyAttack() {
-    return encounter().EncounterVerifyAttack();
-  }
-
-  public boolean EncounterVerifyBoard(EncounterDialogHost host) {
-    return encounter().EncounterVerifyBoard(host);
-  }
-
-  public boolean EncounterVerifyBribe() {
-    return encounter().EncounterVerifyBribe();
-  }
-
-  public boolean EncounterVerifyFlee() {
-    return encounter().EncounterVerifyFlee();
-  }
-
-  public boolean EncounterVerifySubmit() {
-    return encounter().EncounterVerifySubmit();
-  }
-
-  public boolean getEncounterCmdrFleeing() {
-    return encounter().getEncounterCmdrFleeing();
-  }
-
-  public boolean getEncounterCmdrHit() {
-    return encounter().getEncounterCmdrHit();
-  }
-
-  public boolean getEncounterContinueAttacking() {
-    return encounter().getEncounterContinueAttacking();
-  }
-
-  public boolean setEncounterContinueAttacking(boolean encounterContinueAttacking) {
-    return encounter().setEncounterContinueAttacking(encounterContinueAttacking);
-  }
-
-  public boolean getEncounterContinueFleeing() {
-    return encounter().getEncounterContinueFleeing();
-  }
-
-  public boolean getEncounterOppFleeing() {
-    return encounter().getEncounterOppFleeing();
-  }
-
-  public boolean getEncounterOppFleeingPrev() {
-    return encounter().getEncounterOppFleeingPrev();
-  }
-
-  public boolean getEncounterOppHit() {
-    return encounter().getEncounterOppHit();
-  }
-
-  public boolean getInspected() {
-    return encounter().getInspected();
-  }
-
-  public boolean getJustLootedMarie() {
-    return encounter().getJustLootedMarie();
-  }
-
-  public boolean getLitterWarning() {
-    return encounter().getLitterWarning();
-  }
-
-  public boolean getOpponentDisabled() {
-    return encounter().getOpponentDisabled();
-  }
-
-  public boolean setOpponentDisabled(boolean opponentDisabled) {
-    return encounter().setOpponentDisabled(opponentDisabled);
-  }
-
-  public boolean getRaided() {
-    return encounter().getRaided();
-  }
-
-  public int EncounterImageIndex() {
-    return encounter().EncounterImageIndex();
-  }
-
-  public void EncounterBegin() {
-    encounter().EncounterBegin();
-  }
-
-  public void EncounterDrink() {
-    encounter().EncounterDrink();
-  }
-
-  public void EncounterMeet() {
-    encounter().EncounterMeet();
-  }
-
-  public void EncounterPlunder(EncounterDialogHost host) {
-    encounter().EncounterPlunder(host);
-  }
-
-  public void EncounterTrade(EncounterDialogHost host) {
-    encounter().EncounterTrade(host);
-  }
-
-  public void setEncounterCmdrFleeing(boolean encounterCmdrFleeing) {
-    encounter().setEncounterCmdrFleeing(encounterCmdrFleeing);
-  }
-
-  public void setEncounterCmdrHit(boolean encounterCmdrHit) {
-    encounter().setEncounterCmdrHit(encounterCmdrHit);
-  }
-
-  public void setEncounterContinueFleeing(boolean encounterContinueFleeing) {
-    encounter().setEncounterContinueFleeing(encounterContinueFleeing);
-  }
-
-  public void setEncounterOppFleeing(boolean encounterOppFleeing) {
-    encounter().setEncounterOppFleeing(encounterOppFleeing);
-  }
-
-  public void setEncounterOppFleeingPrev(boolean encounterOppFleeingPrev) {
-    encounter().setEncounterOppFleeingPrev(encounterOppFleeingPrev);
-  }
-
-  public void setEncounterOppHit(boolean encounterOppHit) {
-    encounter().setEncounterOppHit(encounterOppHit);
-  }
-
-  public void setEncounterType(EncounterType encounterType) {
-    encounter().setEncounterType(encounterType);
-  }
-
-  public void setInspected(boolean inspected) {
-    encounter().setInspected(inspected);
-  }
-
-  public void setJustLootedMarie(boolean justLootedMarie) {
-    encounter().setJustLootedMarie(justLootedMarie);
-  }
-
-  public void setLitterWarning(boolean litterWarning) {
-    encounter().setLitterWarning(litterWarning);
-  }
-
-  public void setOpponent(Ship opponent) {
-    encounter().setOpponent(opponent);
-  }
-
-  public void setRaided(boolean raided) {
-    encounter().setRaided(raided);
-  }
-
 }

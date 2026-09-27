@@ -45,9 +45,11 @@ public final class Encounter {
   private boolean _encounterContinueAttacking = false;
   private boolean _encounterCmdrFleeing = false;
   private boolean _encounterCmdrHit = false;
+  private int _encounterCmdrDamage = 0;
   private boolean _encounterOppFleeingPrev = false;
   private boolean _encounterOppFleeing = false;
   private boolean _encounterOppHit = false;
+  private int _encounterOppDamage = 0;
 
   public Encounter(Game game) {
     this.game = game;
@@ -295,6 +297,8 @@ public final class Encounter {
     int prevOppHull = getOpponent().getHull();
     setEncounterCmdrHit(false);
     setEncounterOppHit(false);
+    _encounterCmdrDamage = 0;
+    _encounterOppDamage = 0;
     setEncounterOppFleeingPrev(getEncounterOppFleeing());
     setEncounterOppFleeing(false);
     // Fire shots
@@ -323,6 +327,9 @@ public final class Encounter {
         setEncounterOppHit(!getEncounterCmdrFleeing() && EncounterExecuteAttack(game.Commander().getShip(), getOpponent(), false));
         break;
     }
+    // What the round did (the hull lost on each side), for the views.
+    _encounterCmdrDamage = Math.max(0, prevCmdrHull - game.Commander().getShip().getHull());
+    _encounterOppDamage = Math.max(0, prevOppHull - getOpponent().getHull());
     // Determine whether someone gets destroyed
     if(game.Commander().getShip().getHull() <= 0) {
       if(game.Commander().getShip().getEscapePod()) {
@@ -902,6 +909,14 @@ public final class Encounter {
 
   public boolean getEncounterCmdrFleeing() {
     return _encounterCmdrFleeing;
+  }
+
+  public int getEncounterCmdrDamage() {
+    return _encounterCmdrDamage;
+  }
+
+  public int getEncounterOppDamage() {
+    return _encounterOppDamage;
   }
 
   public boolean getEncounterCmdrHit() {
