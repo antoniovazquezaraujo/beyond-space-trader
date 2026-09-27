@@ -64,12 +64,18 @@ public record ShipArtFile(String name, String color, List<String> lines) {
     BufferedReader buffered = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader);
     for(String line = buffered.readLine(); line != null; line = buffered.readLine()) {
       String trimmed = line.strip();
-      if(trimmed.isEmpty() || trimmed.startsWith(";;")) {
+      if(trimmed.startsWith(";;")) {
+        continue;
+      }
+      if(trimmed.isEmpty()) {
+        if(name != null) {
+          lines.add(""); // una fila vacía dentro del dibujo
+        }
         continue;
       }
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
         if(name != null) {
-          parts.add(new ShipArtFile(name, color, List.copyOf(lines)));
+          parts.add(new ShipArtFile(name, color, trimBlank(lines)));
         }
         name = trimmed.substring(1, trimmed.length() - 1).strip();
         color = "blanco";
@@ -81,9 +87,22 @@ public record ShipArtFile(String name, String color, List<String> lines) {
       }
     }
     if(name != null) {
-      parts.add(new ShipArtFile(name, color, List.copyOf(lines)));
+      parts.add(new ShipArtFile(name, color, trimBlank(lines)));
     }
     return parts;
+  }
+
+  /** Drops the empty rows above and below the drawing (they were separators). */
+  private static List<String> trimBlank(List<String> lines) {
+    int from = 0;
+    int to = lines.size();
+    while(from < to && lines.get(from).isBlank()) {
+      from++;
+    }
+    while(to > from && lines.get(to - 1).isBlank()) {
+      to--;
+    }
+    return List.copyOf(lines.subList(from, to));
   }
 
   public int width() {

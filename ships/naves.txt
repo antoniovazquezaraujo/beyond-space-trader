@@ -1,6 +1,11 @@
-;; Montaje guardado por el compositor (./run-composer.sh).
 [nave de ejemplo]
-chasis=insecto-diminuto
+chasis=bloque-grande
 pieza=antena x=5 y=0 color=cian
 pieza=motor x=0 y=2 color=naranja
 pieza=torreta laser x=9 y=4 color=rojo
+pieza=motor x=3 y=2 color=naranja
+pieza=torreta laser x=9 y=0 color=rojo
+pieza=torreta disruptor x=19 y=4 color=magenta
+pieza=vaina de carga x=13 y=4 color=amarillo
+pieza=cabina x=27 y=1 color=cian
+pieza=deposito x=8 y=4 color=verde
