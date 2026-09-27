@@ -1242,13 +1242,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       }
     }
     if(cargo != null) {
-      if(row < height - 5) {
-        UiPalette.title(graphics, x, row++, String.format("%-10s %10s %10s",
-            Strings.TradeItem, Strings.TradeSell, Strings.TradeBuy), panelWidth);
-      }
-      // When another system is shown, the table lists its prices.
+      // When another system is shown, the table lists its prices and the margin.
       boolean targetPrices = targetSelected() && !cargo.rows().isEmpty()
           && !cargo.rows().get(0).targetSellPrice().isEmpty();
+      if(row < height - 5) {
+        UiPalette.title(graphics, x, row++, targetPrices
+            ? String.format("%-10s %10s %10s %5s",
+                Strings.TradeItem, Strings.TradeSell, Strings.TradeBuy, Strings.TradePct)
+            : String.format("%-10s %10s %10s",
+                Strings.TradeItem, Strings.TradeSell, Strings.TradeBuy), panelWidth);
+      }
       for(int i = 0; i < cargo.rows().size() && row < height - 5; i++) {
         CargoRowViewModel item = cargo.rows().get(i);
         String name = cut(Consts.TradeItems.get(i).Name(), 10);
@@ -1256,8 +1259,12 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
             UiPalette.TEXT, x + panelWidth);
         column = UiPalette.draw(graphics, column, row, String.format(" %10s",
             targetPrices ? item.targetSellPrice() : item.sellPrice()), UiPalette.GOOD, x + panelWidth);
-        UiPalette.draw(graphics, column, row, String.format(" %10s",
+        column = UiPalette.draw(graphics, column, row, String.format(" %10s",
             targetPrices ? item.targetBuyPrice() : item.buyPrice()), UiPalette.MONEY, x + panelWidth);
+        if(targetPrices) {
+          UiPalette.draw(graphics, column, row, String.format(" %5s",
+              tradeValue(item.targetPct(), Strings.CargoTargetPctUnknown)), pctColor(item.targetPct()), x + panelWidth);
+        }
         row++;
       }
     }

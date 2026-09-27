@@ -971,15 +971,8 @@ class LanternaMainWindowTest {
       gui.addWindow(window.asWindow());
       gui.updateScreen();
 
-      StarSystem current = holder[0].Commander().CurrentSystem();
-      StarSystem target = null;
-      for(StarSystem system : holder[0].Universe()) {
-        if(system != current) {
-          target = system;
-          break;
-        }
-      }
-      assertNotNull(target);
+      StarSystem target = reachableSystemTradingWater(holder[0]);
+      assertNotNull(target, "the galaxy must have a reachable system trading Water");
       holder[0].SelectedSystemId(target.Id());
       presenter.updateAll();
       gui.updateScreen();
@@ -988,9 +981,14 @@ class LanternaMainWindowTest {
           holder[0].Commander().getPoliceRecordScore());
       int[] targetBuy = TradeCalculator.CalculateBuyPrices(target, targetSell,
           holder[0].Commander().getPoliceRecordScore(), holder[0].Commander().getShip().Trader());
-      String expected = String.format("%-10s %10s %10s", Consts.TradeItems.get(0).Name(),
+      int price = Consts.TradeItems.get(0).StandardPrice(target);
+      int localBuy = holder[0].PriceCargoBuy()[0];
+      int diff = price - localBuy;
+      String pct = localBuy > 0 ? (diff > 0 ? "+" : "") + Functions.FormatNumber(100 * diff / localBuy) + "%"
+          : Strings.CargoTargetPctUnknown;
+      String expected = String.format("%-10s %10s %10s %5s", Consts.TradeItems.get(0).Name(),
           targetSell[0] > 0 ? Functions.FormatMoney(targetSell[0]) : Strings.NoTrade,
-          targetBuy[0] > 0 ? Functions.FormatMoney(targetBuy[0]) : Strings.NotSold);
+          targetBuy[0] > 0 ? Functions.FormatMoney(targetBuy[0]) : Strings.NotSold, pct);
       assertTrue(screenText(screen).contains(expected), screenText(screen));
     } finally {
       screen.stopScreen();
