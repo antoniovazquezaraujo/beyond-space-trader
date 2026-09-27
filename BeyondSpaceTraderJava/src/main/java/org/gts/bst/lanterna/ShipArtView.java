@@ -18,6 +18,10 @@ import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import org.gts.bst.ship.ShipType;
@@ -52,6 +56,8 @@ public final class ShipArtView extends BasicWindow {
   private int shipIndex;
   private int shipX = 3;
   private int shipY = 3;
+  private int variant;
+  private String lastSaved = "";
   private boolean mirrored;
   private boolean showZones;
   private boolean enginesOff;
@@ -100,6 +106,11 @@ public final class ShipArtView extends BasicWindow {
           nextShip(-1);
         } else if(character == 'm') {
           mirrored = !mirrored;
+        } else if(character == 'r') {
+          variant++;
+          updateTitle();
+        } else if(character == 's') {
+          save();
         } else if(character == 'z') {
           showZones = !showZones;
         } else if(character == 'c') {
@@ -124,7 +135,7 @@ public final class ShipArtView extends BasicWindow {
 
   private void updateTitle() {
     ShipType type = ships.get(shipIndex);
-    setTitle(shipName(type) + " (" + sizeName(type) + ")");
+    setTitle(shipName(type) + " (" + sizeName(type) + ")" + (variant > 0 ? " #" + (variant + 1) : ""));
   }
 
   private static String shipName(ShipType type) {
@@ -136,8 +147,33 @@ public final class ShipArtView extends BasicWindow {
   }
 
   private ShipArt art() {
-    ShipArt art = ShipArtGenerator.of(ships.get(shipIndex));
+    ShipArt art = ShipArtGenerator.of(ships.get(shipIndex), variant);
     return mirrored ? art.mirrored() : art;
+  }
+
+  /** Saves the ship being shown so it can be kept as the model's art later. */
+  private void save() {
+    ShipArt art = art();
+    ShipType type = ships.get(shipIndex);
+    File file = new File(Consts.CustomDirectory, "ships/" + type.name() + "-" + variant + ".txt");
+    File directory = file.getParentFile();
+    if(directory != null && !directory.exists() && !directory.mkdirs()) {
+      lastSaved = "no se pudo crear " + directory.getPath();
+      return;
+    }
+    try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
+      writer.println("# " + type.name() + " (" + sizeName(type) + ") variant " + variant);
+      for(String line : art.lines()) {
+        writer.println(line);
+      }
+      writer.println("---");
+      for(String zone : art.zones()) {
+        writer.println(zone);
+      }
+      lastSaved = file.getPath();
+    } catch(IOException e) {
+      lastSaved = "no se pudo guardar: " + e.getMessage();
+    }
   }
 
   private TextColor zoneColor(char zone) {
@@ -208,7 +244,9 @@ public final class ShipArtView extends BasicWindow {
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       String state = "[z] zonas " + (showZones ? "(si)" : "(no)") + " · [d] motores "
           + (enginesOff ? "(apagados)" : "(en marcha)") + " · [c] paleta: " + PALETTE_NAMES[paletteIndex]
-          + " · [flechas] mover · [n/p] nave · [m] espejo · [ESC] salir";
+          + " · [r] otra version" + (variant > 0 ? " (#" + (variant + 1) + ")" : "")
+          + " · [s] guardar · [flechas] mover · [n/p] nave · [m] espejo · [ESC] salir"
+          + (lastSaved.isEmpty() ? "" : "  ||  " + lastSaved);
       graphics.putString(1, size.getRows() - 1,
           state.substring(0, Math.min(state.length(), size.getColumns() - 2)));
     }

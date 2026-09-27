@@ -29,11 +29,11 @@ class ShipArtGeneratorTest {
 
   @Test
   void theFitShowsInTheZones() {
-    ShipArt gnat = ShipArtGenerator.of(ShipType.Gnat);
-    assertTrue(zoneCount(gnat, ShipArt.COCKPIT) > 0);
-    assertTrue(zoneCount(gnat, ShipArt.ENGINE) > 0);
-    assertTrue(zoneCount(gnat, ShipArt.CARGO) > 0);
-    assertTrue(zoneCount(gnat, ShipArt.WEAPON) > 0);
+    ShipArt wasp = ShipArtGenerator.of(ShipType.Wasp);
+    assertTrue(zoneCount(wasp, ShipArt.COCKPIT) > 0);
+    assertTrue(zoneCount(wasp, ShipArt.ENGINE) > 0);
+    assertTrue(zoneCount(wasp, ShipArt.CARGO) > 0);
+    assertTrue(zoneCount(wasp, ShipArt.WEAPON) > 0);
     assertEquals(0, zoneCount(ShipArtGenerator.of(ShipType.Flea), ShipArt.WEAPON),
         "the Flea has no weapon mounts");
   }
