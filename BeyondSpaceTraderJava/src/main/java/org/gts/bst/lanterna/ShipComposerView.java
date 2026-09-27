@@ -43,6 +43,7 @@ public final class ShipComposerView extends BasicWindow {
   private int cursorY = 2;
   private String pendingColor;
   private boolean showPending = true;
+  private boolean blinkOn = true;
   private String message = "";
 
   public ShipComposerView(List<ShipArtFile> chassis, List<ShipArtFile> pieces, ShipAssembly saved) {
@@ -51,6 +52,14 @@ public final class ShipComposerView extends BasicWindow {
     setFocusedInteractable(canvas);
     this.chassis = chassis;
     this.pieces = pieces;
+    java.util.Timer timer = new java.util.Timer("composer-blink", true);
+    timer.scheduleAtFixedRate(new java.util.TimerTask() {
+      @Override
+      public void run() {
+        blinkOn = !blinkOn;
+        canvas.invalidate();
+      }
+    }, 500, 500);
     this.assembly = saved != null && !saved.chassis().isEmpty()
         ? saved : ShipAssembly.empty(chassis.isEmpty() ? "" : chassis.get(0).name());
     chassisIndex = Math.max(0, indexOf(chassis, assembly.chassis()));
@@ -191,26 +200,9 @@ public final class ShipComposerView extends BasicWindow {
     setTitle("compositor: " + assembly.chassis() + " (" + assembly.pieces().size() + " piezas)");
   }
 
-  /** Maps the colour names of the files to the terminal palette. */
+  /** Maps the colours of the files (names, #rrggbb or 0-255) to the terminal. */
   static TextColor color(String name) {
-    switch(name.toLowerCase()) {
-      case "cian":
-        return TextColor.ANSI.CYAN;
-      case "rojo":
-        return TextColor.ANSI.RED;
-      case "amarillo":
-        return TextColor.ANSI.YELLOW;
-      case "verde":
-        return TextColor.ANSI.GREEN;
-      case "magenta":
-        return TextColor.ANSI.MAGENTA;
-      case "azul":
-        return TextColor.ANSI.BLUE;
-      case "negro":
-        return TextColor.ANSI.BLACK;
-      default:
-        return TextColor.ANSI.WHITE;
-    }
+    return org.gts.bst.view.ShipColors.color(name);
   }
 
   private final class ComposerCanvas extends AbstractInteractableComponent<ComposerCanvas> {
@@ -276,11 +268,11 @@ public final class ShipComposerView extends BasicWindow {
       overlay(cells, colors, hull, 1, 1, hull.color());
       for(ShipAssembly.ShipPlacement placement : assembly.pieces()) {
         ShipArtFile piece = findPiece(placement.piece());
-        if(piece != null) {
+        if(piece != null && (!piece.blink() || blinkOn)) {
           overlay(cells, colors, piece, placement.x() + 1, placement.y() + 1, placement.color());
         }
       }
-      if(!pieces.isEmpty() && showPending) {
+      if(!pieces.isEmpty() && showPending && (!pieces.get(pieceIndex).blink() || blinkOn)) {
         overlay(cells, colors, pieces.get(pieceIndex), cursorX + 1, cursorY + 1, pendingColor);
       }
       int left = Math.max(0, (size.getColumns() - width) / 2);

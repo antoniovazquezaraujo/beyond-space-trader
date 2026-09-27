@@ -23,7 +23,7 @@ import java.util.List;
  * a name, a colour name and the drawing, where '.' is empty and everything else
  * (unicode included) is part of the art.
  */
-public record ShipArtFile(String name, String color, List<String> lines) {
+public record ShipArtFile(String name, String color, List<String> lines, boolean blink) {
   /** Loads the parts of a file, looking for it in the usual places. */
   public static List<ShipArtFile> load(String fileName) throws IOException {
     File file = resolve(fileName).toFile();
@@ -59,7 +59,8 @@ public record ShipArtFile(String name, String color, List<String> lines) {
   public static List<ShipArtFile> parse(Reader reader) throws IOException {
     List<ShipArtFile> parts = new ArrayList<>();
     String name = null;
-    String color = "blanco";
+    String color = "white";
+    boolean blink = false;
     List<String> lines = new ArrayList<>();
     BufferedReader buffered = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader);
     for(String line = buffered.readLine(); line != null; line = buffered.readLine()) {
@@ -75,19 +76,23 @@ public record ShipArtFile(String name, String color, List<String> lines) {
       }
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
         if(name != null) {
-          parts.add(new ShipArtFile(name, color, trimBlank(lines)));
+          parts.add(new ShipArtFile(name, color, trimBlank(lines), blink));
         }
         name = trimmed.substring(1, trimmed.length() - 1).strip();
-        color = "blanco";
+        color = "white";
+        blink = false;
         lines.clear();
       } else if(name != null && trimmed.startsWith("color=")) {
         color = trimmed.substring("color=".length()).strip();
+      } else if(name != null && trimmed.startsWith("blink=")) {
+        String value = trimmed.substring("blink=".length()).strip().toLowerCase();
+        blink = value.equals("yes") || value.equals("true") || value.equals("1") || value.equals("si") || value.equals("sí");
       } else if(name != null) {
         lines.add(line.replace('.', ' ').replace('\t', ' '));
       }
     }
     if(name != null) {
-      parts.add(new ShipArtFile(name, color, trimBlank(lines)));
+      parts.add(new ShipArtFile(name, color, trimBlank(lines), blink));
     }
     return parts;
   }
