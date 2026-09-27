@@ -27,6 +27,8 @@ import java.util.Set;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.ShipArt;
 import org.gts.bst.view.ShipArtGenerator;
+import org.gts.bst.view.ShipPixelArt;
+import org.gts.bst.view.ShipPixelArtGenerator;
 import spacetrader.Consts;
 import spacetrader.Strings;
 
@@ -59,6 +61,7 @@ public final class ShipArtView extends BasicWindow {
   private int variant;
   private String lastSaved = "";
   private boolean mirrored;
+  private boolean braille;
   private boolean showZones;
   private boolean enginesOff;
   private int paletteIndex;
@@ -106,6 +109,8 @@ public final class ShipArtView extends BasicWindow {
           nextShip(-1);
         } else if(character == 'm') {
           mirrored = !mirrored;
+        } else if(character == 'b') {
+          braille = !braille;
         } else if(character == 'r') {
           variant++;
           updateTitle();
@@ -147,6 +152,10 @@ public final class ShipArtView extends BasicWindow {
   }
 
   private ShipArt art() {
+    if(braille) {
+      ShipPixelArt pixels = ShipPixelArtGenerator.of(ships.get(shipIndex), variant);
+      return (mirrored ? pixels.mirrored() : pixels).toShipArt();
+    }
     ShipArt art = ShipArtGenerator.of(ships.get(shipIndex), variant);
     return mirrored ? art.mirrored() : art;
   }
@@ -242,7 +251,8 @@ public final class ShipArtView extends BasicWindow {
       }
       drawLegend(graphics, 1, size.getRows() - 2);
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
-      String state = "[z] zonas " + (showZones ? "(si)" : "(no)") + " · [d] motores "
+      String state = "[z] zonas " + (showZones ? "(si)" : "(no)") + " · [b] braille "
+          + (braille ? "(si)" : "(no)") + " · [d] motores "
           + (enginesOff ? "(apagados)" : "(en marcha)") + " · [c] paleta: " + PALETTE_NAMES[paletteIndex]
           + " · [r] otra version" + (variant > 0 ? " (#" + (variant + 1) + ")" : "")
           + " · [s] guardar · [flechas] mover · [n/p] nave · [m] espejo · [ESC] salir"

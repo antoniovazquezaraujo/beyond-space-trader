@@ -46,6 +46,10 @@ class ShipArtViewTest {
       assertEquals(1, view.shipIndex());
       assertTrue(screenText(screen).contains(Strings.ShipNames.get(1)), screenText(screen));
 
+      view.handleKey(new KeyStroke('b', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("[b] braille (si)"), screenText(screen));
+      view.handleKey(new KeyStroke('b', false, false));
       view.handleKey(new KeyStroke('z', false, false));
       view.handleKey(new KeyStroke('c', false, false));
       view.handleKey(new KeyStroke('d', false, false));
