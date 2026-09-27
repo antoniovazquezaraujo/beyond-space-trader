@@ -46,6 +46,18 @@ class ShipArtViewTest {
       assertEquals(1, view.shipIndex());
       assertTrue(screenText(screen).contains(Strings.ShipNames.get(1)), screenText(screen));
 
+      view.handleKey(new KeyStroke('v', false, false));
+      gui.updateScreen();
+      String catalogue = screenText(screen);
+      assertTrue(catalogue.contains("PIEZAS 1/9: motor"), catalogue);
+      assertTrue(catalogue.contains("ASCII 8x8"), catalogue);
+      assertTrue(catalogue.contains("BRAILLE 4x2"), catalogue);
+      assertTrue(catalogue.contains("BLOQUES 4x2"), catalogue);
+      view.handleKey(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("PIEZAS 2/9: torreta laser"), screenText(screen));
+      view.handleKey(new KeyStroke('v', false, false));
+
       view.handleKey(new KeyStroke('b', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("[b] vista: braille"), screenText(screen));
