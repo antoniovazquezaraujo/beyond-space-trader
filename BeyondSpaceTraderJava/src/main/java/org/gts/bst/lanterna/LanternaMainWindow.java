@@ -18,6 +18,7 @@ import com.googlecode.lanterna.input.KeyType;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.gts.bst.cargo.CargoBuyOffer;
@@ -1197,6 +1198,9 @@ public final class LanternaMainWindow
       case 'l':
         moveSelection(game, 1, 0);
         return true;
+      case '/':
+        find();
+        return true;
       default:
         return false;
     }
@@ -1225,15 +1229,66 @@ public final class LanternaMainWindow
       }
     }
     if(best != null) {
-      game.SelectedSystemId(best.Id());
-      if(presenter != null) {
-        presenter.updateTargetSystemInfo();
-        presenter.updateCharts();
-        // The target prices of the trade panel follow the chart cursor.
-        presenter.updateCargo();
-      }
-      content.invalidate();
+      selectSystem(game, best);
     }
+  }
+
+  /** Selects a system as the target and refreshes what depends on it. */
+  private void selectSystem(Game game, StarSystem system) {
+    game.SelectedSystemId(system.Id());
+    if(presenter != null) {
+      presenter.updateTargetSystemInfo();
+      presenter.updateCharts();
+      // The target prices of the trade panel follow the chart cursor.
+      presenter.updateCargo();
+    }
+    content.invalidate();
+  }
+
+  /** Finds a system by name and selects it; asks which one when several match. */
+  private void find() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    String text = InputDialog.show(gui, Strings.DialogFindTitle, Strings.DialogFindPrompt, "");
+    if(text == null || text.trim().isEmpty()) {
+      return;
+    }
+    String name = text.trim().toLowerCase(Locale.ROOT);
+    List<StarSystem> matches = new ArrayList<>();
+    for(StarSystem system : game.Universe()) {
+      if(system.Name().toLowerCase(Locale.ROOT).startsWith(name)) {
+        matches.add(system);
+      }
+    }
+    if(matches.isEmpty()) {
+      content.log(Strings.FindNone);
+      content.invalidate();
+      return;
+    }
+    if(matches.size() == 1) {
+      selectedSystem(game, matches.get(0));
+      return;
+    }
+    List<String> items = new ArrayList<>();
+    List<Runnable> actions = new ArrayList<>();
+    for(StarSystem system : matches) {
+      items.add(system.Name() + " · " + Functions.StringVars(Strings.MainTargetDistance,
+          "" + Functions.Distance(game.Commander().CurrentSystem(), system)));
+      actions.add(() -> selectedSystem(game, system));
+    }
+    menuActions.clear();
+    menuActions.addAll(actions);
+    content.showMenu(Strings.FindTitle, items);
+  }
+
+  /** Selects a found system and logs it as the target. */
+  private void selectedSystem(Game game, StarSystem system) {
+    selectSystem(game, system);
+    content.log(Functions.StringVars(Strings.MainTarget, system.Name(),
+        "" + Functions.Distance(game.Commander().CurrentSystem(), system)));
+    content.invalidate();
   }
 
   private void trackSelection(Game game) {

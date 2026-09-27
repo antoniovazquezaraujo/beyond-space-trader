@@ -227,6 +227,7 @@ chart is hidden; the chart comes back when the panel closes.
 | hjkl | Move the cursor on the map and up/down in the lists (vim style) |
 | TAB | Local chart / galactic chart |
 | ENTER / T | Confirm / track the selected system (T again stops tracking it) |
+| / | Find a system by name and select it (asks which one if several match) |
 | ESC | Close the panel / go back / quit |
 | SPACE | Close a read-only panel (commander, ship, quests, high scores) |
 | C | Trade panel |
@@ -236,8 +237,9 @@ chart is hidden; the chart comes back when the panel closes.
 | W | Warp to the selected system (normal trip: spends fuel and a day) |
 | G | Jump with the Portable Singularity, only while it is on board |
 | F / R | Buy fuel / repair the hull |
-| F10 | Dropdown menu (scores, options, save/load, new game, quit) |
+| F10 | Dropdown menu (scores, options, save/load, new game, about, quit) |
 | I / V | Commander / ship status |
+| A | About panel (origin, authors and license) |
 | F2 / F5 / F9 | New game / save / load |
 | F3 / F8 | High scores / options |
 | Digits | Quantities in the trade panels and cargo transfer |
@@ -246,7 +248,7 @@ Encounter keys are shown in the encounter panel itself. The navigation screen sh
 the direct keys (daily plus the actions available in the current system) in the bottom
 lines; when a panel is open, the general menu hides and the panel shows its own keys
 inside it. The F10 menu holds the program actions (high scores, options, save/load,
-new game and quit).
+new game, about and quit).
 
 ## Screens and states
 

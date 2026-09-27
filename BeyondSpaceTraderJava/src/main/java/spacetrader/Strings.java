@@ -432,6 +432,10 @@ public final class Strings {
   public static final String AboutPorts = text("AboutPorts");
   public static final String AboutLicense = text("AboutLicense");
   public static final String AboutHome = text("AboutHome");
+  public static final String DialogFindTitle = text("DialogFindTitle");
+  public static final String DialogFindPrompt = text("DialogFindPrompt");
+  public static final String FindTitle = text("FindTitle");
+  public static final String FindNone = text("FindNone");
   public static final String HighScoresTitle = text("HighScoresTitle");
   public static final String OptionsKeys = text("OptionsKeys");
   public static final String OptionsOff = text("OptionsOff");
