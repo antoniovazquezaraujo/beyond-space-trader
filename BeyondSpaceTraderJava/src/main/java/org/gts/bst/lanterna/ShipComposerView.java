@@ -42,6 +42,7 @@ public final class ShipComposerView extends BasicWindow {
   private int cursorX = 2;
   private int cursorY = 2;
   private String pendingColor;
+  private boolean showPending = true;
   private String message = "";
 
   public ShipComposerView(List<ShipArtFile> chassis, List<ShipArtFile> pieces, ShipAssembly saved) {
@@ -111,6 +112,10 @@ public final class ShipComposerView extends BasicWindow {
       place();
     } else if(character == 'c') {
       pendingColor = COLORS[(java.util.Arrays.asList(COLORS).indexOf(pendingColor) + 1) % COLORS.length];
+    } else if(character == 'x') {
+      assembly = ShipAssembly.empty(assembly.chassis());
+    } else if(character == 'h') {
+      showPending = !showPending;
     } else if(character == 'u') {
       assembly = assembly.withoutLast();
     } else if(character == 's') {
@@ -275,7 +280,7 @@ public final class ShipComposerView extends BasicWindow {
           overlay(cells, colors, piece, placement.x() + 1, placement.y() + 1, placement.color());
         }
       }
-      if(!pieces.isEmpty()) {
+      if(!pieces.isEmpty() && showPending) {
         overlay(cells, colors, pieces.get(pieceIndex), cursorX + 1, cursorY + 1, pendingColor);
       }
       int left = Math.max(0, (size.getColumns() - width) / 2);
@@ -293,8 +298,9 @@ public final class ShipComposerView extends BasicWindow {
       graphics.putString(1, size.getRows() - 2, hull.name() + " [" + hull.color() + "]  ·  pieza: " + pieceName
           + " (" + (pieces.isEmpty() ? 0 : pieceIndex + 1) + "/" + pieces.size() + ") x=" + cursorX + " y=" + cursorY
           + " [" + pendingColor + "]  ·  " + assembly.pieces().size() + " colocadas");
-      graphics.putString(1, size.getRows() - 1, "[flechas] mover · [ENTER] colocar · [n/p] pieza · [TAB] chasis"
-          + " · [c] color · [u] deshacer · [s] guardar · [l] cargar · [r] recargar · [ESC] salir"
+      graphics.putString(1, size.getRows() - 1, "[h] pieza " + (showPending ? "(si)" : "(no)") + " · [x] vaciar"
+          + " · [flechas] mover · [ENTER] colocar · [n/p] pieza · [TAB] chasis · [c] color · [u] deshacer"
+          + " · [s] guardar · [l] cargar · [r] recargar · [ESC] salir"
           + (message.isEmpty() ? "" : "   ||   " + message));
     }
 
