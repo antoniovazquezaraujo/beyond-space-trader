@@ -46,6 +46,13 @@ class ShipComposerViewTest {
 
       view.handleKey(new KeyStroke('u', false, false));
       assertEquals(0, view.placedCount());
+
+      // moverse mas alla del borde no debe reventar el dibujo
+      for(int i = 0; i < 30; i++) {
+        view.handleKey(new KeyStroke(KeyType.ArrowLeft));
+        view.handleKey(new KeyStroke(KeyType.ArrowUp));
+      }
+      gui.updateScreen();
     } finally {
       screen.stopScreen();
       screen.close();

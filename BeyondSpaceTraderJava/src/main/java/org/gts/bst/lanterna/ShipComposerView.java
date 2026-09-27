@@ -79,16 +79,16 @@ public final class ShipComposerView extends BasicWindow {
     }
     switch(key.getKeyType()) {
       case ArrowLeft:
-        cursorX--;
+        cursorX = Math.max(0, cursorX - 1);
         break;
       case ArrowRight:
-        cursorX++;
+        cursorX = Math.min(200, cursorX + 1);
         break;
       case ArrowUp:
-        cursorY--;
+        cursorY = Math.max(0, cursorY - 1);
         break;
       case ArrowDown:
-        cursorY++;
+        cursorY = Math.min(100, cursorY + 1);
         break;
       case Character:
         character(Character.toLowerCase(key.getCharacter()));
@@ -302,7 +302,8 @@ public final class ShipComposerView extends BasicWindow {
       for(int row = 0; row < part.height(); row++) {
         for(int column = 0; column < part.width(); column++) {
           char character = part.at(row, column);
-          if(character != ' ' && y + row < cells.length && x + column < cells[0].length) {
+          if(character != ' ' && y + row >= 0 && y + row < cells.length && x + column >= 0
+              && x + column < cells[0].length) {
             cells[y + row][x + column] = character;
             colors[y + row][x + column] = color(colorName);
           }
