@@ -202,6 +202,8 @@ public final class Strings {
   public static final List<String> ActivityLevels = list("ActivityLevels");
   public static final List<String> CargoBuyOps = list("CargoBuyOps");
   public static final List<String> CargoSellOps = list("CargoSellOps");
+  public static final String TradeBuying = text("TradeBuying");
+  public static final String TradeSelling = text("TradeSelling");
   private static final List<String> MUTABLE_CREWMEMBERNAMES = new ArrayList<>(list("CrewMemberNames"));
   public static final List<String> CrewMemberNames = Collections.unmodifiableList(MUTABLE_CREWMEMBERNAMES);
 

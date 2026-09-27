@@ -42,12 +42,13 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.2</version>
         <configuration>
+          <!-- The tests run against the English bundle whatever the machine locale is
+               (systemPropertyVariables are set after the JVM starts, too late for the
+               default locale, so this goes in argLine). -->
+          <argLine>-Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8</argLine>
           <!-- The model tests must not create windows; keep local and CI runs consistent. -->
           <systemPropertyVariables>
             <java.awt.headless>true</java.awt.headless>
-            <!-- The tests run against the English bundle whatever the machine locale is. -->
-            <user.language>en</user.language>
-            <user.country>US</user.country>
           </systemPropertyVariables>
         </configuration>
       </plugin>
