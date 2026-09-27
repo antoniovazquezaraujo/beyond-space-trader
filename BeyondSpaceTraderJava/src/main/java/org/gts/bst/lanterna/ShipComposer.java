@@ -36,8 +36,12 @@ public final class ShipComposer {
       java.util.Locale.setDefault(locale);
     }
     final List<ShipArtFile> chassis;
+    final List<ShipArtFile> pieces;
+    final org.gts.bst.view.ShipAssembly saved;
     try {
       chassis = ShipArtFile.load("chassis.txt");
+      pieces = ShipArtFile.load("pieces.txt");
+      saved = org.gts.bst.view.ShipAssembly.load(ShipArtFile.resolve("naves.txt").toString());
     } catch(IOException e) {
       System.err.println(e.getMessage());
       return;
@@ -47,7 +51,7 @@ public final class ShipComposer {
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
-      gui.addWindowAndWait(new ShipComposerView(chassis));
+      gui.addWindowAndWait(new ShipComposerView(chassis, pieces, saved));
     } finally {
       screen.stopScreen();
       screen.close();
