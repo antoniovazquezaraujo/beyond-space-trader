@@ -1201,6 +1201,9 @@ public final class LanternaMainWindow
       case '/':
         find();
         return true;
+      case 'y':
+        acceptSpecialEvent();
+        return true;
       default:
         return false;
     }
@@ -1231,6 +1234,34 @@ public final class LanternaMainWindow
     if(best != null) {
       selectSystem(game, best);
     }
+  }
+
+  /**
+   * Accepts the special event of the current system (the quests, the moon, the
+   * deliveries...), like the Special button of the Swing front-end.
+   */
+  private void acceptSpecialEvent() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return;
+    }
+    StarSystem system = game.Commander().CurrentSystem();
+    if(system == null || !system.ShowSpecialButton() || system.SpecialEvent() == null) {
+      content.log(Strings.MainSpecialNone);
+      content.invalidate();
+      return;
+    }
+    if(game.Commander().CashToSpend() < system.SpecialEvent().Price()) {
+      game.Dialogs().alert(AlertType.SpecialIF);
+      return;
+    }
+    try {
+      game.HandleSpecialEvent();
+    } catch(GameEndException e) {
+      showGameEnd(game);
+      return;
+    }
+    refresh();
   }
 
   /** Selects a system as the target and refreshes what depends on it. */
@@ -1448,6 +1479,9 @@ public final class LanternaMainWindow
     boolean noTech = system.TechLevel().ordinal()
         < Consts.ShipSpecs.get(ShipType.Flea.CastToInt()).MinimumTechLevel().ordinal();
     List<String> contextual = new ArrayList<>();
+    if(system.ShowSpecialButton()) {
+      contextual.add(Strings.NavSpecial);
+    }
     if(game.getCanSuperWarp()) {
       contextual.add(Strings.NavJump);
     }

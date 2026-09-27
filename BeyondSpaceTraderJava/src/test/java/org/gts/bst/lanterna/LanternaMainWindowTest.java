@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.gts.bst.difficulty.Difficulty;
+import org.gts.bst.events.SpecialEventType;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.view.DialogResult;
@@ -40,9 +41,12 @@ import org.junit.jupiter.api.Test;
 import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
+import spacetrader.SpecialEvent;
 import spacetrader.StarSystem;
+import spacetrader.enums.AlertType;
 import spacetrader.enums.StarSystemId;
 import spacetrader.Strings;
+import spacetrader.TestDialogService;
 import spacetrader.TradeCalculator;
 
 
@@ -321,6 +325,115 @@ class LanternaMainWindowTest {
         }
       }
       assertNotEquals(before, row(screen, 3), "hjkl must move the chart cursor:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void acceptsTheSpecialEventWithTheYKey() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(600000);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.Moon);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      assertEquals(SpecialEvent.StatusMoonBought, holder[0].getQuestStatusMoon(),
+          "the moon offer must be accepted");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void doesNotAcceptTheSpecialEventWithoutEnoughMoney() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(450000);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.Moon);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      assertEquals(SpecialEvent.StatusMoonNotStarted, holder[0].getQuestStatusMoon());
+      assertTrue(dialogs.alerts().contains(AlertType.SpecialIF), dialogs.alerts().toString());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void showsTheSpecialEventInTheNavigationPanel() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(600000);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.Moon);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains(Strings.SpecialEventTitles.get(SpecialEventType.Moon.CastToInt())), text);
+      assertTrue(text.contains(Strings.NavSpecial), text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void logsWhenThereIsNoSpecialEvent() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.NA);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains(Strings.MainSpecialNone), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
