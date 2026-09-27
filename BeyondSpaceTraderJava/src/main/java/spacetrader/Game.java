@@ -2198,7 +2198,7 @@ public final class Game extends STSerializableObject {
   public void EncounterTrade(EncounterDialogHost host) {
     boolean buy = (getEncounterType() == EncounterType.TraderBuy);
     int item = (buy ? cmdr.getShip() : getOpponent()).GetRandomTradeableItem();
-    String alertStr = buy ? "selling" : "buying";
+    String alertStr = buy ? Strings.TradeSelling : Strings.TradeBuying;
     int cash = cmdr.getCash();
     if(getEncounterType() == EncounterType.TraderBuy) {
       host.sellTraderCargo(item);
