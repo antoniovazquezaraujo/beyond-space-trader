@@ -23,7 +23,7 @@ import java.util.List;
  * a name, a colour name and the drawing, where '.' is empty and everything else
  * (unicode included) is part of the art.
  */
-public record ShipArtFile(String name, String color, List<String> lines, boolean blink) {
+public record ShipArtFile(String name, String color, List<String> lines, boolean blink, String bgColor) {
   /** Loads the parts of a file, looking for it in the usual places. */
   public static List<ShipArtFile> load(String fileName) throws IOException {
     File file = resolve(fileName).toFile();
@@ -61,6 +61,7 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
     String name = null;
     String color = "white";
     boolean blink = false;
+    String bgColor = "";
     List<String> lines = new ArrayList<>();
     BufferedReader buffered = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader);
     for(String line = buffered.readLine(); line != null; line = buffered.readLine()) {
@@ -76,14 +77,17 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
       }
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
         if(name != null) {
-          parts.add(new ShipArtFile(name, color, trimBlank(lines), blink));
+          parts.add(new ShipArtFile(name, color, trimBlank(lines), blink, bgColor));
         }
         name = trimmed.substring(1, trimmed.length() - 1).strip();
         color = "white";
         blink = false;
+        bgColor = "";
         lines.clear();
       } else if(name != null && trimmed.startsWith("color=")) {
         color = trimmed.substring("color=".length()).strip();
+      } else if(name != null && trimmed.startsWith("bgcolor=")) {
+        bgColor = trimmed.substring("bgcolor=".length()).strip();
       } else if(name != null && trimmed.startsWith("blink=")) {
         String value = trimmed.substring("blink=".length()).strip().toLowerCase();
         blink = value.equals("yes") || value.equals("true") || value.equals("1") || value.equals("si") || value.equals("sí");
@@ -92,7 +96,7 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
       }
     }
     if(name != null) {
-      parts.add(new ShipArtFile(name, color, trimBlank(lines), blink));
+      parts.add(new ShipArtFile(name, color, trimBlank(lines), blink, bgColor));
     }
     return parts;
   }

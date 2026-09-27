@@ -24,6 +24,7 @@ class ShipBlinkTest {
         "[sirena]\n"
         + "color=brightred\n"
         + "blink=yes\n"
+        + "bgcolor=white\n"
         + "##\n"
         + "\n"
         + "[motor]\n"
@@ -33,5 +34,7 @@ class ShipBlinkTest {
     assertTrue(parts.get(0).blink(), "the siren blinks");
     assertFalse(parts.get(1).blink(), "the engine does not");
     assertTrue(parts.get(0).color().equals("brightred"));
+    assertTrue(parts.get(0).bgColor().equals("white"), "the blink flips between the shape and the background");
+    assertTrue(parts.get(1).bgColor().isEmpty());
   }
 }
