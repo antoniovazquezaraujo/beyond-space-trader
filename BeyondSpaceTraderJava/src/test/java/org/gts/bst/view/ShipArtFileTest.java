@@ -86,4 +86,28 @@ class ShipArtFileTest {
     assertEquals(ShipArtFile.CONTINUATION, parts.get(0).at(0, 1), "the second cell is its continuation");
     assertEquals('x', parts.get(0).at(0, 2), "the letter goes after the two cells");
   }
+
+  @Test
+  void wideListReservesASecondCell() throws IOException {
+    List<ShipArtFile> parts = ShipArtFile.parse(new StringReader(
+        "wide=2190 U+26A1\n"
+        + "[pieza]\n"
+        + "←x\n"));
+
+    assertEquals(3, parts.get(0).width(), "the arrow takes two cells now");
+    assertEquals('←', parts.get(0).at(0, 0));
+    assertEquals(ShipArtFile.CONTINUATION, parts.get(0).at(0, 1), "the second cell is reserved");
+    assertEquals('x', parts.get(0).at(0, 2));
+  }
+
+  @Test
+  void narrowListRemovesTheSecondCell() throws IOException {
+    List<ShipArtFile> parts = ShipArtFile.parse(new StringReader(
+        "narrow=1F063\n"
+        + "[pieza]\n"
+        + "🁣x\n"));
+
+    assertEquals(2, parts.get(0).width(), "the domino takes one cell now");
+    assertEquals('x', parts.get(0).at(0, 1), "the letter comes next");
+  }
 }
