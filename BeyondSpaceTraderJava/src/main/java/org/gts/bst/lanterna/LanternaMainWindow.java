@@ -111,6 +111,7 @@ public final class LanternaMainWindow
   private ShipyardPresenter shipyardPresenter;
   private boolean gameOver;
   private final List<Runnable> menuActions = new ArrayList<>();
+  private java.util.Timer starTimer;
   private Runnable newGameAction;
   private Runnable saveGameAction;
   private Runnable loadGameAction;
@@ -130,6 +131,7 @@ public final class LanternaMainWindow
 
   public void setPresenter(MainPresenter presenter) {
     this.presenter = presenter;
+    startStarTimer();
   }
 
   /**
@@ -344,9 +346,14 @@ public final class LanternaMainWindow
   }
 
   private boolean handleKey(KeyStroke key) {
+    if(content.titleScreen()) {
+      // Any key enters the program from the title screen.
+      content.titleScreen(false);
+      return true;
+    }
     Game game = gameSupplier.get();
     if(game == null) {
-      return false;
+      return handleTitleKey(key);
     }
     // Vim keys: in the menu and the panels j and k move down and up like the arrows;
     // on the map they move the cursor (see handleCharacter).
@@ -1087,6 +1094,61 @@ public final class LanternaMainWindow
     content.openCommander();
   }
 
+  /** The keys of the title screen (no game): the menu and the program actions. */
+  private boolean handleTitleKey(KeyStroke key) {
+    if(key.getKeyType() == KeyType.F10) {
+      toggleMenu();
+      return true;
+    }
+    if(content.menuVisible()) {
+      return handleMenuKey(key);
+    }
+    switch(key.getKeyType()) {
+      case F2:
+        return runAction(newGameAction, Strings.MainNewGameUnavailable);
+      case F9:
+        return runAction(loadGameAction, Strings.MainLoadUnavailable);
+      case F3:
+        openHighScores();
+        return true;
+      case F8:
+        openOptions();
+        return true;
+      case Escape:
+        window.close();
+        return true;
+      case Character:
+        if(Character.toLowerCase(key.getCharacter()) == 'a') {
+          openAbout();
+          return true;
+        }
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  /** Moves the starfield of the empty screen, only while it is shown. */
+  private void startStarTimer() {
+    if(starTimer != null) {
+      return;
+    }
+    starTimer = new java.util.Timer("empty-stars", true);
+    starTimer.scheduleAtFixedRate(new java.util.TimerTask() {
+      @Override
+      public void run() {
+        if(content.titleScreen()) {
+          gui.getGUIThread().invokeLater(() -> content.tickStarfield());
+        }
+      }
+    }, 110, 110);
+  }
+
+  /** Shows the title screen (only the logo and the stars) until a key is pressed. */
+  public void showTitleScreen() {
+    content.titleScreen(true);
+  }
+
   private void openAbout() {
     content.openAbout();
   }
@@ -1441,10 +1503,7 @@ public final class LanternaMainWindow
       content.hideMenu();
       return;
     }
-    Game game = gameSupplier.get();
-    if(game == null) {
-      return;
-    }
+    // The menu also opens on the title screen: its actions handle the empty game.
     List<String> items = new ArrayList<>();
     menuActions.clear();
     addMenuItem(items, Strings.MenuScores, this::openHighScores);

@@ -52,6 +52,45 @@ import spacetrader.TradeCalculator;
 
 class LanternaMainWindowTest {
   @Test
+  void theTitleScreenAnswersToTheMenuKeys() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
+      MainPresenter presenter = new MainPresenter(() -> null, window);
+      window.setPresenter(presenter);
+      boolean[] newGame = {false};
+      window.setGameActions(() -> newGame[0] = true, null, null);
+      window.showTitleScreen();
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("Beyond"), "the title shows the logo");
+
+      // any key leaves the title and enters the program
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('x', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.MainNoGame), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F2));
+      assertTrue(newGame[0], "F2 starts a new game from the program");
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F10));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.MenuTitle), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('a', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.AboutTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void showsTheBannerOnTheEmptyScreen() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -60,12 +99,15 @@ class LanternaMainWindowTest {
       LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
       MainPresenter presenter = new MainPresenter(() -> null, window);
       window.setPresenter(presenter);
+      window.showTitleScreen();
       presenter.updateAll();
       gui.addWindow(window.asWindow());
       gui.updateScreen();
 
       assertTrue(screenText(screen).contains("Beyond"), screenText(screen));
       assertTrue(screenText(screen).contains("Space Trader"), screenText(screen));
+      assertTrue(screenText(screen).chars().anyMatch(c -> c >= 0x2800 && c <= 0x28FF),
+          "the starfield is drawn in braille");
     } finally {
       screen.stopScreen();
       screen.close();

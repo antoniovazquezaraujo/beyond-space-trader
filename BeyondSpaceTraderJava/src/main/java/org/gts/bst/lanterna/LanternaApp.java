@@ -63,9 +63,11 @@ public final class LanternaApp {
           () -> newGame(gui, window, dialogs, game),
           () -> saveGame(gui, dialogs, game[0], window),
           () -> loadGame(gui, window, dialogs, game));
-      game[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, dialogs);
+      // The game starts on the title screen: the logo, the starfield and the menu.
+      // "New game (F2)" or "Load (F9)" bring a game in.
       MainPresenter presenter = new MainPresenter(() -> game[0], window);
       window.setPresenter(presenter);
+      window.showTitleScreen();
       presenter.updateAll();
       gui.addWindowAndWait(window.asWindow());
     } finally {
