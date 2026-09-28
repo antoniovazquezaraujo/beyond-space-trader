@@ -181,43 +181,57 @@ Not for sale:
 
 **Gadgets** (seven, all different, no tiers):
 
-| Piece | Effect | Price |
-| --- | --- | --- |
-| 5 extra cargo bays | +5 cargo bays | 2,500 |
-| Auto-repair system | Improves the engineer's effect | 7,500 |
-| Navigating system | Improves the pilot's effect | 15,000 |
-| Targeting system | Improves the fighter's effect | 25,000 |
-| Cloaking device | Pirates and police do not notice you (good engineer) | 100,000 |
-| Fuel compactor | +3 fuel tanks | 30,000 |
-| 5 hidden cargo bays | +5 bays invisible to the police | 60,000 |
+| Piece | Effect | Price | Symbol |
+| --- | --- | --- | --- |
+| 5 extra cargo bays | +5 cargo bays | 2,500 | ⠾ |
+| Auto-repair system | Improves the engineer's effect | 7,500 | ⧎ |
+| Navigating system | Improves the pilot's effect | 15,000 | ◒ |
+| Targeting system | Improves the fighter's effect | 25,000 | ◈ |
+| Cloaking device | Pirates and police do not notice you (good engineer) | 100,000 | ⍉ |
+| Fuel compactor | +3 fuel tanks | 30,000 | ⏚ |
+| 5 hidden cargo bays | +5 bays invisible to the police | 60,000 | 🁨 |
 
 Everything else the ship shows is **free art** (no model variant): cockpits,
 wings, antennas, fuel tanks, hatches, docking rings, cargo pods, greebles. Draw
 as many variants as you like; the game always uses the same one unless a rule
 says otherwise.
 
-## Cargo in braille
+## Cargo
 
-One dot = one cargo bay; a braille character holds 8 dots (2x4).
+One dot = one cargo bay; a braille character holds 8 dots (2x4). The gauge can be
+drawn **live** from the real capacity (base + 5 per cargo gadget), so it grows
+when the player installs the extra bays.
 
-| Ship | Bays | Dots | Characters |
-| --- | --- | --- | --- |
-| Flea | 10 | 10 | 1¼ |
-| Gnat, Mosquito | 15 | 15 | 1⅞ |
-| Firefly, Hornet | 20 | 20 | 2½ |
-| Bumblebee | 25 | 25 | 3⅛ |
-| Grasshopper, Scorpion | 30 | 30 | 3¾ |
-| Wasp | 35 | 35 | 4⅜ |
-| Beetle | 50 | 50 | 6¼ |
-| Termite | 60 | 60 | 7½ |
+| Ship | Bays | Dots | Characters | Tiles |
+| --- | --- | --- | --- | --- |
+| Flea | 10 | 10 | 1¼ | 🂅 |
+| Gnat, Mosquito | 15 | 15 | 1⅞ | 🂓 🁦 |
+| Firefly, Hornet | 20 | 20 | 2½ | 🂓 🁷 |
+| Bumblebee | 25 | 25 | 3⅛ | 🂓 🂓 🁤 |
+| Grasshopper, Scorpion | 30 | 30 | 3¾ | 🂓 🂓 🁩 |
+| Wasp | 35 | 35 | 4⅜ | 🂓 🂓 🂌 |
+| Beetle | 50 | 50 | 6¼ | 🂓 🂓 🂓 🂓 🁥 |
+| Termite | 60 | 60 | 7½ | 🂓 🂓 🂓 🂓 🂓 |
 
-The gauge can be drawn **live** from the real capacity (base + 5 per cargo
-gadget), so the dots grow when the player installs the extra bays.
+The tiles are the domino set, one tile for every total from 0 to 12 (one pip per
+bay):
 
-If you prefer pips to dots: the dice faces ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ are single width and
-give 1 to 6 pips each, so two dice hold up to 12 bays. The domino tiles show a
-whole total from 0 to 12 per tile (15 = 6-6 + 0-3, 60 = five 6-6 tiles) and work
-too, at two cells each: pretty, but less dense than braille.
+🁣 🁤 🁥 🁦 🁧 🁨 🁩 🁰 🁷 🁾 🂅 🂌 🂓
+
+| Tiles | Bays |
+| --- | --- |
+| 🂅 | 10 |
+| 🂓 🁦 | 15 |
+| 🂓 🁷 | 20 |
+| 🂓 🂓 🁤 | 25 |
+| 🂓 🂓 🁩 | 30 |
+| 🂓 🂓 🂌 | 35 |
+| 🂓 🂓 🂓 🂓 🁥 | 50 |
+| 🂓 🂓 🂓 🂓 🂓 | 60 |
+
+The domino tiles are two cells wide (see **Glyphs**): the composer reserves the
+second cell. If you prefer one cell per glyph, the dice faces ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ hold
+1 to 6 pips each.
 
 ## Mount points (proposal)
 
