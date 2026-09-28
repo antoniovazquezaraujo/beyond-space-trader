@@ -55,6 +55,92 @@ to Lanterna's table, the domino tiles) **takes two cells**: the composer keeps
 the second one reserved for it, so the rows stay aligned. Everything else takes
 one cell. Braille and the dice faces ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ are single width.
 
+### The palette (safe glyphs, copy from here)
+
+These are the glyphs that any normal monospace setup can draw: each one is
+present in at least 13 of the 20 monospace font families of the development
+machine, so no fallback to a proportional font is needed. Everything else — the
+technical signs, the exotic arrows, the dingbats, the dominoes — depends on the
+fonts and the fallback of the reader's terminal.
+
+**Letters, digits and accents**
+
+```
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+0 1 2 3 4 5 6 7 8 9
+á é í ó ú ü ñ Á É Í Ó Ú Ü Ñ ç Ç à è ì ò ù â ê î ô û ä ë ï ö ¿ ¡ ª º ¹ ² ³ ½ ¼ ¾ µ
+```
+
+**Punctuation and signs**
+
+```
+! " # $ % & ' ( ) * + , - . / : ; < = > ? @ [ \ ] ^ _ ` { | } ~
+€ ¢ £ ¥ · • … – — † ‡ ° § ¶ ¤ ¦ © ® ™
+```
+
+**Arrows**
+
+```
+← ↑ → ↓ ↔ ↕ ↖ ↗ ↘ ↙ ⇐ ⇑ ⇒ ⇓ ⇔ ⇦ ⇧ ⇨ ⇩ ↠ ↣ ⇉ ⇝ ⇶ ⇻
+```
+
+**Maths**
+
+```
+± × ÷ ≈ ≠ ≤ ≥ ∞ √ ∑ ∏ ∫ ∂ ∆ ∇ ⌐ ∠ ∘ ¬ ⊕ ⊗ ⊙ ⊛
+```
+
+**Box drawing**
+
+```
+─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╔ ╗ ╚ ╝ ╠ ╣ ╦ ╩ ╬
+━ ┃ ┏ ┓ ┗ ┛ ┣ ┫ ┳ ┻ ╋ ┄ ┅ ┆ ┇ ┈ ┉ ┊ ┋ ╌ ╍ ╎ ╏ ╴ ╵ ╶ ╷
+```
+
+**Blocks and shades**
+
+```
+░ ▒ ▓ █ ▉ ▊ ▋ ▌ ▍ ▎ ▏ ▁ ▂ ▃ ▄ ▅ ▆ ▇ ▀ ▬ ▭
+```
+
+**Shapes**
+
+```
+■ □ ▪ ▫ ▲ ▼ ► ◄ ◆ ◇ ○ ● ◎ ◉ ◍ ◘ ◙ ◢ ◣ ◤ ◥
+```
+
+**Symbols**
+
+```
+★ ☆ ✦ ✧ ☀ ☁ ☂ ☎ ☏ ☼ ☽ ☾ ♠ ♥ ♦ ♣ ♤ ♡ ♢ ♧ ♪ ♫ ♬ ♭ ♯ ♩ ♀ ♂
+✓ ✗ ⌂ ⚐ ⚑ ⚒ ⚔ ⚖ ⚗ ⚛ ☢ ☣ ⚙ ⚡ ⌘ ⍟ ⌾ ⌁ ⌸ ⍉
+```
+
+**Dice**
+
+```
+⚀ ⚁ ⚂ ⚃ ⚄ ⚅
+```
+
+**Braille** (the whole block U+2800–U+28FF, grouped by number of dots; U+2800 is
+the blank one)
+
+```
+1 dot : ⠁⠂⠄⠈⠐⠠⡀⢀
+2 dots: ⠃⠅⠆⠉⠊⠌⠑⠒⠔⠘⠡⠢⠤⠨⠰⡁⡂⡄⡈⡐⡠⢁⢂⢄⢈⢐⢠⣀
+3 dots: ⠇⠋⠍⠎⠓⠕⠖⠙⠚⠜⠣⠥⠦⠩⠪⠬⠱⠲⠴⠸⡃⡅⡆⡉⡊⡌⡑⡒⡔⡘⡡⡢⡤⡨⡰⢃⢅⢆⢉⢊⢌⢑⢒⢔⢘⢡⢢⢤⢨⢰⣁⣂⣄⣈⣐⣠
+4 dots: ⠏⠗⠛⠝⠞⠧⠫⠭⠮⠳⠵⠶⠹⠺⠼⡇⡋⡍⡎⡓⡕⡖⡙⡚⡜⡣⡥⡦⡩⡪⡬⡱⡲⡴⡸⢇⢋⢍⢎⢓⢕⢖⢙⢚⢜⢣⢥⢦⢩⢪⢬⢱⢲⢴⢸⣃⣅⣆⣉⣊⣌⣑⣒⣔⣘⣡⣢⣤⣨⣰
+5 dots: ⠟⠯⠷⠻⠽⠾⡏⡗⡛⡝⡞⡧⡫⡭⡮⡳⡵⡶⡹⡺⡼⢏⢗⢛⢝⢞⢧⢫⢭⢮⢳⢵⢶⢹⢺⢼⣇⣋⣍⣎⣓⣕⣖⣙⣚⣜⣣⣥⣦⣩⣪⣬⣱⣲⣴⣸
+6 dots: ⠿⡟⡯⡷⡻⡽⡾⢟⢯⢷⢻⢽⢾⣏⣗⣛⣝⣞⣧⣫⣭⣮⣳⣵⣶⣹⣺⣼
+7 dots: ⡿⢿⣟⣯⣷⣻⣽⣾
+8 dots: ⣿
+```
+
+**Out of the palette** — they are drawn on this machine thanks to fallback fonts,
+but a reader without those fonts would see boxes: the technical signs the piece
+files use now (`⧯ ⎅ ⏚ ⏌ ⎚ ⛁ ⧎ ⦖ ⦔ ⦈ ⍡`) and the domino tiles (`🁣…🂓`).
+
 ## Colours
 
 `#rrggbb` (exactly seven characters), a palette index `0-255`, or a **name in
@@ -176,21 +262,21 @@ Not for sale:
 
 | Piece | Protection | Price | Tech | Symbol |
 | --- | --- | --- | --- | --- |
-| Energy shield | 100 | 5,000 | t5 | ⦖ |
-| Reflective shield | 200 | 20,000 | t6 | ⦔ |
-| Lightning shield | 350 | 45,000 | t8 | ⦈ |
+| Energy shield | 100 | 5,000 | t5 | ⊙ |
+| Reflective shield | 200 | 20,000 | t6 | ◉ |
+| Lightning shield | 350 | 45,000 | t8 | ⚡ |
 
 **Gadgets** (seven, all different, no tiers):
 
 | Piece | Effect | Price | Symbol |
 | --- | --- | --- | --- |
 | 5 extra cargo bays | +5 cargo bays | 2,500 | ⠾ |
-| Auto-repair system | Improves the engineer's effect | 7,500 | ⧎ |
+| Auto-repair system | Improves the engineer's effect | 7,500 | ⚙ |
 | Navigating system | Improves the pilot's effect | 15,000 | ◒ |
 | Targeting system | Improves the fighter's effect | 25,000 | ◈ |
 | Cloaking device | Pirates and police do not notice you (good engineer) | 100,000 | ⍉ |
-| Fuel compactor | +3 fuel tanks | 30,000 | ⏚ |
-| 5 hidden cargo bays | +5 bays invisible to the police | 60,000 | 🁨 |
+| Fuel compactor | +3 fuel tanks | 30,000 | ▬ |
+| 5 hidden cargo bays | +5 bays invisible to the police | 60,000 | ◙ |
 
 Everything else the ship shows is **free art** (no model variant): cockpits,
 wings, antennas, fuel tanks, hatches, docking rings, cargo pods, greebles. Draw
@@ -203,36 +289,22 @@ One dot = one cargo bay; a braille character holds 8 dots (2x4). The gauge can b
 drawn **live** from the real capacity (base + 5 per cargo gadget), so it grows
 when the player installs the extra bays.
 
-| Ship | Bays | Dots | Characters | Tiles |
-| --- | --- | --- | --- | --- |
-| Flea | 10 | 10 | 1¼ | 🂅 |
-| Gnat, Mosquito | 15 | 15 | 1⅞ | 🂓 🁦 |
-| Firefly, Hornet | 20 | 20 | 2½ | 🂓 🁷 |
-| Bumblebee | 25 | 25 | 3⅛ | 🂓 🂓 🁤 |
-| Grasshopper, Scorpion | 30 | 30 | 3¾ | 🂓 🂓 🁩 |
-| Wasp | 35 | 35 | 4⅜ | 🂓 🂓 🂌 |
-| Beetle | 50 | 50 | 6¼ | 🂓 🂓 🂓 🂓 🁥 |
-| Termite | 60 | 60 | 7½ | 🂓 🂓 🂓 🂓 🂓 |
+| Ship | Bays | Dots | Characters |
+| --- | --- | --- | --- |
+| Flea | 10 | 10 | 1¼ |
+| Gnat, Mosquito | 15 | 15 | 1⅞ |
+| Firefly, Hornet | 20 | 20 | 2½ |
+| Bumblebee | 25 | 25 | 3⅛ |
+| Grasshopper, Scorpion | 30 | 30 | 3¾ |
+| Wasp | 35 | 35 | 4⅜ |
+| Beetle | 50 | 50 | 6¼ |
+| Termite | 60 | 60 | 7½ |
 
-The tiles are the domino set, one tile for every total from 0 to 12 (one pip per
-bay):
-
-🁣 🁤 🁥 🁦 🁧 🁨 🁩 🁰 🁷 🁾 🂅 🂌 🂓
-
-| Tiles | Bays |
-| --- | --- |
-| 🂅 | 10 |
-| 🂓 🁦 | 15 |
-| 🂓 🁷 | 20 |
-| 🂓 🂓 🁤 | 25 |
-| 🂓 🂓 🁩 | 30 |
-| 🂓 🂓 🂌 | 35 |
-| 🂓 🂓 🂓 🂓 🁥 | 50 |
-| 🂓 🂓 🂓 🂓 🂓 | 60 |
-
-The domino tiles are two cells wide (see **Glyphs**): the composer reserves the
-second cell. If you prefer one cell per glyph, the dice faces ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ hold
-1 to 6 pips each.
+The dice faces ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ are a one-cell alternative (1 to 6 pips each: 15 =
+⚅ ⚅ ⚂, 30 = five ⚅). The domino tiles read even better (one tile per total from
+0 to 12, one pip per bay: 15 = 🂓 🁦, 60 = five 🂓) but they are **not in the
+palette**: no monospace font has that block, so they only work on machines with
+a font installed on purpose.
 
 ## Mount points (proposal)
 
