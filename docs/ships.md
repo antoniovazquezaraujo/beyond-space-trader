@@ -448,6 +448,54 @@ Every chassis is then drawn once with up to that many small mount positions, and
 nothing else has to change when a player refits. The composer should show the
 ship's budget (pending).
 
+### Site types
+
+A **site** is a place in the chassis that the game fills with a piece. The
+letters are reserved in the art (declared at the top of the chassis file) and the
+**length of the run** tells how wide the piece may be:
+
+| Letter | Site | Filled with | How many |
+| --- | --- | --- | --- |
+| `C` | Cockpit | The cockpit piece | One, always |
+| `M` | Engines | The engine piece | By size (1 to 3) |
+| `D` | Fuel | The fuel tank piece | One, two on the big ones |
+| `B` | Cargo | The braille gauge of its real capacity | One if it carries cargo |
+| `R` | Role | The role marker ($, ☠ or the siren) | None on the player's ship |
+| `A` | Weapons | The piece of the mounted weapon | 0 to its weapon slots |
+| `E` | Shields | The piece of the mounted shield | 0 to its shield slots |
+| `G` | Gadgets | The piece of the mounted gadget | 0 to its gadget slots |
+
+The minimum is what the chassis must always show; the maximum is how many the
+game may fill, so **the chassis has to offer that many sites** (the composer will
+check it). A dash means the ship has no site of that kind at all.
+
+```
+sitios= C=cabina M=motor D=deposito B=bodega R=rol A=arma E=escudo G=artilugio
+```
+
+### Sites per ship type
+
+| Ship | Size | C | M | D | B | R | A | E | G | Total (min–max) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Flea | Tiny | 1 | 1 | 1 | 1 | 0–1 | — | — | — | 4–5 |
+| Gnat | Small | 1 | 1 | 1 | 1 | 0–1 | 0–1 | — | 0–1 | 4–7 |
+| Firefly | Small | 1 | 1 | 1 | 1 | 0–1 | 0–1 | 0–1 | 0–1 | 4–8 |
+| Mosquito | Small | 1 | 1 | 1 | 1 | 0–1 | 0–2 | 0–1 | 0–1 | 4–9 |
+| Bumblebee | Medium | 1 | 2 | 1 | 1 | 0–1 | 0–1 | 0–2 | 0–2 | 5–11 |
+| Beetle | Medium | 1 | 2 | 1 | 1 | 0–1 | — | 0–1 | 0–1 | 5–8 |
+| Hornet | Large | 1 | 2 | 2 | 1 | 0–1 | 0–3 | 0–2 | 0–1 | 6–13 |
+| Grasshopper | Large | 1 | 2 | 2 | 1 | 0–1 | 0–2 | 0–2 | 0–3 | 6–14 |
+| Termite | Huge | 1 | 3 | 2 | 1 | 0–1 | 0–1 | 0–3 | 0–2 | 7–14 |
+| Wasp | Huge | 1 | 3 | 2 | 1 | 0–1 | 0–3 | 0–2 | 0–2 | 7–15 |
+
+The special ships are **fixed art** (the player never fits them), so they need no
+sites; their equipment, if we ever want it visible, would be: Space Monster
+3 weapons, Dragonfly 2/3/2 (seven sites in a Small hull), Mantis 3/1/3, Scarab
+2/0/0, Scorpion 2/2/2, Bottle none.
+
+The player-designed ship (`Custom`) uses a generic Huge chassis with the widest
+set (C1 M3 D2 B1 R0 A0–3 E0–3 G0–3), and the game fills what the player designed.
+
 ### Role markers
 
 The role the game gives the ship (police, pirate or trader) is known at
