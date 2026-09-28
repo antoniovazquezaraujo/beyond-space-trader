@@ -9,6 +9,7 @@
 package org.gts.bst.lanterna;
 
 import com.googlecode.lanterna.TerminalPosition;
+import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.AbstractInteractableComponent;
@@ -256,7 +257,7 @@ public final class ShipComposerView extends BasicWindow {
         width = Math.max(width, cursorX + pieces.get(pieceIndex).width() + 2);
         height = Math.max(height, cursorY + pieces.get(pieceIndex).height() + 2);
       }
-      char[][] cells = new char[height][width];
+      int[][] cells = new int[height][width];
       TextColor[][] colors = new TextColor[height][width];
       for(int row = 0; row < height; row++) {
         for(int column = 0; column < width; column++) {
@@ -284,9 +285,8 @@ public final class ShipComposerView extends BasicWindow {
       int top = Math.max(0, (size.getRows() - height - 2) / 2);
       for(int row = 0; row < height && top + row < size.getRows() - 2; row++) {
         for(int column = 0; column < width && left + column < size.getColumns(); column++) {
-          if(cells[row][column] != ' ') {
-            graphics.setForegroundColor(colors[row][column]);
-            graphics.setCharacter(left + column, top + row, cells[row][column]);
+          if(cells[row][column] != ' ' && cells[row][column] != ShipArtFile.CONTINUATION) {
+            drawGlyph(graphics, left + column, top + row, cells[row][column], colors[row][column]);
           }
         }
       }
@@ -301,10 +301,17 @@ public final class ShipComposerView extends BasicWindow {
           + (message.isEmpty() ? "" : "   ||   " + message));
     }
 
-    private void overlay(char[][] cells, TextColor[][] colors, ShipArtFile part, int x, int y, String colorName) {
+    /** Draws one glyph (a code point) in its colour; the terminal decides how wide it is. */
+    private static void drawGlyph(TextGUIGraphics graphics, int column, int row, int codePoint, TextColor color) {
+      TextCharacter glyph = TextCharacter.fromString(new String(Character.toChars(codePoint)), color,
+          TextColor.ANSI.BLACK)[0];
+      graphics.setCharacter(column, row, glyph);
+    }
+
+    private void overlay(int[][] cells, TextColor[][] colors, ShipArtFile part, int x, int y, String colorName) {
       for(int row = 0; row < part.height(); row++) {
         for(int column = 0; column < part.width(); column++) {
-          char character = part.at(row, column);
+          int character = part.at(row, column);
           if(character != ' ' && y + row >= 0 && y + row < cells.length && x + column >= 0
               && x + column < cells[0].length) {
             cells[y + row][x + column] = character;

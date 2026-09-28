@@ -45,6 +45,16 @@ blink=true                   ← optional; only true or false (false by default)
   alternates between `color` and `bgcolor` (black when there is no `bgcolor`):
   the piece never disappears. `bgcolor` alone does nothing.
 
+## Glyphs
+
+The files are read as Unicode **code points**, so any glyph works, including the
+ones outside the basic plane (the domino tiles 🁣 🂓, for example).
+
+A glyph that the terminal paints **two columns wide** (emoji, CJK and, according
+to Lanterna's table, the domino tiles) **takes two cells**: the composer keeps
+the second one reserved for it, so the rows stay aligned. Everything else takes
+one cell. Braille and the dice faces ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ are single width.
+
 ## Colours
 
 `#rrggbb` (exactly seven characters), a palette index `0-255`, or a **name in
@@ -152,22 +162,22 @@ Not for sale:
 
 **Weapons** (six, in tiers):
 
-| Piece | Power | Price | Tech | Extra |
-| --- | --- | --- | --- | --- |
-| Pulse laser | 15 | 2,000 | t5 | — |
-| Beam laser | 25 | 12,500 | t6 | — |
-| Military laser | 35 | 35,000 | t7 | — |
-| Morgan's laser | 85 | 50,000 | t8 | — |
-| Photon disruptor | 20 | 15,000 | t6 | Disables systems |
-| Quantum disruptor | 60 | 50,000 | t8 | Disables systems |
+| Piece | Power | Price | Tech | Extra | Symbol |
+| --- | --- | --- | --- | --- | --- |
+| Pulse laser | 15 | 2,000 | t5 | — | ↠ |
+| Beam laser | 25 | 12,500 | t6 | — | ⇉ |
+| Military laser | 35 | 35,000 | t7 | — | ⇶ |
+| Morgan's laser | 85 | 50,000 | t8 | — | ↣ |
+| Photon disruptor | 20 | 15,000 | t6 | Disables systems | ⇝ |
+| Quantum disruptor | 60 | 50,000 | t8 | Disables systems | ⇻ |
 
 **Shields** (three, in tiers):
 
-| Piece | Protection | Price | Tech |
-| --- | --- | --- | --- |
-| Energy shield | 100 | 5,000 | t5 |
-| Reflective shield | 200 | 20,000 | t6 |
-| Lightning shield | 350 | 45,000 | t8 |
+| Piece | Protection | Price | Tech | Symbol |
+| --- | --- | --- | --- | --- |
+| Energy shield | 100 | 5,000 | t5 | ⦖ |
+| Reflective shield | 200 | 20,000 | t6 | ⦔ |
+| Lightning shield | 350 | 45,000 | t8 | ⦈ |
 
 **Gadgets** (seven, all different, no tiers):
 
@@ -203,6 +213,11 @@ One dot = one cargo bay; a braille character holds 8 dots (2x4).
 
 The gauge can be drawn **live** from the real capacity (base + 5 per cargo
 gadget), so the dots grow when the player installs the extra bays.
+
+If you prefer pips to dots: the dice faces ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ are single width and
+give 1 to 6 pips each, so two dice hold up to 12 bays. The domino tiles show a
+whole total from 0 to 12 per tile (15 = 6-6 + 0-3, 60 = five 6-6 tiles) and work
+too, at two cells each: pretty, but less dense than braille.
 
 ## Mount points (proposal)
 

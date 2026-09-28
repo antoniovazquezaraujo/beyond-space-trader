@@ -74,4 +74,16 @@ class ShipArtFileTest {
     assertEquals('x', parts.get(0).at(1, 1));
     assertEquals(' ', parts.get(0).at(2, 1), "the bottom row is empty");
   }
+
+  @Test
+  void wideGlyphsTakeTwoCells() throws IOException {
+    List<ShipArtFile> parts = ShipArtFile.parse(new StringReader(
+        "[fichas]\n"
+        + "🁣x\n"));
+
+    assertEquals(3, parts.get(0).width(), "the domino tile takes two cells");
+    assertEquals(0x1F063, parts.get(0).at(0, 0), "the whole code point comes back");
+    assertEquals(ShipArtFile.CONTINUATION, parts.get(0).at(0, 1), "the second cell is its continuation");
+    assertEquals('x', parts.get(0).at(0, 2), "the letter goes after the two cells");
+  }
 }
