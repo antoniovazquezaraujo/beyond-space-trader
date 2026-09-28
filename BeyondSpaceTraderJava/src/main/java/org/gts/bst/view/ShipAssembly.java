@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * A ship assembly: a chassis and the pieces placed on it, each with its position
- * and its colour. It is what the composer saves to ships/naves.txt and reloads.
+ * and its colour. It is what the composer saves to ships/ships.txt and reloads.
  */
 public record ShipAssembly(String name, String chassis, List<ShipPlacement> pieces) {
   /** One piece of the assembly: which one, where and its colour. */
@@ -99,7 +99,7 @@ public record ShipAssembly(String name, String chassis, List<ShipPlacement> piec
     List<ShipPlacement> pieces = new ArrayList<>();
     for(String line = buffered.readLine(); line != null; line = buffered.readLine()) {
       String trimmed = line.strip();
-      if(trimmed.isEmpty() || trimmed.startsWith(";")) {
+      if(trimmed.isEmpty() || trimmed.startsWith(";;")) {
         continue;
       }
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {

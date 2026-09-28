@@ -23,7 +23,7 @@ class ShipAssemblyTest {
     ShipAssembly assembly = new ShipAssembly("prueba", "insecto-diminuto", List.of(
         new ShipAssembly.ShipPlacement("motor", 0, 2, "orange"),
         new ShipAssembly.ShipPlacement("antena", 6, 0, "cyan")));
-    Path file = Files.createTempFile("naves", ".txt");
+    Path file = Files.createTempFile("ships", ".txt");
     try {
       ShipAssembly.save(file.toString(), assembly);
       assertEquals(assembly, ShipAssembly.load(file.toString()));
@@ -35,13 +35,17 @@ class ShipAssemblyTest {
   @Test
   void keepsNamesWithSpacesAndSkipsBrokenLines() throws IOException {
     ShipAssembly assembly = ShipAssembly.parse(new java.io.StringReader(
-        "[prueba]\n"
+        ";; un comentario\n"
+        + "[prueba]\n"
         + "chasis=uno\n"
+        + "; una linea suelta no es comentario ni pieza\n"
         + "pieza=torreta laser x=9 y=4 color=red\n"
         + "pieza=vaina x=1 y=1\n"
         + "pieza=motor x=0 y=2 color=orange\n"));
 
     assertEquals(2, assembly.pieces().size(), "the broken line is skipped");
+    assertEquals("prueba", assembly.name(), "the ;; comment does not open a section");
+    assertEquals("uno", assembly.chassis(), "the single ; line is ignored");
     assertEquals("torreta laser", assembly.pieces().get(0).piece());
     assertEquals(9, assembly.pieces().get(0).x());
     assertEquals("orange", assembly.pieces().get(1).color());

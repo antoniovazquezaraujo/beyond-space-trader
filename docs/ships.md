@@ -15,7 +15,7 @@ piece catalogue below is the inventory of what has to be drawn.
 | --- | --- | --- |
 | `ships/chassis.txt` | The chassis drawings | Hand; the composer reloads it with `R` |
 | `ships/pieces.txt` | The piece drawings | Hand; the composer reloads it with `R` |
-| `ships/naves.txt` | One assembly: a chassis and its placed pieces | The composer, with `S` |
+| `ships/ships.txt` | One assembly: a chassis and its placed pieces | The composer, with `S` |
 
 Lookup order (UTF-8): `ships/<file>`, `../ships/<file>`, `BeyondSpaceTraderJava/ships/<file>`.
 
@@ -60,10 +60,13 @@ English** (there are no Spanish aliases: `color=rojo` is white).
 Anything unknown falls back to white **without warning**: `color=naranja` is
 white; write `color=orange` (or the index, or `#rrggbb`).
 
-## Format of `naves.txt` (one assembly)
+## Format of `ships.txt` (one assembly)
+
+The rules are the same as above: comments are `;;` (a single `;` is never a comment
+and, here, it is ignored like any other unknown line).
 
 ```
-; a comment (one semicolon is enough here)
+;; a comment (two semicolons, like the other files)
 [borrador]
 chasis=insecto-diminuto
 pieza=antena x=3 y=0 color=rojo
@@ -97,7 +100,7 @@ pieza=antena x=3 y=0 color=rojo
 | `x` | Empty the assembly |
 | `Tab` | Next chassis |
 | `r` | Reload `chassis.txt` and `pieces.txt` |
-| `s` / `l` | Save / load `naves.txt` |
+| `s` / `l` | Save / load `ships.txt` |
 | `Esc`, `q` | Exit |
 
 ## What each ship can carry

@@ -41,7 +41,7 @@ public final class ShipComposer {
     try {
       chassis = ShipArtFile.load("chassis.txt");
       pieces = ShipArtFile.load("pieces.txt");
-      saved = org.gts.bst.view.ShipAssembly.load(ShipArtFile.resolve("naves.txt").toString());
+      saved = org.gts.bst.view.ShipAssembly.load(ShipArtFile.resolve("ships.txt").toString());
     } catch(IOException e) {
       System.err.println(e.getMessage());
       return;
