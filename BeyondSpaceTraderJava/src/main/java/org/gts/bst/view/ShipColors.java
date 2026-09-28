@@ -13,7 +13,8 @@ import com.googlecode.lanterna.TextColor;
 
 /**
  * The colours of the art files: an English name, a #rrggbb value or a palette
- * number (0-255). Unknown names fall back to white.
+ * number (0-255). Names are English only (there are no Spanish aliases).
+ * Unknown names fall back to white.
  */
 public final class ShipColors {
   private ShipColors() {
@@ -40,28 +41,21 @@ public final class ShipColors {
   private static TextColor byName(String name) {
     switch(name) {
       case "black":
-      case "negro":
         return TextColor.ANSI.BLACK;
       case "red":
-      case "rojo":
         return TextColor.ANSI.RED;
       case "green":
-      case "verde":
         return TextColor.ANSI.GREEN;
       case "yellow":
-      case "amarillo":
         return TextColor.ANSI.YELLOW;
       case "blue":
-      case "azul":
         return TextColor.ANSI.BLUE;
       case "magenta":
         return TextColor.ANSI.MAGENTA;
       case "cyan":
-      case "cian":
         return TextColor.ANSI.CYAN;
       case "grey":
       case "gray":
-      case "gris":
         return TextColor.ANSI.WHITE;
       case "brightwhite":
         return TextColor.ANSI.WHITE_BRIGHT;

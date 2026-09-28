@@ -21,8 +21,8 @@ class ShipAssemblyTest {
   @Test
   void savesAndLoadsAnAssembly() throws IOException {
     ShipAssembly assembly = new ShipAssembly("prueba", "insecto-diminuto", List.of(
-        new ShipAssembly.ShipPlacement("motor", 0, 2, "naranja"),
-        new ShipAssembly.ShipPlacement("antena", 6, 0, "cian")));
+        new ShipAssembly.ShipPlacement("motor", 0, 2, "orange"),
+        new ShipAssembly.ShipPlacement("antena", 6, 0, "cyan")));
     Path file = Files.createTempFile("naves", ".txt");
     try {
       ShipAssembly.save(file.toString(), assembly);
@@ -37,20 +37,20 @@ class ShipAssemblyTest {
     ShipAssembly assembly = ShipAssembly.parse(new java.io.StringReader(
         "[prueba]\n"
         + "chasis=uno\n"
-        + "pieza=torreta laser x=9 y=4 color=rojo\n"
+        + "pieza=torreta laser x=9 y=4 color=red\n"
         + "pieza=vaina x=1 y=1\n"
-        + "pieza=motor x=0 y=2 color=naranja\n"));
+        + "pieza=motor x=0 y=2 color=orange\n"));
 
     assertEquals(2, assembly.pieces().size(), "the broken line is skipped");
     assertEquals("torreta laser", assembly.pieces().get(0).piece());
     assertEquals(9, assembly.pieces().get(0).x());
-    assertEquals("naranja", assembly.pieces().get(1).color());
+    assertEquals("orange", assembly.pieces().get(1).color());
   }
 
   @Test
   void addsAndUndoesPieces() {
     ShipAssembly assembly = ShipAssembly.empty("bloque-mediano");
-    assembly = assembly.with(new ShipAssembly.ShipPlacement("motor", 1, 1, "rojo"));
+    assembly = assembly.with(new ShipAssembly.ShipPlacement("motor", 1, 1, "red"));
     assertEquals(1, assembly.pieces().size());
     assertEquals(0, assembly.withoutLast().pieces().size());
   }

@@ -32,7 +32,7 @@ import org.gts.bst.view.ShipAssembly;
  * reloads the definitions so they can be edited with any editor.
  */
 public final class ShipComposerView extends BasicWindow {
-  private static final String[] COLORS = {"blanco", "cian", "rojo", "amarillo", "verde", "magenta", "azul"};
+  private static final String[] COLORS = {"white", "cyan", "red", "yellow", "green", "magenta", "blue"};
   private final ComposerCanvas canvas = new ComposerCanvas();
   private List<ShipArtFile> chassis;
   private List<ShipArtFile> pieces;
@@ -63,7 +63,7 @@ public final class ShipComposerView extends BasicWindow {
     this.assembly = saved != null && !saved.chassis().isEmpty()
         ? saved : ShipAssembly.empty(chassis.isEmpty() ? "" : chassis.get(0).name());
     chassisIndex = Math.max(0, indexOf(chassis, assembly.chassis()));
-    pendingColor = pieces.isEmpty() ? "blanco" : pieces.get(0).color();
+    pendingColor = pieces.isEmpty() ? "white" : pieces.get(0).color();
     updateTitle();
   }
 
@@ -113,10 +113,10 @@ public final class ShipComposerView extends BasicWindow {
   private void character(char character) {
     if(character == 'n') {
       pieceIndex = pieces.isEmpty() ? 0 : (pieceIndex + 1) % pieces.size();
-      pendingColor = pieces.isEmpty() ? "blanco" : pieces.get(pieceIndex).color();
+      pendingColor = pieces.isEmpty() ? "white" : pieces.get(pieceIndex).color();
     } else if(character == 'p') {
       pieceIndex = pieces.isEmpty() ? 0 : (pieces.size() + pieceIndex - 1) % pieces.size();
-      pendingColor = pieces.isEmpty() ? "blanco" : pieces.get(pieceIndex).color();
+      pendingColor = pieces.isEmpty() ? "white" : pieces.get(pieceIndex).color();
     } else if(character == ' ' || character == 'o') {
       place();
     } else if(character == 'c') {

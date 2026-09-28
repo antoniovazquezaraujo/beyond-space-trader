@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 class ShipComposerViewTest {
   @Test
   void placesAndUndoesAPieceOverTheChassis() throws IOException {
-    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[uno]\ncolor=cian\n..##\n#..#\n"));
-    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[total]\ncolor=rojo\n##\n##\n"));
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\n..##\n#..#\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[total]\ncolor=red\n##\n##\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 12)));
     screen.startScreen();
     try {

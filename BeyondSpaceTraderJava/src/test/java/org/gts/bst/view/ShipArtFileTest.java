@@ -23,7 +23,7 @@ class ShipArtFileTest {
         "; comentario\n"
         + "\n"
         + "[uno]\n"
-        + "color=cian\n"
+        + "color=cyan\n"
         + "..##\n"
         + "#..#\n"
         + "\n"
@@ -34,7 +34,7 @@ class ShipArtFileTest {
 
     assertEquals(2, parts.size());
     assertEquals("uno", parts.get(0).name());
-    assertEquals("cian", parts.get(0).color());
+    assertEquals("cyan", parts.get(0).color());
     assertEquals(3, parts.get(0).height(), "the blank row before [dos] is part of [uno]");
     assertEquals(4, parts.get(0).width());
     assertEquals('.', parts.get(0).at(0, 0), "a dot is drawn");

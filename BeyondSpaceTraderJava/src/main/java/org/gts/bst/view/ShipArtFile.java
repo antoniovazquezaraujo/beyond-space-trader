@@ -91,7 +91,7 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
         bgColor = trimmed.substring("bgcolor=".length()).strip();
       } else if(name != null && trimmed.startsWith("blink=")) {
         String value = trimmed.substring("blink=".length()).strip().toLowerCase();
-        blink = value.equals("yes") || value.equals("true") || value.equals("1") || value.equals("si") || value.equals("sí");
+        blink = value.equals("true");
       } else if(name != null) {
         // The line is kept as written: a space is empty, a dot is ink.
         lines.add(line);

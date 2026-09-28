@@ -24,9 +24,9 @@ Lookup order (UTF-8): `ships/<file>`, `../ships/<file>`, `BeyondSpaceTraderJava/
 ```
 ;; a comment (only with two semicolons)
 [torreta laser]              ← a part; the name may have spaces
-color=cian                   ← optional; white by default
-bgcolor=negro                ← optional; the colour it jumps to while blinking
-blink=yes                    ← optional; yes/true/1/si/sí
+color=cyan                   ← optional; white by default
+bgcolor=black                ← optional; the colour it jumps to while blinking
+blink=true                   ← optional; only true or false (false by default)
   ⦅                          ← the drawing starts here
 ∫.                           ← '.' is ink, a space is empty
 ```
@@ -41,22 +41,24 @@ blink=yes                    ← optional; yes/true/1/si/sí
   extends over them, which is how a chassis keeps room to place pieces on. A
   blank line before the next `[name]` is one more row of the previous part.
 - Width = the longest line (shorter lines are padded); height = the number of rows.
-- **Blink** alternates between `color` and `bgcolor` (black when there is no
-  `bgcolor`): the piece never disappears. `bgcolor` alone does nothing.
+- **Blink** happens only with `blink=true` (`false` or anything else is off) and
+  alternates between `color` and `bgcolor` (black when there is no `bgcolor`):
+  the piece never disappears. `bgcolor` alone does nothing.
 
 ## Colours
 
-`#rrggbb` (exactly seven characters), a palette index `0-255`, or a name:
+`#rrggbb` (exactly seven characters), a palette index `0-255`, or a **name in
+English** (there are no Spanish aliases: `color=rojo` is white).
 
-| Names | Spanish alias | Notes |
-| --- | --- | --- |
-| `black`, `red`, `green`, `yellow`, `blue`, `cyan`, `grey`/`gray` | `negro`, `rojo`, `verde`, `amarillo`, `azul`, `cian`, `gris` | `gris`/`grey` is white in this palette |
-| `magenta` | `magenta` | same word in both |
-| `brightwhite`, `brightred`, `brightgreen`, `brightyellow`, `brightblue`, `brightmagenta`, `brightcyan` | — | English only |
-| `orange`(208), `purple`(93), `pink`(218), `brown`(130), `darkgrey`(238), `lightgrey`(250), `gold`(220), `navy`(17), `teal`(30), `olive`(58), `maroon`(88), `lime`(118), `skyblue`(117) | — | fixed palette index |
+| Names | Notes |
+| --- | --- |
+| `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan` | the basic palette |
+| `grey`/`gray` | white in this palette |
+| `brightwhite`, `brightred`, `brightgreen`, `brightyellow`, `brightblue`, `brightmagenta`, `brightcyan` | bright variants |
+| `orange`(208), `purple`(93), `pink`(218), `brown`(130), `darkgrey`(238), `lightgrey`(250), `gold`(220), `navy`(17), `teal`(30), `olive`(58), `maroon`(88), `lime`(118), `skyblue`(117) | fixed palette index |
 
 Anything unknown falls back to white **without warning**: `color=naranja` is
-white, write `color=orange` (or the index, or `#rrggbb`).
+white; write `color=orange` (or the index, or `#rrggbb`).
 
 ## Format of `naves.txt` (one assembly)
 
