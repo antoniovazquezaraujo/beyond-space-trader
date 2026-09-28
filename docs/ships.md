@@ -63,6 +63,13 @@ machine, so no fallback to a proportional font is needed. Everything else — th
 technical signs, the exotic arrows, the dingbats, the dominoes — depends on the
 fonts and the fallback of the reader's terminal.
 
+Every glyph in the palette is **one cell wide**: none of them has the East Asian
+Wide/Fullwidth property, so the engine never has to reserve a second cell. Two
+caveats: many of them are *ambiguous* (one cell in a Western locale, two in a
+terminal configured for East Asian languages), and a few (☀ ☁ ⚡ ⚙ ⚛ ★ ☆ ☢) have
+an emoji twin that a terminal could substitute (coloured and wide). The composer's
+strip (`g`) shows what your terminal does with any glyph.
+
 **Letters, digits and accents**
 
 ```
