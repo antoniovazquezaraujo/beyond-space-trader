@@ -111,6 +111,7 @@ public final class LanternaMainWindow
   private ShipyardPresenter shipyardPresenter;
   private boolean gameOver;
   private final List<Runnable> menuActions = new ArrayList<>();
+  private java.util.Timer starTimer;
   private Runnable newGameAction;
   private Runnable saveGameAction;
   private Runnable loadGameAction;
@@ -130,6 +131,7 @@ public final class LanternaMainWindow
 
   public void setPresenter(MainPresenter presenter) {
     this.presenter = presenter;
+    startStarTimer();
   }
 
   /**
@@ -1085,6 +1087,22 @@ public final class LanternaMainWindow
     }
     new CommanderPresenter(game, this).update();
     content.openCommander();
+  }
+
+  /** Moves the starfield of the empty screen, only while it is shown. */
+  private void startStarTimer() {
+    if(starTimer != null) {
+      return;
+    }
+    starTimer = new java.util.Timer("empty-stars", true);
+    starTimer.scheduleAtFixedRate(new java.util.TimerTask() {
+      @Override
+      public void run() {
+        if(gameSupplier.get() == null) {
+          gui.getGUIThread().invokeLater(() -> content.tickStarfield());
+        }
+      }
+    }, 110, 110);
   }
 
   private void openAbout() {

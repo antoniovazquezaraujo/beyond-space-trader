@@ -66,6 +66,8 @@ class LanternaMainWindowTest {
 
       assertTrue(screenText(screen).contains("Beyond"), screenText(screen));
       assertTrue(screenText(screen).contains("Space Trader"), screenText(screen));
+      assertTrue(screenText(screen).chars().anyMatch(c -> c >= 0x2800 && c <= 0x28FF),
+          "the starfield is drawn in braille");
     } finally {
       screen.stopScreen();
       screen.close();

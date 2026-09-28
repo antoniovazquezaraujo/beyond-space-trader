@@ -19,6 +19,7 @@ import com.googlecode.lanterna.input.KeyStroke;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import org.gts.bst.view.Starfield;
 import org.gts.bst.view.BankViewModel;
 import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
@@ -116,6 +117,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private int viewX = -1;
   private int viewY = -1;
   private int viewSystemId = -1;
+  private Starfield starfield;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -538,6 +540,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     String title = chartType == ChartType.GALACTIC ? Strings.MainChartGalactic : Strings.MainChartShortRange;
     UiPalette.title(graphics, 1, contentTop, title, chartWidth);
     if(game == null || cmdr == null) {
+      drawStarfield(graphics, chartWidth, chartHeight);
       drawBanner(graphics, chartWidth, chartHeight);
       return;
     }
@@ -545,6 +548,34 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     LanternaChartView chart = new LanternaChartView(
         graphics.newTextGraphics(new TerminalPosition(1, contentTop + 1), size), size);
     chart.render(chartModel(game, cmdr, chartWidth, chartHeight));
+  }
+
+  /** Moves the stars of the empty screen (called by the window timer). */
+  public void tickStarfield() {
+    if(starfield != null) {
+      starfield.advance();
+      invalidate();
+    }
+  }
+
+  /** The parallax starfield behind the logo, in braille with grey shades. */
+  private void drawStarfield(TextGUIGraphics graphics, int chartWidth, int chartHeight) {
+    int columns = Math.max(1, chartWidth - 1);
+    int rows = Math.max(1, chartHeight - 1);
+    if(starfield == null || starfield.dotWidth() != columns * 2 || starfield.dotHeight() != rows * 4) {
+      starfield = new Starfield(columns, rows, 0.12, 42);
+    }
+    Starfield.Frame frame = starfield.frame(columns, rows);
+    for(int row = 0; row < rows; row++) {
+      for(int column = 0; column < columns; column++) {
+        int shade = frame.shades()[row][column];
+        if(shade >= 0) {
+          graphics.setForegroundColor(new TextColor.Indexed(shade));
+          graphics.setCharacter(1 + column, contentTop + 1 + row, frame.lines().get(row).charAt(column));
+        }
+      }
+    }
+    UiPalette.reset(graphics);
   }
 
   /** The project logo, centred, on the empty screen. */
