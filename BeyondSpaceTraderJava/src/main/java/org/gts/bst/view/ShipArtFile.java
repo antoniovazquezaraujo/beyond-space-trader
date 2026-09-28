@@ -20,8 +20,8 @@ import java.util.List;
 
 /**
  * One definition of a ship part (a chassis or a piece) read from a text file:
- * a name, a colour name and the drawing, where '.' is empty and everything else
- * (unicode included) is part of the art.
+ * a name, a colour name and the drawing, copied literally. A space is empty and
+ * everything else (dots and unicode included) is part of the art.
  */
 public record ShipArtFile(String name, String color, List<String> lines, boolean blink, String bgColor) {
   /** Loads the parts of a file, looking for it in the usual places. */
@@ -92,7 +92,9 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
         String value = trimmed.substring("blink=".length()).strip().toLowerCase();
         blink = value.equals("yes") || value.equals("true") || value.equals("1") || value.equals("si") || value.equals("sí");
       } else if(name != null) {
-        lines.add(line.replace('.', ' ').replace('\t', ' '));
+        // The line is kept as written: a space is empty, a dot is ink. A tab
+        // cannot be drawn in a cell, so it becomes a space.
+        lines.add(line.replace('\t', ' '));
       }
     }
     if(name != null) {
