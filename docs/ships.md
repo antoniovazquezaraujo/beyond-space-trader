@@ -426,22 +426,17 @@ One dot = one cargo bay; a braille character holds 8 dots (2x4). The gauge can b
 drawn **live** from the real capacity (base + 5 per cargo gadget), so it grows
 when the player installs the extra bays.
 
-| Ship | Bays | Dots | Characters |
-| --- | --- | --- | --- |
-| Flea | 10 | 10 | 1¼ |
-| Gnat, Mosquito | 15 | 15 | 1⅞ |
-| Firefly, Hornet | 20 | 20 | 2½ |
-| Bumblebee | 25 | 25 | 3⅛ |
-| Grasshopper, Scorpion | 30 | 30 | 3¾ |
-| Wasp | 35 | 35 | 4⅜ |
-| Beetle | 50 | 50 | 6¼ |
-| Termite | 60 | 60 | 7½ |
+| Ship | Bays | Dots | Characters | Symbols |
+| --- | --- | --- | --- | --- |
+| Flea | 10 | 10 | 1¼ | ⣿⣀ |
+| Gnat, Mosquito | 15 | 15 | 1⅞ | ⣿⣷ |
+| Firefly, Hornet | 20 | 20 | 2½ | ⣿⣿⣤ |
+| Bumblebee | 25 | 25 | 3⅛ | ⣿⣿⣿⡀ |
+| Grasshopper, Scorpion | 30 | 30 | 3¾ | ⣿⣿⣿⣶ |
+| Wasp | 35 | 35 | 4⅜ | ⣿⣿⣿⣿⣄ |
+| Beetle | 50 | 50 | 6¼ | ⣿⣿⣿⣿⣿⣿⣀ |
+| Termite | 60 | 60 | 7½ | ⣿⣿⣿⣿⣿⣿⣿⣤ |
 
-The dice faces ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ are a one-cell alternative (1 to 6 pips each: 15 =
-⚅ ⚅ ⚂, 30 = five ⚅). The domino tiles read even better (one tile per total from
-0 to 12, one pip per bay: 15 = 🂓 🁦, 60 = five 🂓) but they are **not in the
-palette**: no monospace font has that block, so they only work on machines with
-a font installed on purpose.
 
 ## Mount points (proposal)
 
@@ -452,6 +447,34 @@ The numbers above fix the budget: Tiny 0, Small 4, Medium 5, Large 7, Huge 7.
 Every chassis is then drawn once with up to that many small mount positions, and
 nothing else has to change when a player refits. The composer should show the
 ship's budget (pending).
+
+### Role markers
+
+The role the game gives the ship (police, pirate or trader) is known at
+encounter time, so it can be a **site** too: a `R` marker in the chassis that the
+game fills with one of these three pieces.
+
+```
+[marca comerciante]
+color=gold
+$
+
+[marca pirata]
+color=white
+☠
+
+[marca policia]
+color=red
+bgcolor=blue
+blink=true
+✶
+```
+
+The siren alternates **red and blue** thanks to the blink: the shape switches
+between `color` and `bgcolor`. The skull is emoji-capable but with text
+presentation, like ★, so terminals draw it as text; the strip (`g`) tells if one
+substitutes it (⚑, ⌾ and ☼ are in the palette as alternatives). The player's
+ship carries no marker.
 
 ## The drawing list
 

@@ -27,3 +27,16 @@ color=cyan
 [deposito]
 color=green
 ⛁
+
+;; marcas de rol (las pone el juego segun el encuentro)
+[marca comerciante]
+color=gold
+$
+[marca pirata]
+color=white
+☠
+[marca policia]
+color=red
+bgcolor=blue
+blink=true
+✶
