@@ -89,6 +89,33 @@ class ShipComposerViewTest {
     }
   }
 
+  @Test
+  void showsTheGlyphStrip() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\n##\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[total]\ncolor=red\n##\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(120, 12)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKey(new KeyStroke('g', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("glifos:"), screenText(screen));
+      assertTrue(screenText(screen).contains("🁣"), "the strip shows the domino tile");
+
+      view.handleKey(new KeyStroke('g', false, false));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains("glifos:"), "g hides the strip again");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {

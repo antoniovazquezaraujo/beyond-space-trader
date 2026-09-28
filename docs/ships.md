@@ -106,6 +106,7 @@ pieza=antena x=3 y=0 color=rojo
 | `Intro`, `espacio`, `o` | Place the piece at the cursor |
 | `c` | Cycle the colour of the piece to place |
 | `h` | Show / hide the piece at the cursor (to see the bare chassis) |
+| `g` | Glyph strip: check how the terminal paints the sample glyphs (wide ones leave a hole) |
 | `u` | Undo the last placed piece |
 | `x` | Empty the assembly |
 | `Tab` | Next chassis |

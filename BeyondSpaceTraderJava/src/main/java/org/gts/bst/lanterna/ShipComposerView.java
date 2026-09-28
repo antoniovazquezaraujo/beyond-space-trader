@@ -44,6 +44,9 @@ public final class ShipComposerView extends BasicWindow {
   private int cursorY = 2;
   private String pendingColor;
   private boolean showPending = true;
+  private boolean showGlyphStrip;
+  /** Sample glyphs to check in the terminal: wide ones leave a hole after the marker. */
+  private static final String GLYPH_SAMPLE = "🁣 🁩 🂓 ┃ ⚀ ⚅ ┃ ⣿ ⠿ ┃ ⧯ ⎅ ⏌ ⎚ ⛁ ┃ ↠ ⇉ ⦖ ⧎ ◒ ◈ ⍉ ⏚ ┃ 😀 中 ┃ ┌─┐";
   private boolean blinkOn = true;
   private String message = "";
 
@@ -126,6 +129,8 @@ public final class ShipComposerView extends BasicWindow {
       assembly = ShipAssembly.empty(assembly.chassis());
     } else if(character == 'h') {
       showPending = !showPending;
+    } else if(character == 'g') {
+      showGlyphStrip = !showGlyphStrip;
     } else if(character == 'u') {
       assembly = assembly.withoutLast();
     } else if(character == 's') {
@@ -291,13 +296,18 @@ public final class ShipComposerView extends BasicWindow {
         }
       }
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
-      String pieceName = pieces.isEmpty() ? "-" : pieces.get(pieceIndex).name();
-      graphics.putString(1, size.getRows() - 2, hull.name() + " [" + hull.color() + "]  ·  pieza: " + pieceName
-          + " (" + (pieces.isEmpty() ? 0 : pieceIndex + 1) + "/" + pieces.size() + ") x=" + cursorX + " y=" + cursorY
-          + " [" + pendingColor + "]  ·  " + assembly.pieces().size() + " colocadas");
+      if(showGlyphStrip) {
+        graphics.putString(1, size.getRows() - 2, cut("glifos: " + GLYPH_SAMPLE
+            + "   (cada ┃: pegado al glifo = ocupa 2 columnas; con hueco = 1 columna)", size.getColumns() - 2));
+      } else {
+        String pieceName = pieces.isEmpty() ? "-" : pieces.get(pieceIndex).name();
+        graphics.putString(1, size.getRows() - 2, hull.name() + " [" + hull.color() + "]  ·  pieza: " + pieceName
+            + " (" + (pieces.isEmpty() ? 0 : pieceIndex + 1) + "/" + pieces.size() + ") x=" + cursorX + " y=" + cursorY
+            + " [" + pendingColor + "]  ·  " + assembly.pieces().size() + " colocadas");
+      }
       graphics.putString(1, size.getRows() - 1, "[h] pieza " + (showPending ? "(si)" : "(no)") + " · [x] vaciar"
           + " · [flechas] mover · [ENTER] colocar · [n/p] pieza · [TAB] chasis · [c] color · [u] deshacer"
-          + " · [s] guardar · [l] cargar · [r] recargar · [ESC] salir"
+          + " · [g] glifos · [s] guardar · [l] cargar · [r] recargar · [ESC] salir"
           + (message.isEmpty() ? "" : "   ||   " + message));
     }
 
@@ -320,6 +330,22 @@ public final class ShipComposerView extends BasicWindow {
         }
       }
     }
+  }
+
+  /** Trims a text to a number of cells, without breaking a glyph in half. */
+  private static String cut(String text, int cells) {
+    StringBuilder cut = new StringBuilder();
+    int width = 0;
+    for(int i = 0; i < text.length() && width < cells; ) {
+      int codePoint = text.codePointAt(i);
+      i += Character.charCount(codePoint);
+      width += ShipArtFile.isWide(codePoint) ? 2 : 1;
+      if(width > cells) {
+        break;
+      }
+      cut.appendCodePoint(codePoint);
+    }
+    return cut.toString();
   }
 
   private ShipArtFile findPiece(String name) {
