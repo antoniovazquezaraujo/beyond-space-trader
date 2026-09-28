@@ -5,24 +5,29 @@
 ;; una linea en blanco antes del siguiente [chasis] es una fila mas del anterior.
 
 [insecto-diminuto]
-color=blanco
-   ||-.
-   /|  `-._
-  /══╗------
-   `. ----
-
+color=red
+             
+ ||───.      
+ /|  `└───.  
+/══╗------└─.
+ `.        ┌┘
+    ───────. 
+             
 [insecto-pequeno]
-color=blanco
-      ,
-     / \
-   .;.__:
-   '`---`'``---...___
-   |═══╗.._____      ```---.
-   / ══╗   /   ``````-----.
-  /  ----.' --/-------
-   -------- .'
+color=green
+
+    ┌─                     
+   ┌┘ \                    
+  ┌┘.__:─────┐             
+  │`---`'``--└───────┐     
+  |═══╗.._____      `└───-.
+  / ══╗   /   `````──────. 
+ /  ----.' ──────────      
+  ─────────.'              
+
 [bloque-mediano]
-color=cian
+color=blue
+
 ---------..__
    `-._|  ═══╗`--..__------
        \   ══╗═─     ``-***__
@@ -33,7 +38,8 @@ color=cian
              .'--'''''
 
 [bloque-grande]
-color=cian
+color=yellow
+
                     .-`..'
        .'__    -----  .'`-.
      .'    ``--.-'_ .' -------

@@ -4,25 +4,26 @@
 ;; Los espacios del final se conservan; las lineas en blanco son filas de la pieza.
 
 [antena]
-color=cian
+color=cyan
  ⦅
 ∫
 [motor]
-color=#3399AA
-blink=yes
+color=#ff0000
+bgcolor=#ffff00
+blink=true
 ⧯
 [torreta laser]
-color=rojo
+color=red
 ⍡
 [torreta disruptor]
 color=magenta
 ⎅
 [vaina de carga]
-color=amarillo
+color=yellow
 ⏌
 [cabina]
-color=cian
+color=cyan
 ⎚.
 [deposito]
-color=verde
+color=green
 ⛁
