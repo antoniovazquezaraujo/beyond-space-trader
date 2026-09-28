@@ -66,9 +66,12 @@ fonts and the fallback of the reader's terminal.
 Every glyph in the palette is **one cell wide**: none of them has the East Asian
 Wide/Fullwidth property, so the engine never has to reserve a second cell. Two
 caveats: many of them are *ambiguous* (one cell in a Western locale, two in a
-terminal configured for East Asian languages), and a few (☀ ☁ ⚡ ⚙ ⚛ ★ ☆ ☢) have
-an emoji twin that a terminal could substitute (coloured and wide). The composer's
-strip (`g`) shows what your terminal does with any glyph.
+terminal configured for East Asian languages), and some have an **emoji twin**.
+Per the Unicode emoji data, the only palette glyph with *emoji presentation* is
+⚡ (the terminal paints it as a colour emoji, two columns), so it is **out**; the
+others (☀ ☁ ☂ ☎ ♠ ♥ ♦ ♣ ♀ ♂ ⚒ ⚔ ⚖ ⚗ ⚛ ☢ ☣ ⚙ © ® ™ ↔ ↕ ↖ ↗ ↘ ↙ ▪ ▫) are emoji
+too but with *text* presentation, which is what terminals draw by default. If one
+of them is substituted, the composer's strip (`g`) shows it.
 
 **Letters, digits and accents**
 
@@ -77,6 +80,7 @@ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
 a b c d e f g h i j k l m n o p q r s t u v w x y z
 0 1 2 3 4 5 6 7 8 9
 á é í ó ú ü ñ Á É Í Ó Ú Ü Ñ ç Ç à è ì ò ù â ê î ô û ä ë ï ö ¿ ¡ ª º ¹ ² ³ ½ ¼ ¾ µ
+α β γ δ ε θ λ μ π σ φ ω Α Β Γ Δ Θ Λ Π Σ Φ Ω ϟ
 ```
 
 **Punctuation and signs**
@@ -121,7 +125,7 @@ a b c d e f g h i j k l m n o p q r s t u v w x y z
 
 ```
 ★ ☆ ✦ ✧ ☀ ☁ ☂ ☎ ☏ ☼ ☽ ☾ ♠ ♥ ♦ ♣ ♤ ♡ ♢ ♧ ♪ ♫ ♬ ♭ ♯ ♩ ♀ ♂
-✓ ✗ ⌂ ⚐ ⚑ ⚒ ⚔ ⚖ ⚗ ⚛ ☢ ☣ ⚙ ⚡ ⌘ ⍟ ⌾ ⌁ ⌸ ⍉
+✓ ✗ ⌂ ⚐ ⚑ ⚒ ⚔ ⚖ ⚗ ⚛ ☢ ☣ ⚙ ⌘ ⍟ ⌾ ⌁ ⌸ ⍉ ↯ ☇
 ```
 
 **Dice**
@@ -271,7 +275,7 @@ Not for sale:
 | --- | --- | --- | --- | --- |
 | Energy shield | 100 | 5,000 | t5 | ⊙ |
 | Reflective shield | 200 | 20,000 | t6 | ◉ |
-| Lightning shield | 350 | 45,000 | t8 | ⚡ |
+| Lightning shield | 350 | 45,000 | t8 | ϟ |
 
 **Gadgets** (seven, all different, no tiers):
 
