@@ -1,6 +1,8 @@
 ;; Chasis de naves. Editable a mano; recarga con R en el compositor.
 ;; Una linea [nombre] abre un chasis; color= es opcional (blanco por defecto).
 ;; El espacio es vacio; todo lo demas (puntos y unicode incluidos) se dibuja.
+;; Las lineas en blanco tambien son del chasis, tambien las de los extremos:
+;; una linea en blanco antes del siguiente [chasis] es una fila mas del anterior.
 
 [insecto-diminuto]
 color=blanco

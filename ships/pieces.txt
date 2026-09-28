@@ -1,7 +1,7 @@
 ;; Piezas de nave. Editable a mano; recarga con R en el compositor.
 ;; Una linea [nombre] abre una pieza; color= es opcional (blanco por defecto).
 ;; El espacio es vacio; todo lo demas (puntos y unicode incluidos) se dibuja.
-;; Los espacios del final se conservan; una linea en blanco es una fila vacia.
+;; Los espacios del final se conservan; las lineas en blanco son filas de la pieza.
 
 [antena]
 color=cian
