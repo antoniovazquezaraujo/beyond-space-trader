@@ -67,6 +67,7 @@ public final class LanternaApp {
       // "New game (F2)" or "Load (F9)" bring a game in.
       MainPresenter presenter = new MainPresenter(() -> game[0], window);
       window.setPresenter(presenter);
+      window.showTitleScreen();
       presenter.updateAll();
       gui.addWindowAndWait(window.asWindow());
     } finally {

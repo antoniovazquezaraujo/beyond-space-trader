@@ -118,6 +118,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private int viewY = -1;
   private int viewSystemId = -1;
   private Starfield starfield;
+  private boolean titleScreen;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
     this.gameSupplier = gameSupplier;
@@ -424,6 +425,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     };
   }
 
+  /** True while the title screen is shown (only the logo and the stars). */
+  public boolean titleScreen() {
+    return titleScreen;
+  }
+
+  public void titleScreen(boolean value) {
+    titleScreen = value;
+    invalidate();
+  }
+
   private void paint(TextGUIGraphics graphics) {
     TerminalSize size = getSize();
     int width = size.getColumns();
@@ -436,6 +447,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     String blank = " ".repeat(width);
     for(int row = 0; row < height; row++) {
       graphics.putString(0, row, blank);
+    }
+    if(titleScreen) {
+      drawStarfield(graphics, width, height);
+      drawBanner(graphics, width, height);
+      return;
     }
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
@@ -540,8 +556,6 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     String title = chartType == ChartType.GALACTIC ? Strings.MainChartGalactic : Strings.MainChartShortRange;
     UiPalette.title(graphics, 1, contentTop, title, chartWidth);
     if(game == null || cmdr == null) {
-      drawStarfield(graphics, chartWidth, chartHeight);
-      drawBanner(graphics, chartWidth, chartHeight);
       return;
     }
     TerminalSize size = new TerminalSize(chartWidth, chartHeight);
