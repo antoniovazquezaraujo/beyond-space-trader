@@ -459,7 +459,7 @@ letters are reserved in the art (declared at the top of the chassis file) and th
 | `C` | Cockpit | The cockpit piece | One, always |
 | `M` | Engines | The engine piece | By size (1 to 3) |
 | `D` | Fuel | The fuel tank piece | One, two on the big ones |
-| `B` | Cargo | The braille gauge of its real capacity | One if it carries cargo |
+| `B` | Cargo | The braille gauge: one dot per bay, two to nine cells (10 bays = 2, 60 = 8, 70 with two cargo gadgets = 9) | One, if it carries cargo |
 | `R` | Role | The role marker ($, ☠ or the siren) | None on the player's ship |
 | `A` | Weapons | The piece of the mounted weapon | 0 to its weapon slots |
 | `E` | Shields | The piece of the mounted shield | 0 to its shield slots |
@@ -487,6 +487,11 @@ sitios= C=cabina M=motor D=deposito B=bodega R=rol A=arma E=escudo G=artilugio
 | Grasshopper | Large | 1 | 2 | 2 | 1 | 0–1 | 0–2 | 0–2 | 0–3 | 6–14 |
 | Termite | Huge | 1 | 3 | 2 | 1 | 0–1 | 0–1 | 0–3 | 0–2 | 7–14 |
 | Wasp | Huge | 1 | 3 | 2 | 1 | 0–1 | 0–3 | 0–2 | 0–2 | 7–15 |
+
+The `B` site is always one, but its run has to be as wide as the biggest gauge
+of that ship: 2 cells on the Flea, 3 on the Gnat and Mosquito, 4 on the Firefly
+and Hornet, 5 on the Bumblebee, 6 on the Grasshopper and Wasp, 7 on the Beetle
+and 9 on the Termite (one cell per eight bays, cargo gadgets included).
 
 The special ships are **fixed art** (the player never fits them), so they need no
 sites; their equipment, if we ever want it visible, would be: Space Monster
