@@ -25,7 +25,7 @@ import java.util.Set;
  */
 abstract class ArtEditorWindow extends BasicWindow {
   private final Canvas canvas = new Canvas();
-  private boolean blinkOn = true;
+  private volatile boolean blinkOn = true;
 
   ArtEditorWindow(String title) {
     super(title);

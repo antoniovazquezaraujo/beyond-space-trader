@@ -569,9 +569,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     chart.render(chartModel(game, cmdr, chartWidth, chartHeight));
   }
 
-  /** Moves the stars of the empty screen (called by the window timer). */
+  /** Moves the stars of the title screen (runs on the GUI thread, from the window timer). */
   public void tickStarfield() {
-    if(starfield != null) {
+    if(titleScreen && starfield != null) {
       starfield.advance();
       invalidate();
     }
