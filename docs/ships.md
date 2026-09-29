@@ -336,14 +336,15 @@ group=M x=6 y=3
 files, so the changes are there); Escape in the menu quits.
 
 Both editors have a vertical panel on the left, and the selected row of every
-list has a background of its own. In the **ship editor** the first line is the
-ship type (`y` cycles it), then comes the list of ships (`TAB` and `⇧TAB` move
-through it and the open one is highlighted) and then the numbered elements:
-`n` and `p` move through them and the keys `1` to `9` pick one directly. Each
-element is a piece key the game may fill a site with (`1. Weapon (A)`), with how
-many the ship has against the maximum (and a mark: `✓` right, `⚠` missing, `✗`
-over, `?` without a type); then come the hull with its colours and the same ship
-with the real pieces painted over it.
+list has a background of its own. The **ship editor** panel starts with the
+`Ships` list: every ship shows its type in brackets (`mi nave [Bumblebee]`),
+`TAB` and `⇧TAB` move through the list, the open one is highlighted and `y`
+cycles its type. Under the `Elements` title and its line come the numbered
+elements: `n` and `p` move through them and the keys `1` to `9` pick one
+directly. Each element is a piece key the game may fill a site with
+(`1. Weapon (A)`), with how many the ship has against the maximum (and a mark:
+`✓` right, `⚠` missing, `✗` over, `?` without a type); then come the hull with
+its colours and the same ship with the real pieces painted over it.
 
 | Key | Action |
 | --- | --- |
@@ -353,7 +354,7 @@ with the real pieces painted over it.
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the element painted. The cursor moves one cell right either way |
 | `v` | Preview: cycle which piece of the element is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
 | `+` / `t` | Add a ship / rename it (title) |
-| `f` / `y` | Pick the frame (chassis) from a list / cycle the ship type (first line of the panel) |
+| `f` / `y` | Pick the frame (chassis) from a list / cycle the type of the open ship |
 | `TAB` / `⇧TAB` | Next / previous ship (the file keeps every design) |
 | `s` | Save every ship back to `ships.txt` |
 | `Esc` | Back to the menu |

@@ -479,7 +479,7 @@ public final class HullEditorView extends ArtEditorWindow {
   /** The vertical panel on the left: the numbered colour elements, ready to pick. */
   private void paintPanel(TextGUIGraphics graphics, int width, int rows) {
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
-    graphics.putString(0, 0, EditorText.cut("elements", width));
+    graphics.putString(0, 0, EditorText.cut("Elements", width));
     int row = 1;
     if(letters.isEmpty()) {
       graphics.putString(0, row, EditorText.cut("(no elements: [+] adds one)", width));

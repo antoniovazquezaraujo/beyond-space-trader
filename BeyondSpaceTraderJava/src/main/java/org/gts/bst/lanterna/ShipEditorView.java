@@ -567,15 +567,13 @@ public final class ShipEditorView extends ArtEditorWindow {
     return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
   }
 
-  /** The vertical panel on the left: the type, the ships and the numbered elements. */
+  /** The vertical panel on the left: the ships (with their type) and the numbered elements. */
   private void paintPanel(TextGUIGraphics graphics, int width, int rows) {
     ShipDesign design = design();
     ShipSites.Budget budget = design == null ? null : ShipSites.budgetOf(design.type());
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
-    graphics.putString(0, 0, EditorText.cut("type: "
-        + (design == null || design.type().isEmpty() ? "-" : design.type()), width));
-    graphics.putString(0, 1, EditorText.cut("ships", width));
-    int row = 2;
+    graphics.putString(0, 0, EditorText.cut("Ships", width));
+    int row = 1;
     if(designs.isEmpty()) {
       graphics.putString(0, row++, EditorText.cut("(no ships in ships.txt)", width));
     }
@@ -585,12 +583,15 @@ public final class ShipEditorView extends ArtEditorWindow {
         graphics.setForegroundColor(TextColor.ANSI.BLACK);
         graphics.setBackgroundColor(TextColor.ANSI.WHITE);
       }
-      graphics.putString(0, row, EditorText.cut(String.format("%-" + width + "s", designs.get(i).name()), width));
+      graphics.putString(0, row, EditorText.cut(String.format("%-" + width + "s", shipLabel(designs.get(i))), width));
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     }
     if(row < rows) {
-      graphics.putString(0, row++, EditorText.cut("elements", width));
+      graphics.putString(0, row++, EditorText.cut("Elements", width));
+    }
+    if(row < rows) {
+      graphics.putString(0, row++, EditorText.cut("─".repeat(width), width));
     }
     ShipArtFile hull = hull();
     if(row < rows && hull != null && budget != null && !hull.size().isEmpty()
@@ -624,6 +625,11 @@ public final class ShipEditorView extends ArtEditorWindow {
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     }
+  }
+
+  /** A ship as the panel lists it: its name and its type in brackets. */
+  private static String shipLabel(ShipDesign design) {
+    return design.type().isEmpty() ? design.name() : design.name() + " [" + design.type() + "]";
   }
 
   /** Draws the open list of hulls or ship types. */

@@ -94,21 +94,21 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
       assertTrue(screenText(screen).contains("cannot find the chassis"), screenText(screen));
-      assertTrue(screenText(screen).contains("type: -"), screenText(screen));
+      assertTrue(panelRowOf(screen, "prueba") >= 0, screenText(screen));
 
-      // f opens the chassis list, on the first line of the panel
+      // f opens the chassis list
       view.handleKey(new KeyStroke('f', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("chassis:"), screenText(screen));
       assertTrue(screenText(screen).contains("uno"), screenText(screen));
       view.handleKey(new KeyStroke(KeyType.Enter));
 
-      // y cycles the type on the first line, with no menu at all
+      // y cycles the type: it is written next to the name, in brackets
       for(int i = 0; i < 3; i++) {
         view.handleKey(new KeyStroke('y', false, false));
       }
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("type: Firefly"), screenText(screen));
+      assertTrue(panelRowOf(screen, "prueba [Firefly]") >= 0, screenText(screen));
       view.handleKey(new KeyStroke('s', false, false));
 
       List<ShipDesign> saved = ShipDesign.load(file.toString());
