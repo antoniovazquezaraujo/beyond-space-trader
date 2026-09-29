@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -100,6 +101,44 @@ class HullEditorViewTest {
       screen.close();
       Files.deleteIfExists(file);
     }
+  }
+
+  @Test
+  void paintsTheBackgroundsOfTheColourElements() throws IOException {
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=white\nxxxxx\nxxxxx\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      HullEditorView view = new HullEditorView(hulls);
+      gui.addWindow(view);
+      gui.updateScreen();
+      assertFalse(hasBackground(screen, TextColor.ANSI.BLUE), screenText(screen));
+
+      // + adds the element, f cycles its background to blue and space paints it
+      view.handleKey(new KeyStroke('+', false, false));
+      view.handleKey(new KeyStroke('f', false, false));
+      view.handleKey(new KeyStroke('f', false, false));
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(hasBackground(screen, TextColor.ANSI.BLUE),
+          "the blue background of the element is painted: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static boolean hasBackground(Screen screen, TextColor color) {
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        if(color.equals(screen.getBackCharacter(column, row).getBackgroundColor())) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private static String screenText(Screen screen) {

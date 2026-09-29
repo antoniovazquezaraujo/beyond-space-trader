@@ -393,6 +393,44 @@ class ShipEditorViewTest {
     }
   }
 
+  @Test
+  void paintsTheBackgroundsOfThePieces() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nbgcolor=blue\nA\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(110, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+      gui.updateScreen();
+      assertFalse(hasBackground(screen, TextColor.ANSI.BLUE), screenText(screen));
+
+      // space paints the weapon: its preview keeps the blue background
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(hasBackground(screen, TextColor.ANSI.BLUE),
+          "the blue background of the piece is painted: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static boolean hasBackground(Screen screen, TextColor color) {
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        if(color.equals(screen.getBackCharacter(column, row).getBackgroundColor())) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   private static int panelRowOf(Screen screen, String text) {
     String[] lines = screenText(screen).split("\n", -1);
     for(int row = 0; row < lines.length; row++) {

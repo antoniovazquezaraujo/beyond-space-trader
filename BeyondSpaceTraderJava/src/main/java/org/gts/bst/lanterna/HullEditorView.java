@@ -414,10 +414,9 @@ public final class HullEditorView extends ArtEditorWindow {
         int codePoint = hull.at(row, column);
         if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
           if(withLetters) {
-            EditorText.glyph(graphics, originX + column, originY + row, codePoint, color(hull.color()), false);
+            EditorText.glyph(graphics, originX + column, originY + row, codePoint, hullBrush(hull), false);
           } else {
-            EditorText.glyph(graphics, originX + column, originY + row, codePoint,
-                color(zoneColor(hull, column, row)), false);
+            EditorText.glyph(graphics, originX + column, originY + row, codePoint, zoneBrush(hull, column, row), false);
           }
         }
       }
@@ -430,7 +429,7 @@ public final class HullEditorView extends ArtEditorWindow {
           continue;
         }
         for(int i = 0; i < run.n() && x + i < left + width; i++) {
-          EditorText.glyph(graphics, x + i, y, run.letter(), color(letterColor(run.letter())), false);
+          EditorText.glyph(graphics, x + i, y, run.letter(), letterBrush(run.letter()), false);
         }
       }
       int x = originX + cursorX;
@@ -447,24 +446,30 @@ public final class HullEditorView extends ArtEditorWindow {
     }
   }
 
-  /** The colour of a colour letter, with its background and blink taken into account. */
-  private String letterColor(char letter) {
+  /** The brush of a colour letter: its colour, background and blink (white when it has no style yet). */
+  private EditorText.Brush letterBrush(char letter) {
     for(ShipArtFile.ColorLetter style : letters) {
       if(style.letter() == letter) {
-        return style.blink() && !blinkOn() ? (style.bgColor().isEmpty() ? "black" : style.bgColor()) : style.color();
+        return EditorText.brush(style.color(), style.bgColor(), style.blink(), blinkOn());
       }
     }
-    return "white";
+    return EditorText.brush("white", "", false, blinkOn());
   }
 
-  private String zoneColor(ShipArtFile hull, int x, int y) {
+  /** The brush of the drawing itself, away from the zones. */
+  private EditorText.Brush hullBrush(ShipArtFile hull) {
+    return EditorText.brush(hull.color(), hull.bgColor(), hull.blink(), blinkOn());
+  }
+
+  /** The brush of a cell of the drawing: the letter of its zone, or the hull's own. */
+  private EditorText.Brush zoneBrush(ShipArtFile hull, int x, int y) {
     for(ShipArtFile.Zone zone : hull.zones()) {
       if(x >= zone.x() && x < zone.x() + Math.max(1, zone.w()) && y >= zone.y()
           && y < zone.y() + Math.max(1, zone.h())) {
-        return letterColor(zone.letter());
+        return letterBrush(zone.letter());
       }
     }
-    return hull.color();
+    return hullBrush(hull);
   }
 
   private String hullsLine() {
@@ -507,7 +512,4 @@ public final class HullEditorView extends ArtEditorWindow {
         + " · [TAB] hull · [ESC] exit";
   }
 
-  private static TextColor color(String name) {
-    return org.gts.bst.view.ShipColors.color(name);
-  }
 }

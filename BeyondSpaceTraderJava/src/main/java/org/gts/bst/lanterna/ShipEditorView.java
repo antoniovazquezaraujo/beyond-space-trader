@@ -657,8 +657,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       for(int column = 0; column < hull.width() && originX + column < left + width; column++) {
         int codePoint = hull.at(row, column);
         if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
-          EditorText.glyph(graphics, originX + column, originY + row, codePoint, color(zoneColor(hull, column, row)),
-              false);
+          EditorText.glyph(graphics, originX + column, originY + row, codePoint, zoneBrush(hull, column, row), false);
         }
       }
     }
@@ -710,29 +709,31 @@ public final class ShipEditorView extends ArtEditorWindow {
         for(int column = 0; column < piece.width() && x + i + column < left + width; column++) {
           int codePoint = piece.at(row, column);
           if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
-            EditorText.glyph(graphics, x + i + column, y + row, codePoint, color(pieceColor(piece)), false);
+            EditorText.glyph(graphics, x + i + column, y + row, codePoint, pieceBrush(piece), false);
           }
         }
       }
     }
   }
 
-  private String pieceColor(ShipArtFile piece) {
-    return piece.blink() && !blinkOn() ? (piece.bgColor().isEmpty() ? "black" : piece.bgColor()) : piece.color();
+  /** The brush of a piece: its colour, its background and its blink. */
+  private EditorText.Brush pieceBrush(ShipArtFile piece) {
+    return EditorText.brush(piece.color(), piece.bgColor(), piece.blink(), blinkOn());
   }
 
-  private String zoneColor(ShipArtFile hull, int x, int y) {
+  /** The brush of a cell of the chassis: the colour letter of its zone, or the hull's own. */
+  private EditorText.Brush zoneBrush(ShipArtFile hull, int x, int y) {
     for(ShipArtFile.Zone zone : hull.zones()) {
       if(x >= zone.x() && x < zone.x() + Math.max(1, zone.w()) && y >= zone.y()
           && y < zone.y() + Math.max(1, zone.h())) {
         for(ShipArtFile.ColorLetter letter : hull.letters()) {
           if(letter.letter() == zone.letter()) {
-            return letter.color();
+            return EditorText.brush(letter.color(), letter.bgColor(), letter.blink(), blinkOn());
           }
         }
       }
     }
-    return hull.color();
+    return EditorText.brush(hull.color(), hull.bgColor(), hull.blink(), blinkOn());
   }
 
   private int capacity() {
