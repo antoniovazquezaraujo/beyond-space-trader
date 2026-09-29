@@ -460,6 +460,13 @@ public final class ShipEditorView extends ArtEditorWindow {
     Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(currentGroups(), pieces);
     graphics.putString(left, 0, EditorText.cut("sites and pieces", size.getColumns() - left));
     int row = 1;
+    ShipArtFile hull = hull();
+    if(hull != null && budget != null && !hull.size().isEmpty() && !ShipSites.sizeFits(hull.size(), budget.size())) {
+      graphics.setForegroundColor(TextColor.ANSI.YELLOW);
+      graphics.putString(left, row++, EditorText.cut("⚠ size " + hull.size() + " vs " + budget.size(),
+          size.getColumns() - left));
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    }
     for(ShipSites.Kind kind : ShipSites.Kind.values()) {
       List<ShipArtFile> ofKind = piecesOfKind(kind);
       int max = budget == null ? -1 : ShipSites.maxOfKind(budget, kind);

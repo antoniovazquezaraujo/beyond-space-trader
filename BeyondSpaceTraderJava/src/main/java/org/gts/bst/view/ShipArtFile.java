@@ -32,7 +32,7 @@ import java.util.List;
  * them.
  */
 public record ShipArtFile(String name, String color, List<int[]> cells, boolean blink, String bgColor,
-    String letter, List<ColorLetter> letters, List<Zone> zones) {
+    String letter, List<ColorLetter> letters, List<Zone> zones, String size) {
   /** The second cell of a glyph the terminal paints two columns wide. */
   public static final int CONTINUATION = -1;
 
@@ -45,7 +45,12 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
   }
 
   public ShipArtFile(String name, String color, List<int[]> cells, boolean blink, String bgColor) {
-    this(name, color, cells, blink, bgColor, "", List.of(), List.of());
+    this(name, color, cells, blink, bgColor, "", List.of(), List.of(), "");
+  }
+
+  public ShipArtFile(String name, String color, List<int[]> cells, boolean blink, String bgColor, String letter,
+      List<ColorLetter> letters, List<Zone> zones) {
+    this(name, color, cells, blink, bgColor, letter, letters, zones, "");
   }
 
   /** Loads the parts of a file, looking for it in the usual places. */
@@ -81,7 +86,7 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
 
   /** A part as read, before the glyph widths are applied. */
   private record RawPart(String name, String color, List<String> lines, boolean blink, String bgColor, String letter,
-      List<ColorLetter> letters, List<Zone> zones) {
+      List<ColorLetter> letters, List<Zone> zones, String size) {
   }
 
   /**
@@ -94,6 +99,7 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
     java.util.Set<Integer> wide = new java.util.HashSet<>();
     java.util.Set<Integer> narrow = new java.util.HashSet<>();
     String letter = "";
+    String size = "";
     List<ColorLetter> letters = new ArrayList<>();
     List<Zone> zones = new ArrayList<>();
     String name = null;
@@ -113,7 +119,10 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
         }
         continue;
       }
-      if(trimmed.startsWith("key=")) {
+      if(trimmed.startsWith("size=")) {
+        size = trimmed.substring("size=".length()).strip();
+        continue;
+      } else if(trimmed.startsWith("key=")) {
         String[] tokens = trimmed.substring("key=".length()).strip().split("\\s+");
         if(tokens.length == 1 && tokens[0].length() == 1) {
           letter = tokens[0]; // la letra que rellena la pieza
@@ -171,13 +180,14 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
         if(name != null) {
           raw.add(new RawPart(name, color, List.copyOf(lines), blink, bgColor, letter, List.copyOf(letters),
-              List.copyOf(zones)));
+              List.copyOf(zones), size));
         }
         name = trimmed.substring(1, trimmed.length() - 1).strip();
         color = "white";
         blink = false;
         bgColor = "";
         letter = "";
+        size = "";
         letters = new ArrayList<>();
         zones = new ArrayList<>();
         lines.clear();
@@ -195,12 +205,12 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
     }
     if(name != null) {
       raw.add(new RawPart(name, color, List.copyOf(lines), blink, bgColor, letter, List.copyOf(letters),
-          List.copyOf(zones)));
+          List.copyOf(zones), size));
     }
     List<ShipArtFile> parts = new ArrayList<>();
     for(RawPart part : raw) {
       parts.add(new ShipArtFile(part.name(), part.color(), toCells(part.lines(), wide, narrow), part.blink(),
-          part.bgColor(), part.letter(), part.letters(), part.zones()));
+          part.bgColor(), part.letter(), part.letters(), part.zones(), part.size()));
     }
     return parts;
   }

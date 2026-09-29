@@ -36,6 +36,9 @@ public final class HullFile {
         current = find(hulls, trimmed.substring(1, trimmed.length() - 1).strip());
         out.add(line);
         if(current != null) {
+          if(!current.size().isEmpty()) {
+            out.add("size=" + current.size());
+          }
           for(ShipArtFile.ColorLetter letter : current.letters()) {
             out.add("key=" + letter.letter() + " color=" + letter.color()
                 + (letter.bgColor().isEmpty() ? "" : " bgcolor=" + letter.bgColor())
@@ -48,7 +51,8 @@ public final class HullFile {
         }
         continue;
       }
-      if(current != null && (trimmed.startsWith("key=") || trimmed.startsWith("zone="))) {
+      if(current != null && (trimmed.startsWith("key=") || trimmed.startsWith("zone=")
+          || trimmed.startsWith("size="))) {
         continue; // las viejas se tiran: las nuevas van arriba, tras la cabecera
       }
       out.add(line);

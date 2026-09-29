@@ -266,6 +266,14 @@ public final class ShipSites {
     return kinds;
   }
 
+  /** True when the size of a chassis suits a ship type (empty or any always do). */
+  public static boolean sizeFits(String chassisSize, ShipSize type) {
+    if(chassisSize == null || chassisSize.isEmpty() || chassisSize.equalsIgnoreCase("any")) {
+      return true;
+    }
+    return type != null && chassisSize.equalsIgnoreCase(type.name());
+  }
+
   /** The kind of a piece, by the name of the game item it draws. */
   public static Kind kindOf(String pieceName) {
     return KINDS.getOrDefault(pieceName == null ? "" : pieceName.strip().toLowerCase(), Kind.PART);

@@ -145,7 +145,8 @@ class ShipEditorViewTest {
 
   @Test
   void needsTheTypeAndRefusesTheEnginesOverTheLimit() throws IOException {
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxxxx\nxxxxxxx\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(
+        "[uno]\nsize=tiny\ncolor=cyan\nxxxxxxx\nxxxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Engine]\nkey=M\ncolor=red\nM\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -173,6 +174,9 @@ class ShipEditorViewTest {
       }
       gui.updateScreen();
       assertTrue(screenText(screen).contains("engine (M)  3/3"), screenText(screen));
+
+      assertTrue(screenText(screen).contains("size tiny vs Huge"),
+          "the size of the chassis is checked: " + screenText(screen));
 
       wasp.handleKey(new KeyStroke('M', false, false));
       gui.updateScreen();

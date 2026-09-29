@@ -9,6 +9,7 @@
 package org.gts.bst.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -87,6 +88,14 @@ class ShipSitesTest {
         ShipSites.longestRun(ShipSites.sitesOf(parts.get(0))));
 
     assertTrue(warnings.contains("sobran sitios de arma (3)"), warnings.toString());
+  }
+
+  @Test
+  void checksTheSizeOfAChassis() {
+    assertTrue(ShipSites.sizeFits("", ShipSize.Huge), "no size declared always fits");
+    assertTrue(ShipSites.sizeFits("any", ShipSize.Tiny), "any fits everything");
+    assertTrue(ShipSites.sizeFits("Huge", ShipSize.Huge), "the case does not matter");
+    assertFalse(ShipSites.sizeFits("tiny", ShipSize.Huge), "a rowing boat is not a cargo ship");
   }
 
   @Test

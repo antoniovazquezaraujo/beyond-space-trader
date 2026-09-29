@@ -31,6 +31,7 @@ public final class HullEditorView extends ArtEditorWindow {
       "purple", "pink", "lightgrey", "darkgrey"};
   private static final String[] BACKGROUNDS = {"", "black", "blue", "red", "green", "magenta", "yellow", "cyan"};
   private static final int STRIP_ROWS = 3;
+  private static final String[] SIZES = {"", "tiny", "small", "medium", "large", "huge", "any"};
   private final List<ShipArtFile> hulls;
   private int hullIndex;
   private LetterGrid grid;
@@ -39,6 +40,7 @@ public final class HullEditorView extends ArtEditorWindow {
   private int cursorX = 2;
   private int cursorY = 2;
   private boolean nameLetter;
+  private String hullSize = "";
   private String message = "";
   /** The chassis file the editor saves to (a field so the tests can point elsewhere). */
   private String hullsPath = ShipArtFile.resolve("chassis.txt").toString();
@@ -68,6 +70,7 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     ShipArtFile hull = hulls.get(hullIndex);
     grid = LetterGrid.ofZones(hull);
+    hullSize = hull.size();
     letters = new ArrayList<>(hull.letters());
     letterIndex = 0;
     updateTitle();
@@ -79,7 +82,7 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     ShipArtFile hull = hulls.get(hullIndex);
     hulls.set(hullIndex, new ShipArtFile(hull.name(), hull.color(), hull.cells(), hull.blink(), hull.bgColor(), "",
-        List.copyOf(letters), grid.zones()));
+        List.copyOf(letters), grid.zones(), hullSize));
   }
 
   private ShipArtFile hull() {
@@ -162,6 +165,16 @@ public final class HullEditorView extends ArtEditorWindow {
     } else if(character == 'e') {
       nameLetter = true;
       message = "teclea la letra para la combinacion " + currentLetter().color();
+    } else if(character == 'z') {
+      int index = 0;
+      for(int i = 0; i < SIZES.length; i++) {
+        if(SIZES[i].equalsIgnoreCase(hullSize)) {
+          index = i;
+          break;
+        }
+      }
+      hullSize = SIZES[(index + 1) % SIZES.length];
+      message = "tamano: " + (hullSize.isEmpty() ? "(sin declarar)" : hullSize);
     } else if(character == 'c') {
       styleColor();
     } else if(character == 'b') {
@@ -349,7 +362,7 @@ public final class HullEditorView extends ArtEditorWindow {
 
   private String keysLine() {
     return "[ENTER] pintar · espacio borrar · [n/p] letra · [+] anyadir · [e] renombrar · [c] color · [b] fondo"
-        + " · [k] parpadeo · [s] guardar · [,/.] chasis · [ESC] salir"
+        + " · [k] parpadeo · [z] tamano · [s] guardar · [,/.] chasis · [ESC] salir"
         + (nameLetter ? "   ||   teclea la letra deseada" : message.isEmpty() ? "" : "   ||   " + message);
   }
 

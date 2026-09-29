@@ -37,6 +37,10 @@ blink=true                   ← optional; only true or false (false by default)
   (`[Pulse Laser]`, `[Energy Shield]`, `[Engine]`): that is how the game finds the
   piece for each thing. **In a piece**, `key=` says which site letter it fills
   (`key=M`).
+- **In a chassis**, `size=` declares its size (`tiny`, `small`, `medium`, `large`,
+  `huge` or `any`; empty means unknown). The ship editor warns when it does not
+  match the size of the ship type, so a rowing boat cannot pass for a cargo ship
+  without a warning; the hull editor sets it with `z`.
 - **In a chassis**, `key=` with a style defines a **colour letter** (a free
   letter and the colour, background and blink it paints with:
   `key=X color=red bgcolor=blue blink=true`) and `zone=` paints a **colour
@@ -357,6 +361,7 @@ over it.
 | `+` | Add a colour letter (the next free letter) |
 | `n` / `p` | Previous / next colour letter |
 | `e` | Rename the current colour letter (then type the letter) |
+| `z` | Cycle the size of the hull (empty, tiny, small, medium, large, huge, any) |
 | `c` / `b` / `k` | Cycle its colour / background / blink |
 | `←↑→↓` | Move the cursor |
 | `ENTER` | Paint the current letter at the cursor |
