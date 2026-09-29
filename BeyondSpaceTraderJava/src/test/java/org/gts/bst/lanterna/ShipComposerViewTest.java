@@ -38,6 +38,7 @@ class ShipComposerViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipComposerView view = new ShipComposerView(chassis, pieces, null);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke('v', false, false));
       gui.updateScreen();
 
       view.handleKey(new KeyStroke(KeyType.Enter));
@@ -113,6 +114,160 @@ class ShipComposerViewTest {
     } finally {
       screen.stopScreen();
       screen.close();
+    }
+  }
+
+  @Test
+  void showsTheSitePanelAndItsWarnings() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Wasp]\ncolor=cyan\nMA\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      gui.addWindow(new ShipComposerView(chassis, pieces, null));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains("Wasp (Huge)"), text);
+      assertTrue(text.contains("arma"), text);
+      assertTrue(text.contains("1/3"), "the panel counts the sites against the budget: " + text);
+      assertTrue(text.contains("faltan"), "the warnings are shown: " + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void previewsTheCargoGauge() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Flea]\ncolor=cyan\nBB\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKey(new KeyStroke('v', false, false));
+      gui.updateScreen();
+      String text = screenText(screen);
+      assertTrue(text.contains("⣿"), "ten bays are a full cell and two dots: " + text);
+      assertTrue(text.contains("vista: vacia"), "the panel shows the preview: " + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void opensTheShipTypeList() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Wasp]\ncolor=cyan\nMA\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKey(new KeyStroke('t', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("tipo de nave:"), screenText(screen));
+      assertTrue(screenText(screen).contains("Flea"), screenText(screen));
+
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("SpaceMonster (Huge)"),
+          "the panel follows the chosen type: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void writesSitesWithTheCursor() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Wasp]\ncolor=cyan\nx   x\nx   x\nx   x\nx   x\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+      gui.addWindow(view);
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("0/3"), "no sites yet: " + screenText(screen));
+
+      view.handleKey(new KeyStroke('e', false, false));
+      view.handleKey(new KeyStroke('A', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("1/3"), "one weapon site: " + screenText(screen));
+      assertTrue(screenText(screen).contains("SITIOS"), "the site mode line: " + screenText(screen));
+
+      view.handleKey(new KeyStroke(KeyType.ArrowRight));
+      view.handleKey(new KeyStroke('A', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("2/3"), "another weapon site: " + screenText(screen));
+
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("1/3"), "the space erases: " + screenText(screen));
+
+      // el espacio sobre el dibujo no lo borra
+      for(int i = 0; i < 3; i++) {
+        view.handleKey(new KeyStroke(KeyType.ArrowLeft));
+      }
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("celda: x"), "the drawing is still there: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void savesTheSitesInTheChassisFile() throws IOException {
+    String content = ";; un comentario\n[Wasp]\ncolor=cyan\nx   x\nx   x\n";
+    java.nio.file.Path file = java.nio.file.Files.createTempFile("chassis", ".txt");
+    java.nio.file.Files.writeString(file, content);
+    try {
+      List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader(content));
+      List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+      Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+      screen.startScreen();
+      try {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        gui.setTheme(LanternaTheme.create());
+        ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+        view.chassisPath(file.toString());
+        gui.addWindow(view);
+
+        view.handleKey(new KeyStroke('e', false, false));
+        view.handleKey(new KeyStroke(KeyType.ArrowLeft));
+        view.handleKey(new KeyStroke(KeyType.ArrowUp));
+        view.handleKey(new KeyStroke('A', false, false));
+        view.handleKey(new KeyStroke('s', false, false));
+
+        String saved = java.nio.file.Files.readString(file);
+        assertTrue(saved.contains("xA  x"), "the letter is in the file: " + saved);
+        assertTrue(saved.contains(";; un comentario"), "the comments survive: " + saved);
+        assertTrue(saved.contains("color=cyan"), "the keys survive: " + saved);
+      } finally {
+        screen.stopScreen();
+        screen.close();
+      }
+    } finally {
+      java.nio.file.Files.deleteIfExists(file);
     }
   }
 

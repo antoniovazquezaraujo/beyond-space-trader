@@ -333,8 +333,12 @@ pieza=antena x=3 y=0 color=rojo
 | `u` | Undo the last placed piece |
 | `x` | Empty the assembly |
 | `Tab` | Next chassis |
+| `e` | Site mode: **type the letter** (`C M D B R A E G P`) and it is written at the cursor (empty cells only: a letter over the drawing is refused); space erases the site and gives the drawing back, `Esc` leaves |
+| `t` | Open the ship type list; the panel follows the chosen type |
+| `v` | Preview: hides the site letters and draws the real pieces and the gauge (`,` / `.` change the preset: vacia, comerciante, pirata, policia, a tope) |
 | `r` | Reload `chassis.txt` and `pieces.txt` |
-| `s` / `l` | Save / load `ships.txt` |
+| `s` | Save the chassis (the site edits) and the assembly |
+| `l` | Load the assembly |
 | `Esc`, `q` | Exit |
 
 ## What each ship can carry
@@ -464,10 +468,16 @@ letters are reserved in the art (declared at the top of the chassis file) and th
 | `A` | Weapons | The piece of the mounted weapon | 0 to its weapon slots |
 | `E` | Shields | The piece of the mounted shield | 0 to its shield slots |
 | `G` | Gadgets | The piece of the mounted gadget | 0 to its gadget slots |
+| `P` | Pod | The escape pod piece | 0 or 1, only on the player's ship |
 
 The minimum is what the chassis must always show; the maximum is how many the
-game may fill, so **the chassis has to offer that many sites** (the composer will
-check it). A dash means the ship has no site of that kind at all.
+game may fill, so **the chassis has to offer that many sites** (the composer
+checks it and warns). A dash means the ship has no site of that kind at all.
+
+Three details: `D` is one tank, and a second one can appear when the fuel is
+increased (the fuel compactor adds three tanks); the `B` gauge is drawn by the
+game, and the hidden cargo bays (the hidden cargo gadget) can go in another
+colour; `P` is only for the player's ship, the NPCs never carry a pod.
 
 ```
 sitios= C=cabina M=motor D=deposito B=bodega R=rol A=arma E=escudo G=artilugio
@@ -528,6 +538,19 @@ between `color` and `bgcolor`. The skull is emoji-capable but with text
 presentation, like ★, so terminals draw it as text; the strip (`g`) tells if one
 substitutes it (⚑, ⌾ and ☼ are in the palette as alternatives). The player's
 ship carries no marker.
+
+The sites are written by hand in `chassis.txt`, or with the site mode of the
+composer (`e`): you type the letter and it goes at the cursor; saving patches
+those cells in the file, leaving the comments, the keys and the other sections
+untouched. The letters are drawn in yellow, and the real pieces only appear in
+the preview (`v`), which hides them.
+
+The composer reads the sites of the chassis and shows them on a right panel
+against the type's budget (see **Sites per ship type**), with warnings, and the
+preview fills them with the pieces named by convention (`motor`, `cabina`,
+`deposito`, `capsula`, `torreta*`, `escudo*`, `artilugio*`, `marca *`) plus the
+braille gauge of the real capacity. The game renderer will do the same when it
+replaces `ShipSprites`.
 
 ## The drawing list
 
