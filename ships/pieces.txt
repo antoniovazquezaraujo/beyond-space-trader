@@ -27,6 +27,22 @@ color=red
 key=A
 color=magenta
 ⎅
+[Beam Laser]
+key=A
+color=brightred
+⇶
+[Military Laser]
+key=A
+color=green
+↣
+[Morgan's Laser]
+key=A
+color=gold
+⇻
+[Quantum Disruptor]
+key=A
+color=magenta
+⍟
 [Cargo Pod]
 color=yellow
 ⏌
@@ -42,51 +58,51 @@ color=green
 key=B
 ⣿
 
-;; shields, gadgets and pod: the ? is a placeholder, draw their glyphs
+;; shields, gadgets and pod
 [Energy Shield]
 key=E
 color=cyan
-?
+◉
 [Reflective Shield]
 key=E
 color=blue
-?
+⊕
 [Lightning Shield]
 key=E
 color=brightblue
-?
+ϟ
 [Navigating System]
 key=G
 color=cyan
-?
+⊙
 [Targeting System]
 key=G
 color=red
-?
+◈
 [Auto-Repair System]
 key=G
 color=green
-?
+⚙
 [Cloaking Device]
 key=G
 color=magenta
-?
+◍
 [Fuel Compactor]
 key=G
 color=orange
-?
+⌁
 [Hidden Cargo Bays]
 key=G
 color=darkgrey
-?
+◙
 [Extra Cargo Bays]
 key=G
 color=yellow
-?
+⠿
 [Escape Pod]
 key=P
 color=lightgrey
-?
+◘
 
 ;; role markers: the game shows the one of the encounter
 [Role Trader]
