@@ -336,15 +336,16 @@ group=M x=6 y=3
 files, so the changes are there); Escape in the menu quits.
 
 Both editors have a vertical panel on the left, and the selected row of every
-list has a background of its own. The **ship editor** panel starts with the
-`Ships` list: every ship shows its type in brackets (`mi nave [Bumblebee]`),
-`TAB` and `⇧TAB` move through the list, the open one is highlighted and `y`
-cycles its type. Under the `Elements` title and its line come the numbered
-elements: `n` and `p` move through them and the keys `1` to `9` pick one
-directly. Each element is a piece key the game may fill a site with
-(`1. Weapon (A)`), with how many the ship has against the maximum (and a mark:
-`✓` right, `⚠` missing, `✗` over, `?` without a type); then come the hull with
-its colours and the same ship with the real pieces painted over it.
+list has a background of its own; each list opens with its title inside a line
+(`─ Ships ───`, `─ Elements ───`). The **ship editor** panel starts with the
+ships: every one shows its type in brackets (`mi nave [Bumblebee]`), `TAB` and
+`⇧TAB` move through the list, the open one is highlighted and `y` cycles its
+type. Then come the numbered elements: `n` and `p` move through them and the
+keys `1` to `9` pick one directly. Each element is a piece key the game may
+fill a site with (`1. Weapon (A)`), with how many the ship has against the
+maximum (and a mark: `✓` right, `⚠` missing, `✗` over, `?` without a type);
+then come the hull with its colours and the same ship with the real pieces
+painted over it.
 
 | Key | Action |
 | --- | --- |

@@ -286,9 +286,9 @@ public final class ShipEditorView extends ArtEditorWindow {
     return ofLetter.get(variants.getOrDefault(ShipSites.kindOfLetter(letter, pieces), 0) % ofLetter.size());
   }
 
+  /** The window title: the name and the type are already in the ships list. */
   private void updateTitle() {
-    ShipDesign design = design();
-    setTitle(design == null ? "ship editor" : "ships: " + design.name() + " [" + design.type() + "]");
+    setTitle("ship editor");
   }
 
   @Override
@@ -572,7 +572,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = design();
     ShipSites.Budget budget = design == null ? null : ShipSites.budgetOf(design.type());
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
-    graphics.putString(0, 0, EditorText.cut("Ships", width));
+    graphics.putString(0, 0, EditorText.section("Ships", width));
     int row = 1;
     if(designs.isEmpty()) {
       graphics.putString(0, row++, EditorText.cut("(no ships in ships.txt)", width));
@@ -588,10 +588,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     }
     if(row < rows) {
-      graphics.putString(0, row++, EditorText.cut("Elements", width));
-    }
-    if(row < rows) {
-      graphics.putString(0, row++, EditorText.cut("─".repeat(width), width));
+      graphics.putString(0, row++, EditorText.section("Elements", width));
     }
     ShipArtFile hull = hull();
     if(row < rows && hull != null && budget != null && !hull.size().isEmpty()

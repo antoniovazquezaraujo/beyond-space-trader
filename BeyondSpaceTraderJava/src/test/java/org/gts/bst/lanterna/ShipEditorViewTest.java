@@ -9,6 +9,7 @@
 package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -94,6 +95,8 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
       assertTrue(screenText(screen).contains("cannot find the chassis"), screenText(screen));
+      assertTrue(screenText(screen).contains("─ Ships "), screenText(screen));
+      assertTrue(screenText(screen).contains("─ Elements "), screenText(screen));
       assertTrue(panelRowOf(screen, "prueba") >= 0, screenText(screen));
 
       // f opens the chassis list
@@ -287,6 +290,8 @@ class ShipEditorViewTest {
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
       gui.updateScreen();
+      // the title bar does not repeat the open ship: it is in the list
+      assertFalse(screenText(screen).contains("ships: uno"), screenText(screen));
       // the open ship is the one with a background of its own in the ships list
       assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "uno")).getBackgroundColor(),
           screenText(screen));

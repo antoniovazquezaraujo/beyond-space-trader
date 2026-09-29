@@ -27,6 +27,15 @@ final class EditorText {
     graphics.setCharacter(column, row, reverse ? character.withModifier(SGR.REVERSE) : character);
   }
 
+  /** A panel section: the title inside a line, like `─ Ships ─────`. */
+  static String section(String title, int cells) {
+    String head = "─ " + title + " ";
+    if(head.length() >= cells) {
+      return cut(head, cells);
+    }
+    return head + "─".repeat(cells - head.length());
+  }
+
   /** Trims a text to a number of cells, without breaking a glyph in half. */
   static String cut(String text, int cells) {
     StringBuilder cut = new StringBuilder();
