@@ -38,6 +38,7 @@ class ShipComposerViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipComposerView view = new ShipComposerView(chassis, pieces, null);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke('v', false, false));
       gui.updateScreen();
 
       view.handleKey(new KeyStroke(KeyType.Enter));
@@ -207,22 +208,19 @@ class ShipComposerViewTest {
       assertTrue(screenText(screen).contains("0/3"), "no sites yet: " + screenText(screen));
 
       view.handleKey(new KeyStroke('e', false, false));
-      view.handleKey(new KeyStroke(KeyType.Enter));
+      view.handleKey(new KeyStroke('A', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("1/3"), "one weapon site: " + screenText(screen));
       assertTrue(screenText(screen).contains("SITIOS"), "the site mode line: " + screenText(screen));
 
-      // / cambia de letra y los numeros la eligen directamente
-      view.handleKey(new KeyStroke('/', false, false));
+      view.handleKey(new KeyStroke(KeyType.ArrowRight));
+      view.handleKey(new KeyStroke('A', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("SITIOS: [E]"), "the slash changes it: " + screenText(screen));
-      view.handleKey(new KeyStroke(KeyType.Enter));
-      gui.updateScreen();
-      assertTrue(screenText(screen).contains("1/2"), "one shield site: " + screenText(screen));
+      assertTrue(screenText(screen).contains("2/3"), "another weapon site: " + screenText(screen));
 
-      view.handleKey(new KeyStroke('2', false, false));
+      view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("SITIOS: [M]"), "the number picks it: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1/3"), "the space erases: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -249,7 +247,7 @@ class ShipComposerViewTest {
         view.handleKey(new KeyStroke('e', false, false));
         view.handleKey(new KeyStroke(KeyType.ArrowLeft));
         view.handleKey(new KeyStroke(KeyType.ArrowUp));
-        view.handleKey(new KeyStroke(KeyType.Enter));
+        view.handleKey(new KeyStroke('A', false, false));
         view.handleKey(new KeyStroke('s', false, false));
 
         String saved = java.nio.file.Files.readString(file);

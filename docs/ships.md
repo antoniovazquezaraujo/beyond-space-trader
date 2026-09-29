@@ -333,11 +333,12 @@ pieza=antena x=3 y=0 color=rojo
 | `u` | Undo the last placed piece |
 | `x` | Empty the assembly |
 | `Tab` | Next chassis |
-| `e` | Site mode: write the letters with the cursor (`/` cycles the letter, `1`-`9` pick one, `Enter` writes, `d` erases, `s` saves `chassis.txt`) |
+| `e` | Site mode: **type the letter** (`C M D B R A E G P`) and it is written at the cursor; space erases, `Esc` leaves |
 | `t` | Open the ship type list; the panel follows the chosen type |
-| `v` | Preview the ship with a sample loadout (`,` / `.` change the preset: vacia, comerciante, pirata, policia, a tope) |
+| `v` | Preview: hides the site letters and draws the real pieces and the gauge (`,` / `.` change the preset: vacia, comerciante, pirata, policia, a tope) |
 | `r` | Reload `chassis.txt` and `pieces.txt` |
-| `s` / `l` | Save / load `ships.txt` |
+| `s` | Save the chassis (the site edits) and the assembly |
+| `l` | Load the assembly |
 | `Esc`, `q` | Exit |
 
 ## What each ship can carry
@@ -539,9 +540,10 @@ substitutes it (⚑, ⌾ and ☼ are in the palette as alternatives). The player
 ship carries no marker.
 
 The sites are written by hand in `chassis.txt`, or with the site mode of the
-composer (`e`): it writes the letters with the cursor and saves them back to the
-file leaving the comments, the keys and the other sections untouched. They are
-drawn in yellow so they stand out from the art.
+composer (`e`): you type the letter and it goes at the cursor; saving patches
+those cells in the file, leaving the comments, the keys and the other sections
+untouched. The letters are drawn in yellow, and the real pieces only appear in
+the preview (`v`), which hides them.
 
 The composer reads the sites of the chassis and shows them on a right panel
 against the type's budget (see **Sites per ship type**), with warnings, and the
