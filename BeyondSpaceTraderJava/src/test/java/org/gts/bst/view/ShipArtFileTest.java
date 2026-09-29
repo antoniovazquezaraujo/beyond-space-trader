@@ -77,15 +77,15 @@ class ShipArtFileTest {
 
   @Test
   void readsTheLetterOfAPieceAndTheColourLettersOfAChassis() throws IOException {
-    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\nletra=M\ncolor=red\n⧯\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\nkey=M\ncolor=red\n⧯\n"));
     assertEquals("M", pieces.get(0).letter(), "the site the piece fills");
 
     List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader(
         "[uno]\n"
-        + "letra=X color=red bgcolor=blue blink=true\n"
-        + "letra=Y color=green\n"
-        + "zona=X x=1 y=2 w=3 h=4\n"
-        + "zona=Y x=0 y=0 w=1 h=1\n"
+        + "key=X color=red bgcolor=blue blink=true\n"
+        + "key=Y color=green\n"
+        + "zone=X x=1 y=2 w=3 h=4\n"
+        + "zone=Y x=0 y=0 w=1 h=1\n"
         + "..\n"));
 
     assertEquals(2, chassis.get(0).letters().size());

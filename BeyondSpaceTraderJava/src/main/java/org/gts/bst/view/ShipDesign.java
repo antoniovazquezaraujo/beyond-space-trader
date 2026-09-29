@@ -55,12 +55,12 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
       if(name == null) {
         continue;
       }
-      if(trimmed.startsWith("tipo=")) {
-        type = trimmed.substring("tipo=".length()).strip();
-      } else if(trimmed.startsWith("fuselaje=") || trimmed.startsWith("chasis=")) {
+      if(trimmed.startsWith("type=")) {
+        type = trimmed.substring("type=".length()).strip();
+      } else if(trimmed.startsWith("chasis=") || trimmed.startsWith("chassis=")) {
         chassis = trimmed.substring(trimmed.indexOf('=') + 1).strip();
-      } else if(trimmed.startsWith("grupo=")) {
-        LetterGroup group = group(trimmed.substring("grupo=".length()));
+      } else if(trimmed.startsWith("group=")) {
+        LetterGroup group = group(trimmed.substring("group=".length()));
         if(group != null) {
           groups.add(group);
         }
@@ -128,10 +128,10 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
     try(PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Path.of(fileName), StandardCharsets.UTF_8))) {
       for(ShipDesign design : designs) {
         writer.println("[" + design.name() + "]");
-        writer.println("tipo=" + design.type());
-        writer.println("fuselaje=" + design.chassis());
+        writer.println("type=" + design.type());
+        writer.println("chasis=" + design.chassis());
         for(LetterGroup group : design.groups()) {
-          writer.println("grupo=" + group.letter() + " x=" + group.x() + " y=" + group.y() + " n=" + group.n()
+          writer.println("group=" + group.letter() + " x=" + group.x() + " y=" + group.y() + " n=" + group.n()
               + (group.color().isEmpty() ? "" : " color=" + group.color()));
         }
       }

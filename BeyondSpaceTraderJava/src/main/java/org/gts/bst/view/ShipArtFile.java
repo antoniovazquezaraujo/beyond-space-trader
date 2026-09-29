@@ -113,8 +113,8 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
         }
         continue;
       }
-      if(trimmed.startsWith("letra=")) {
-        String[] tokens = trimmed.substring("letra=".length()).strip().split("\\s+");
+      if(trimmed.startsWith("key=")) {
+        String[] tokens = trimmed.substring("key=".length()).strip().split("\\s+");
         if(tokens.length == 1 && tokens[0].length() == 1) {
           letter = tokens[0]; // la letra que rellena la pieza
         } else if(tokens.length > 1) {
@@ -133,13 +133,13 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
           letters.add(new ColorLetter(tokens[0].charAt(0), letterColor, letterBg, letterBlink));
         }
         continue;
-      } else if(trimmed.startsWith("zona=")) {
+      } else if(trimmed.startsWith("zone=")) {
         char zoneLetter = 0;
         int x = 0;
         int y = 0;
         int w = 0;
         int h = 0;
-        for(String token : trimmed.substring("zona=".length()).strip().split("\\s+")) {
+        for(String token : trimmed.substring("zone=".length()).strip().split("\\s+")) {
           String[] pair = token.split("=", 2);
           if(pair.length == 1 && pair[0].length() == 1) {
             zoneLetter = pair[0].charAt(0);

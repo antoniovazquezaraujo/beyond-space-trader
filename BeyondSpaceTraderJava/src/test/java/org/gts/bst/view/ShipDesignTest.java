@@ -24,15 +24,15 @@ class ShipDesignTest {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader(
         ";; las naves\n"
         + "[firefly pirata]\n"
-        + "tipo=Firefly\n"
-        + "fuselaje=insecto-diminuto\n"
-        + "grupo=A x=3 y=1 n=2 color=red\n"
-        + "grupo=M x=6 y=3\n"
+        + "type=Firefly\n"
+        + "chasis=insecto-diminuto\n"
+        + "group=A x=3 y=1 n=2 color=red\n"
+        + "group=M x=6 y=3\n"
         + "\n"
         + "[wasp]\n"
-        + "tipo=Wasp\n"
-        + "chasis=insecto-pequeno\n"
-        + "grupo=E x=2 y=2 color=cyan\n"));
+        + "type=Wasp\n"
+        + "chassis=insecto-pequeno\n"
+        + "group=E x=2 y=2 color=cyan\n"));
 
     assertEquals(2, designs.size());
     assertEquals("firefly pirata", designs.get(0).name());
@@ -42,7 +42,7 @@ class ShipDesignTest {
     assertEquals(new ShipDesign.LetterGroup('A', 3, 1, 2, "red"), designs.get(0).groups().get(0));
     assertEquals(new ShipDesign.LetterGroup('M', 6, 3, 1, ""), designs.get(0).groups().get(1));
     assertEquals("Wasp", designs.get(1).type());
-    assertEquals("insecto-pequeno", designs.get(1).chassis(), "chasis= is accepted too");
+    assertEquals("insecto-pequeno", designs.get(1).chassis(), "the chassis= spelling is accepted too");
     assertEquals(1, designs.get(1).groups().get(0).n(), "n defaults to one");
     assertEquals("cyan", designs.get(1).groups().get(0).color());
   }

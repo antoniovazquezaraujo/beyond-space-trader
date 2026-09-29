@@ -29,7 +29,7 @@ quiere colorear el casco por zonas y no mezclar esa tarea con la de montar naves
    le añaden **letras de color**, que son **libres**: el usuario define las
    combinaciones que necesite (color, fondo y parpadeo) y les asigna la letra que
    prefiera. Se pintan sobre el casco y se guardan en el fichero de fuselajes
-   como **letra + tamaño + posición**. En la otra mitad se ve el casco coloreado.
+   como **key + tamaño + posición**. En la otra mitad se ve el casco coloreado.
 4. **Editor de naves**: el fuselaje se muestra **tal cual, con sus colores ya
    puestos**, y **no se toca**. Sobre él se teclean las **letras de las piezas**
    (los sitios: `C` cabina, `M` motores, `D` depósito, `B` medidor de bodegas,
@@ -43,10 +43,10 @@ quiere colorear el casco por zonas y no mezclar esa tarea con la de montar naves
 6. **Los sitios** (lo que el juego rellena) son los de las piezas, con sus
    mínimos y máximos por tipo (`docs/ships.md`); la validación de siempre
    (`puesto/máximo` y avisos) cuenta los grupos de la nave.
-7. **Las piezas** llevan `letra=` en `pieces.txt`; se acabó la convención por
+7. **Las piezas** llevan `key=` en `pieces.txt`; se acabó la convención por
    nombre. Su estilo (color, fondo, parpadeo) es el que ya soporta el formato.
-8. **Las naves** se guardan con secciones `[nombre]` y sus claves: `tipo=`,
-   `fuselaje=` y los grupos (`letra=A x=5 y=2 n=3`), con el color del grupo.
+8. **Las naves** se guardan con secciones `[nombre]` y sus claves: `key=`, `type=`,
+   `chasis=` y los grupos (`group=A x=5 y=2 n=3`), con el color del grupo.
 9. **Guardados**: el editor de naves guarda **todas las naves modificadas**; el
    de fuselajes, las letras de color de los fuselajes tocados.
 10. **Reparto de pantalla** en los dos editores: mitad izquierda la edición,

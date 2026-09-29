@@ -33,11 +33,11 @@ blink=true                   ← optional; only true or false (false by default)
 
 - **Comments**: lines starting with `;;`. A single `;` is part of the drawing.
 - **`[name]`** opens a part and closes the previous one.
-- **In a piece**, `letra=` says which site it fills (`letra=M`).
-- **In a chassis**, `letra=` with a style defines a **colour letter** (a free
+- **In a piece**, `key=` says which site it fills (`key=M`).
+- **In a chassis**, `key=` with a style defines a **colour letter** (a free
   letter and the colour, background and blink it paints with:
-  `letra=X color=red bgcolor=blue blink=true`) and `zona=` paints a **colour
-  zone** with it (`zona=X x=1 y=2 w=3 h=4`).
+  `key=X color=red bgcolor=blue blink=true`) and `zone=` paints a **colour
+  zone** with it (`zone=X x=1 y=2 w=3 h=4`).
 - **Keys**: `color=`, `bgcolor=`, `blink=`, lowercase, at the start of the line.
   A line starting with `Color=` is **art**, not a key.
 - **Drawing**: read literally. A space is empty; everything else (dots, unicode)
@@ -306,16 +306,16 @@ budget), the chassis it uses and its **letter groups** (the sites the game fills
 ```
 ;; a comment (two semicolons, like the other files)
 [firefly pirata]
-tipo=Firefly
-fuselaje=insecto-diminuto
-grupo=A x=3 y=1 n=2 color=red
-grupo=M x=6 y=3
+type=Firefly
+chasis=insecto-diminuto
+group=A x=3 y=1 n=2 color=red
+group=M x=6 y=3
 ```
 
-- `[nombre]` is free; `tipo=` names the ship type of the game specs (with no
-  type, the panel cannot check the sites); `fuselaje=` must match a `[name]` of
-  `chassis.txt` (`chasis=` is accepted too).
-- `grupo=<letter> x=<n> y=<n> [n=<count>] [color=<c>]`: a run of the same site
+- `[nombre]` is free; `type=` names the ship type of the game specs (with no
+  type, the panel cannot check the sites); `chasis=` must match a `[name]` of
+  `chassis.txt` (`chassis=` is accepted too).
+- `group=<letter> x=<n> y=<n> [n=<count>] [color=<c>]`: a run of the same site
   letter starting at `(x,y)`, `n` letters long (one by default), in a colour.
 - Coordinates: `(0,0)` is the first stored row and column of the chassis
   (leading spaces included).
