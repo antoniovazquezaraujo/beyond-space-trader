@@ -9,6 +9,7 @@
 package org.gts.bst.presenter;
 
 import org.gts.bst.ship.equip.GadgetType;
+import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipView;
 import org.gts.bst.view.ShipViewModel;
 import spacetrader.Consts;
@@ -37,7 +38,7 @@ public class ShipPresenter {
     Ship ship = game.Commander().getShip();
     EquipmentText equipment = equipmentText(ship);
     view.render(new ShipViewModel(ship.Name(), equipment.labels(), equipment.values(), specialCargo(ship),
-        ship.Type()));
+        ship.Type(), ShipCatalog.shared().picture(ship.Type(), ShipArtItems.of(ship), ship.CargoBays())));
   }
 
   private EquipmentText equipmentText(Ship ship) {

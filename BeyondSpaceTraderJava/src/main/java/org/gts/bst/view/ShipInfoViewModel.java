@@ -26,6 +26,7 @@ public record ShipInfoViewModel(
     String gadget,
     String crew,
     int imageIndex,
-    ShipType type) {
+    ShipType type,
+    ShipPicture picture) {
 }
 

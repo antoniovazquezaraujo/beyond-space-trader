@@ -20,6 +20,7 @@ public record ShipViewModel(
     String equipmentLabels,
     String equipmentValues,
     String specialCargo,
-    ShipType typeId) {
+    ShipType typeId,
+    ShipPicture picture) {
 }
 

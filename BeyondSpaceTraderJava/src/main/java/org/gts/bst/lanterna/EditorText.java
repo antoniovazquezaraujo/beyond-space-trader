@@ -13,6 +13,7 @@ import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import org.gts.bst.view.ShipArtFile;
+import org.gts.bst.view.ShipPicture;
 import org.gts.bst.view.ShipColors;
 
 
@@ -46,6 +47,30 @@ final class EditorText {
   /** Draws one glyph (a code point) in its colour on black, optionally reversed. */
   static void glyph(TextGUIGraphics graphics, int column, int row, int codePoint, TextColor color, boolean reverse) {
     glyph(graphics, column, row, codePoint, new Brush(color, TextColor.ANSI.BLACK), reverse);
+  }
+
+  /** Draws one cell of a ship picture (its colours come as names). */
+  static void glyph(TextGUIGraphics graphics, int column, int row, ShipPicture.Cell cell) {
+    glyph(graphics, column, row, cell.codePoint(), brush(cell.color(), cell.background(), cell.blink(), true), false);
+  }
+
+  /**
+   * Paints a ship picture centred in a column, from a row on and down to another:
+   * returns how many rows it used, so the caller can keep laying out below it.
+   */
+  static int picture(TextGUIGraphics graphics, int left, int row, int width, int maxRow, ShipPicture picture) {
+    int from = left + Math.max(0, (width - picture.width()) / 2);
+    int rows = 0;
+    for(int y = 0; y < picture.height() && row + y < maxRow; y++) {
+      for(int x = 0; x < picture.width(); x++) {
+        ShipPicture.Cell cell = picture.at(x, y);
+        if(cell != null && !cell.continuation()) {
+          glyph(graphics, from + x, row + y, cell);
+        }
+      }
+      rows++;
+    }
+    return rows;
   }
 
   /** A panel section: the title inside a line, like `─ Ships ─────`. */

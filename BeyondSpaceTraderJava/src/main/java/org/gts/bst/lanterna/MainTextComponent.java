@@ -856,11 +856,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     int row = contentTop + 1;
     UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.ShipType, ship.type()), UiPalette.ACCENT, x + panelWidth);
-    for(String artLine : ShipSprites.of(ship.typeId())) {
-      if(row >= height - 5) {
-        break;
+    if(ship.picture().width() > 0) {
+      row += EditorText.picture(graphics, x, row, panelWidth, height - 5, ship.picture());
+    } else {
+      // No art files: the old sprites, as a fallback.
+      for(String artLine : ShipSprites.of(ship.typeId())) {
+        if(row >= height - 5) {
+          break;
+        }
+        graphics.putString(x, row++, cut(artLine, panelWidth));
       }
-      graphics.putString(x, row++, cut(artLine, panelWidth));
     }
     row++;
     String[] labels = ship.equipmentLabels().split("\n", -1);
@@ -904,11 +909,15 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     if(row < limit) {
       UiPalette.draw(graphics, x, row++, shipInfo.name() + "  " + shipInfo.size(), UiPalette.ACCENT, x + panelWidth);
     }
-    for(String artLine : ShipSprites.of(shipInfo.type())) {
-      if(row >= limit) {
-        break;
+    if(shipInfo.picture().width() > 0) {
+      row += EditorText.picture(graphics, x, row, panelWidth, limit, shipInfo.picture());
+    } else {
+      for(String artLine : ShipSprites.of(shipInfo.type())) {
+        if(row >= limit) {
+          break;
+        }
+        graphics.putString(x, row++, cut(artLine, panelWidth));
       }
-      graphics.putString(x, row++, cut(artLine, panelWidth));
     }
     row++;
     if(row < limit) {
