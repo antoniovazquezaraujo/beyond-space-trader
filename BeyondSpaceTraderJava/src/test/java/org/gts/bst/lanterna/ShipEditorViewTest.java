@@ -294,6 +294,39 @@ class ShipEditorViewTest {
     }
   }
 
+  @Test
+  void spaceErasesAnyLetterEvenIfItIsNotThePen() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Engine]\nkey=M\ncolor=white\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(110, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      // el pincel empieza en A (el arma): espacio la pinta
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("A: Weapon  1/1"), screenText(screen));
+
+      // con el pincel en M (motor), espacio sobre la A la borra igual
+      view.handleKey(new KeyStroke(',', false, false));
+      view.handleKey(new KeyStroke(KeyType.ArrowLeft));
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("A: Weapon  0/1"), "the A is erased: " + screenText(screen));
+      assertTrue(screenText(screen).contains("M: Engine  0/1"), "and no M was painted: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {

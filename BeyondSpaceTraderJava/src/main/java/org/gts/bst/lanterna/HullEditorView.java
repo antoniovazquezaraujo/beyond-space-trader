@@ -161,15 +161,23 @@ public final class HullEditorView extends ArtEditorWindow {
   }
 
   /** Space: if the pen key is in the cell it erases it, if not it paints it, and the cursor moves right. */
+  /** Space: any letter in the cell is erased; if it is empty, the pen is painted; the cursor moves right. */
   private void toggleCell() {
-    char pen = currentLetter().letter();
-    if(grid.at(cursorX, cursorY) == pen) {
+    char current = grid.at(cursorX, cursorY);
+    if(current != ' ') {
       grid.clear(cursorX, cursorY);
-      message = "erased " + pen + " at x=" + cursorX + " y=" + cursorY;
-    } else {
-      grid.set(cursorX, cursorY, pen);
-      message = "painted " + pen + " at x=" + cursorX + " y=" + cursorY;
+      message = "erased " + current + " at x=" + cursorX + " y=" + cursorY;
+      cursorX++;
+      redraw();
+      return;
     }
+    if(letters.isEmpty()) {
+      message = "add a colour letter with [+] first";
+      return;
+    }
+    char pen = currentLetter().letter();
+    grid.set(cursorX, cursorY, pen);
+    message = "painted " + pen + " at x=" + cursorX + " y=" + cursorY;
     cursorX++;
     redraw();
   }

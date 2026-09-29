@@ -199,25 +199,26 @@ public final class ShipEditorView extends ArtEditorWindow {
         + (variantsOf(pen).size() > 1 ? " · [v] variants" : "");
   }
 
-  /** Space: if the pen key is in the cell it erases it, if not it paints it, and the cursor moves right. */
+  /** Space: any letter in the cell is erased; if it is empty, the pen is painted; the cursor moves right. */
   private void toggleCell() {
-    if(pen == 0) {
-      message = "pick the element with , or .";
+    char current = grid.at(cursorX, cursorY);
+    if(current != ' ') {
+      grid.clear(cursorX, cursorY);
+      message = "erased " + current + " at x=" + cursorX + " y=" + cursorY;
+      cursorX++;
+      redraw();
       return;
     }
-    char current = grid.at(cursorX, cursorY);
-    if(Character.toUpperCase(current) == Character.toUpperCase(pen)) {
-      grid.clear(cursorX, cursorY);
-      message = "erased " + pen + " at x=" + cursorX + " y=" + cursorY;
-    } else {
-      if(!canPlace(pen)) {
-        return;
-      }
-      grid.set(cursorX, cursorY, pen);
-      ShipSites.Kind kind = ShipSites.kindOfLetter(pen, pieces);
-      message = "painted " + pen + " (" + ShipSites.kindName(kind) + " " + countOfKind(kind) + "/" + maxOfKind(kind)
-          + ")";
+    if(pen == 0) {
+      message = "empty cell and no element picked (use , or .)";
+      return;
     }
+    if(!canPlace(pen)) {
+      return;
+    }
+    grid.set(cursorX, cursorY, pen);
+    ShipSites.Kind kind = ShipSites.kindOfLetter(pen, pieces);
+    message = "painted " + pen + " (" + ShipSites.kindName(kind) + " " + countOfKind(kind) + "/" + maxOfKind(kind) + ")";
     cursorX++;
     redraw();
   }

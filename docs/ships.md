@@ -345,7 +345,7 @@ kinds with no piece yet show `(-)`, so the missing art is visible at a glance.
 | --- | --- |
 | `←↑→↓` or `hjkl` | Move the cursor |
 | `,` / `.` | Pick the element to paint (the letter of a kind, marked `>` in the tree) |
-| space | Paint the element at the cursor: if it is already there it erases it, and the cursor moves one cell right |
+| space | A letter in the cell is erased (whatever it is); an empty cell gets the element painted. The cursor moves one cell right either way |
 | `v` | Preview: cycle which piece of the element is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
 | `n` / `r` | Add a ship / rename it |
 | `c` / `y` | Pick the chassis / the ship type from a list |
@@ -366,7 +366,7 @@ over it.
 | `c` / `b` / `p` | Cycle its colour / background / blink |
 | `←↑→↓` or `hjkl` | Move the cursor |
 | `,` / `.` | Pick the colour letter to paint |
-| space | Paint the colour letter at the cursor: if it is already there it erases it, and the cursor moves one cell right |
+| space | A letter in the cell is erased (whatever it is); an empty cell gets the colour letter painted. The cursor moves one cell right either way |
 | `TAB` / `⇧TAB` | Previous / next hull |
 | `s` | Save every edited hull back to `chassis.txt` |
 | `Esc` | Back to the menu |
