@@ -3,8 +3,8 @@
 ;; the game finds the piece for each thing); key= is the site letter it fills.
 ;; The letters are yours: keep the pieces and the hulls in agreement.
 ;; Suggested letters: A weapon, E shield, G gadget, C cockpit, M engines,
-;; D fuel tank, B cargo gauge, P escape pod; the role markers use their own
-;; glyph as key ($ trader, ☠ pirate, ✶ police).
+;; D fuel tank, B cargo gauge, P escape pod. The suggested role letters are
+;; T trader, R pirate and L police.
 ;; color=, bgcolor= and blink= are optional.
 ;; A space is empty; anything else (dots and unicode included) is drawn.
 
@@ -43,15 +43,15 @@ key=B
 
 ;; role markers: the game shows the one of the encounter
 [Role Trader]
-key=$
+key=T
 color=gold
 $
 [Role Pirate]
-key=☠
+key=R
 color=white
 ☠
 [Role Police]
-key=✶
+key=L
 color=red
 bgcolor=blue
 blink=true

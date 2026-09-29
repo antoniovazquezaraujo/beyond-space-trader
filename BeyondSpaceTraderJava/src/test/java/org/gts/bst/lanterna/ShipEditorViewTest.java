@@ -45,11 +45,12 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
       assertTrue(screenText(screen).contains("prueba"), screenText(screen));
-      assertTrue(screenText(screen).contains("Engine(M)"), "the pieces list: " + screenText(screen));
+      assertTrue(screenText(screen).contains("Engine"), "the tree of pieces: " + screenText(screen));
 
       view.handleKey(new KeyStroke('M', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("motor 1/1"), "the sites summary: " + screenText(screen));
+      assertTrue(screenText(screen).contains("motor (M)"), "the tree of sites: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1/1"), "the count: " + screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
@@ -62,7 +63,7 @@ class ShipEditorViewTest {
       // el espacio borra el grupo entero
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("motor 0/1"), "the group is gone: " + screenText(screen));
+      assertTrue(screenText(screen).contains("motor (M)  0/1"), "the group is gone: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -127,7 +128,7 @@ class ShipEditorViewTest {
 
       view.handleKey(new KeyStroke('A', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("arma 1/1"), "the Firefly admits one weapon: " + screenText(screen));
+      assertTrue(screenText(screen).contains("arma (A)"), "the Firefly admits one weapon: " + screenText(screen));
 
       // otra arma, separada: se cuenta igual y no cabe
       view.handleKey(new KeyStroke(KeyType.ArrowRight));
@@ -135,7 +136,7 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke('A', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("admite 1"), "the warning: " + screenText(screen));
-      assertTrue(screenText(screen).contains("arma 1/1"), "it is not written: " + screenText(screen));
+      assertTrue(screenText(screen).contains("arma (A)  1/1"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -171,12 +172,12 @@ class ShipEditorViewTest {
         wasp.handleKey(new KeyStroke(KeyType.ArrowRight));
       }
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("motor 3/3"), screenText(screen));
+      assertTrue(screenText(screen).contains("motor (M)  3/3"), screenText(screen));
 
       wasp.handleKey(new KeyStroke('M', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("admite 3"), screenText(screen));
-      assertTrue(screenText(screen).contains("motor 3/3"), "it is not written: " + screenText(screen));
+      assertTrue(screenText(screen).contains("motor (M)  3/3"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();

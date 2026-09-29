@@ -32,7 +32,7 @@ import org.gts.bst.view.ShipSites;
  */
 public final class ShipEditorView extends ArtEditorWindow {
   private static final String[] GROUP_COLORS = {"white", "cyan", "red", "yellow", "green", "magenta", "blue"};
-  private static final int STRIP_ROWS = 5;
+  private static final int STRIP_ROWS = 3;
   private final List<ShipDesign> designs;
   private final List<ShipArtFile> hulls;
   private final List<ShipArtFile> pieces;
@@ -346,28 +346,104 @@ public final class ShipEditorView extends ArtEditorWindow {
       return;
     }
     int rows = size.getRows() - STRIP_ROWS;
-    int half = (size.getColumns() - 1) / 2;
+    int treeWidth = treeWidth(size);
+    int canvas = size.getColumns() - treeWidth;
+    int half = (canvas - 1) / 2;
     for(int row = 0; row < rows; row++) {
       graphics.setCharacter(half, row, '│');
+      if(treeWidth > 0) {
+        graphics.setCharacter(canvas, row, '│');
+      }
     }
     ShipArtFile hull = hull();
     if(hull == null) {
       ShipDesign design = design();
       graphics.putString(1, 1, design == null ? "no hay naves en ships.txt"
           : "no encuentro el chasis " + design.chassis() + " (con [h] eliges uno de chassis.txt)");
-      graphics.putString(1, 2, EditorText.cut("hay: " + hullsLine(), size.getColumns() - 2));
+      graphics.putString(1, 2, EditorText.cut("hay: " + hullsLine(), canvas - 2));
     } else {
       paintHull(graphics, hull, 0, 0, half, rows, true);
-      paintHull(graphics, hull, half + 1, 0, size.getColumns() - half - 1, rows, false);
+      paintHull(graphics, hull, half + 1, 0, canvas - half - 1, rows, false);
     }
+    paintTree(graphics, size, canvas + 1, rows);
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.putString(0, rows, EditorText.cut(shipsLine(), size.getColumns()));
-    graphics.putString(0, rows + 1, EditorText.cut(piecesLine(), size.getColumns()));
-    graphics.putString(0, rows + 2, EditorText.cut(sitesLine(), size.getColumns()));
     graphics.setForegroundColor(message.startsWith("⚠") ? TextColor.ANSI.YELLOW : TextColor.ANSI.WHITE);
-    graphics.putString(0, rows + 3, EditorText.cut(message, size.getColumns()));
+    graphics.putString(0, rows + 1, EditorText.cut(message, size.getColumns()));
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
-    graphics.putString(0, rows + 4, EditorText.cut(keysLine(), size.getColumns()));
+    graphics.putString(0, rows + 2, EditorText.cut(keysLine(), size.getColumns()));
+  }
+
+  private int treeWidth(TerminalSize size) {
+    return size.getColumns() < 80 ? 0 : Math.min(30, Math.max(24, size.getColumns() / 4));
+  }
+
+  /** The pieces that fill a kind of site (only the ones with a key). */
+  private List<ShipArtFile> piecesOfKind(ShipSites.Kind kind) {
+    List<ShipArtFile> ofKind = new ArrayList<>();
+    for(ShipArtFile piece : pieces) {
+      if(!piece.letter().isEmpty() && ShipSites.kindOf(piece.name()) == kind) {
+        ofKind.add(piece);
+      }
+    }
+    return ofKind;
+  }
+
+  /** The keys of some pieces, without repeating. */
+  private static String keysOf(List<ShipArtFile> ofKind) {
+    StringBuilder keys = new StringBuilder();
+    for(ShipArtFile piece : ofKind) {
+      if(keys.indexOf(piece.letter()) < 0) {
+        keys.append(keys.length() == 0 ? "" : " ").append(piece.letter());
+      }
+    }
+    return keys.length() == 0 ? "-" : keys.toString();
+  }
+
+  /** The glyph of a piece: its first drawn character. */
+  private static String glyphOf(ShipArtFile piece) {
+    for(int row = 0; row < piece.height(); row++) {
+      for(int column = 0; column < piece.width(); column++) {
+        int codePoint = piece.at(row, column);
+        if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
+          return new String(Character.toChars(codePoint));
+        }
+      }
+    }
+    return "?";
+  }
+
+  /** The vertical panel: the tree of sites (kinds) with their pieces. */
+  private void paintTree(TextGUIGraphics graphics, TerminalSize size, int left, int rows) {
+    if(size.getColumns() - left <= 1) {
+      return;
+    }
+    ShipDesign design = design();
+    ShipSites.Budget budget = design == null ? null : ShipSites.budgetOf(design.type());
+    Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(currentGroups(), pieces);
+    graphics.putString(left, 0, EditorText.cut("sitios y piezas", size.getColumns() - left));
+    int row = 1;
+    for(ShipSites.Kind kind : ShipSites.Kind.values()) {
+      List<ShipArtFile> ofKind = piecesOfKind(kind);
+      int max = budget == null ? -1 : ShipSites.maxOfKind(budget, kind);
+      if(ofKind.isEmpty() && (max <= 0 || kind == ShipSites.Kind.PART)) {
+        continue;
+      }
+      int there = counts.getOrDefault(kind, 0);
+      String mark = max < 0 ? "?" : there < max ? "⚠" : there == max ? "ok" : "✗";
+      graphics.setForegroundColor(mark.equals("⚠") || mark.equals("✗") ? TextColor.ANSI.YELLOW
+          : TextColor.ANSI.WHITE);
+      graphics.putString(left, row++, EditorText.cut(ShipSites.kindName(kind) + " (" + keysOf(ofKind) + ")  " + there
+          + "/" + (max < 0 ? "?" : max) + " " + mark, size.getColumns() - left));
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      for(ShipArtFile piece : ofKind) {
+        if(row >= rows) {
+          return;
+        }
+        graphics.putString(left + 2, row++, EditorText.cut("· " + piece.name() + "  " + glyphOf(piece),
+            Math.max(0, size.getColumns() - left - 2)));
+      }
+    }
   }
 
   /** Draws the open list of hulls or ship types. */
@@ -493,14 +569,6 @@ public final class ShipEditorView extends ArtEditorWindow {
     return text.toString();
   }
 
-  private String piecesLine() {
-    StringBuilder text = new StringBuilder("piezas:");
-    for(ShipArtFile piece : pieces) {
-      text.append(' ').append(piece.name()).append('(')
-          .append(piece.letter().isEmpty() ? "?" : piece.letter()).append(')');
-    }
-    return text.toString();
-  }
 
   /** The groups of the design, as the grid has them now. */
   private List<ShipDesign.LetterGroup> currentGroups() {
@@ -511,30 +579,6 @@ public final class ShipEditorView extends ArtEditorWindow {
     return groups;
   }
 
-  private String sitesLine() {
-    ShipDesign design = design();
-    if(design == null) {
-      return "";
-    }
-    ShipSites.Budget budget = ShipSites.budgetOf(design.type());
-    if(budget == null) {
-      return "sitios: (sin type=: no se puede validar)";
-    }
-    List<ShipDesign.LetterGroup> groups = currentGroups();
-    Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(groups, pieces);
-    Map<ShipSites.Kind, Integer> longest = ShipSites.longestByKind(groups, pieces);
-    StringBuilder text = new StringBuilder("sitios:");
-    for(ShipSites.Kind kind : ShipSites.Kind.values()) {
-      int max = ShipSites.maxOfKind(budget, kind);
-      if(max <= 0) {
-        continue;
-      }
-      int there = kind == ShipSites.Kind.CARGO ? longest.getOrDefault(kind, 0) : counts.getOrDefault(kind, 0);
-      text.append(' ').append(ShipSites.kindName(kind)).append(' ').append(there).append('/').append(max);
-      text.append(there < max ? " ⚠" : there == max ? " ok" : " ✗");
-    }
-    return text.toString();
-  }
 
   private String keysLine() {
     ShipDesign design = design();
