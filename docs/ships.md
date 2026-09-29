@@ -332,6 +332,7 @@ on the right with the real pieces:
 | Key | Action |
 | --- | --- |
 | `C M D B R A E G P` | Write that site letter at the cursor |
+| `h` / `y` | Pick the chassis / the ship type from a list |
 | `←↑→↓` | Move the cursor |
 | space | Erase the whole group under the cursor |
 | `,` / `.` | Cycle the colour of the letter under the cursor |

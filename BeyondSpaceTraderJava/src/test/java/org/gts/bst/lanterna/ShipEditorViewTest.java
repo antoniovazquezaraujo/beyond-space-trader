@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
@@ -66,6 +67,47 @@ class ShipEditorViewTest {
       screen.stopScreen();
       screen.close();
       Files.deleteIfExists(file);
+    }
+  }
+
+  @Test
+  void picksTheChassisAndTheTypeFromLists() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\nchasis=nope\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\n"));
+    List<ShipArtFile> pieces = List.of();
+    Path file = java.nio.file.Files.createTempFile("naves", ".txt");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      view.shipsPath(file.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("no encuentro el chasis"), screenText(screen));
+
+      view.handleKey(new KeyStroke('h', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("chasis de la nave:"), screenText(screen));
+      assertTrue(screenText(screen).contains("uno"), screenText(screen));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+
+      view.handleKey(new KeyStroke('y', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("type de la nave:"), screenText(screen));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      view.handleKey(new KeyStroke('s', false, false));
+
+      List<ShipDesign> saved = ShipDesign.load(file.toString());
+      assertEquals("uno", saved.get(0).chassis(), "the chassis is picked from the list");
+      assertEquals("Firefly", saved.get(0).type(), "the third type in the enum");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      java.nio.file.Files.deleteIfExists(file);
     }
   }
 

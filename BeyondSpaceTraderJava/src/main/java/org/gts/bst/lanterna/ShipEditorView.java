@@ -42,6 +42,9 @@ public final class ShipEditorView extends ArtEditorWindow {
   private int cursorX = 2;
   private int cursorY = 2;
   private int colorIndex;
+  private boolean listOpen;
+  private boolean typeList;
+  private int listIndex;
   private String message = "";
   /** The ships file the editor saves to (a field so the tests can point elsewhere). */
   private String shipsPath = ShipArtFile.resolve("ships.txt").toString();
@@ -123,7 +126,24 @@ public final class ShipEditorView extends ArtEditorWindow {
   @Override
   protected boolean handleKey(KeyStroke key) {
     if(key.getKeyType() == KeyType.Escape) {
+      if(listOpen) {
+        listOpen = false;
+        redraw();
+        return true;
+      }
       close();
+      return true;
+    }
+    if(listOpen) {
+      List<String> items = items();
+      if(key.getKeyType() == KeyType.ArrowUp && !items.isEmpty()) {
+        listIndex = (listIndex + items.size() - 1) % items.size();
+      } else if(key.getKeyType() == KeyType.ArrowDown && !items.isEmpty()) {
+        listIndex = (listIndex + 1) % items.size();
+      } else if(key.getKeyType() == KeyType.Enter) {
+        pick();
+      }
+      redraw();
       return true;
     }
     if(key.getKeyType() == KeyType.Tab) {
@@ -183,9 +203,62 @@ public final class ShipEditorView extends ArtEditorWindow {
         letterColors.put(run.letter(), GROUP_COLORS[colorIndex]);
       }
       message = "color " + GROUP_COLORS[colorIndex] + (run == null ? "" : " para " + run.letter());
+    } else if(character == 'h') {
+      openList(false);
+    } else if(character == 'y') {
+      openList(true);
     } else if(character == 's') {
       save();
     }
+  }
+
+  /** The items of the open list: the hulls of chassis.txt or the game ship types. */
+  private List<String> items() {
+    List<String> items = new ArrayList<>();
+    if(typeList) {
+      for(org.gts.bst.ship.ShipType type : org.gts.bst.ship.ShipType.values()) {
+        items.add(type.name());
+      }
+    } else {
+      for(ShipArtFile hull : hulls) {
+        items.add(hull.name());
+      }
+    }
+    return items;
+  }
+
+  private void openList(boolean types) {
+    typeList = types;
+    ShipDesign design = design();
+    String current = design == null ? "" : types ? design.type() : design.chassis();
+    List<String> items = items();
+    listIndex = 0;
+    for(int i = 0; i < items.size(); i++) {
+      if(items.get(i).equalsIgnoreCase(current)) {
+        listIndex = i;
+        break;
+      }
+    }
+    listOpen = true;
+    message = types ? "elige el type de la nave" : "elige el chasis de la nave";
+  }
+
+  private void pick() {
+    List<String> items = items();
+    ShipDesign design = design();
+    if(design == null || items.isEmpty() || listIndex >= items.size()) {
+      listOpen = false;
+      redraw();
+      return;
+    }
+    String value = items.get(listIndex);
+    storeCurrent();
+    designs.set(designIndex, new ShipDesign(design.name(), typeList ? value : design.type(),
+        typeList ? design.chassis() : value, design.groups()));
+    listOpen = false;
+    updateTitle();
+    message = (typeList ? "type=" : "chasis=") + value;
+    redraw();
   }
 
   private void save() {
@@ -210,6 +283,10 @@ public final class ShipEditorView extends ArtEditorWindow {
     for(int row = 0; row < size.getRows(); row++) {
       graphics.putString(0, row, " ".repeat(size.getColumns()));
     }
+    if(listOpen) {
+      paintList(graphics, size);
+      return;
+    }
     int rows = size.getRows() - STRIP_ROWS;
     int half = (size.getColumns() - 1) / 2;
     for(int row = 0; row < rows; row++) {
@@ -219,7 +296,8 @@ public final class ShipEditorView extends ArtEditorWindow {
     if(hull == null) {
       ShipDesign design = design();
       graphics.putString(1, 1, design == null ? "no hay naves en ships.txt"
-          : "no encuentro el chasis " + design.chassis() + " en chassis.txt");
+          : "no encuentro el chasis " + design.chassis() + " (con [h] eliges uno de chassis.txt)");
+      graphics.putString(1, 2, EditorText.cut("hay: " + hullsLine(), size.getColumns() - 2));
     } else {
       paintHull(graphics, hull, 0, 0, half, rows, true);
       paintHull(graphics, hull, half + 1, 0, size.getColumns() - half - 1, rows, false);
@@ -229,6 +307,25 @@ public final class ShipEditorView extends ArtEditorWindow {
     graphics.putString(0, rows + 1, EditorText.cut(piecesLine(), size.getColumns()));
     graphics.putString(0, rows + 2, EditorText.cut(sitesLine(), size.getColumns()));
     graphics.putString(0, rows + 3, EditorText.cut(keysLine(), size.getColumns()));
+  }
+
+  /** Draws the open list of hulls or ship types. */
+  private void paintList(TextGUIGraphics graphics, TerminalSize size) {
+    List<String> items = items();
+    int left = Math.max(1, (size.getColumns() - 24) / 2);
+    int top = Math.max(0, (size.getRows() - items.size() - 2) / 2);
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    graphics.putString(left, top, typeList ? "type de la nave:" : "chasis de la nave:");
+    for(int i = 0; i < items.size() && top + 1 + i < size.getRows() - 1; i++) {
+      if(i == listIndex) {
+        graphics.setForegroundColor(TextColor.ANSI.BLACK);
+        graphics.setBackgroundColor(TextColor.ANSI.WHITE);
+      }
+      graphics.putString(left, top + 1 + i, EditorText.cut(String.format("%-22s", items.get(i)), 22));
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    }
+    graphics.putString(1, size.getRows() - 1, "[flechas] elegir · [ENTER] aceptar · [ESC] cancelar");
   }
 
   /** Draws a hull (with its colour zones), the letters on the left, the pieces on the right. */
@@ -319,6 +416,14 @@ public final class ShipEditorView extends ArtEditorWindow {
     return budget == null ? 0 : budget.cargoBays();
   }
 
+  private String hullsLine() {
+    StringBuilder text = new StringBuilder();
+    for(ShipArtFile hull : hulls) {
+      text.append(text.length() == 0 ? "" : ", ").append(hull.name());
+    }
+    return text.toString();
+  }
+
   private String shipsLine() {
     StringBuilder text = new StringBuilder("[TAB] nave:");
     for(int i = 0; i < designs.size(); i++) {
@@ -372,7 +477,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = design();
     return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor · [,/.] color"
         + (design == null ? "" : " · chasis: " + design.chassis())
-        + " · [s] guardar · [TAB] nave · [ESC] salir"
+        + " · [h] chasis · [y] type · [s] guardar · [TAB] nave · [ESC] salir"
         + (message.isEmpty() ? "" : "   ||   " + message);
   }
 
