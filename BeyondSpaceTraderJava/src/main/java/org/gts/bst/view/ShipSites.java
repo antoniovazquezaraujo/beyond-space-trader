@@ -326,7 +326,8 @@ public final class ShipSites {
   /** The kind of a letter: that of the piece whose key= is that letter. */
   public static Kind kindOfLetter(char letter, List<ShipArtFile> pieces) {
     for(ShipArtFile piece : pieces) {
-      if(!piece.letter().isEmpty() && piece.letter().charAt(0) == letter) {
+      if(!piece.letter().isEmpty()
+          && Character.toUpperCase(piece.letter().charAt(0)) == Character.toUpperCase(letter)) {
         return kindOf(piece.name());
       }
     }

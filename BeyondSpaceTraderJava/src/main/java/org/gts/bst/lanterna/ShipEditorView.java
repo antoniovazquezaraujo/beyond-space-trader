@@ -172,7 +172,7 @@ public final class ShipEditorView extends ArtEditorWindow {
         cursorY++;
         break;
       case Character:
-        character(Character.toLowerCase(key.getCharacter()));
+        character(key.getCharacter());
         break;
       default:
         break;
@@ -181,9 +181,20 @@ public final class ShipEditorView extends ArtEditorWindow {
     return true;
   }
 
+  /** The letter to paint for a typed character: a piece's key or a suggested one. */
+  private char keyLetter(char typed) {
+    for(ShipArtFile piece : pieces) {
+      if(!piece.letter().isEmpty()
+          && Character.toUpperCase(piece.letter().charAt(0)) == Character.toUpperCase(typed)) {
+        return piece.letter().charAt(0);
+      }
+    }
+    return ShipSites.isSite(Character.toUpperCase(typed)) ? Character.toUpperCase(typed) : 0;
+  }
+
   private void character(char character) {
-    char letter = Character.toUpperCase(character);
-    if(ShipSites.isSite(letter)) {
+    char letter = keyLetter(character);
+    if(letter != 0) {
       if(canPlace(letter)) {
         grid.set(cursorX, cursorY, letter);
         ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
@@ -240,7 +251,8 @@ public final class ShipEditorView extends ArtEditorWindow {
     }
     int max = maxOfKind(kind);
     if(max < 0) {
-      return true;
+      message = "⚠ elige el type de la nave con [y] para poder colocar sitios";
+      return false;
     }
     char previous = grid.at(cursorX, cursorY);
     grid.set(cursorX, cursorY, letter);

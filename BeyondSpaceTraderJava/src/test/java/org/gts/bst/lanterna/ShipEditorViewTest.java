@@ -142,6 +142,47 @@ class ShipEditorViewTest {
     }
   }
 
+  @Test
+  void needsTheTypeAndRefusesTheEnginesOverTheLimit() throws IOException {
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxxxx\nxxxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Engine]\nkey=M\ncolor=red\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+
+      // sin type= no deja colocar sitios
+      ShipEditorView noType = new ShipEditorView(
+          ShipDesign.parse(new StringReader("[prueba]\nchasis=uno\n")), hulls, pieces);
+      gui.addWindow(noType);
+      gui.updateScreen();
+      noType.handleKey(new KeyStroke('M', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("elige el type"), screenText(screen));
+      noType.handleKey(new KeyStroke(KeyType.Escape));
+
+      // con type=Wasp (Huge) caben tres motores y el cuarto no
+      ShipEditorView wasp = new ShipEditorView(
+          ShipDesign.parse(new StringReader("[prueba]\ntype=Wasp\nchasis=uno\n")), hulls, pieces);
+      gui.addWindow(wasp);
+      for(int i = 0; i < 3; i++) {
+        wasp.handleKey(new KeyStroke('M', false, false));
+        wasp.handleKey(new KeyStroke(KeyType.ArrowRight));
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("motor 3/3"), screenText(screen));
+
+      wasp.handleKey(new KeyStroke('M', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("admite 3"), screenText(screen));
+      assertTrue(screenText(screen).contains("motor 3/3"), "it is not written: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {

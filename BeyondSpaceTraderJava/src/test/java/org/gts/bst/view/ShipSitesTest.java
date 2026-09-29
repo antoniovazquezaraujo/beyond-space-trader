@@ -106,6 +106,10 @@ class ShipSitesTest {
     assertEquals(ShipSites.Kind.WEAPON, ShipSites.kindOfLetter('A', pieces));
     assertEquals(ShipSites.Kind.ENGINES, ShipSites.kindOfLetter('M', pieces));
     assertEquals(ShipSites.Kind.PART, ShipSites.kindOfLetter('Z', pieces), "a letter with no piece");
+    List<ShipArtFile> roles = ShipArtFile.parse(new StringReader(
+        "[Role Trader]\nkey=$\ncolor=gold\n$\n[Role Pirate]\nkey=\u2620\ncolor=white\n\u2620\n"));
+    assertEquals(ShipSites.Kind.ROLE, ShipSites.kindOfLetter('$', roles));
+    assertEquals(ShipSites.Kind.ROLE, ShipSites.kindOfLetter('\u2620', roles), "each role has its own key");
 
     Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(groups, pieces);
     assertEquals(2, counts.get(ShipSites.Kind.WEAPON));

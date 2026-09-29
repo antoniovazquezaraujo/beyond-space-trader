@@ -507,7 +507,7 @@ agreement. These are the suggested letters:
 | `M` | Engines | the `Engine` piece (by size: 1 to 3) |
 | `D` | Fuel | the `Fuel Tank` piece (one, two on the big ones) |
 | `B` | Cargo | the `Cargo Gauge` piece: the game draws the braille gauge of the real capacity (one dot per bay, two to nine cells) |
-| `R` | Role | the role marker (`Role Trader`, `Role Pirate` or `Role Police`) |
+| `R` | Role | not used any more: each role marker has its own key (`$` trader, `☠` pirate, `✶` police) |
 | `A` | Weapons | the piece of the mounted weapon, by its English name |
 | `E` | Shields | the piece of the mounted shield |
 | `G` | Gadgets | the piece of the mounted gadget |
@@ -519,6 +519,8 @@ shield and gadget slots) and the size, so **the ship has to offer that many
 sites**. The ship editor counts every group of a kind (side by side or apart) and
 **refuses to write more than the type admits**, with a warning; the message of
 each letter tells the quota (`arma 2/3`) and the summary line shows it too.
+Without a `type=` there is no quota, so the editor does not let any site be
+written: it asks for the type first (`y`).
 
 Three details: `D` is one tank, and a second one can appear when the fuel is
 increased (the fuel compactor adds three tanks); the `B` gauge is drawn by the
