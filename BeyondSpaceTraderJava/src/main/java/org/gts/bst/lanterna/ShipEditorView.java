@@ -40,8 +40,6 @@ public final class ShipEditorView extends ArtEditorWindow {
   private LetterGrid grid = new LetterGrid();
   private int cursorX = 2;
   private int cursorY = 2;
-  private int previewRole;
-  private static final String[] ROLES = {"trader", "pirate", "police"};
   private boolean listOpen;
   private boolean typeList;
   private int listIndex;
@@ -73,6 +71,13 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = designs.get(designIndex);
     grid = LetterGrid.ofDesign(design);
     updateTitle();
+  }
+
+  /** Says which ship is open, so TAB does not look like it does nothing. */
+  private void announceShip() {
+    ShipDesign design = design();
+    message = design == null ? "no hay naves en ships.txt"
+        : "nave " + (designIndex + 1) + "/" + designs.size() + ": " + design.name();
   }
 
   private void storeCurrent() {
@@ -122,14 +127,6 @@ public final class ShipEditorView extends ArtEditorWindow {
     if(ofLetter.isEmpty()) {
       return null;
     }
-    if(ShipSites.kindOfLetter(letter, pieces) == ShipSites.Kind.ROLE) {
-      // el rol de la vista: el juego real elige el suyo en cada encuentro
-      for(ShipArtFile piece : ofLetter) {
-        if(piece.name().toLowerCase().endsWith(ROLES[previewRole])) {
-          return piece;
-        }
-      }
-    }
     return ofLetter.get(variants.getOrDefault(ShipSites.kindOfLetter(letter, pieces), 0) % ofLetter.size());
   }
 
@@ -164,12 +161,14 @@ public final class ShipEditorView extends ArtEditorWindow {
     if(key.getKeyType() == KeyType.Tab) {
       storeCurrent();
       loadDesign(designIndex + 1);
+      announceShip();
       redraw();
       return true;
     }
     if(key.getKeyType() == KeyType.ReverseTab) {
       storeCurrent();
       loadDesign(designIndex - 1);
+      announceShip();
       redraw();
       return true;
     }
@@ -229,17 +228,14 @@ public final class ShipEditorView extends ArtEditorWindow {
     } else if(character == 'v') {
       char under = grid.at(cursorX, cursorY);
       if(under == ' ') {
-        message = "pon el cursor sobre una letra para cambiar la vista de la pieza";
+        message = "pon el cursor sobre una letra para cambiar el preview";
       } else if(variantsOf(under).size() <= 1) {
         message = "la pieza " + ShipSites.kindName(ShipSites.kindOfLetter(under, pieces)) + " no tiene variantes";
       } else {
         ShipSites.Kind kind = ShipSites.kindOfLetter(under, pieces);
         variants.merge(kind, 1, Integer::sum);
-        message = "vista: " + pieceFor(under).name();
+        message = "preview: " + pieceFor(under).name();
       }
-    } else if(character == 'o') {
-      previewRole = (previewRole + 1) % ROLES.length;
-      message = "rol de la vista: " + ROLES[previewRole];
     } else if(character == 'h') {
       openList(false);
     } else if(character == 'y') {
@@ -411,6 +407,10 @@ public final class ShipEditorView extends ArtEditorWindow {
     return ofKind;
   }
 
+  private static String capitalized(String text) {
+    return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
+  }
+
   /** The keys of some pieces, without repeating. */
   private static String keysOf(List<ShipArtFile> ofKind) {
     StringBuilder keys = new StringBuilder();
@@ -459,11 +459,11 @@ public final class ShipEditorView extends ArtEditorWindow {
         continue;
       }
       int there = counts.getOrDefault(kind, 0);
-      String mark = max < 0 ? "?" : there < max ? "⚠" : there == max ? "ok" : "✗";
+      String mark = max < 0 ? "?" : there < max ? "⚠" : there == max ? "✓" : "✗";
       graphics.setForegroundColor(mark.equals("⚠") || mark.equals("✗") ? TextColor.ANSI.YELLOW
           : TextColor.ANSI.WHITE);
-      graphics.putString(left, row++, EditorText.cut(ShipSites.kindName(kind) + " (" + keysOf(ofKind) + ")  " + there
-          + "/" + (max < 0 ? "?" : max) + " " + mark, size.getColumns() - left));
+      graphics.putString(left, row++, EditorText.cut(keysOf(ofKind) + ": " + capitalized(ShipSites.kindName(kind))
+          + "  " + there + "/" + (max < 0 ? "?" : max) + " " + mark, size.getColumns() - left));
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       for(ShipArtFile piece : ofKind) {
         if(row >= rows) {
@@ -621,7 +621,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = design();
     return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor"
         + (design == null ? "" : " · chasis: " + design.chassis())
-        + " · [v] vista · [h] chasis · [y] type · [o] role preview (" + ROLES[previewRole] + ")"
+        + " · [v] preview · [h] chasis · [y] type"
         + " · [s] guardar · [TAB] nave · [ESC] salir";
   }
 

@@ -49,7 +49,7 @@ class ShipEditorViewTest {
 
       view.handleKey(new KeyStroke('M', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("engine (M)"), "the tree of sites: " + screenText(screen));
+      assertTrue(screenText(screen).contains("M: Engine"), "the tree of sites: " + screenText(screen));
       assertTrue(screenText(screen).contains("1/1"), "the count: " + screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
@@ -63,7 +63,7 @@ class ShipEditorViewTest {
       // el espacio borra el grupo entero
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("engine (M)  0/1"), "the group is gone: " + screenText(screen));
+      assertTrue(screenText(screen).contains("M: Engine  0/1"), "the group is gone: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -128,7 +128,7 @@ class ShipEditorViewTest {
 
       view.handleKey(new KeyStroke('A', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("weapon (A)"), "the Firefly admits one weapon: " + screenText(screen));
+      assertTrue(screenText(screen).contains("A: Weapon"), "the Firefly admits one weapon: " + screenText(screen));
 
       // otra arma, separada: se cuenta igual y no cabe
       view.handleKey(new KeyStroke(KeyType.ArrowRight));
@@ -136,7 +136,7 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke('A', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("admite 1"), "the warning: " + screenText(screen));
-      assertTrue(screenText(screen).contains("weapon (A)  1/1"), "it is not written: " + screenText(screen));
+      assertTrue(screenText(screen).contains("A: Weapon  1/1"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -173,7 +173,7 @@ class ShipEditorViewTest {
         wasp.handleKey(new KeyStroke(KeyType.ArrowRight));
       }
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("engine (M)  3/3"), screenText(screen));
+      assertTrue(screenText(screen).contains("M: Engine  3/3"), screenText(screen));
 
       assertTrue(screenText(screen).contains("size tiny vs Huge"),
           "the size of the chassis is checked: " + screenText(screen));
@@ -181,7 +181,7 @@ class ShipEditorViewTest {
       wasp.handleKey(new KeyStroke('M', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("admite 3"), screenText(screen));
-      assertTrue(screenText(screen).contains("engine (M)  3/3"), "it is not written: " + screenText(screen));
+      assertTrue(screenText(screen).contains("M: Engine  3/3"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -214,7 +214,7 @@ class ShipEditorViewTest {
       // v cambia la variante que se ve
       view.handleKey(new KeyStroke('v', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("vista: Beam Laser"), screenText(screen));
+      assertTrue(screenText(screen).contains("preview: Beam Laser"), screenText(screen));
       assertTrue(screenText(screen).contains("BB"), "the other variant: " + screenText(screen));
       assertTrue(screenText(screen).contains("⣿⣿⣿⣿⣄"),
           "the cargo gauge of the Wasp (35 bays) is drawn by itself: " + screenText(screen));

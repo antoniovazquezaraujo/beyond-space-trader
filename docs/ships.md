@@ -343,8 +343,7 @@ kinds with no piece yet show `(-)`, so the missing art is visible at a glance.
 | --- | --- |
 | `C M D B R A E G P` | Write that site letter at the cursor |
 | `h` / `y` | Pick the chassis / the ship type from a list |
-| `o` | Cycle the role of the preview (trader, pirate, police) |
-| `v` | Cycle which piece of the kind is shown in the preview (the game uses the real loadout) |
+| `v` | Preview: cycle which piece of the kind under the cursor is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
 | `←↑→↓` | Move the cursor |
 | space | Erase the whole group under the cursor |
 | `,` / `.` | Cycle the colour of the letter under the cursor |
