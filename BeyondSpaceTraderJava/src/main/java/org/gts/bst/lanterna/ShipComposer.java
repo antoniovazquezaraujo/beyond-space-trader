@@ -55,6 +55,8 @@ public final class ShipComposer {
       if(chosen == 0) {
         gui.addWindowAndWait(new ShipEditorView(designs, chassis, pieces));
       } else if(chosen == 1) {
+        gui.addWindowAndWait(new HullEditorView(chassis));
+      } else if(chosen == 2) {
         gui.addWindowAndWait(new ShipComposerView(chassis, pieces,
             org.gts.bst.view.ShipAssembly.load(ShipArtFile.resolve("ships.txt").toString())));
       }
@@ -74,8 +76,12 @@ public final class ShipComposer {
       chosen[0] = 0;
       window.close();
     });
-    menu.addItem("Compositor clasico (piezas sueltas)", () -> {
+    menu.addItem("Fuselajes: colorear los cascos", () -> {
       chosen[0] = 1;
+      window.close();
+    });
+    menu.addItem("Compositor clasico (piezas sueltas)", () -> {
+      chosen[0] = 2;
       window.close();
     });
     window.setComponent(menu);

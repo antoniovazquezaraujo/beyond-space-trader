@@ -340,6 +340,23 @@ on the right with the real pieces:
 | `s` | Save every ship back to `ships.txt` |
 | `Esc` | Back to the menu |
 
+The **hull editor** paints the colours of a hull: the drawing is read only and
+the free colour letters (each with its colour, background and blink) are painted
+over it.
+
+| Key | Action |
+| --- | --- |
+| `+` | Add a colour letter (the next free letter) |
+| `n` / `p` | Previous / next colour letter |
+| `e` | Rename the current colour letter (then type the letter) |
+| `c` / `b` / `k` | Cycle its colour / background / blink |
+| `←↑→↓` | Move the cursor |
+| `ENTER` | Paint the current letter at the cursor |
+| space | Erase the cell |
+| `,` / `.` | Previous / next hull |
+| `s` | Save every edited hull back to `chassis.txt` |
+| `Esc` | Back to the menu |
+
 ## The classic composer
 
 Keys:
