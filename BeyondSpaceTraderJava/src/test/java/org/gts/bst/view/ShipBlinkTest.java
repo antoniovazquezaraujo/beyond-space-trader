@@ -23,16 +23,21 @@ class ShipBlinkTest {
     List<ShipArtFile> parts = ShipArtFile.parse(new StringReader(
         "[sirena]\n"
         + "color=brightred\n"
-        + "blink=yes\n"
+        + "blink=true\n"
         + "bgcolor=white\n"
         + "##\n"
         + "\n"
         + "[motor]\n"
         + "color=orange\n"
+        + "##\n"
+        + "\n"
+        + "[vieja]\n"
+        + "blink=yes\n"
         + "##\n"));
 
     assertTrue(parts.get(0).blink(), "the siren blinks");
     assertFalse(parts.get(1).blink(), "the engine does not");
+    assertFalse(parts.get(2).blink(), "only true turns the blink on");
     assertTrue(parts.get(0).color().equals("brightred"));
     assertTrue(parts.get(0).bgColor().equals("white"), "the blink flips between the shape and the background");
     assertTrue(parts.get(1).bgColor().isEmpty());

@@ -20,8 +20,9 @@ import java.util.List;
 
 /**
  * One definition of a ship part (a chassis or a piece) read from a text file:
- * a name, a colour name and the drawing, where '.' is empty and everything else
- * (unicode included) is part of the art.
+ * a name, a colour name and the drawing, copied literally line by line, blank
+ * rows included. A space is empty and everything else (dots and unicode
+ * included) is part of the art.
  */
 public record ShipArtFile(String name, String color, List<String> lines, boolean blink, String bgColor) {
   /** Loads the parts of a file, looking for it in the usual places. */
@@ -71,13 +72,13 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
       }
       if(trimmed.isEmpty()) {
         if(name != null) {
-          lines.add(""); // una fila vacía dentro del dibujo
+          lines.add(line); // una fila vacía también es parte del dibujo
         }
         continue;
       }
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
         if(name != null) {
-          parts.add(new ShipArtFile(name, color, trimBlank(lines), blink, bgColor));
+          parts.add(new ShipArtFile(name, color, List.copyOf(lines), blink, bgColor));
         }
         name = trimmed.substring(1, trimmed.length() - 1).strip();
         color = "white";
@@ -90,28 +91,16 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
         bgColor = trimmed.substring("bgcolor=".length()).strip();
       } else if(name != null && trimmed.startsWith("blink=")) {
         String value = trimmed.substring("blink=".length()).strip().toLowerCase();
-        blink = value.equals("yes") || value.equals("true") || value.equals("1") || value.equals("si") || value.equals("sí");
+        blink = value.equals("true");
       } else if(name != null) {
-        lines.add(line.replace('.', ' ').replace('\t', ' '));
+        // The line is kept as written: a space is empty, a dot is ink.
+        lines.add(line);
       }
     }
     if(name != null) {
-      parts.add(new ShipArtFile(name, color, trimBlank(lines), blink, bgColor));
+      parts.add(new ShipArtFile(name, color, List.copyOf(lines), blink, bgColor));
     }
     return parts;
-  }
-
-  /** Drops the empty rows above and below the drawing (they were separators). */
-  private static List<String> trimBlank(List<String> lines) {
-    int from = 0;
-    int to = lines.size();
-    while(from < to && lines.get(from).isBlank()) {
-      from++;
-    }
-    while(to > from && lines.get(to - 1).isBlank()) {
-      to--;
-    }
-    return List.copyOf(lines.subList(from, to));
   }
 
   public int width() {

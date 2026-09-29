@@ -25,9 +25,9 @@ class ShipColorsTest {
   }
 
   @Test
-  void keepsTheOldNamesWorking() {
-    assertEquals(TextColor.ANSI.RED, ShipColors.color("rojo"));
-    assertEquals(TextColor.ANSI.CYAN, ShipColors.color("cian"));
+  void ignoresSpanishNames() {
+    assertEquals(TextColor.ANSI.WHITE, ShipColors.color("rojo"), "names are English only");
+    assertEquals(TextColor.ANSI.WHITE, ShipColors.color("cian"), "names are English only");
   }
 
   @Test

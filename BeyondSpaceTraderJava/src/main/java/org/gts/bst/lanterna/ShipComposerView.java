@@ -28,11 +28,11 @@ import org.gts.bst.view.ShipAssembly;
 /**
  * The ship composer: a chassis from ships/chassis.txt with pieces (from
  * ships/pieces.txt) placed on top, each in its colour; whatever is placed covers
- * the chassis. The assembly saves to and loads from ships/naves.txt, and R
+ * the chassis. The assembly saves to and loads from ships/ships.txt, and R
  * reloads the definitions so they can be edited with any editor.
  */
 public final class ShipComposerView extends BasicWindow {
-  private static final String[] COLORS = {"blanco", "cian", "rojo", "amarillo", "verde", "magenta", "azul"};
+  private static final String[] COLORS = {"white", "cyan", "red", "yellow", "green", "magenta", "blue"};
   private final ComposerCanvas canvas = new ComposerCanvas();
   private List<ShipArtFile> chassis;
   private List<ShipArtFile> pieces;
@@ -63,7 +63,7 @@ public final class ShipComposerView extends BasicWindow {
     this.assembly = saved != null && !saved.chassis().isEmpty()
         ? saved : ShipAssembly.empty(chassis.isEmpty() ? "" : chassis.get(0).name());
     chassisIndex = Math.max(0, indexOf(chassis, assembly.chassis()));
-    pendingColor = pieces.isEmpty() ? "blanco" : pieces.get(0).color();
+    pendingColor = pieces.isEmpty() ? "white" : pieces.get(0).color();
     updateTitle();
   }
 
@@ -113,10 +113,10 @@ public final class ShipComposerView extends BasicWindow {
   private void character(char character) {
     if(character == 'n') {
       pieceIndex = pieces.isEmpty() ? 0 : (pieceIndex + 1) % pieces.size();
-      pendingColor = pieces.isEmpty() ? "blanco" : pieces.get(pieceIndex).color();
+      pendingColor = pieces.isEmpty() ? "white" : pieces.get(pieceIndex).color();
     } else if(character == 'p') {
       pieceIndex = pieces.isEmpty() ? 0 : (pieces.size() + pieceIndex - 1) % pieces.size();
-      pendingColor = pieces.isEmpty() ? "blanco" : pieces.get(pieceIndex).color();
+      pendingColor = pieces.isEmpty() ? "white" : pieces.get(pieceIndex).color();
     } else if(character == ' ' || character == 'o') {
       place();
     } else if(character == 'c') {
@@ -147,8 +147,8 @@ public final class ShipComposerView extends BasicWindow {
 
   private void save() {
     try {
-      ShipAssembly.save(ShipArtFile.resolve("naves.txt").toString(), assembly);
-      message = "montaje guardado en " + ShipArtFile.resolve("naves.txt");
+      ShipAssembly.save(ShipArtFile.resolve("ships.txt").toString(), assembly);
+      message = "montaje guardado en " + ShipArtFile.resolve("ships.txt");
     } catch(IOException e) {
       message = "no se pudo guardar: " + e.getMessage();
     }
@@ -156,7 +156,7 @@ public final class ShipComposerView extends BasicWindow {
 
   private void loadAssembly() {
     try {
-      ShipAssembly saved = ShipAssembly.load(ShipArtFile.resolve("naves.txt").toString());
+      ShipAssembly saved = ShipAssembly.load(ShipArtFile.resolve("ships.txt").toString());
       if(saved != null) {
         assembly = saved;
         chassisIndex = Math.max(0, indexOf(chassis, assembly.chassis()));
