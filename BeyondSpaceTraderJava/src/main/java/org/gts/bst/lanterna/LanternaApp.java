@@ -115,10 +115,12 @@ public final class LanternaApp {
     }
     String name = InputDialog.show(gui, Strings.DialogNewNameTitle, Strings.DialogNewNamePrompt, "Antonio");
     if(name == null || name.trim().isEmpty()) {
+      window.log(Strings.MainNewGameCancelled);
       return;
     }
     Difficulty difficulty = askDifficulty(gui);
     if(difficulty == null) {
+      window.log(Strings.MainNewGameCancelled);
       return;
     }
     String[] labels = {Strings.SkillPilot, Strings.SkillFighter, Strings.SkillTrader, Strings.SkillEngineer};
@@ -129,6 +131,7 @@ public final class LanternaApp {
       Integer value = LanternaDialogs.askAmount(gui, Strings.DialogSkillTitle,
           Functions.StringVars(Strings.DialogSkillPrompt, labels[i], "" + max), max);
       if(value == null) {
+        window.log(Strings.MainNewGameCancelled);
         return;
       }
       extra[i] = value;

@@ -556,6 +556,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     String title = chartType == ChartType.GALACTIC ? Strings.MainChartGalactic : Strings.MainChartShortRange;
     UiPalette.title(graphics, 1, contentTop, title, chartWidth);
     if(game == null || cmdr == null) {
+      // No game yet: point at the menu instead of leaving the chart blank.
+      String hint = Strings.MenuNewGame + " · " + Strings.MenuLoad;
+      graphics.putString(1 + Math.max(0, (chartWidth - hint.length()) / 2),
+          contentTop + 1 + Math.max(0, chartHeight / 2), hint);
+      UiPalette.reset(graphics);
       return;
     }
     TerminalSize size = new TerminalSize(chartWidth, chartHeight);

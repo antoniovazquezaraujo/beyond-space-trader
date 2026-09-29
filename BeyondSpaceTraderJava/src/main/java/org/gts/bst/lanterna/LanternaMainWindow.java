@@ -347,9 +347,19 @@ public final class LanternaMainWindow
 
   private boolean handleKey(KeyStroke key) {
     if(content.titleScreen()) {
-      // Any key enters the program from the title screen.
+      // Any key enters the program from the title screen, and the menu keys do their
+      // job at once: F2 there starts a game instead of being swallowed.
       content.titleScreen(false);
-      return true;
+      switch(key.getKeyType()) {
+        case F2:
+        case F3:
+        case F8:
+        case F9:
+        case F10:
+          return handleTitleKey(key);
+        default:
+          return true;
+      }
     }
     Game game = gameSupplier.get();
     if(game == null) {
