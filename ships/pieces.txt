@@ -40,7 +40,7 @@ color=green
 ⛁
 [Cargo Gauge]
 key=B
-▬
+<
 
 ;; role markers: the game shows the one of the encounter
 [Role Trader]
