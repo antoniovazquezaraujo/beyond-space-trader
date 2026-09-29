@@ -162,7 +162,7 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
                 default: break;
               }
             } catch(NumberFormatException e) {
-              // un numero raro se ignora
+              // a strange number is ignored
             }
           }
         }
@@ -222,7 +222,7 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
       try {
         codePoints.add(Integer.parseInt(hex, 16));
       } catch(NumberFormatException e) {
-        // un token raro se ignora
+        // a strange token is ignored
       }
     }
   }

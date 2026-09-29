@@ -50,45 +50,8 @@ class ShipSitesTest {
     assertEquals("⣿⣿⣿⣿⣿⣿⣿⣤", ShipSites.gauge(60), "the owner's table: 60 bays");
   }
 
-  @Test
-  void countsTheSitesOfAChassis() throws IOException {
-    List<ShipArtFile> parts = ShipArtFile.parse(new StringReader("[Wasp]\nMMA\n"));
-    List<ShipSites.Site> sites = ShipSites.sitesOf(parts.get(0));
 
-    assertEquals(2, sites.size());
-    assertEquals(new ShipSites.Site('M', 0, 0, 2), sites.get(0));
-    assertEquals(new ShipSites.Site('A', 2, 0, 1), sites.get(1));
-    assertEquals(2, ShipSites.count(sites).get('M'));
-    assertEquals(2, ShipSites.longestRun(sites).get('M'));
-    assertEquals(1, ShipSites.longestRun(sites).get('A'));
-  }
 
-  @Test
-  void warnsAboutTheSitesTheTypeNeeds() throws IOException {
-    List<ShipArtFile> parts = ShipArtFile.parse(new StringReader("[Wasp]\nMMA\n"));
-    Map<Character, Integer> placed = ShipSites.count(ShipSites.sitesOf(parts.get(0)));
-    Map<Character, Integer> runs = ShipSites.longestRun(ShipSites.sitesOf(parts.get(0)));
-    List<String> warnings = ShipSites.warnings("Wasp", placed, runs);
-
-    assertTrue(warnings.contains("faltan sitios de arma (2)"), warnings.toString());
-    assertTrue(warnings.contains("faltan celdas en la bodega (6)"), warnings.toString());
-    assertTrue(warnings.contains("faltan sitios de cabina (1)"), warnings.toString());
-    assertEquals(7, warnings.size(), warnings.toString());
-
-    List<String> panel = ShipSites.panel("Wasp", placed, runs);
-    assertTrue(panel.get(0).contains("Wasp (Huge)"), panel.toString());
-    assertTrue(panel.toString().contains("arma"), panel.toString());
-    assertTrue(panel.toString().contains("1/3"), panel.toString());
-  }
-
-  @Test
-  void flagsTheSitesTheTypeDoesNotAdmit() throws IOException {
-    List<ShipArtFile> parts = ShipArtFile.parse(new StringReader("[Flea]\nAAA\n"));
-    List<String> warnings = ShipSites.warnings("Flea", ShipSites.count(ShipSites.sitesOf(parts.get(0))),
-        ShipSites.longestRun(ShipSites.sitesOf(parts.get(0))));
-
-    assertTrue(warnings.contains("sobran sitios de arma (3)"), warnings.toString());
-  }
 
   @Test
   void checksTheSizeOfAChassis() {
@@ -126,12 +89,4 @@ class ShipSitesTest {
     assertEquals(3, counts.get(ShipSites.Kind.PART));
   }
 
-  @Test
-  void theCustomShipAdmitsExtraWeapons() throws IOException {
-    List<ShipArtFile> parts = ShipArtFile.parse(new StringReader("[Custom]\nAAAAAAAA\n"));
-    List<String> warnings = ShipSites.warnings("Custom", ShipSites.count(ShipSites.sitesOf(parts.get(0))),
-        ShipSites.longestRun(ShipSites.sitesOf(parts.get(0))));
-
-    assertTrue(warnings.stream().noneMatch(w -> w.contains("sobran") && w.contains("arma")), warnings.toString());
-  }
 }

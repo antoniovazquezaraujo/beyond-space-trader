@@ -37,7 +37,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   private final List<ShipArtFile> pieces;
   private final Map<ShipSites.Kind, Integer> variants = new LinkedHashMap<>();
   private int designIndex;
-  /** La letra del elemento que se pone con espacio. */
+  /** The key of the element that space paints. */
   private char pen;
   private LetterGrid grid = new LetterGrid();
   private int cursorX = 2;
@@ -50,7 +50,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   private String shipsPath = ShipArtFile.resolve("ships.txt").toString();
 
   public ShipEditorView(List<ShipDesign> designs, List<ShipArtFile> hulls, List<ShipArtFile> pieces) {
-    super("editor de naves");
+    super("ship editor");
     this.designs = new ArrayList<>(designs);
     this.hulls = hulls;
     this.pieces = pieces;
@@ -66,7 +66,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     designIndex = Math.max(0, Math.min(index, designs.size() - 1));
     if(designs.isEmpty()) {
       grid = new LetterGrid();
-      message = "no hay naves: escribe [nombre] con type= y chasis= en ships.txt";
+      message = "no ships: write [name] with type= and chasis= in ships.txt";
       updateTitle();
       return;
     }
@@ -82,14 +82,14 @@ public final class ShipEditorView extends ArtEditorWindow {
   private void newDesign() {
     storeCurrent();
     ShipDesign design = design();
-    String name = "nueva";
+    String name = "new";
     int number = 2;
     while(nameTaken(name)) {
-      name = "nueva" + number++;
+      name = "new" + number++;
     }
     designs.add(new ShipDesign(name, "", design == null ? "" : design.chassis(), List.of()));
     loadDesign(designs.size() - 1);
-    message = "nave nueva " + name + ": pon el type con [y]";
+    message = "new ship " + name + ": pick its type with [y]";
     redraw();
   }
 
@@ -109,13 +109,13 @@ public final class ShipEditorView extends ArtEditorWindow {
     if(design == null || gui == null) {
       return;
     }
-    String typed = com.googlecode.lanterna.gui2.dialogs.TextInputDialog.showDialog(gui, "nombre de la nave",
-        "Escribe el nombre (sera el [nombre] de ships.txt):", design.name());
+    String typed = com.googlecode.lanterna.gui2.dialogs.TextInputDialog.showDialog(gui, "ship name",
+        "Name (it will be the [name] in ships.txt):", design.name());
     if(typed != null && !typed.isBlank()) {
       storeCurrent();
       designs.set(designIndex, new ShipDesign(typed.strip(), design.type(), design.chassis(), design.groups()));
       updateTitle();
-      message = "nave renombrada: " + typed.strip();
+      message = "renamed: " + typed.strip();
       redraw();
     }
   }
@@ -134,8 +134,8 @@ public final class ShipEditorView extends ArtEditorWindow {
   /** Says which ship is open, so TAB does not look like it does nothing. */
   private void announceShip() {
     ShipDesign design = design();
-    message = design == null ? "no hay naves en ships.txt"
-        : "nave " + (designIndex + 1) + "/" + designs.size() + ": " + design.name();
+    message = design == null ? "no ships in ships.txt"
+        : "ship " + (designIndex + 1) + "/" + designs.size() + ": " + design.name();
   }
 
   private void storeCurrent() {
@@ -191,31 +191,31 @@ public final class ShipEditorView extends ArtEditorWindow {
   private void cyclePen(int step) {
     List<Character> pens = pens();
     if(pens.isEmpty()) {
-      message = "no hay piezas con letra en pieces.txt";
+      message = "no pieces with a key in pieces.txt";
       return;
     }
     pen = pens.get((pens.indexOf(pen) + step + pens.size()) % pens.size());
-    message = "elemento: " + pen + " (" + ShipSites.kindName(ShipSites.kindOfLetter(pen, pieces)) + ")"
-        + (variantsOf(pen).size() > 1 ? " · [v] variantes" : "");
+    message = "element: " + pen + " (" + ShipSites.kindName(ShipSites.kindOfLetter(pen, pieces)) + ")"
+        + (variantsOf(pen).size() > 1 ? " · [v] variants" : "");
   }
 
-  /** Espacio: si la letra del pincel esta en la celda la quita, si no la pone, y avanza. */
+  /** Space: if the pen key is in the cell it erases it, if not it paints it, and the cursor moves right. */
   private void toggleCell() {
     if(pen == 0) {
-      message = "elige el elemento con , o .";
+      message = "pick the element with , or .";
       return;
     }
     char current = grid.at(cursorX, cursorY);
     if(Character.toUpperCase(current) == Character.toUpperCase(pen)) {
       grid.clear(cursorX, cursorY);
-      message = "quitado " + pen + " en x=" + cursorX + " y=" + cursorY;
+      message = "erased " + pen + " at x=" + cursorX + " y=" + cursorY;
     } else {
       if(!canPlace(pen)) {
         return;
       }
       grid.set(cursorX, cursorY, pen);
       ShipSites.Kind kind = ShipSites.kindOfLetter(pen, pieces);
-      message = "puesto " + pen + " (" + ShipSites.kindName(kind) + " " + countOfKind(kind) + "/" + maxOfKind(kind)
+      message = "painted " + pen + " (" + ShipSites.kindName(kind) + " " + countOfKind(kind) + "/" + maxOfKind(kind)
           + ")";
     }
     cursorX++;
@@ -245,7 +245,7 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   private void updateTitle() {
     ShipDesign design = design();
-    setTitle(design == null ? "editor de naves" : "naves: " + design.name() + " [" + design.type() + "]");
+    setTitle(design == null ? "ship editor" : "ships: " + design.name() + " [" + design.type() + "]");
   }
 
   @Override
@@ -302,7 +302,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     return true;
   }
 
-  /** Las letras son de vim (moverse) y el resto, comandos; espacio pone o quita. */
+  /** The letters are vim keys (move); the rest are commands, and space paints or erases. */
   private void character(char character) {
     switch(Character.toLowerCase(character)) {
       case 'h':
@@ -371,7 +371,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   private void cycleVariant() {
     ShipSites.Kind kind = ShipSites.kindOfLetter(pen, pieces);
     if(variantsOf(pen).size() <= 1) {
-      message = "la pieza " + ShipSites.kindName(kind) + " no tiene variantes";
+      message = "the " + ShipSites.kindName(kind) + " has no variants";
       return;
     }
     variants.merge(kind, 1, Integer::sum);
@@ -381,12 +381,12 @@ public final class ShipEditorView extends ArtEditorWindow {
   private boolean canPlace(char letter) {
     ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
     if(kind == ShipSites.Kind.PART) {
-      message = "aviso: ninguna pieza usa la letra " + letter;
+      message = "note: no piece uses the key " + letter;
       return true;
     }
     int max = maxOfKind(kind);
     if(max < 0) {
-      message = "⚠ elige el type de la nave con [y] para poder colocar sitios";
+      message = "⚠ pick the ship type with [y] before painting sites";
       return false;
     }
     char previous = grid.at(cursorX, cursorY);
@@ -399,7 +399,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     }
     ShipDesign design = design();
     if(count > max) {
-      message = "⚠ " + ShipSites.kindName(kind) + ": el " + design.type() + " admite " + max;
+      message = "⚠ " + ShipSites.kindName(kind) + ": the " + design.type() + " takes " + max;
       return false;
     }
     return true;
@@ -433,7 +433,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       }
     }
     listOpen = true;
-    message = types ? "elige el type de la nave" : "elige el chasis de la nave";
+    message = types ? "pick the ship type" : "pick the chassis";
   }
 
   private void pick() {
@@ -456,15 +456,15 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   private void save() {
     if(designs.isEmpty()) {
-      message = "no hay naves que guardar";
+      message = "no ships to save";
       return;
     }
     storeCurrent();
     try {
       ShipDesign.save(shipsPath, designs);
-      message = "guardado: " + shipsPath + " (" + designs.size() + " naves)";
+      message = "saved: " + shipsPath + " (" + designs.size() + " ships)";
     } catch(IOException e) {
-      message = "no se pudo guardar: " + e.getMessage();
+      message = "could not save: " + e.getMessage();
     }
   }
 
@@ -493,8 +493,8 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipArtFile hull = hull();
     if(hull == null) {
       ShipDesign design = design();
-      graphics.putString(1, 1, design == null ? "no hay naves en ships.txt"
-          : "no encuentro el chasis " + design.chassis() + " (con [h] eliges uno de chassis.txt)");
+      graphics.putString(1, 1, design == null ? "no ships in ships.txt"
+          : "cannot find the chassis " + design.chassis() + " (pick one from chassis.txt with [c])");
       graphics.putString(1, 2, EditorText.cut("hay: " + hullsLine(), canvas - 2));
     } else {
       paintHull(graphics, hull, 0, 0, half, rows, true);
@@ -587,7 +587,7 @@ public final class ShipEditorView extends ArtEditorWindow {
         if(row >= rows) {
           return;
         }
-        // el medidor de bodegas no usa el dibujo de la pieza: es braille, automatico
+        // the cargo gauge does not use the piece art: it is braille, automatic
         String glyph = ShipSites.kindOf(piece.name()) == ShipSites.Kind.CARGO ? ShipSites.gauge(capacity())
             : glyphOf(piece);
         graphics.putString(left + 2, row++, EditorText.cut("· " + piece.name() + "  " + glyph,
@@ -602,7 +602,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     int left = Math.max(1, (size.getColumns() - 24) / 2);
     int top = Math.max(0, (size.getRows() - items.size() - 2) / 2);
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
-    graphics.putString(left, top, typeList ? "type de la nave:" : "chasis de la nave:");
+    graphics.putString(left, top, typeList ? "ship type:" : "chassis:");
     for(int i = 0; i < items.size() && top + 1 + i < size.getRows() - 1; i++) {
       if(i == listIndex) {
         graphics.setForegroundColor(TextColor.ANSI.BLACK);
@@ -612,7 +612,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     }
-    graphics.putString(1, size.getRows() - 1, "[flechas] elegir · [ENTER] aceptar · [ESC] cancelar");
+    graphics.putString(1, size.getRows() - 1, "[arrows] choose · [ENTER] take · [ESC] cancel");
   }
 
   /** Draws a hull (with its colour zones), the letters on the left, the pieces on the right. */
@@ -667,7 +667,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       }
       return;
     }
-    // una pieza por letra: una fila de AAA son tres armas
+    // one piece per letter: a run of AAA is three weapons
     for(int i = 0; i < run.n(); i++) {
       ShipArtFile piece = pieceFor(run.letter());
       if(piece == null || x + i >= left + width) {
@@ -717,7 +717,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   }
 
   private String shipsLine() {
-    StringBuilder text = new StringBuilder("[TAB] nave:");
+    StringBuilder text = new StringBuilder("[TAB] ship:");
     for(int i = 0; i < designs.size(); i++) {
       text.append(i == designIndex ? " [" : " ").append(designs.get(i).name()).append(i == designIndex ? "]" : "");
     }
@@ -737,10 +737,10 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   private String keysLine() {
     ShipDesign design = design();
-    return "[flechas] o hjkl mover · espacio poner/quitar · [,/.] elemento " + (pen == 0 ? "-" : pen)
-        + " · [v] variante · [n] nueva · [r] renombrar · [c] chasis · [y] type"
+    return "[arrows] or hjkl move · space paint/erase · [,/.] element " + (pen == 0 ? "-" : pen)
+        + " · [v] variant · [n] new · [r] rename · [c] chassis · [y] type"
         + (design == null ? "" : " (" + design.chassis() + ")")
-        + " · [s] guardar · [TAB] nave · [ESC] salir";
+        + " · [s] save · [TAB] ship · [ESC] exit";
   }
 
   private static TextColor color(String name) {

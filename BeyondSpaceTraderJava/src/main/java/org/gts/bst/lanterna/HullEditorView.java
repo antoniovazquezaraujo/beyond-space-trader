@@ -46,7 +46,7 @@ public final class HullEditorView extends ArtEditorWindow {
   private String hullsPath = ShipArtFile.resolve("chassis.txt").toString();
 
   public HullEditorView(List<ShipArtFile> hulls) {
-    super("editor de fuselajes");
+    super("hull editor");
     this.hulls = new ArrayList<>(hulls);
     loadHull(0);
   }
@@ -64,7 +64,7 @@ public final class HullEditorView extends ArtEditorWindow {
     if(hulls.isEmpty()) {
       grid = new LetterGrid();
       letters = new ArrayList<>();
-      message = "no hay fuselajes en chassis.txt";
+      message = "no hulls in chassis.txt";
       updateTitle();
       return;
     }
@@ -82,7 +82,7 @@ public final class HullEditorView extends ArtEditorWindow {
       return;
     }
     loadHull((hullIndex + step + hulls.size()) % hulls.size());
-    message = "chasis " + hulls.get(hullIndex).name();
+    message = "hull " + hulls.get(hullIndex).name();
     redraw();
   }
 
@@ -109,7 +109,7 @@ public final class HullEditorView extends ArtEditorWindow {
 
   private void updateTitle() {
     ShipArtFile hull = hull();
-    setTitle(hull == null ? "editor de fuselajes" : "fuselajes: " + hull.name());
+    setTitle(hull == null ? "hull editor" : "hulls: " + hull.name());
   }
 
   @Override
@@ -160,15 +160,15 @@ public final class HullEditorView extends ArtEditorWindow {
     return true;
   }
 
-  /** Espacio: si la letra del pincel esta en la celda la quita, si no la pone, y avanza. */
+  /** Space: if the pen key is in the cell it erases it, if not it paints it, and the cursor moves right. */
   private void toggleCell() {
     char pen = currentLetter().letter();
     if(grid.at(cursorX, cursorY) == pen) {
       grid.clear(cursorX, cursorY);
-      message = "quitado " + pen + " en x=" + cursorX + " y=" + cursorY;
+      message = "erased " + pen + " at x=" + cursorX + " y=" + cursorY;
     } else {
       grid.set(cursorX, cursorY, pen);
-      message = "puesto " + pen + " en x=" + cursorX + " y=" + cursorY;
+      message = "painted " + pen + " at x=" + cursorX + " y=" + cursorY;
     }
     cursorX++;
     redraw();
@@ -193,18 +193,18 @@ public final class HullEditorView extends ArtEditorWindow {
         break;
       case ',':
         letterIndex = letters.isEmpty() ? 0 : (letterIndex + letters.size() - 1) % letters.size();
-        message = "elemento: " + currentLetter().letter();
+        message = "element: " + currentLetter().letter();
         break;
       case '.':
         letterIndex = letters.isEmpty() ? 0 : (letterIndex + 1) % letters.size();
-        message = "elemento: " + currentLetter().letter();
+        message = "element: " + currentLetter().letter();
         break;
       case '+':
         addLetter();
         break;
       case 'e':
         nameLetter = true;
-        message = "teclea la letra para la combinacion " + currentLetter().color();
+        message = "type the letter for the combination " + currentLetter().color();
         break;
       case 'c':
         styleColor();
@@ -231,7 +231,7 @@ public final class HullEditorView extends ArtEditorWindow {
     ShipArtFile.ColorLetter letter = currentLetter();
     letters.set(letterIndex, new ShipArtFile.ColorLetter(letter.letter(), letter.color(), letter.bgColor(),
         !letter.blink()));
-    message = "parpadeo " + (!letter.blink() ? "si" : "no") + " para " + letter.letter();
+    message = "blink " + (!letter.blink() ? "on" : "off") + " for " + letter.letter();
   }
 
   private void styleSize() {
@@ -243,7 +243,7 @@ public final class HullEditorView extends ArtEditorWindow {
       }
     }
     hullSize = SIZES[(index + 1) % SIZES.length];
-    message = "tamano: " + (hullSize.isEmpty() ? "(sin declarar)" : hullSize);
+    message = "size: " + (hullSize.isEmpty() ? "(not set)" : hullSize);
   }
 
   private void addLetter() {
@@ -253,7 +253,7 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     letters.add(new ShipArtFile.ColorLetter(letter, COLORS[0], "", false));
     letterIndex = letters.size() - 1;
-    message = "letra " + letter + " anyadida (c color, b fondo, k parpadeo)";
+    message = "letter " + letter + " added (c colour, b background, p blink)";
   }
 
   private boolean used(char letter) {
@@ -295,9 +295,9 @@ public final class HullEditorView extends ArtEditorWindow {
     storeCurrent();
     try {
       HullFile.save(hullsPath, hulls);
-      message = "guardado: " + hullsPath;
+      message = "saved: " + hullsPath;
     } catch(IOException e) {
-      message = "no se pudo guardar: " + e.getMessage();
+      message = "could not save: " + e.getMessage();
     }
   }
 
@@ -316,7 +316,7 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     ShipArtFile hull = hull();
     if(hull == null) {
-      graphics.putString(1, 1, "no hay fuselajes en chassis.txt");
+      graphics.putString(1, 1, "no hulls in chassis.txt");
     } else {
       paintHull(graphics, hull, 0, 0, half, rows, true);
       paintHull(graphics, hull, half + 1, 0, size.getColumns() - half - 1, rows, false);
@@ -390,7 +390,7 @@ public final class HullEditorView extends ArtEditorWindow {
   }
 
   private String hullsLine() {
-    StringBuilder text = new StringBuilder("[,/.] chasis:");
+    StringBuilder text = new StringBuilder("[TAB] hull:");
     for(int i = 0; i < hulls.size(); i++) {
       text.append(i == hullIndex ? " [" : " ").append(hulls.get(i).name())
           .append(i == hullIndex ? "]" : "");
@@ -399,7 +399,7 @@ public final class HullEditorView extends ArtEditorWindow {
   }
 
   private String lettersLine() {
-    StringBuilder text = new StringBuilder("letras:");
+    StringBuilder text = new StringBuilder("letters:");
     for(int i = 0; i < letters.size(); i++) {
       ShipArtFile.ColorLetter letter = letters.get(i);
       text.append(i == letterIndex ? " [" : " ").append(letter.letter()).append('=').append(letter.color());
@@ -418,8 +418,8 @@ public final class HullEditorView extends ArtEditorWindow {
   }
 
   private String keysLine() {
-    return "[ENTER] pintar · espacio borrar · [n/p] letra · [+] anyadir · [e] renombrar · [c] color · [b] fondo"
-        + " · [p] parpadeo · [z] tamano · [s] guardar · [TAB] chasis · [ESC] salir"
+    return "[arrows] or hjkl move · space paint/erase · [,/.] element · [+] add · [e] rename · [c] colour"
+        + " · [b] background · [p] blink · [z] size · [s] save · [TAB] hull · [ESC] exit"
         + (nameLetter ? "   ||   teclea la letra deseada" : message.isEmpty() ? "" : "   ||   " + message);
   }
 

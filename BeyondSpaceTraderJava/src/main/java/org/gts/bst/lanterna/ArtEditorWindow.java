@@ -32,8 +32,8 @@ abstract class ArtEditorWindow extends BasicWindow {
     setHints(Set.of(Window.Hint.FULL_SCREEN));
     setComponent(canvas);
     setFocusedInteractable(canvas);
-    // Red de seguridad: si el gestor de ventanas se come una tecla (TAB cambia el
-    // foco), la recogemos aqui y se la pasamos al editor.
+    // Safety net: if the window manager swallows a key (TAB changes the focus),
+    // we catch it here and pass it to the editor.
     addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
       @Override
       public void onUnhandledInput(com.googlecode.lanterna.gui2.Window window, KeyStroke key,

@@ -47,7 +47,7 @@ class ShipEditorViewTest {
       assertTrue(screenText(screen).contains("prueba"), screenText(screen));
       assertTrue(screenText(screen).contains("Engine"), "the tree of pieces: " + screenText(screen));
 
-      // el pincel empieza en la letra del primer elemento (M, el motor): espacio pone
+      // the pen starts on the first key of the tree (M, the engine): space paints
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("M: Engine"), "the tree of sites: " + screenText(screen));
@@ -61,12 +61,12 @@ class ShipEditorViewTest {
       assertEquals(1, saved.get(0).groups().size());
       assertEquals(new ShipDesign.LetterGroup('M', 2, 2, 1), saved.get(0).groups().get(0));
 
-      // otra vez en la celda de al lado: se pasa del cupo y no la pone
+      // one cell further: it would go over the quota, so it is not painted
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("admite 1"), "the quota: " + screenText(screen));
+      assertTrue(screenText(screen).contains("takes 1"), "the quota: " + screenText(screen));
 
-      // y sobre la M puesta, espacio la quita
+      // and on the M already there, space erases it
       view.handleKey(new KeyStroke(KeyType.ArrowLeft));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
@@ -93,17 +93,17 @@ class ShipEditorViewTest {
       view.shipsPath(file.toString());
       gui.addWindow(view);
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("no encuentro el chasis"), screenText(screen));
+      assertTrue(screenText(screen).contains("cannot find the chassis"), screenText(screen));
 
       view.handleKey(new KeyStroke('c', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("chasis de la nave:"), screenText(screen));
+      assertTrue(screenText(screen).contains("chassis:"), screenText(screen));
       assertTrue(screenText(screen).contains("uno"), screenText(screen));
       view.handleKey(new KeyStroke(KeyType.Enter));
 
       view.handleKey(new KeyStroke('y', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("type de la nave:"), screenText(screen));
+      assertTrue(screenText(screen).contains("ship type:"), screenText(screen));
       view.handleKey(new KeyStroke(KeyType.ArrowDown));
       view.handleKey(new KeyStroke(KeyType.ArrowDown));
       view.handleKey(new KeyStroke(KeyType.Enter));
@@ -142,7 +142,7 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke(KeyType.ArrowRight));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("admite 1"), "the warning: " + screenText(screen));
+      assertTrue(screenText(screen).contains("takes 1"), "the warning: " + screenText(screen));
       assertTrue(screenText(screen).contains("A: Weapon  1/1"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
@@ -168,7 +168,7 @@ class ShipEditorViewTest {
       gui.updateScreen();
       noType.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("elige el type"), screenText(screen));
+      assertTrue(screenText(screen).contains("pick the ship type"), screenText(screen));
       noType.handleKey(new KeyStroke(KeyType.Escape));
 
       // con type=Wasp (Huge) caben tres motores y el cuarto no
@@ -187,7 +187,7 @@ class ShipEditorViewTest {
 
       wasp.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("admite 3"), screenText(screen));
+      assertTrue(screenText(screen).contains("takes 3"), screenText(screen));
       assertTrue(screenText(screen).contains("M: Engine  3/3"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
@@ -211,14 +211,14 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
 
-      // dos armas seguidas: la vista dibuja una pieza en cada letra
-      // el espacio ya avanza a la derecha: las dos quedan seguidas
+      // two weapons in a row: the preview draws a piece at every letter
+      // the space moves right, so the two letters end up together
       view.handleKey(new KeyStroke(' ', false, false));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("LL"), "one piece per letter: " + screenText(screen));
 
-      // v cambia la variante que se ve
+      // v cycles the variant shown
       view.handleKey(new KeyStroke('v', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("preview: Beam Laser"), screenText(screen));
@@ -250,12 +250,12 @@ class ShipEditorViewTest {
 
       view.handleKey(new KeyStroke('n', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("nueva"), "the new ship: " + screenText(screen));
+      assertTrue(screenText(screen).contains("new"), "the new ship: " + screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
       assertEquals(2, saved.size());
-      assertEquals("nueva", saved.get(1).name());
+      assertEquals("new", saved.get(1).name());
       assertEquals("uno", saved.get(1).chassis(), "the new ship starts with the same chassis");
     } finally {
       screen.stopScreen();

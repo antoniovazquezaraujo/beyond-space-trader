@@ -71,13 +71,13 @@ public final class ShipComposer {
   private static int chooseMode(MultiWindowTextGUI gui) {
     com.googlecode.lanterna.gui2.ActionListBox menu = new com.googlecode.lanterna.gui2.ActionListBox();
     com.googlecode.lanterna.gui2.BasicWindow window = new com.googlecode.lanterna.gui2.BasicWindow(
-        "compositor de naves");
+        "ship composer");
     final int[] chosen = {-1};
-    menu.addItem("Naves: disenar las naves (letras y piezas)", () -> {
+    menu.addItem("Ships: design the ships (keys and pieces)", () -> {
       chosen[0] = 0;
       window.close();
     });
-    menu.addItem("Fuselajes: colorear los cascos", () -> {
+    menu.addItem("Hulls: paint the hulls' colours", () -> {
       chosen[0] = 1;
       window.close();
     });

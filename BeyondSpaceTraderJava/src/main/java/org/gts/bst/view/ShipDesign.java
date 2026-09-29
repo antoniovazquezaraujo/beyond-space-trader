@@ -102,7 +102,7 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
             break;
         }
       } catch(NumberFormatException e) {
-        // un numero raro se ignora
+        // a strange number is ignored
       }
     }
     return new LetterGroup(letter, x, y, n);
