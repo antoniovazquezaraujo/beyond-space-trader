@@ -8,6 +8,7 @@
  */
 package org.gts.bst.view;
 
+import com.googlecode.lanterna.TextCharacter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -22,9 +23,14 @@ import java.util.List;
  * One definition of a ship part (a chassis or a piece) read from a text file:
  * a name, a colour name and the drawing, copied literally line by line, blank
  * rows included. A space is empty and everything else (dots and unicode
- * included) is part of the art.
+ * included) is part of the art. Rows are read as code points, so glyphs outside
+ * the basic plane (a domino tile, an emoji) work; a glyph that the terminal
+ * paints two columns wide takes two cells (the second one is reserved).
  */
-public record ShipArtFile(String name, String color, List<String> lines, boolean blink, String bgColor) {
+public record ShipArtFile(String name, String color, List<int[]> cells, boolean blink, String bgColor) {
+  /** The second cell of a glyph the terminal paints two columns wide. */
+  public static final int CONTINUATION = -1;
+
   /** Loads the parts of a file, looking for it in the usual places. */
   public static List<ShipArtFile> load(String fileName) throws IOException {
     File file = resolve(fileName).toFile();
@@ -56,9 +62,19 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
     return java.nio.file.Path.of(candidates[0]);
   }
 
-  /** Parses the parts of a reader: sections, optional colours and art lines. */
+  /** A part as read, before the glyph widths are applied. */
+  private record RawPart(String name, String color, List<String> lines, boolean blink, String bgColor) {
+  }
+
+  /**
+   * Parses the parts of a reader: sections, optional colours and art lines.
+   * The keys wide= and narrow= list code points that the terminal paints wider
+   * or narrower than the tables say (hex, separated by spaces or commas).
+   */
   public static List<ShipArtFile> parse(Reader reader) throws IOException {
-    List<ShipArtFile> parts = new ArrayList<>();
+    List<RawPart> raw = new ArrayList<>();
+    java.util.Set<Integer> wide = new java.util.HashSet<>();
+    java.util.Set<Integer> narrow = new java.util.HashSet<>();
     String name = null;
     String color = "white";
     boolean blink = false;
@@ -76,9 +92,16 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
         }
         continue;
       }
+      if(trimmed.startsWith("wide=")) {
+        addCodePoints(wide, trimmed.substring("wide=".length()));
+        continue;
+      } else if(trimmed.startsWith("narrow=")) {
+        addCodePoints(narrow, trimmed.substring("narrow=".length()));
+        continue;
+      }
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
         if(name != null) {
-          parts.add(new ShipArtFile(name, color, List.copyOf(lines), blink, bgColor));
+          raw.add(new RawPart(name, color, List.copyOf(lines), blink, bgColor));
         }
         name = trimmed.substring(1, trimmed.length() - 1).strip();
         color = "white";
@@ -98,25 +121,69 @@ public record ShipArtFile(String name, String color, List<String> lines, boolean
       }
     }
     if(name != null) {
-      parts.add(new ShipArtFile(name, color, List.copyOf(lines), blink, bgColor));
+      raw.add(new RawPart(name, color, List.copyOf(lines), blink, bgColor));
+    }
+    List<ShipArtFile> parts = new ArrayList<>();
+    for(RawPart part : raw) {
+      parts.add(new ShipArtFile(part.name(), part.color(), toCells(part.lines(), wide, narrow), part.blink(),
+          part.bgColor()));
     }
     return parts;
   }
 
+  /** Reads a list of code points: "21A0 21C9" or "U+21A0, U+21C9". */
+  private static void addCodePoints(java.util.Set<Integer> codePoints, String text) {
+    for(String token : text.strip().split("[\\s,]+")) {
+      String hex = token.startsWith("U+") || token.startsWith("u+") ? token.substring(2) : token;
+      try {
+        codePoints.add(Integer.parseInt(hex, 16));
+      } catch(NumberFormatException e) {
+        // un token raro se ignora
+      }
+    }
+  }
+
+  /** Turns the text of the drawing into cells: one per column, wide glyphs included. */
+  private static List<int[]> toCells(List<String> lines, java.util.Set<Integer> wide, java.util.Set<Integer> narrow) {
+    List<int[]> cells = new ArrayList<>();
+    for(String line : lines) {
+      List<Integer> row = new ArrayList<>();
+      for(int i = 0; i < line.length(); ) {
+        int codePoint = line.codePointAt(i);
+        i += Character.charCount(codePoint);
+        row.add(codePoint);
+        if((isWide(codePoint) || wide.contains(codePoint)) && !narrow.contains(codePoint)) {
+          row.add(CONTINUATION); // la segunda columna que ocupa el glifo
+        }
+      }
+      cells.add(row.stream().mapToInt(Integer::intValue).toArray());
+    }
+    return List.copyOf(cells);
+  }
+
+  /** True when the terminal paints the glyph two columns wide (emoji, CJK, dominoes). */
+  public static boolean isWide(int codePoint) {
+    if(codePoint < 0x1100) {
+      return false; // below Hangul Jamo everything is narrow: fast path
+    }
+    return TextCharacter.fromString(new String(Character.toChars(codePoint)))[0].isDoubleWidth();
+  }
+
   public int width() {
     int width = 0;
-    for(String line : lines) {
-      width = Math.max(width, line.length());
+    for(int[] row : cells) {
+      width = Math.max(width, row.length);
     }
     return width;
   }
 
   public int height() {
-    return lines.size();
+    return cells.size();
   }
 
-  public char at(int row, int column) {
-    String line = lines.get(row);
-    return column < line.length() ? line.charAt(column) : ' ';
+  /** The code point of a cell, or CONTINUATION when a wide glyph covers it. */
+  public int at(int row, int column) {
+    int[] cellsOfRow = cells.get(row);
+    return column < cellsOfRow.length ? cellsOfRow[column] : ' ';
   }
 }

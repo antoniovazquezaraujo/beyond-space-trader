@@ -9,6 +9,7 @@
 package org.gts.bst.lanterna;
 
 import com.googlecode.lanterna.TerminalPosition;
+import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.AbstractInteractableComponent;
@@ -43,6 +44,9 @@ public final class ShipComposerView extends BasicWindow {
   private int cursorY = 2;
   private String pendingColor;
   private boolean showPending = true;
+  private boolean showGlyphStrip;
+  /** Sample glyphs to check in the terminal: wide ones leave a hole after the marker. */
+  private static final String GLYPH_SAMPLE = "🁣 🁩 🂓 ┃ ⚀ ⚅ ┃ ⣿ ⠿ ┃ ⧯ ⎅ ⏌ ⎚ ⛁ ┃ ↠ ⇉ ⦖ ⧎ ◒ ◈ ⍉ ⏚ ┃ 😀 中 ┃ ┌─┐";
   private boolean blinkOn = true;
   private String message = "";
 
@@ -125,6 +129,8 @@ public final class ShipComposerView extends BasicWindow {
       assembly = ShipAssembly.empty(assembly.chassis());
     } else if(character == 'h') {
       showPending = !showPending;
+    } else if(character == 'g') {
+      showGlyphStrip = !showGlyphStrip;
     } else if(character == 'u') {
       assembly = assembly.withoutLast();
     } else if(character == 's') {
@@ -256,7 +262,7 @@ public final class ShipComposerView extends BasicWindow {
         width = Math.max(width, cursorX + pieces.get(pieceIndex).width() + 2);
         height = Math.max(height, cursorY + pieces.get(pieceIndex).height() + 2);
       }
-      char[][] cells = new char[height][width];
+      int[][] cells = new int[height][width];
       TextColor[][] colors = new TextColor[height][width];
       for(int row = 0; row < height; row++) {
         for(int column = 0; column < width; column++) {
@@ -284,27 +290,38 @@ public final class ShipComposerView extends BasicWindow {
       int top = Math.max(0, (size.getRows() - height - 2) / 2);
       for(int row = 0; row < height && top + row < size.getRows() - 2; row++) {
         for(int column = 0; column < width && left + column < size.getColumns(); column++) {
-          if(cells[row][column] != ' ') {
-            graphics.setForegroundColor(colors[row][column]);
-            graphics.setCharacter(left + column, top + row, cells[row][column]);
+          if(cells[row][column] != ' ' && cells[row][column] != ShipArtFile.CONTINUATION) {
+            drawGlyph(graphics, left + column, top + row, cells[row][column], colors[row][column]);
           }
         }
       }
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
-      String pieceName = pieces.isEmpty() ? "-" : pieces.get(pieceIndex).name();
-      graphics.putString(1, size.getRows() - 2, hull.name() + " [" + hull.color() + "]  ·  pieza: " + pieceName
-          + " (" + (pieces.isEmpty() ? 0 : pieceIndex + 1) + "/" + pieces.size() + ") x=" + cursorX + " y=" + cursorY
-          + " [" + pendingColor + "]  ·  " + assembly.pieces().size() + " colocadas");
+      if(showGlyphStrip) {
+        graphics.putString(1, size.getRows() - 2, cut("glifos: " + GLYPH_SAMPLE
+            + "   (cada ┃: pegado al glifo = ocupa 2 columnas; con hueco = 1 columna)", size.getColumns() - 2));
+      } else {
+        String pieceName = pieces.isEmpty() ? "-" : pieces.get(pieceIndex).name();
+        graphics.putString(1, size.getRows() - 2, hull.name() + " [" + hull.color() + "]  ·  pieza: " + pieceName
+            + " (" + (pieces.isEmpty() ? 0 : pieceIndex + 1) + "/" + pieces.size() + ") x=" + cursorX + " y=" + cursorY
+            + " [" + pendingColor + "]  ·  " + assembly.pieces().size() + " colocadas");
+      }
       graphics.putString(1, size.getRows() - 1, "[h] pieza " + (showPending ? "(si)" : "(no)") + " · [x] vaciar"
           + " · [flechas] mover · [ENTER] colocar · [n/p] pieza · [TAB] chasis · [c] color · [u] deshacer"
-          + " · [s] guardar · [l] cargar · [r] recargar · [ESC] salir"
+          + " · [g] glifos · [s] guardar · [l] cargar · [r] recargar · [ESC] salir"
           + (message.isEmpty() ? "" : "   ||   " + message));
     }
 
-    private void overlay(char[][] cells, TextColor[][] colors, ShipArtFile part, int x, int y, String colorName) {
+    /** Draws one glyph (a code point) in its colour; the terminal decides how wide it is. */
+    private static void drawGlyph(TextGUIGraphics graphics, int column, int row, int codePoint, TextColor color) {
+      TextCharacter glyph = TextCharacter.fromString(new String(Character.toChars(codePoint)), color,
+          TextColor.ANSI.BLACK)[0];
+      graphics.setCharacter(column, row, glyph);
+    }
+
+    private void overlay(int[][] cells, TextColor[][] colors, ShipArtFile part, int x, int y, String colorName) {
       for(int row = 0; row < part.height(); row++) {
         for(int column = 0; column < part.width(); column++) {
-          char character = part.at(row, column);
+          int character = part.at(row, column);
           if(character != ' ' && y + row >= 0 && y + row < cells.length && x + column >= 0
               && x + column < cells[0].length) {
             cells[y + row][x + column] = character;
@@ -313,6 +330,22 @@ public final class ShipComposerView extends BasicWindow {
         }
       }
     }
+  }
+
+  /** Trims a text to a number of cells, without breaking a glyph in half. */
+  private static String cut(String text, int cells) {
+    StringBuilder cut = new StringBuilder();
+    int width = 0;
+    for(int i = 0; i < text.length() && width < cells; ) {
+      int codePoint = text.codePointAt(i);
+      i += Character.charCount(codePoint);
+      width += ShipArtFile.isWide(codePoint) ? 2 : 1;
+      if(width > cells) {
+        break;
+      }
+      cut.appendCodePoint(codePoint);
+    }
+    return cut.toString();
   }
 
   private ShipArtFile findPiece(String name) {

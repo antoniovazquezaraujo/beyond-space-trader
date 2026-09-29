@@ -9,6 +9,7 @@
 package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -67,12 +68,60 @@ class ShipComposerViewTest {
     }
   }
 
+  @Test
+  void drawsGlyphsOutsideTheBasicPlane() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\n🁣x\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[total]\ncolor=red\n##\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 12)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      gui.addWindow(new ShipComposerView(chassis, pieces, null));
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains("🁣"), "the domino tile is drawn");
+      assertTrue(ShipArtFile.isWide(0x1F063), "Lanterna paints the domino in two columns");
+      assertFalse(ShipArtFile.isWide('x'), "a letter is one column");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void showsTheGlyphStrip() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\n##\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[total]\ncolor=red\n##\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(120, 12)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKey(new KeyStroke('g', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("glifos:"), screenText(screen));
+      assertTrue(screenText(screen).contains("🁣"), "the strip shows the domino tile");
+
+      view.handleKey(new KeyStroke('g', false, false));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains("glifos:"), "g hides the strip again");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
       StringBuilder line = new StringBuilder();
       for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
-        line.append(screen.getBackCharacter(column, row).getCharacter());
+        line.append(screen.getBackCharacter(column, row).getCharacterString());
       }
       text.append(line.toString().stripTrailing()).append('\n');
     }

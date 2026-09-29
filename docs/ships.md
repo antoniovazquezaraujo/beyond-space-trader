@@ -45,6 +45,239 @@ blink=true                   ← optional; only true or false (false by default)
   alternates between `color` and `bgcolor` (black when there is no `bgcolor`):
   the piece never disappears. `bgcolor` alone does nothing.
 
+## Glyphs
+
+The files are read as Unicode **code points**, so any glyph works, including the
+ones outside the basic plane (the domino tiles 🁣 🂓, for example).
+
+A glyph that the terminal paints **two columns wide** (emoji, CJK and, according
+to Lanterna's table, the domino tiles) **takes two cells**: the composer keeps
+the second one reserved for it, so the rows stay aligned. Everything else takes
+one cell. Braille and the dice faces ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ are single width.
+
+### The palette (safe glyphs, copy from here)
+
+These are the glyphs that any normal monospace setup can draw: each one is
+present in at least 13 of the 20 monospace font families of the development
+machine, so no fallback to a proportional font is needed. Everything else — the
+technical signs, the exotic arrows, the dingbats, the dominoes — depends on the
+fonts and the fallback of the reader's terminal.
+
+Every glyph in the palette is **one cell wide**: none of them has the East Asian
+Wide/Fullwidth property, so the engine never has to reserve a second cell. Two
+caveats: many of them are *ambiguous* (one cell in a Western locale, two in a
+terminal configured for East Asian languages), and some have an **emoji twin**.
+Per the Unicode emoji data, the only palette glyph with *emoji presentation* is
+⚡ (the terminal paints it as a colour emoji, two columns), so it is **out**; the
+others (☀ ☁ ☂ ☎ ♠ ♥ ♦ ♣ ♀ ♂ ⚒ ⚔ ⚖ ⚗ ⚛ ☢ ☣ ⚙ © ® ™ ↔ ↕ ↖ ↗ ↘ ↙ ▪ ▫) are emoji
+too but with *text* presentation, which is what terminals draw by default. If one
+of them is substituted, the composer's strip (`g`) shows it.
+
+**Letters, digits and accents**
+
+```
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+0 1 2 3 4 5 6 7 8 9
+á é í ó ú ü ñ Á É Í Ó Ú Ü Ñ ç Ç à è ì ò ù â ê î ô û ä ë ï ö ¿ ¡ ª º ¹ ² ³ ½ ¼ ¾ µ
+α β γ δ ε θ λ μ π σ φ ω Α Β Γ Δ Θ Λ Π Σ Φ Ω ϟ
+```
+
+**Punctuation and signs**
+
+```
+! " # $ % & ' ( ) * + , - . / : ; < = > ? @ [ \ ] ^ _ ` { | } ~
+€ ¢ £ ¥ · • … – — † ‡ ° § ¶ ¤ ¦ © ® ™
+```
+
+**Arrows**
+
+```
+←↑→↓↔↕↖↗↘↙⇐⇑⇒⇓ ⇔ ⇦ ⇧ ⇨ ⇩ ↠ ↣ ⇉ ⇝ ⇶ ⇻
+```
+
+**Maths**
+
+```
+± × ÷ ≈ ≠ ≤ ≥ ∞ √ ∑ ∏ ∫ ∂ ∆ ∇ ⌐ ∠ ∘ ¬ ⊕ ⊗ ⊙ ⊛
+```
+
+**Box drawing**
+
+```
+─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╔ ╗ ╚ ╝ ╠ ╣ ╦ ╩ ╬
+━ ┃ ┏ ┓ ┗ ┛ ┣ ┫ ┳ ┻ ╋ ┄ ┅ ┆ ┇ ┈ ┉ ┊ ┋ ╌ ╍ ╎ ╏ ╴ ╵ ╶ ╷
+```
+
+**Blocks and shades**
+
+```
+░ ▒ ▓ █ ▉ ▊ ▋ ▌ ▍ ▎ ▏ ▁ ▂ ▃ ▄ ▅ ▆ ▇ ▀ ▬ ▭
+```
+
+**Shapes**
+
+```
+■ □ ▪ ▫ ▲ ▼ ► ◄ ◆ ◇ ○ ● ◎ ◉ ◍ ◘ ◙ ◢ ◣ ◤ ◥
+```
+
+**Symbols**
+
+```
+★ ☆ ✦ ✧ ☀ ☁ ☂ ☎ ☏ ☼ ☽ ☾ ♠ ♥ ♦ ♣ ♤ ♡ ♢ ♧ ♪ ♫ ♬ ♭ ♯ ♩ ♀ ♂
+✓ ✗ ⌂ ⚐ ⚑ ⚒ ⚔ ⚖ ⚗ ⚛ ☢ ☣ ⚙ ⌘ ⍟ ⌾ ⌁ ⌸ ⍉ ↯ ☇
+```
+
+**Dice**
+
+```
+⚀ ⚁ ⚂ ⚃ ⚄ ⚅
+```
+
+**Braille** (the whole block U+2800–U+28FF, grouped by number of dots; U+2800 is
+the blank one)
+
+```
+1 dot : ⠁⠂⠄⠈⠐⠠⡀⢀
+2 dots: ⠃⠅⠆⠉⠊⠌⠑⠒⠔⠘⠡⠢⠤⠨⠰⡁⡂⡄⡈⡐⡠⢁⢂⢄⢈⢐⢠⣀
+3 dots: ⠇⠋⠍⠎⠓⠕⠖⠙⠚⠜⠣⠥⠦⠩⠪⠬⠱⠲⠴⠸⡃⡅⡆⡉⡊⡌⡑⡒⡔⡘⡡⡢⡤⡨⡰⢃⢅⢆⢉⢊⢌⢑⢒⢔⢘⢡⢢⢤⢨⢰⣁⣂⣄⣈⣐⣠
+4 dots: ⠏⠗⠛⠝⠞⠧⠫⠭⠮⠳⠵⠶⠹⠺⠼⡇⡋⡍⡎⡓⡕⡖⡙⡚⡜⡣⡥⡦⡩⡪⡬⡱⡲⡴⡸⢇⢋⢍⢎⢓⢕⢖⢙⢚⢜⢣⢥⢦⢩⢪⢬⢱⢲⢴⢸⣃⣅⣆⣉⣊⣌⣑⣒⣔⣘⣡⣢⣤⣨⣰
+5 dots: ⠟⠯⠷⠻⠽⠾⡏⡗⡛⡝⡞⡧⡫⡭⡮⡳⡵⡶⡹⡺⡼⢏⢗⢛⢝⢞⢧⢫⢭⢮⢳⢵⢶⢹⢺⢼⣇⣋⣍⣎⣓⣕⣖⣙⣚⣜⣣⣥⣦⣩⣪⣬⣱⣲⣴⣸
+6 dots: ⠿⡟⡯⡷⡻⡽⡾⢟⢯⢷⢻⢽⢾⣏⣗⣛⣝⣞⣧⣫⣭⣮⣳⣵⣶⣹⣺⣼
+7 dots: ⡿⢿⣟⣯⣷⣻⣽⣾
+8 dots: ⣿
+```
+
+**Out of the palette** — they are drawn on this machine thanks to fallback fonts,
+but a reader without those fonts would see boxes: the technical signs the piece
+files use now (`⧯ ⎅ ⏚ ⏌ ⎚ ⛁ ⧎ ⦖ ⦔ ⦈ ⍡`) and the domino tiles (`🁣…🂓`).
+
+### Extended palette (what the common monospace fonts carry)
+
+The list above is the bullet-proof core. This one is much bigger: it is what
+**Noto Sans Mono**, the primary font of the development machine, draws by
+itself — so there is no fallback and, being a monospace font, every glyph is
+**one cell wide by construction**. A machine without that font will reach them
+through the terminal's fallback (usually another monospace font, which keeps the
+cell); it is worth a look with the strip (`g`) on the target machines.
+
+**Punctuation**
+
+```
+                      ​ ‌ ‍ ‎ ‏ ‐ ‑ ‒ – — ― ‖ ‗ ‘ ’ ‚ ‛ “ ” „ ‟ † ‡ • ‣ ․ ‥ … ‧     ‪ ‫
+‬ ‭ ‮   ‰ ‱ ′ ″ ‴ ‵ ‶ ‷ ‸ ‹ › ※ ‼ ‽ ‾ ‿ ⁀ ⁁ ⁂ ⁃ ⁄ ⁅ ⁆ ⁇ ⁈ ⁉ ⁊ ⁋ ⁌ ⁍ ⁎ ⁏ ⁐ ⁑ ⁒ ⁓ ⁔ ⁕ ⁖ ⁗
+⁘ ⁙ ⁚ ⁛ ⁜ ⁝ ⁞   ⁠ ⁡ ⁢ ⁣ ⁤ ⁦ ⁧ ⁨ ⁩ ⁪ ⁫ ⁬ ⁭ ⁮ ⁯
+```
+
+**Spaces**
+
+```
+                     
+```
+
+**Superscripts**
+
+```
+⁰ ⁱ ⁴ ⁵ ⁶ ⁷ ⁸ ⁹ ⁺ ⁻ ⁼ ⁽ ⁾ ⁿ ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉ ₊ ₋ ₌ ₍ ₎ ₐ ₑ ₒ ₓ ₔ ₕ ₖ ₗ ₘ ₙ ₚ ₛ ₜ
+```
+
+**Currency**
+
+```
+₠ ₡ ₢ ₣ ₤ ₥ ₦ ₧ ₨ ₩ ₪ ₫ € ₭ ₮ ₯ ₰ ₱ ₲ ₳ ₴ ₵ ₶ ₷ ₸ ₹ ₺ ₻ ₼ ₽ ₾ ₿ ⃀
+```
+
+**Letterlike**
+
+```
+℀ ℁ ℂ ℃ ℄ ℅ ℆ ℇ ℈ ℉ ℊ ℋ ℌ ℍ ℎ ℏ ℐ ℑ ℒ ℓ ℔ ℕ № ℗ ℘ ℙ ℚ ℛ ℜ ℝ ℞ ℟ ℠ ℡ ™ ℣ ℤ ℥ Ω ℧ ℨ ℩ K Å
+ℬ ℭ ℮ ℯ ℰ ℱ Ⅎ ℳ ℴ ℵ ℶ ℷ ℸ ℹ ℺ ℻ ℼ ℽ ℾ ℿ ⅀ ⅁ ⅂ ⅃ ⅄ ⅅ ⅆ ⅇ ⅈ ⅉ ⅊ ⅋ ⅌ ⅍ ⅎ ⅏
+```
+
+**Numerals**
+
+```
+⅐ ⅑ ⅒ ⅓ ⅔ ⅕ ⅖ ⅗ ⅘ ⅙ ⅚ ⅛ ⅜ ⅝ ⅞ ⅟ Ↄ ↄ ↉
+```
+
+**Arrows**
+
+```
+← ↑ → ↓ ↔ ↕ ↜ ↝ ↞ ↠ ↢ ↣ ↤ ↦ ⇐ ⇑ ⇒ ⇓ ⇔ ⇚ ⇛ ⇦ ⇨
+```
+
+**Maths**
+
+```
+∀ ∁ ∂ ∃ ∄ ∅ ∆ ∇ ∈ ∉ ∊ ∋ ∌ ∍ ∎ ∐ − ∘ ∙ √ ∞ ∠ ∣ ∧ ∨ ∩ ∪ ∴ ∵ ∶ ∷ ∸ ∼ ∽ ≁ ≃ ≅ ≇ ≈ ≉ ≊ ≋ ≌ ≔
+≕ ≗ ≟ ≠ ≡ ≢ ≤ ≥ ≬ ≮ ≯ ≰ ≱ ≲ ≳ ≴ ≵ ≺ ≻ ⊂ ⊃ ⊄ ⊅ ⊆ ⊇ ⊈ ⊉ ⊎ ⊑ ⊒ ⊓ ⊔ ⊕ ⊖ ⊗ ⊘ ⊙ ⊚ ⊛ ⊜ ⊢ ⊣ ⊤ ⊥
+⊴ ⊵ ⊸ ⋂ ⋃ ⋄ ⋆ ⋈ ⋉ ⋊ ⋍ ⋎ ⋐ ⋑ ⋢ ⋣
+```
+
+**Technical**
+
+```
+⌈ ⌉ ⌊ ⌋ ⌐ ⌙ ⌠ ⌡ ⌶ ⌷ ⌸ ⌹ ⌺ ⌻ ⌼ ⌽ ⌾ ⌿ ⍀ ⍁ ⍂ ⍃ ⍄ ⍅ ⍆ ⍇ ⍈ ⍉ ⍊ ⍋ ⍌ ⍍ ⍎ ⍏ ⍐ ⍑ ⍒ ⍓ ⍔ ⍕ ⍖ ⍗ ⍘ ⍙
+⍚ ⍛ ⍜ ⍝ ⍞ ⍟ ⍠ ⍡ ⍢ ⍣ ⍤ ⍥ ⍦ ⍧ ⍨ ⍩ ⍪ ⍫ ⍬ ⍭ ⍮ ⍯ ⍰ ⍱ ⍲ ⍳ ⍴ ⍵ ⍶ ⍷ ⍸ ⍹ ⍺ ⎕ ⎛ ⎜ ⎝ ⎞ ⎟ ⎠ ⎡ ⎢ ⎣ ⎤
+⎥ ⎦ ⎧ ⎨ ⎩ ⎪ ⎫ ⎬ ⎭ ⎮ ⎰ ⎱ ⎲ ⎳ ⎴ ⎵ ⎶ ⎷ ⎸ ⎹ ⎺ ⎻ ⎼ ⎽ ⏜ ⏝ ⏞ ⏟ ⏠ ⏡
+```
+
+**Enclosed**
+
+```
+⑴ ⑵
+```
+
+**Box drawing**
+
+```
+─ ━ │ ┃ ┄ ┅ ┆ ┇ ┈ ┉ ┊ ┋ ┌ ┍ ┎ ┏ ┐ ┑ ┒ ┓ └ ┕ ┖ ┗ ┘ ┙ ┚ ┛ ├ ┝ ┞ ┟ ┠ ┡ ┢ ┣ ┤ ┥ ┦ ┧ ┨ ┩ ┪ ┫
+┬ ┭ ┮ ┯ ┰ ┱ ┲ ┳ ┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻ ┼ ┽ ┾ ┿ ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╌ ╍ ╎ ╏ ═ ║ ╒ ╓ ╔ ╕ ╖ ╗
+╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟ ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ ╨ ╩ ╪ ╫ ╬ ╭ ╮ ╯ ╰ ╱ ╲ ╳ ╴ ╵ ╶ ╷ ╸ ╹ ╺ ╻ ╼ ╽ ╾ ╿
+```
+
+**Blocks**
+
+```
+▀ ▁ ▂ ▃ ▄ ▅ ▆ ▇ █ ▉ ▊ ▋ ▌ ▍ ▎ ▏ ▐ ░ ▒ ▓ ▔ ▕ ▖ ▗ ▘ ▙ ▚ ▛ ▜ ▝ ▞ ▟
+```
+
+**Shapes**
+
+```
+■ □ ▢ ▣ ▤ ▥ ▦ ▧ ▨ ▩ ▪ ▫ ▬ ▭ ▮ ▯ ▰ ▱ ▲ △ ▴ ▵ ▶ ▷ ▸ ▹ ► ▻ ▼ ▽ ▾ ▿ ◀ ◁ ◂ ◃ ◄ ◅ ◆ ◇ ◈ ◉ ◊ ○
+◌ ◍ ◎ ● ◐ ◑ ◒ ◓ ◔ ◕ ◖ ◗ ◘ ◙ ◚ ◛ ◜ ◝ ◞ ◟ ◠ ◡ ◢ ◣ ◤ ◥ ◦ ◧ ◨ ◩ ◪ ◫ ◬ ◭ ◮ ◯ ◰ ◱ ◲ ◳ ◴ ◵ ◶ ◷
+◸ ◹ ◺ ◻ ◼ ◿
+```
+
+**Misc symbols**
+
+```
+♭ ♮ ♯
+```
+
+**Dingbats**
+
+```
+✶ ❘ ❙ ❚
+```
+
+**Maths B**
+
+```
+⦇ ⦈ ⦣ ⦸
+```
+
+**Maths operators**
+
+```
+⨀ ⨅ ⨆
+```
+
+Anything else — the exotic arrows and technical signs, the dominoes, the cards,
+the alchemical and musical symbols, the emoji, the CJK — is out of both lists,
+for the reasons in **Glyphs** above.
+
 ## Colours
 
 `#rrggbb` (exactly seven characters), a palette index `0-255`, or a **name in
@@ -96,6 +329,7 @@ pieza=antena x=3 y=0 color=rojo
 | `Intro`, `espacio`, `o` | Place the piece at the cursor |
 | `c` | Cycle the colour of the piece to place |
 | `h` | Show / hide the piece at the cursor (to see the bare chassis) |
+| `g` | Glyph strip: check how the terminal paints the sample glyphs (wide ones leave a hole) |
 | `u` | Undo the last placed piece |
 | `x` | Empty the assembly |
 | `Tab` | Next chassis |
@@ -152,57 +386,57 @@ Not for sale:
 
 **Weapons** (six, in tiers):
 
-| Piece | Power | Price | Tech | Extra |
-| --- | --- | --- | --- | --- |
-| Pulse laser | 15 | 2,000 | t5 | — |
-| Beam laser | 25 | 12,500 | t6 | — |
-| Military laser | 35 | 35,000 | t7 | — |
-| Morgan's laser | 85 | 50,000 | t8 | — |
-| Photon disruptor | 20 | 15,000 | t6 | Disables systems |
-| Quantum disruptor | 60 | 50,000 | t8 | Disables systems |
+| Piece | Power | Price | Tech | Extra | Symbol |
+| --- | --- | --- | --- | --- | --- |
+| Pulse laser | 15 | 2,000 | t5 | — | ↠ |
+| Beam laser | 25 | 12,500 | t6 | — | ⇉ |
+| Military laser | 35 | 35,000 | t7 | — | ⇶ |
+| Morgan's laser | 85 | 50,000 | t8 | — | ↣ |
+| Photon disruptor | 20 | 15,000 | t6 | Disables systems | ⇝ |
+| Quantum disruptor | 60 | 50,000 | t8 | Disables systems | ⇻ |
 
 **Shields** (three, in tiers):
 
-| Piece | Protection | Price | Tech |
-| --- | --- | --- | --- |
-| Energy shield | 100 | 5,000 | t5 |
-| Reflective shield | 200 | 20,000 | t6 |
-| Lightning shield | 350 | 45,000 | t8 |
+| Piece | Protection | Price | Tech | Symbol |
+| --- | --- | --- | --- | --- |
+| Energy shield | 100 | 5,000 | t5 | ⊙ |
+| Reflective shield | 200 | 20,000 | t6 | ◉ |
+| Lightning shield | 350 | 45,000 | t8 | ϟ |
 
 **Gadgets** (seven, all different, no tiers):
 
-| Piece | Effect | Price |
-| --- | --- | --- |
-| 5 extra cargo bays | +5 cargo bays | 2,500 |
-| Auto-repair system | Improves the engineer's effect | 7,500 |
-| Navigating system | Improves the pilot's effect | 15,000 |
-| Targeting system | Improves the fighter's effect | 25,000 |
-| Cloaking device | Pirates and police do not notice you (good engineer) | 100,000 |
-| Fuel compactor | +3 fuel tanks | 30,000 |
-| 5 hidden cargo bays | +5 bays invisible to the police | 60,000 |
+| Piece | Effect | Price | Symbol |
+| --- | --- | --- | --- |
+| 5 extra cargo bays | +5 cargo bays | 2,500 | ⠾ |
+| Auto-repair system | Improves the engineer's effect | 7,500 | ⚙ |
+| Navigating system | Improves the pilot's effect | 15,000 | ◒ |
+| Targeting system | Improves the fighter's effect | 25,000 | ◈ |
+| Cloaking device | Pirates and police do not notice you (good engineer) | 100,000 | ⍉ |
+| Fuel compactor | +3 fuel tanks | 30,000 | ▬ |
+| 5 hidden cargo bays | +5 bays invisible to the police | 60,000 | ◙ |
 
 Everything else the ship shows is **free art** (no model variant): cockpits,
 wings, antennas, fuel tanks, hatches, docking rings, cargo pods, greebles. Draw
 as many variants as you like; the game always uses the same one unless a rule
 says otherwise.
 
-## Cargo in braille
+## Cargo
 
-One dot = one cargo bay; a braille character holds 8 dots (2x4).
+One dot = one cargo bay; a braille character holds 8 dots (2x4). The gauge can be
+drawn **live** from the real capacity (base + 5 per cargo gadget), so it grows
+when the player installs the extra bays.
 
-| Ship | Bays | Dots | Characters |
-| --- | --- | --- | --- |
-| Flea | 10 | 10 | 1¼ |
-| Gnat, Mosquito | 15 | 15 | 1⅞ |
-| Firefly, Hornet | 20 | 20 | 2½ |
-| Bumblebee | 25 | 25 | 3⅛ |
-| Grasshopper, Scorpion | 30 | 30 | 3¾ |
-| Wasp | 35 | 35 | 4⅜ |
-| Beetle | 50 | 50 | 6¼ |
-| Termite | 60 | 60 | 7½ |
+| Ship | Bays | Dots | Characters | Symbols |
+| --- | --- | --- | --- | --- |
+| Flea | 10 | 10 | 1¼ | ⣿⣀ |
+| Gnat, Mosquito | 15 | 15 | 1⅞ | ⣿⣷ |
+| Firefly, Hornet | 20 | 20 | 2½ | ⣿⣿⣤ |
+| Bumblebee | 25 | 25 | 3⅛ | ⣿⣿⣿⡀ |
+| Grasshopper, Scorpion | 30 | 30 | 3¾ | ⣿⣿⣿⣶ |
+| Wasp | 35 | 35 | 4⅜ | ⣿⣿⣿⣿⣄ |
+| Beetle | 50 | 50 | 6¼ | ⣿⣿⣿⣿⣿⣿⣀ |
+| Termite | 60 | 60 | 7½ | ⣿⣿⣿⣿⣿⣿⣿⣤ |
 
-The gauge can be drawn **live** from the real capacity (base + 5 per cargo
-gadget), so the dots grow when the player installs the extra bays.
 
 ## Mount points (proposal)
 
@@ -213,6 +447,87 @@ The numbers above fix the budget: Tiny 0, Small 4, Medium 5, Large 7, Huge 7.
 Every chassis is then drawn once with up to that many small mount positions, and
 nothing else has to change when a player refits. The composer should show the
 ship's budget (pending).
+
+### Site types
+
+A **site** is a place in the chassis that the game fills with a piece. The
+letters are reserved in the art (declared at the top of the chassis file) and the
+**length of the run** tells how wide the piece may be:
+
+| Letter | Site | Filled with | How many |
+| --- | --- | --- | --- |
+| `C` | Cockpit | The cockpit piece | One, always |
+| `M` | Engines | The engine piece | By size (1 to 3) |
+| `D` | Fuel | The fuel tank piece | One, two on the big ones |
+| `B` | Cargo | The braille gauge: one dot per bay, two to nine cells (10 bays = 2, 60 = 8, 70 with two cargo gadgets = 9) | One, if it carries cargo |
+| `R` | Role | The role marker ($, ☠ or the siren) | None on the player's ship |
+| `A` | Weapons | The piece of the mounted weapon | 0 to its weapon slots |
+| `E` | Shields | The piece of the mounted shield | 0 to its shield slots |
+| `G` | Gadgets | The piece of the mounted gadget | 0 to its gadget slots |
+
+The minimum is what the chassis must always show; the maximum is how many the
+game may fill, so **the chassis has to offer that many sites** (the composer will
+check it). A dash means the ship has no site of that kind at all.
+
+```
+sitios= C=cabina M=motor D=deposito B=bodega R=rol A=arma E=escudo G=artilugio
+```
+
+### Sites per ship type
+
+| Ship | Size | C | M | D | B | R | A | E | G | Total (min–max) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Flea | Tiny | 1 | 1 | 1 | 1 | 0–1 | — | — | — | 4–5 |
+| Gnat | Small | 1 | 1 | 1 | 1 | 0–1 | 0–1 | — | 0–1 | 4–7 |
+| Firefly | Small | 1 | 1 | 1 | 1 | 0–1 | 0–1 | 0–1 | 0–1 | 4–8 |
+| Mosquito | Small | 1 | 1 | 1 | 1 | 0–1 | 0–2 | 0–1 | 0–1 | 4–9 |
+| Bumblebee | Medium | 1 | 2 | 1 | 1 | 0–1 | 0–1 | 0–2 | 0–2 | 5–11 |
+| Beetle | Medium | 1 | 2 | 1 | 1 | 0–1 | — | 0–1 | 0–1 | 5–8 |
+| Hornet | Large | 1 | 2 | 2 | 1 | 0–1 | 0–3 | 0–2 | 0–1 | 6–13 |
+| Grasshopper | Large | 1 | 2 | 2 | 1 | 0–1 | 0–2 | 0–2 | 0–3 | 6–14 |
+| Termite | Huge | 1 | 3 | 2 | 1 | 0–1 | 0–1 | 0–3 | 0–2 | 7–14 |
+| Wasp | Huge | 1 | 3 | 2 | 1 | 0–1 | 0–3 | 0–2 | 0–2 | 7–15 |
+
+The `B` site is always one, but its run has to be as wide as the biggest gauge
+of that ship: 2 cells on the Flea, 3 on the Gnat and Mosquito, 4 on the Firefly
+and Hornet, 5 on the Bumblebee, 6 on the Grasshopper and Wasp, 7 on the Beetle
+and 9 on the Termite (one cell per eight bays, cargo gadgets included).
+
+The special ships are **fixed art** (the player never fits them), so they need no
+sites; their equipment, if we ever want it visible, would be: Space Monster
+3 weapons, Dragonfly 2/3/2 (seven sites in a Small hull), Mantis 3/1/3, Scarab
+2/0/0, Scorpion 2/2/2, Bottle none.
+
+The player-designed ship (`Custom`) uses a generic Huge chassis with the widest
+set (C1 M3 D2 B1 R0 A0–3 E0–3 G0–3), and the game fills what the player designed.
+
+### Role markers
+
+The role the game gives the ship (police, pirate or trader) is known at
+encounter time, so it can be a **site** too: a `R` marker in the chassis that the
+game fills with one of these three pieces.
+
+```
+[marca comerciante]
+color=gold
+$
+
+[marca pirata]
+color=white
+☠
+
+[marca policia]
+color=red
+bgcolor=blue
+blink=true
+✶
+```
+
+The siren alternates **red and blue** thanks to the blink: the shape switches
+between `color` and `bgcolor`. The skull is emoji-capable but with text
+presentation, like ★, so terminals draw it as text; the strip (`g`) tells if one
+substitutes it (⚑, ⌾ and ☼ are in the palette as alternatives). The player's
+ship carries no marker.
 
 ## The drawing list
 
