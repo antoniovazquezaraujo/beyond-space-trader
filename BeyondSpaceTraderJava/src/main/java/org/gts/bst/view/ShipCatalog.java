@@ -20,7 +20,7 @@ import org.gts.bst.ship.ShipType;
  * drawn; the files are read once and the catalogue is shared.
  */
 public final class ShipCatalog {
-  private static ShipCatalog shared;
+  private static final ShipCatalog SHARED = load();
 
   private final List<ShipDesign> designs;
   private final List<ShipArtFile> chassis;
@@ -32,18 +32,19 @@ public final class ShipCatalog {
     this.pieces = List.copyOf(pieces);
   }
 
-  /** The art of the game, read from the ships files. */
-  public static synchronized ShipCatalog shared() {
-    if(shared == null) {
-      try {
-        shared = new ShipCatalog(ShipDesign.load(ShipArtFile.resolve("ships.txt").toString()),
-            ShipArtFile.load("chassis.txt"), ShipArtFile.load("pieces.txt"));
-      } catch(java.io.IOException e) {
-        // The art files are missing or unreadable: the screens keep their old sprites.
-        shared = new ShipCatalog(List.of(), List.of(), List.of());
-      }
+  /** The art of the game, read once from the ships files. */
+  public static ShipCatalog shared() {
+    return SHARED;
+  }
+
+  private static ShipCatalog load() {
+    try {
+      return new ShipCatalog(ShipDesign.load(ShipArtFile.resolve("ships.txt").toString()),
+          ShipArtFile.load("chassis.txt"), ShipArtFile.load("pieces.txt"));
+    } catch(java.io.IOException e) {
+      // The art files are missing or unreadable: the screens keep their old sprites.
+      return new ShipCatalog(List.of(), List.of(), List.of());
     }
-    return shared;
   }
 
   /** The picture of a ship: its assembly and chassis, with the pieces of the items on board. */
