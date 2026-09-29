@@ -25,10 +25,11 @@ import org.gts.bst.view.ShipSites;
 
 
 /**
- * The ship editor: on the left the hull of the ship with its site letters (typed
- * with the keyboard; space erases a whole group), on the right the same ship with
- * the real pieces. The hull is never touched: the letters are the groups the game
- * will fill with the pieces that say `key=` them.
+ * The ship editor: on the left the numbered elements (the piece keys the game
+ * may fill a site with), then the hull with its site letters (space paints or
+ * erases) and then the same ship with the real pieces. The hull is never
+ * touched: the letters are the groups the game will fill with the pieces that
+ * say `key=` them.
  */
 public final class ShipEditorView extends ArtEditorWindow {
   private static final int STRIP_ROWS = 3;
@@ -187,16 +188,33 @@ public final class ShipEditorView extends ArtEditorWindow {
     return pens;
   }
 
-  /** Moves the pen through the elements of the tree. */
+  /** Moves the selected element through the panel (n and p). */
   private void cyclePen(int step) {
     List<Character> pens = pens();
     if(pens.isEmpty()) {
       message = "no pieces with a key in pieces.txt";
       return;
     }
-    pen = pens.get((pens.indexOf(pen) + step + pens.size()) % pens.size());
-    message = "element: " + pen + " (" + ShipSites.kindName(ShipSites.kindOfLetter(pen, pieces)) + ")"
-        + (variantsOf(pen).size() > 1 ? " · [v] variants" : "");
+    int index = pens.indexOf(pen);
+    pen = index < 0 ? pens.get(step < 0 ? pens.size() - 1 : 0)
+        : pens.get((index + step + pens.size()) % pens.size());
+    message = "element: " + elementLabel(pen) + (variantsOf(pen).size() > 1 ? " · [v] variants" : "");
+  }
+
+  /** Picks an element by its number (the keys 1 to 9). */
+  private void pickPen(int index) {
+    List<Character> pens = pens();
+    if(index >= pens.size()) {
+      message = "no element " + (index + 1);
+      return;
+    }
+    pen = pens.get(index);
+    message = "element: " + elementLabel(pen) + (variantsOf(pen).size() > 1 ? " · [v] variants" : "");
+  }
+
+  /** The name of an element: the kind of piece and the key that paints it. */
+  private String elementLabel(char letter) {
+    return capitalized(ShipSites.kindName(ShipSites.kindOfLetter(letter, pieces))) + " (" + letter + ")";
   }
 
   /** Space: any letter in the cell is erased; if it is empty, the pen is painted; the cursor moves right. */
@@ -210,7 +228,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       return;
     }
     if(pen == 0) {
-      message = "empty cell and no element picked (use , or .)";
+      message = "empty cell and no element picked (use n, p or a number)";
       return;
     }
     if(!canPlace(pen)) {
@@ -303,8 +321,12 @@ public final class ShipEditorView extends ArtEditorWindow {
     return true;
   }
 
-  /** The letters are vim keys (move); the rest are commands, and space paints or erases. */
+  /** The letters are vim keys (move), the digits pick an element; the rest are commands. */
   private void character(char character) {
+    if(character >= '1' && character <= '9') {
+      pickPen(character - '1');
+      return;
+    }
     switch(Character.toLowerCase(character)) {
       case 'h':
         cursorX = Math.max(0, cursorX - 1);
@@ -321,16 +343,16 @@ public final class ShipEditorView extends ArtEditorWindow {
       case ' ':
         toggleCell();
         break;
-      case ',':
-        cyclePen(-1);
-        break;
-      case '.':
+      case 'n':
         cyclePen(1);
+        break;
+      case 'p':
+        cyclePen(-1);
         break;
       case 'v':
         cycleVariant();
         break;
-      case 'n':
+      case '+':
         newDesign();
         break;
       case 't':
@@ -482,26 +504,27 @@ public final class ShipEditorView extends ArtEditorWindow {
       return;
     }
     int rows = size.getRows() - STRIP_ROWS;
-    int treeWidth = treeWidth(size);
-    int canvas = size.getColumns() - treeWidth;
-    int half = (canvas - 1) / 2;
+    int panel = panelWidth(size);
+    int canvas = size.getColumns() - panel - 1;
+    int half = Math.max(1, (canvas - 1) / 2);
     for(int row = 0; row < rows; row++) {
-      graphics.setCharacter(half, row, '│');
-      if(treeWidth > 0) {
-        graphics.setCharacter(canvas, row, '│');
+      graphics.setCharacter(panel, row, '│');
+      if(canvas > 1) {
+        graphics.setCharacter(panel + half + 1, row, '│');
       }
     }
     ShipArtFile hull = hull();
     if(hull == null) {
       ShipDesign design = design();
-      graphics.putString(1, 1, design == null ? "no ships in ships.txt"
-          : "cannot find the chassis " + design.chassis() + " (pick one from chassis.txt with [f])");
-      graphics.putString(1, 2, EditorText.cut("hay: " + hullsLine(), canvas - 2));
+      graphics.putString(panel + 2, 1, EditorText.cut(design == null ? "no ships in ships.txt"
+          : "cannot find the chassis " + design.chassis() + " (pick one from chassis.txt with [f])",
+          canvas - 1));
+      graphics.putString(panel + 2, 2, EditorText.cut("hulls: " + hullsLine(), canvas - 1));
     } else {
-      paintHull(graphics, hull, 0, 0, half, rows, true);
-      paintHull(graphics, hull, half + 1, 0, canvas - half - 1, rows, false);
+      paintHull(graphics, hull, panel + 1, 0, half, rows, true);
+      paintHull(graphics, hull, panel + half + 2, 0, canvas - half - 1, rows, false);
     }
-    paintTree(graphics, size, canvas + 1, rows);
+    paintPanel(graphics, panel, rows);
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.putString(0, rows, EditorText.cut(shipsLine(), size.getColumns()));
     graphics.setForegroundColor(message.startsWith("⚠") ? TextColor.ANSI.YELLOW : TextColor.ANSI.WHITE);
@@ -510,8 +533,8 @@ public final class ShipEditorView extends ArtEditorWindow {
     graphics.putString(0, rows + 2, EditorText.cut(keysLine(), size.getColumns()));
   }
 
-  private int treeWidth(TerminalSize size) {
-    return size.getColumns() < 80 ? 0 : Math.min(30, Math.max(24, size.getColumns() / 4));
+  private int panelWidth(TerminalSize size) {
+    return Math.min(26, Math.max(16, size.getColumns() / 4));
   }
 
   /** The pieces that fill a kind of site (only the ones with a key). */
@@ -529,71 +552,41 @@ public final class ShipEditorView extends ArtEditorWindow {
     return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
   }
 
-  /** The keys of some pieces, without repeating. */
-  private static String keysOf(List<ShipArtFile> ofKind) {
-    StringBuilder keys = new StringBuilder();
-    for(ShipArtFile piece : ofKind) {
-      if(keys.indexOf(piece.letter()) < 0) {
-        keys.append(keys.length() == 0 ? "" : " ").append(piece.letter());
-      }
-    }
-    return keys.length() == 0 ? "-" : keys.toString();
-  }
-
-  /** The glyph of a piece: its first drawn character. */
-  private static String glyphOf(ShipArtFile piece) {
-    for(int row = 0; row < piece.height(); row++) {
-      for(int column = 0; column < piece.width(); column++) {
-        int codePoint = piece.at(row, column);
-        if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
-          return new String(Character.toChars(codePoint));
-        }
-      }
-    }
-    return "?";
-  }
-
-  /** The vertical panel: the tree of sites (kinds) with their pieces. */
-  private void paintTree(TextGUIGraphics graphics, TerminalSize size, int left, int rows) {
-    if(size.getColumns() - left <= 1) {
-      return;
-    }
-    ShipDesign design = design();
-    ShipSites.Budget budget = design == null ? null : ShipSites.budgetOf(design.type());
-    Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(currentGroups(), pieces);
-    graphics.putString(left, 0, EditorText.cut("sites and pieces", size.getColumns() - left));
+  /** The vertical panel on the left: the numbered elements, ready to pick. */
+  private void paintPanel(TextGUIGraphics graphics, int width, int rows) {
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    graphics.putString(0, 0, EditorText.cut("elements", width));
     int row = 1;
     ShipArtFile hull = hull();
+    ShipDesign design = design();
+    ShipSites.Budget budget = design == null ? null : ShipSites.budgetOf(design.type());
     if(hull != null && budget != null && !hull.size().isEmpty() && !ShipSites.sizeFits(hull.size(), budget.size())) {
       graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-      graphics.putString(left, row++, EditorText.cut("⚠ size " + hull.size() + " vs " + budget.size(),
-          size.getColumns() - left));
-      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      graphics.putString(0, row++, EditorText.cut("⚠ size " + hull.size() + " vs " + budget.size(), width));
     }
-    for(ShipSites.Kind kind : ShipSites.Kind.values()) {
-      List<ShipArtFile> ofKind = piecesOfKind(kind);
+    List<Character> pens = pens();
+    if(pens.isEmpty()) {
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      graphics.putString(0, row, EditorText.cut("(no pieces with a key in pieces.txt)", width));
+      return;
+    }
+    Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(currentGroups(), pieces);
+    for(int i = 0; i < pens.size() && row < rows; i++, row++) {
+      char letter = pens.get(i);
+      ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
       int max = budget == null ? -1 : ShipSites.maxOfKind(budget, kind);
-      if(ofKind.isEmpty() && (max <= 0 || kind == ShipSites.Kind.PART)) {
-        continue;
-      }
       int there = counts.getOrDefault(kind, 0);
       String mark = max < 0 ? "?" : there < max ? "⚠" : there == max ? "✓" : "✗";
-      graphics.setForegroundColor(mark.equals("⚠") || mark.equals("✗") ? TextColor.ANSI.YELLOW
-          : TextColor.ANSI.WHITE);
-      graphics.putString(left, row++, EditorText.cut((keysOf(ofKind).indexOf(pen) >= 0 ? "> " : "  ")
-          + keysOf(ofKind) + ": " + capitalized(ShipSites.kindName(kind)) + "  " + there + "/"
-          + (max < 0 ? "?" : max) + " " + mark, size.getColumns() - left));
-      graphics.setForegroundColor(TextColor.ANSI.WHITE);
-      for(ShipArtFile piece : ofKind) {
-        if(row >= rows) {
-          return;
-        }
-        // the cargo gauge does not use the piece art: it is braille, automatic
-        String glyph = ShipSites.kindOf(piece.name()) == ShipSites.Kind.CARGO ? ShipSites.gauge(capacity())
-            : glyphOf(piece);
-        graphics.putString(left + 2, row++, EditorText.cut("· " + piece.name() + "  " + glyph,
-            Math.max(0, size.getColumns() - left - 2)));
+      String text = (i + 1) + ". " + elementLabel(letter) + "  " + there + "/" + (max < 0 ? "?" : max) + " " + mark;
+      if(letter == pen) {
+        graphics.setForegroundColor(TextColor.ANSI.BLACK);
+        graphics.setBackgroundColor(TextColor.ANSI.WHITE);
+      } else if(mark.equals("⚠") || mark.equals("✗")) {
+        graphics.setForegroundColor(TextColor.ANSI.YELLOW);
       }
+      graphics.putString(0, row, EditorText.cut(String.format("%-" + width + "s", text), width));
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     }
   }
 
@@ -738,8 +731,8 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   private String keysLine() {
     ShipDesign design = design();
-    return "[arrows] or hjkl move · space paint/erase · [,/.] element " + (pen == 0 ? "-" : pen)
-        + " · [v] variant · [n] new · [t] rename · [f] frame · [y] type"
+    return "[arrows] or hjkl move · space paint/erase · [n/p] element · [1-9] pick · [v] variant"
+        + " · [+] new ship · [t] rename · [f] frame · [y] type"
         + (design == null ? "" : " (" + design.chassis() + ")")
         + " · [s] save · [TAB] ship · [ESC] exit";
   }

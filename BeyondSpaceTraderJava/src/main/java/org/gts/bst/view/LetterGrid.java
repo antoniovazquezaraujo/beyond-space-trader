@@ -68,6 +68,21 @@ public final class LetterGrid {
     }
   }
 
+  /** Removes every cell with a letter (when the element that paints it is deleted). */
+  public int clearLetter(char letter) {
+    int cleared = 0;
+    for(Map<Integer, Character> row : cells.values()) {
+      for(int x : new ArrayList<>(row.keySet())) {
+        if(row.get(x) == letter) {
+          row.remove(x);
+          cleared++;
+        }
+      }
+    }
+    cells.values().removeIf(Map::isEmpty);
+    return cleared;
+  }
+
   /** The letter of a cell, or ' ' when it is empty. */
   public char at(int x, int y) {
     Map<Integer, Character> row = cells.get(y);

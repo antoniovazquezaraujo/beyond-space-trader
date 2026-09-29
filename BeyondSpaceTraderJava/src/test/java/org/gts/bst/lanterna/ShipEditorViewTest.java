@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -45,12 +46,11 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
       assertTrue(screenText(screen).contains("prueba"), screenText(screen));
-      assertTrue(screenText(screen).contains("Engine"), "the tree of pieces: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1. Engine (M)"), "the panel of elements: " + screenText(screen));
 
-      // the pen starts on the first key of the tree (M, the engine): space paints
+      // the pen starts on the only element (M, the engine): space paints
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("M: Engine"), "the tree of sites: " + screenText(screen));
       assertTrue(screenText(screen).contains("1/1"), "the count: " + screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
@@ -70,7 +70,7 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke(KeyType.ArrowLeft));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("M: Engine  0/1"), "the letter is gone: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1. Engine (M)  0/1"), "the letter is gone: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -135,15 +135,15 @@ class ShipEditorViewTest {
 
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("A: Weapon"), "the Firefly admits one weapon: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1. Weapon (A)"), "the Firefly admits one weapon: " + screenText(screen));
 
-      // otra arma, separada: se cuenta igual y no cabe
+      // another weapon, apart: it counts all the same and does not fit
       view.handleKey(new KeyStroke(KeyType.ArrowRight));
       view.handleKey(new KeyStroke(KeyType.ArrowRight));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("takes 1"), "the warning: " + screenText(screen));
-      assertTrue(screenText(screen).contains("A: Weapon  1/1"), "it is not written: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1. Weapon (A)  1/1"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -161,7 +161,7 @@ class ShipEditorViewTest {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
 
-      // sin type= no deja colocar sitios
+      // without type= no site can be placed
       ShipEditorView noType = new ShipEditorView(
           ShipDesign.parse(new StringReader("[prueba]\nchasis=uno\n")), hulls, pieces);
       gui.addWindow(noType);
@@ -171,7 +171,7 @@ class ShipEditorViewTest {
       assertTrue(screenText(screen).contains("pick the ship type"), screenText(screen));
       noType.handleKey(new KeyStroke(KeyType.Escape));
 
-      // con type=Wasp (Huge) caben tres motores y el cuarto no
+      // with type=Wasp (Huge) three engines fit and the fourth does not
       ShipEditorView wasp = new ShipEditorView(
           ShipDesign.parse(new StringReader("[prueba]\ntype=Wasp\nchasis=uno\n")), hulls, pieces);
       gui.addWindow(wasp);
@@ -180,7 +180,7 @@ class ShipEditorViewTest {
         wasp.handleKey(new KeyStroke(KeyType.ArrowRight));
       }
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("M: Engine  3/3"), screenText(screen));
+      assertTrue(screenText(screen).contains("1. Engine (M)  3/3"), screenText(screen));
 
       assertTrue(screenText(screen).contains("size tiny vs Huge"),
           "the size of the chassis is checked: " + screenText(screen));
@@ -188,7 +188,7 @@ class ShipEditorViewTest {
       wasp.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("takes 3"), screenText(screen));
-      assertTrue(screenText(screen).contains("M: Engine  3/3"), "it is not written: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1. Engine (M)  3/3"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -223,6 +223,13 @@ class ShipEditorViewTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains("preview: Beam Laser"), screenText(screen));
       assertTrue(screenText(screen).contains("BB"), "the other variant: " + screenText(screen));
+
+      // the cargo gauge needs no piece: pick the cargo with 2 and paint five cells
+      view.handleKey(new KeyStroke('2', false, false));
+      for(int i = 0; i < 5; i++) {
+        view.handleKey(new KeyStroke(' ', false, false));
+      }
+      gui.updateScreen();
       assertTrue(screenText(screen).contains("⣿⣿⣿⣿⣄"),
           "the cargo gauge of the Wasp (35 bays) is drawn by itself: " + screenText(screen));
     } finally {
@@ -248,7 +255,7 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
 
-      view.handleKey(new KeyStroke('n', false, false));
+      view.handleKey(new KeyStroke('+', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("new"), "the new ship: " + screenText(screen));
 
@@ -309,22 +316,77 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
 
-      // el pincel empieza en A (el arma): espacio la pinta
+      // the pen starts on A (the weapon): space paints it
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("A: Weapon  1/1"), screenText(screen));
+      assertTrue(screenText(screen).contains("1. Weapon (A)  1/1"), screenText(screen));
 
-      // con el pincel en M (motor), espacio sobre la A la borra igual
-      view.handleKey(new KeyStroke(',', false, false));
+      // n moves the pen to M (the engine); space over the A erases it anyway
+      view.handleKey(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("element: Engine (M)"), screenText(screen));
       view.handleKey(new KeyStroke(KeyType.ArrowLeft));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("A: Weapon  0/1"), "the A is erased: " + screenText(screen));
-      assertTrue(screenText(screen).contains("M: Engine  0/1"), "and no M was painted: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1. Weapon (A)  0/1"), "the A is erased: " + screenText(screen));
+      assertTrue(screenText(screen).contains("2. Engine (M)  0/1"), "and no M was painted: " + screenText(screen));
+
+      // a number picks an element directly
+      view.handleKey(new KeyStroke('1', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("element: Weapon (A)"), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void marksTheSelectedElementWithItsOwnBackground() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Engine]\nkey=M\ncolor=white\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(110, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      int weapon = rowOf(screen, "1. Weapon (A)");
+      int engine = rowOf(screen, "2. Engine (M)");
+      assertTrue(weapon >= 0 && engine >= 0, screenText(screen));
+
+      // the first element is selected: its row has a background of its own
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, weapon).getBackgroundColor(),
+          "the selected element: " + screenText(screen));
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, engine).getBackgroundColor(),
+          "the others: " + screenText(screen));
+
+      // n moves the highlight to the engine
+      view.handleKey(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, rowOf(screen, "2. Engine (M)")).getBackgroundColor(),
+          "the engine is now selected: " + screenText(screen));
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, rowOf(screen, "1. Weapon (A)")).getBackgroundColor(),
+          "and the weapon is not: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static int rowOf(Screen screen, String text) {
+    String[] lines = screenText(screen).split("\n", -1);
+    for(int row = 0; row < lines.length; row++) {
+      if(lines[row].contains(text)) {
+        return row;
+      }
+    }
+    return -1;
   }
 
   private static String screenText(Screen screen) {

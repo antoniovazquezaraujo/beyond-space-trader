@@ -13,9 +13,9 @@ piece catalogue below is the inventory of what has to be drawn.
 
 | File | Holds | Written by |
 | --- | --- | --- |
-| `ships/chassis.txt` | The chassis drawings | Hand; the composer reloads it with `R` |
-| `ships/pieces.txt` | The piece drawings | Hand; the composer reloads it with `R` |
-| `ships/ships.txt` | One assembly: a chassis and its placed pieces | The composer, with `S` |
+| `ships/chassis.txt` | The chassis drawings | Hand; the menu reloads it when an editor closes |
+| `ships/pieces.txt` | The piece drawings | Hand; the menu reloads it when an editor closes |
+| `ships/ships.txt` | One assembly: a chassis and its placed pieces | The composer, with `s` |
 
 Lookup order (UTF-8): `ships/<file>`, `../ships/<file>`, `BeyondSpaceTraderJava/ships/<file>`.
 
@@ -335,38 +335,44 @@ group=M x=6 y=3
 **hull editor**. Escape in an editor goes back to the menu (which reloads the
 files, so the changes are there); Escape in the menu quits.
 
-The **ship editor** has the hull on the left (with its colours), the same ship
-with the real pieces in the middle and, on the right, a vertical panel with the
-tree of sites and pieces: every kind with the keys of its pieces, how many the
-ship has against the maximum (with a mark), and each piece with its glyph. The
-kinds with no piece yet show `(-)`, so the missing art is visible at a glance.
+Both editors have a vertical panel on the left with the numbered elements, and
+the selected one has a background of its own: `n` and `p` move through them and
+the keys `1` to `9` pick one directly.
+
+The **ship editor** panel lists the piece keys the game may fill a site with
+(`1. Weapon (A)`), with how many the ship has against the maximum (and a mark:
+`✓` right, `⚠` missing, `✗` over, `?` without a type); then come the hull with
+its colours and the same ship with the real pieces painted over it.
 
 | Key | Action |
 | --- | --- |
 | `←↑→↓` or `hjkl` | Move the cursor |
-| `,` / `.` | Pick the element to paint (the letter of a kind, marked `>` in the tree) |
+| `n` / `p` | Next / previous element in the panel |
+| `1` to `9` | Pick the element with that number |
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the element painted. The cursor moves one cell right either way |
 | `v` | Preview: cycle which piece of the element is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
-| `n` / `t` | Add a ship / rename it (title) |
+| `+` / `t` | Add a ship / rename it (title) |
 | `f` / `y` | Pick the frame (chassis) / the ship type from a list |
-| `,` / `.` | Cycle the colour of the letter under the cursor |
 | `TAB` / `⇧TAB` | Next / previous ship (the file keeps every design) |
 | `s` | Save every ship back to `ships.txt` |
 | `Esc` | Back to the menu |
 
-The **hull editor** paints the colours of a hull: the drawing is read only and
-the free colour letters (each with its colour, background and blink) are painted
-over it.
+The **hull editor** paints the colours of a hull: the drawing is read only. Its
+panel lists the colour elements (`1. Cyan/Black/Blink (A)`); they are added with
+`+` and removed with `-`, and removing one also erases the letters it had
+painted. Then come the drawing with its colour letters and the same hull painted
+with those colours.
 
 | Key | Action |
 | --- | --- |
-| `+` | Add a colour letter (the next free letter) |
-| `n` | Rename the current colour letter (then type the letter) |
-| `z` | Cycle the size of the hull (empty, tiny, small, medium, large, huge, any) |
-| `t` / `f` / `i` | Cycle its colour / background / blink |
 | `←↑→↓` or `hjkl` | Move the cursor |
-| `,` / `.` | Pick the colour letter to paint |
+| `n` / `p` | Next / previous element in the panel |
+| `1` to `9` | Pick the element with that number |
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the colour letter painted. The cursor moves one cell right either way |
+| `+` / `-` | Add a colour element (the next free letter) / remove the selected one |
+| `r` | Rename the selected element's letter (then type the letter) |
+| `t` / `f` / `i` | Cycle its colour / background / blink |
+| `z` | Cycle the size of the hull (empty, tiny, small, medium, large, huge, any) |
 | `TAB` / `⇧TAB` | Previous / next hull |
 | `s` | Save every edited hull back to `chassis.txt` |
 | `Esc` | Back to the menu |

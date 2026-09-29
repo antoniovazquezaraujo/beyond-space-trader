@@ -22,9 +22,10 @@ import org.gts.bst.view.ShipArtFile;
 
 
 /**
- * The hull editor: on the left the drawing with its colour letters (free letters,
- * each with its colour, background and blink; space erases a cell), on the right
- * the same hull painted with those colours. The drawing is never touched.
+ * The hull editor: on the left the numbered colour elements (colour, background
+ * and blink; added with + and removed with -), then the drawing with its colour
+ * letters (space paints or erases) and then the same hull painted with those
+ * colours. The drawing is never touched.
  */
 public final class HullEditorView extends ArtEditorWindow {
   private static final String[] COLORS = {"white", "cyan", "red", "yellow", "green", "magenta", "blue", "orange",
@@ -115,6 +116,12 @@ public final class HullEditorView extends ArtEditorWindow {
   @Override
   protected boolean handleKey(KeyStroke key) {
     if(key.getKeyType() == KeyType.Escape) {
+      if(nameLetter) {
+        nameLetter = false;
+        message = "rename cancelled";
+        redraw();
+        return true;
+      }
       close();
       return true;
     }
@@ -123,7 +130,7 @@ public final class HullEditorView extends ArtEditorWindow {
       ShipArtFile.ColorLetter old = currentLetter();
       if(letter != ' ') {
         letters.set(letterIndex, new ShipArtFile.ColorLetter(letter, old.color(), old.bgColor(), old.blink()));
-        message = "letra " + letter;
+        message = "letter " + letter;
       }
       nameLetter = false;
       redraw();
@@ -160,7 +167,6 @@ public final class HullEditorView extends ArtEditorWindow {
     return true;
   }
 
-  /** Space: if the pen key is in the cell it erases it, if not it paints it, and the cursor moves right. */
   /** Space: any letter in the cell is erased; if it is empty, the pen is painted; the cursor moves right. */
   private void toggleCell() {
     char current = grid.at(cursorX, cursorY);
@@ -182,8 +188,13 @@ public final class HullEditorView extends ArtEditorWindow {
     redraw();
   }
 
+  /** The letters are vim keys (move), the digits pick an element; the rest are commands. */
   private void character(char character) {
-    switch(Character.toLowerCase(character)) {
+    if(character >= '1' && character <= '9') {
+      pickLetter(character - '1');
+      return;
+    }
+    switch(character) {
       case 'h':
         cursorX = Math.max(0, cursorX - 1);
         break;
@@ -199,18 +210,19 @@ public final class HullEditorView extends ArtEditorWindow {
       case ' ':
         toggleCell();
         break;
-      case ',':
-        letterIndex = letters.isEmpty() ? 0 : (letterIndex + letters.size() - 1) % letters.size();
-        message = "element: " + currentLetter().letter();
+      case 'n':
+        cycleLetter(1);
         break;
-      case '.':
-        letterIndex = letters.isEmpty() ? 0 : (letterIndex + 1) % letters.size();
-        message = "element: " + currentLetter().letter();
+      case 'p':
+        cycleLetter(-1);
         break;
       case '+':
         addLetter();
         break;
-      case 'n':
+      case '-':
+        removeLetter();
+        break;
+      case 'r':
         nameLetter = true;
         message = "type the letter for the combination " + currentLetter().color();
         break;
@@ -232,6 +244,56 @@ public final class HullEditorView extends ArtEditorWindow {
       default:
         break;
     }
+  }
+
+  /** Moves the selected element through the panel (n and p). */
+  private void cycleLetter(int step) {
+    if(letters.isEmpty()) {
+      message = "no elements: add one with [+]";
+      return;
+    }
+    letterIndex = (letterIndex + step + letters.size()) % letters.size();
+    message = "element: " + elementLabel(letterIndex);
+  }
+
+  /** Picks an element by its number (the keys 1 to 9). */
+  private void pickLetter(int index) {
+    if(index >= letters.size()) {
+      message = "no element " + (index + 1);
+      return;
+    }
+    letterIndex = index;
+    message = "element: " + elementLabel(letterIndex);
+  }
+
+  /** The name of an element: its colours and the letter it paints. */
+  private String elementLabel(int index) {
+    ShipArtFile.ColorLetter letter = letters.get(index);
+    StringBuilder text = new StringBuilder(capitalized(letter.color()));
+    if(!letter.bgColor().isEmpty()) {
+      text.append('/').append(capitalized(letter.bgColor()));
+    }
+    if(letter.blink()) {
+      text.append("/Blink");
+    }
+    return text.append(" (").append(letter.letter()).append(')').toString();
+  }
+
+  private static String capitalized(String text) {
+    return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
+  }
+
+  /** Removes the selected element, and with it the letters it had painted. */
+  private void removeLetter() {
+    if(letters.isEmpty()) {
+      message = "no elements to remove";
+      return;
+    }
+    char letter = currentLetter().letter();
+    int painted = grid.clearLetter(letter);
+    letters.remove(letterIndex);
+    letterIndex = Math.max(0, Math.min(letterIndex, letters.size() - 1));
+    message = "removed " + letter + (painted > 0 ? " and the letters it had on the hull" : "");
   }
 
 
@@ -278,7 +340,7 @@ public final class HullEditorView extends ArtEditorWindow {
     int index = indexOf(COLORS, letter.color());
     letters.set(letterIndex, new ShipArtFile.ColorLetter(letter.letter(), COLORS[(index + 1) % COLORS.length],
         letter.bgColor(), letter.blink()));
-    message = "color " + COLORS[(index + 1) % COLORS.length] + " para " + letter.letter();
+    message = "colour " + COLORS[(index + 1) % COLORS.length] + " for " + letter.letter();
   }
 
   private void styleBackground() {
@@ -286,8 +348,8 @@ public final class HullEditorView extends ArtEditorWindow {
     int index = indexOf(BACKGROUNDS, letter.bgColor());
     letters.set(letterIndex, new ShipArtFile.ColorLetter(letter.letter(), letter.color(),
         BACKGROUNDS[(index + 1) % BACKGROUNDS.length], letter.blink()));
-    message = "fondo " + (BACKGROUNDS[(index + 1) % BACKGROUNDS.length].isEmpty() ? "(ninguno)"
-        : BACKGROUNDS[(index + 1) % BACKGROUNDS.length]) + " para " + letter.letter();
+    message = "background " + (BACKGROUNDS[(index + 1) % BACKGROUNDS.length].isEmpty() ? "(none)"
+        : BACKGROUNDS[(index + 1) % BACKGROUNDS.length]) + " for " + letter.letter();
   }
 
   private static int indexOf(String[] values, String value) {
@@ -318,20 +380,28 @@ public final class HullEditorView extends ArtEditorWindow {
       graphics.putString(0, row, " ".repeat(size.getColumns()));
     }
     int rows = size.getRows() - STRIP_ROWS;
-    int half = (size.getColumns() - 1) / 2;
+    int panel = panelWidth(size);
+    int canvas = size.getColumns() - panel - 1;
+    int half = Math.max(1, (canvas - 1) / 2);
     for(int row = 0; row < rows; row++) {
-      graphics.setCharacter(half, row, '│');
+      graphics.setCharacter(panel, row, '│');
+      if(canvas > 1) {
+        graphics.setCharacter(panel + half + 1, row, '│');
+      }
     }
     ShipArtFile hull = hull();
     if(hull == null) {
-      graphics.putString(1, 1, "no hulls in chassis.txt");
+      graphics.putString(panel + 2, 1, "no hulls in chassis.txt");
     } else {
-      paintHull(graphics, hull, 0, 0, half, rows, true);
-      paintHull(graphics, hull, half + 1, 0, size.getColumns() - half - 1, rows, false);
+      paintHull(graphics, hull, panel + 1, 0, half, rows, true);
+      paintHull(graphics, hull, panel + half + 2, 0, canvas - half - 1, rows, false);
     }
+    paintPanel(graphics, panel, rows);
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.putString(0, rows, EditorText.cut(hullsLine(), size.getColumns()));
-    graphics.putString(0, rows + 1, EditorText.cut(lettersLine(), size.getColumns()));
+    graphics.setForegroundColor(message.startsWith("⚠") ? TextColor.ANSI.YELLOW : TextColor.ANSI.WHITE);
+    graphics.putString(0, rows + 1, EditorText.cut(message, size.getColumns()));
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.putString(0, rows + 2, EditorText.cut(keysLine(), size.getColumns()));
   }
 
@@ -406,29 +476,35 @@ public final class HullEditorView extends ArtEditorWindow {
     return text.toString();
   }
 
-  private String lettersLine() {
-    StringBuilder text = new StringBuilder("letters:");
-    for(int i = 0; i < letters.size(); i++) {
-      ShipArtFile.ColorLetter letter = letters.get(i);
-      text.append(i == letterIndex ? " [" : " ").append(letter.letter()).append('=').append(letter.color());
-      if(!letter.bgColor().isEmpty()) {
-        text.append('/').append(letter.bgColor());
-      }
-      if(letter.blink()) {
-        text.append("/blink");
-      }
-      text.append(i == letterIndex ? "]" : "");
-    }
+  /** The vertical panel on the left: the numbered colour elements, ready to pick. */
+  private void paintPanel(TextGUIGraphics graphics, int width, int rows) {
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    graphics.putString(0, 0, EditorText.cut("elements", width));
+    int row = 1;
     if(letters.isEmpty()) {
-      text.append(" (con + anyades una)");
+      graphics.putString(0, row, EditorText.cut("(no elements: [+] adds one)", width));
+      return;
     }
-    return text.toString();
+    for(int i = 0; i < letters.size() && row < rows; i++, row++) {
+      String text = (i + 1) + ". " + elementLabel(i);
+      if(i == letterIndex) {
+        graphics.setForegroundColor(TextColor.ANSI.BLACK);
+        graphics.setBackgroundColor(TextColor.ANSI.WHITE);
+      }
+      graphics.putString(0, row, EditorText.cut(String.format("%-" + width + "s", text), width));
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    }
+  }
+
+  private int panelWidth(TerminalSize size) {
+    return Math.min(26, Math.max(16, size.getColumns() / 4));
   }
 
   private String keysLine() {
-    return "[arrows] or hjkl move · space paint/erase · [,/.] element · [+] add · [n] rename · [t] colour"
-        + " · [f] background · [i] blink · [z] size · [s] save · [TAB] hull · [ESC] exit"
-        + (nameLetter ? "   ||   teclea la letra deseada" : message.isEmpty() ? "" : "   ||   " + message);
+    return "[arrows] or hjkl move · space paint/erase · [n/p] element · [1-9] pick · [+] add · [-] remove"
+        + " · [r] rename · [t] colour · [f] background · [i] blink · [z] size · [s] save"
+        + " · [TAB] hull · [ESC] exit";
   }
 
   private static TextColor color(String name) {

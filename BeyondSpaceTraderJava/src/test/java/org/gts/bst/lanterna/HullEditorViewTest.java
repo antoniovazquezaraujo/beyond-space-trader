@@ -8,6 +8,7 @@
  */
 package org.gts.bst.lanterna;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -47,12 +48,52 @@ class HullEditorViewTest {
       view.handleKey(new KeyStroke('t', false, false));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("A=cyan"), "the letter list: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1. Cyan (A)"), "the panel of elements: " + screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
       String saved = Files.readString(file);
       assertTrue(saved.contains("key=A color=cyan"), saved);
       assertTrue(saved.contains("zone=A x=2 y=2 w=1 h=1"), saved);
+      assertTrue(saved.contains("xxxxx"), "the drawing stays: " + saved);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(file);
+    }
+  }
+
+  @Test
+  void removesTheSelectedElementAndItsLetters() throws IOException {
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=white\nxxxxx\nxxxxx\n"));
+    Path file = Files.createTempFile("chassis", ".txt");
+    Files.writeString(file, "[uno]\ncolor=white\nxxxxx\nxxxxx\n");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      HullEditorView view = new HullEditorView(hulls);
+      view.hullsPath(file.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKey(new KeyStroke('+', false, false));
+      view.handleKey(new KeyStroke('t', false, false));
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("1. Cyan (A)"), screenText(screen));
+
+      // - removes the element and the letters it had painted
+      view.handleKey(new KeyStroke('-', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("removed A"), screenText(screen));
+      assertFalse(screenText(screen).contains("Cyan"), "the panel is empty: " + screenText(screen));
+      assertTrue(screenText(screen).contains("no elements"), screenText(screen));
+
+      view.handleKey(new KeyStroke('s', false, false));
+      String saved = Files.readString(file);
+      assertFalse(saved.contains("key="), saved);
+      assertFalse(saved.contains("zone="), saved);
       assertTrue(saved.contains("xxxxx"), "the drawing stays: " + saved);
     } finally {
       screen.stopScreen();
