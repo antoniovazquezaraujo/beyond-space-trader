@@ -12,12 +12,10 @@
 [Antenna]
 color=cyan
  ⦅
-∫
 [Engine]
 key=M
 color=#ff0000
 bgcolor=#ffff00
-blink=true
 ⧯
 [Pulse Laser]
 key=A
@@ -53,7 +51,7 @@ color=cyan
 [Fuel Tank]
 key=D
 color=green
-⛁
+☢
 [Cargo Gauge]
 key=B
 ⣿

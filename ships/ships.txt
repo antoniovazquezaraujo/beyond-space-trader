@@ -1,3 +1,96 @@
-[borrador]
+[nave-1]
+type=Termite
+chasis=dreadnought
+group=R x=11 y=1 n=1
+group=C x=25 y=2 n=1
+group=A x=29 y=2 n=1
+group=A x=29 y=3 n=1
+group=A x=29 y=4 n=1
+group=D x=13 y=5 n=2
+group=M x=22 y=5 n=3
+[nave-2]
+type=Bumblebee
+chasis=scout
+group=P x=0 y=1 n=1
+group=R x=4 y=1 n=1
+group=G x=3 y=2 n=1
+group=C x=8 y=2 n=1
+group=A x=15 y=2 n=1
+group=B x=4 y=4 n=3
+group=D x=9 y=4 n=1
+group=M x=10 y=4 n=1
+[La pinta]
+type=Termite
+chasis=dreadnought
+group=R x=23 y=1 n=1
+group=C x=35 y=5 n=1
+group=A x=44 y=6 n=1
+group=M x=30 y=7 n=3
+group=G x=38 y=7 n=1
+group=G x=40 y=7 n=1
+group=B x=13 y=8 n=5
+group=P x=5 y=9 n=1
+group=B x=13 y=9 n=3
+group=D x=32 y=9 n=2
+group=E x=46 y=9 n=1
+group=E x=43 y=10 n=1
+group=E x=37 y=11 n=1
+[La niña]
 type=Firefly
-chasis=insecto-diminuto
+chasis=scout
+group=R x=4 y=1 n=1
+group=C x=10 y=2 n=1
+group=A x=17 y=3 n=1
+group=P x=1 y=4 n=1
+group=D x=4 y=4 n=1
+group=B x=6 y=4 n=4
+group=M x=13 y=4 n=1
+group=G x=14 y=4 n=1
+group=E x=16 y=5 n=1
+[La Santamaría]
+type=Grasshopper
+chasis=cruiser
+group=R x=6 y=1 n=1
+group=P x=10 y=3 n=1
+group=C x=20 y=3 n=1
+group=D x=10 y=4 n=1
+group=D x=10 y=5 n=1
+group=M x=11 y=5 n=2
+group=B x=16 y=5 n=6
+group=A x=45 y=5 n=1
+group=G x=26 y=6 n=3
+group=A x=47 y=6 n=1
+group=E x=42 y=7 n=2
+[The faster]
+type=Bumblebee
+chasis=shuttle
+group=R x=10 y=0 n=1
+group=C x=14 y=0 n=1
+group=P x=2 y=1 n=1
+group=B x=7 y=1 n=5
+group=E x=20 y=1 n=1
+group=D x=11 y=2 n=1
+group=G x=12 y=2 n=1
+group=G x=14 y=2 n=1
+group=E x=21 y=2 n=1
+group=M x=12 y=3 n=2
+group=A x=21 y=3 n=1
+;; provisional: these six only carry the type and a chassis; paint their sites in the editor
+[flea]
+type=Flea
+chasis=scout
+[gnat]
+type=Gnat
+chasis=shuttle
+[mosquito]
+type=Mosquito
+chasis=scout
+[beetle]
+type=Beetle
+chasis=corvette
+[hornet]
+type=Hornet
+chasis=cruiser
+[wasp]
+type=Wasp
+chasis=dreadnought
