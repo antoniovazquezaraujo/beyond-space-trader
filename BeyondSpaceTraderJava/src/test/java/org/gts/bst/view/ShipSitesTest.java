@@ -39,7 +39,7 @@ class ShipSitesTest {
     assertEquals(2, ShipSites.budgetOf("Flea").cargoCells());
     assertEquals(0, ShipSites.budgetOf("Flea").weapons(), "the Flea carries no weapons");
     assertEquals(0, ShipSites.budgetOf("Bottle").pod(), "the Bottle is not for sale");
-    assertNull(ShipSites.budgetOf("insecto-diminuto"), "a chassis that is not a ship type");
+    assertNull(ShipSites.budgetOf("scout"), "a chassis that is not a ship type");
   }
 
   @Test

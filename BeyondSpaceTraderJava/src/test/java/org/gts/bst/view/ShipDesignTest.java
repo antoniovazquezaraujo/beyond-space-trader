@@ -25,24 +25,24 @@ class ShipDesignTest {
         ";; las naves\n"
         + "[firefly pirata]\n"
         + "type=Firefly\n"
-        + "chasis=insecto-diminuto\n"
+        + "chasis=scout\n"
         + "group=A x=3 y=1 n=2 color=red\n"
         + "group=M x=6 y=3\n"
         + "\n"
         + "[wasp]\n"
         + "type=Wasp\n"
-        + "chassis=insecto-pequeno\n"
+        + "chassis=corvette\n"
         + "group=E x=2 y=2 color=cyan\n"));
 
     assertEquals(2, designs.size());
     assertEquals("firefly pirata", designs.get(0).name());
     assertEquals("Firefly", designs.get(0).type());
-    assertEquals("insecto-diminuto", designs.get(0).chassis());
+    assertEquals("scout", designs.get(0).chassis());
     assertEquals(2, designs.get(0).groups().size());
     assertEquals(new ShipDesign.LetterGroup('A', 3, 1, 2), designs.get(0).groups().get(0));
     assertEquals(new ShipDesign.LetterGroup('M', 6, 3, 1), designs.get(0).groups().get(1));
     assertEquals("Wasp", designs.get(1).type());
-    assertEquals("insecto-pequeno", designs.get(1).chassis(), "the chassis= spelling is accepted too");
+    assertEquals("corvette", designs.get(1).chassis(), "the chassis= spelling is accepted too");
     assertEquals(1, designs.get(1).groups().get(0).n(), "n defaults to one");
     assertEquals('E', designs.get(1).groups().get(0).letter(), "an old color= is just ignored");
   }

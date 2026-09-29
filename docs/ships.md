@@ -314,7 +314,7 @@ budget), the chassis it uses and its **letter groups** (the sites the game fills
 ;; a comment (two semicolons, like the other files)
 [firefly pirata]
 type=Firefly
-chasis=insecto-diminuto
+chasis=scout
 group=A x=3 y=1 n=2 color=red
 group=M x=6 y=3
 ```
