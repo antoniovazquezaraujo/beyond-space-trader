@@ -73,6 +73,48 @@ public final class ShipEditorView extends ArtEditorWindow {
     updateTitle();
   }
 
+  /** Adds a ship, with the chassis of the current one and a free name. */
+  private void newDesign() {
+    storeCurrent();
+    ShipDesign design = design();
+    String name = "nueva";
+    int number = 2;
+    while(nameTaken(name)) {
+      name = "nueva" + number++;
+    }
+    designs.add(new ShipDesign(name, "", design == null ? "" : design.chassis(), List.of()));
+    loadDesign(designs.size() - 1);
+    message = "nave nueva " + name + ": pon el type con [y]";
+    redraw();
+  }
+
+  private boolean nameTaken(String name) {
+    for(ShipDesign other : designs) {
+      if(other.name().equalsIgnoreCase(name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Renames the open ship with a little dialog (the [name] of ships.txt). */
+  private void renameDesign() {
+    ShipDesign design = design();
+    com.googlecode.lanterna.gui2.WindowBasedTextGUI gui = getTextGUI();
+    if(design == null || gui == null) {
+      return;
+    }
+    String typed = com.googlecode.lanterna.gui2.dialogs.TextInputDialog.showDialog(gui, "nombre de la nave",
+        "Escribe el nombre (sera el [nombre] de ships.txt):", design.name());
+    if(typed != null && !typed.isBlank()) {
+      storeCurrent();
+      designs.set(designIndex, new ShipDesign(typed.strip(), design.type(), design.chassis(), design.groups()));
+      updateTitle();
+      message = "nave renombrada: " + typed.strip();
+      redraw();
+    }
+  }
+
   /** Says which ship is open, so TAB does not look like it does nothing. */
   private void announceShip() {
     ShipDesign design = design();
@@ -225,6 +267,10 @@ public final class ShipEditorView extends ArtEditorWindow {
         }
         message = "grupo " + run.letter() + " borrado";
       }
+    } else if(character == 'n') {
+      newDesign();
+    } else if(character == 'r') {
+      renameDesign();
     } else if(character == 'v') {
       char under = grid.at(cursorX, cursorY);
       if(under == ' ') {
@@ -621,7 +667,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = design();
     return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor"
         + (design == null ? "" : " · chasis: " + design.chassis())
-        + " · [v] preview · [h] chasis · [y] type"
+        + " · [v] preview · [n] nueva · [r] renombrar · [h] chasis · [y] type"
         + " · [s] guardar · [TAB] nave · [ESC] salir";
   }
 

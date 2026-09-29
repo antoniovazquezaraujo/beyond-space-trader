@@ -250,6 +250,38 @@ class ShipEditorViewTest {
     }
   }
 
+  @Test
+  void addsANewShipAndSavesIt() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\n"));
+    List<ShipArtFile> pieces = List.of();
+    Path file = Files.createTempFile("naves", ".txt");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      view.shipsPath(file.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKey(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("nueva"), "the new ship: " + screenText(screen));
+
+      view.handleKey(new KeyStroke('s', false, false));
+      List<ShipDesign> saved = ShipDesign.load(file.toString());
+      assertEquals(2, saved.size());
+      assertEquals("nueva", saved.get(1).name());
+      assertEquals("uno", saved.get(1).chassis(), "the new ship starts with the same chassis");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(file);
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {

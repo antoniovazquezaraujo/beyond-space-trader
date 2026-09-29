@@ -82,6 +82,7 @@ public final class ShipComposer {
       window.close();
     });
     window.setComponent(menu);
+    window.setCloseWindowWithEscape(true);
     gui.addWindowAndWait(window);
     return chosen[0];
   }
