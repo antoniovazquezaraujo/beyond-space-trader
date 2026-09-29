@@ -210,17 +210,17 @@ public final class HullEditorView extends ArtEditorWindow {
       case '+':
         addLetter();
         break;
-      case 'e':
+      case 'n':
         nameLetter = true;
         message = "type the letter for the combination " + currentLetter().color();
         break;
-      case 'c':
+      case 't':
         styleColor();
         break;
-      case 'b':
+      case 'f':
         styleBackground();
         break;
-      case 'p':
+      case 'i':
         styleBlink();
         break;
       case 'z':
@@ -261,7 +261,7 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     letters.add(new ShipArtFile.ColorLetter(letter, COLORS[0], "", false));
     letterIndex = letters.size() - 1;
-    message = "letter " + letter + " added (c colour, b background, p blink)";
+    message = "letter " + letter + " added (t colour, f background, i blink)";
   }
 
   private boolean used(char letter) {
@@ -426,8 +426,8 @@ public final class HullEditorView extends ArtEditorWindow {
   }
 
   private String keysLine() {
-    return "[arrows] or hjkl move · space paint/erase · [,/.] element · [+] add · [e] rename · [c] colour"
-        + " · [b] background · [p] blink · [z] size · [s] save · [TAB] hull · [ESC] exit"
+    return "[arrows] or hjkl move · space paint/erase · [,/.] element · [+] add · [n] rename · [t] colour"
+        + " · [f] background · [i] blink · [z] size · [s] save · [TAB] hull · [ESC] exit"
         + (nameLetter ? "   ||   teclea la letra deseada" : message.isEmpty() ? "" : "   ||   " + message);
   }
 

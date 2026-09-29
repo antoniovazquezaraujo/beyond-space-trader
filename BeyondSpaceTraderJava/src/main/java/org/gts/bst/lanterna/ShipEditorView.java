@@ -333,10 +333,10 @@ public final class ShipEditorView extends ArtEditorWindow {
       case 'n':
         newDesign();
         break;
-      case 'r':
+      case 't':
         renameDesign();
         break;
-      case 'c':
+      case 'f':
         openList(false);
         break;
       case 'y':
@@ -495,7 +495,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     if(hull == null) {
       ShipDesign design = design();
       graphics.putString(1, 1, design == null ? "no ships in ships.txt"
-          : "cannot find the chassis " + design.chassis() + " (pick one from chassis.txt with [c])");
+          : "cannot find the chassis " + design.chassis() + " (pick one from chassis.txt with [f])");
       graphics.putString(1, 2, EditorText.cut("hay: " + hullsLine(), canvas - 2));
     } else {
       paintHull(graphics, hull, 0, 0, half, rows, true);
@@ -739,7 +739,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   private String keysLine() {
     ShipDesign design = design();
     return "[arrows] or hjkl move · space paint/erase · [,/.] element " + (pen == 0 ? "-" : pen)
-        + " · [v] variant · [n] new · [r] rename · [c] chassis · [y] type"
+        + " · [v] variant · [n] new · [t] rename · [f] frame · [y] type"
         + (design == null ? "" : " (" + design.chassis() + ")")
         + " · [s] save · [TAB] ship · [ESC] exit";
   }

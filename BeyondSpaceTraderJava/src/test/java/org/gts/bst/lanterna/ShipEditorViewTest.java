@@ -95,7 +95,7 @@ class ShipEditorViewTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains("cannot find the chassis"), screenText(screen));
 
-      view.handleKey(new KeyStroke('c', false, false));
+      view.handleKey(new KeyStroke('f', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("chassis:"), screenText(screen));
       assertTrue(screenText(screen).contains("uno"), screenText(screen));
