@@ -1,6 +1,7 @@
 # ADR 0001 — Diseño de las naves: chasis, piezas y sitios
 
-- **Estado**: propuesto (borrador; el autor añade al final los cambios que necesita)
+- **Estado**: sustituido en parte por el [ADR 0002](0002-letras-como-datos.md)
+  (las letras ya no viven en el dibujo del chasis y el editor cambia de forma)
 - **Fecha**: 2026-09-29
 - **Referencias**: `docs/ships.md` (el formato y las tablas), `docs/ui-design.md`,
   `ships/chassis.txt`, `ships/pieces.txt`
@@ -82,7 +83,19 @@ experimentos se descartaron en la #179).
 
 ## Cambios que pide el autor
 
-> Escribe aquí lo que no te cuadra o lo que necesitas: yo lo leo, lo convierto en
-> propuesta y actualizo este ADR y el código.
+- En un fichero tendremos los fuselajes, en otro las piezas y en otro las naves
+- Se tiene que poder seleccionar el fuselaje de una lista que mostrará los que hay en el fichero de fuselajes 
+- En el fichero piezas cada una tendrá su nombre, su letra y su glifo  
+- En el fichero ships tendremos las naves, con el nombre de la nave, el tipo de fuselaje y los grupos de letras, la posición cantidad y el color de cada grupo de letras 
+- Se tiene que mostrar una lista de piezas con la letra y el glifo que estarán en el fichero piezas
+- Se tiene que mostrar el fuselaje seleccionado en media pantalla y permitir que el usuario teclee encima las letras que desee en la posición que desee
+- Se tiene que mostrar el cursor para que el usuario sepa dónde aparecerá cada letra
+- Se tiene que poder seleccionar el color de la letra, el fondo y si será intermitente
+- En la otra mitad de la pantalla se debe mostrar el fuselaje con las piezas reales sustituyendo a las letras
+- Al seleccionar otro fuselaje, se colocarán las letras como están en ese fuselaje y con su color
+- Al guardar se guardan TODOS los fuselajes modificados, es decir, las naves.
+- Con espacio se eliminan letras
+- El fuselaje siempre se ve debajo, no se puede editar
+- De la misma forma que las naves, se deben poder editar los colores de los fuselajes: el usuario asignará a cada letra un color y podrá colocar la letra en la zona que 
+desee, mostrándose en la otra mitad el mismo fuselaje coloreado en esa zona con ese color. Eso se guardará en el fichero de fuselajes, con la lista de zonas de color, su tamaño y posición
 
-- (pendiente)

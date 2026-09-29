@@ -1,41 +1,118 @@
-;; Piezas de nave. Editable a mano; recarga con R en el compositor.
-;; Una linea [nombre] abre una pieza; color= es opcional (blanco por defecto).
-;; El espacio es vacio; todo lo demas (puntos y unicode incluidos) se dibuja.
-;; Los espacios del final se conservan; las lineas en blanco son filas de la pieza.
+;; Ship pieces. Editable by hand; the editors read the files when they open.
+;; The [name] is the English name of the game item the piece draws (that is how
+;; the game finds the piece for each thing); key= is the site letter it fills.
+;; The letters are yours: keep the pieces and the hulls in agreement.
+;; Suggested letters: A weapon, E shield, G gadget, C cockpit, M engines,
+;; D fuel tank, B cargo gauge, P escape pod.
+;; The three role markers share the site letter R: the game picks the glyph of
+;; the encounter ($ trader, ☠ pirate, ✶ police).
+;; color=, bgcolor= and blink= are optional.
+;; A space is empty; anything else (dots and unicode included) is drawn.
 
-[antena]
+[Antenna]
 color=cyan
  ⦅
-∫
-[motor]
+[Engine]
+key=M
 color=#ff0000
 bgcolor=#ffff00
-blink=true
 ⧯
-[torreta laser]
+[Pulse Laser]
+key=A
 color=red
 ⍡
-[torreta disruptor]
+[Photon Disruptor]
+key=A
 color=magenta
 ⎅
-[vaina de carga]
+[Beam Laser]
+key=A
+color=brightred
+⇶
+[Military Laser]
+key=A
+color=green
+↣
+[Morgan's Laser]
+key=A
+color=gold
+⇻
+[Quantum Disruptor]
+key=A
+color=magenta
+⍟
+[Cargo Pod]
 color=yellow
 ⏌
-[cabina]
+[Cockpit]
+key=C
 color=cyan
 ⎚.
-[deposito]
+[Fuel Tank]
+key=D
 color=green
-⛁
+☢
+[Cargo Gauge]
+key=B
+⣿
 
-;; marcas de rol (las pone el juego segun el encuentro)
-[marca comerciante]
+;; shields, gadgets and pod
+[Energy Shield]
+key=E
+color=cyan
+◉
+[Reflective Shield]
+key=E
+color=blue
+⊕
+[Lightning Shield]
+key=E
+color=brightblue
+ϟ
+[Navigating System]
+key=G
+color=cyan
+⊙
+[Targeting System]
+key=G
+color=red
+◈
+[Auto-Repair System]
+key=G
+color=green
+⚙
+[Cloaking Device]
+key=G
+color=magenta
+◍
+[Fuel Compactor]
+key=G
+color=orange
+⌁
+[Hidden Cargo Bays]
+key=G
+color=darkgrey
+◙
+[Extra Cargo Bays]
+key=G
+color=yellow
+⠿
+[Escape Pod]
+key=P
+color=lightgrey
+◘
+
+;; role markers: the game shows the one of the encounter
+[Role Trader]
+key=R
 color=gold
 $
-[marca pirata]
+[Role Pirate]
+key=R
 color=white
 ☠
-[marca policia]
+[Role Police]
+key=R
 color=red
 bgcolor=blue
 blink=true

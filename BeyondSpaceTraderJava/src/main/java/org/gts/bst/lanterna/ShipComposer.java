@@ -35,26 +35,55 @@ public final class ShipComposer {
     if(locale != null) {
       java.util.Locale.setDefault(locale);
     }
-    final List<ShipArtFile> chassis;
-    final List<ShipArtFile> pieces;
-    final org.gts.bst.view.ShipAssembly saved;
-    try {
-      chassis = ShipArtFile.load("chassis.txt");
-      pieces = ShipArtFile.load("pieces.txt");
-      saved = org.gts.bst.view.ShipAssembly.load(ShipArtFile.resolve("ships.txt").toString());
-    } catch(IOException e) {
-      System.err.println(e.getMessage());
-      return;
-    }
     Screen screen = new DefaultTerminalFactory().createScreen();
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
-      gui.addWindowAndWait(new ShipComposerView(chassis, pieces, saved));
+      while(true) {
+        final List<ShipArtFile> chassis;
+        final List<ShipArtFile> pieces;
+        final List<org.gts.bst.view.ShipDesign> designs;
+        try {
+          chassis = ShipArtFile.load("chassis.txt");
+          pieces = ShipArtFile.load("pieces.txt");
+          designs = org.gts.bst.view.ShipDesign.load(ShipArtFile.resolve("ships.txt").toString());
+        } catch(IOException e) {
+          System.err.println(e.getMessage());
+          return;
+        }
+        int chosen = chooseMode(gui);
+        if(chosen == 0) {
+          gui.addWindowAndWait(new ShipEditorView(designs, chassis, pieces));
+        } else if(chosen == 1) {
+          gui.addWindowAndWait(new HullEditorView(chassis));
+        } else {
+          break;
+        }
+      }
     } finally {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  /** The little menu: the ship editor or the hull editor (Esc goes back here). */
+  private static int chooseMode(MultiWindowTextGUI gui) {
+    com.googlecode.lanterna.gui2.ActionListBox menu = new com.googlecode.lanterna.gui2.ActionListBox();
+    com.googlecode.lanterna.gui2.BasicWindow window = new com.googlecode.lanterna.gui2.BasicWindow(
+        "ship composer");
+    final int[] chosen = {-1};
+    menu.addItem("Ships: design the ships (keys and pieces)", () -> {
+      chosen[0] = 0;
+      window.close();
+    });
+    menu.addItem("Hulls: paint the hulls' colours", () -> {
+      chosen[0] = 1;
+      window.close();
+    });
+    window.setComponent(menu);
+    window.setCloseWindowWithEscape(true);
+    gui.addWindowAndWait(window);
+    return chosen[0];
   }
 }
