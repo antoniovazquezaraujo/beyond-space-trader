@@ -1,41 +1,51 @@
-;; Piezas de nave. Editable a mano; recarga con R en el compositor.
-;; Una linea [nombre] abre una pieza; color= es opcional (blanco por defecto).
-;; El espacio es vacio; todo lo demas (puntos y unicode incluidos) se dibuja.
-;; Los espacios del final se conservan; las lineas en blanco son filas de la pieza.
+;; Ship pieces. Editable by hand; the editors read the files when they open.
+;; One [name] line opens a piece; key= is the site it fills: A weapon,
+;; E shield, G gadget, C cockpit, M engines, D fuel, B cargo gauge, R role,
+;; P escape pod. color=, bgcolor= and blink= are optional.
+;; A space is empty; anything else (dots and unicode included) is drawn.
+;; Trailing spaces are kept; a blank line is a row of the piece.
 
 [antena]
 color=cyan
  ⦅
 ∫
 [motor]
+key=M
 color=#ff0000
 bgcolor=#ffff00
 blink=true
 ⧯
 [torreta laser]
+key=A
 color=red
 ⍡
 [torreta disruptor]
+key=A
 color=magenta
 ⎅
 [vaina de carga]
 color=yellow
 ⏌
 [cabina]
+key=C
 color=cyan
 ⎚.
 [deposito]
+key=D
 color=green
 ⛁
 
-;; marcas de rol (las pone el juego segun el encuentro)
+;; role markers (the game shows the one of the encounter)
 [marca comerciante]
+key=R
 color=gold
 $
 [marca pirata]
+key=R
 color=white
 ☠
 [marca policia]
+key=R
 color=red
 bgcolor=blue
 blink=true
