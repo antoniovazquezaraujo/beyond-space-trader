@@ -167,6 +167,10 @@ public final class ShipComposerView extends BasicWindow {
     if(character == 'e') {
       siteMode = !siteMode;
       message = siteMode ? "modo sitios: elige letra con [ ] y escribe con ENTER" : "modo normal";
+    } else if(character == '/' && siteMode) {
+      siteLetter = nextSiteLetter(1);
+    } else if(character >= '1' && character <= '9' && siteMode) {
+      siteLetter = ShipSites.letters().charAt(character - '1');
     } else if(character == '[' && siteMode) {
       siteLetter = nextSiteLetter(-1);
     } else if(character == ']' && siteMode) {
@@ -406,8 +410,8 @@ public final class ShipComposerView extends BasicWindow {
       }
       if(siteMode) {
         long pending = siteEdits.values().stream().mapToLong(Map::size).sum();
-        graphics.putString(1, size.getRows() - 1, "SITIOS: letra [" + siteLetter + "] cambia con [ ] · [ENTER] escribir"
-            + " · [d] borrar · [s] guardar en chassis.txt · [e]/[ESC] salir del modo"
+        graphics.putString(1, size.getRows() - 1, "SITIOS: [" + siteLetter + "] / cambia · 1C 2M 3D 4B 5R 6A 7E 8G 9P"
+            + " · [ENTER] escribir · [d] borrar · [s] guardar en chassis.txt · [e]/[ESC] salir del modo"
             + (pending == 0 ? "" : "  ·  " + pending + " cambios sin guardar")
             + (message.isEmpty() ? "" : "   ||   " + message));
       } else {

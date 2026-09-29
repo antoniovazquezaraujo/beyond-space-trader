@@ -211,6 +211,18 @@ class ShipComposerViewTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains("1/3"), "one weapon site: " + screenText(screen));
       assertTrue(screenText(screen).contains("SITIOS"), "the site mode line: " + screenText(screen));
+
+      // / cambia de letra y los numeros la eligen directamente
+      view.handleKey(new KeyStroke('/', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("SITIOS: [E]"), "the slash changes it: " + screenText(screen));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("1/2"), "one shield site: " + screenText(screen));
+
+      view.handleKey(new KeyStroke('2', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("SITIOS: [M]"), "the number picks it: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
