@@ -26,6 +26,9 @@ import java.util.Set;
 abstract class ArtEditorWindow extends BasicWindow {
   private final Canvas canvas = new Canvas();
   private boolean blinkOn = true;
+  private boolean glyphStrip;
+  /** Sample glyphs to check in the terminal: a wide one leaves a hole after the marker. */
+  private static final String GLYPH_SAMPLE = "🁣 🁩 🂓 ┃ ⚀ ⚅ ┃ ⣿ ⠿ ┃ ⧯ ⎅ ⏌ ⎚ ⛁ ┃ ↠ ⇉ ⦖ ⧎ ◒ ◈ ⍉ ⏚ ┃ 😀 中 ┃ ┌─┐";
 
   ArtEditorWindow(String title) {
     super(title);
@@ -65,6 +68,17 @@ abstract class ArtEditorWindow extends BasicWindow {
 
   protected abstract boolean handleKey(KeyStroke key);
 
+  /** The glyph strip first, then the editor's keys. */
+  boolean handleKeyWithStrip(KeyStroke key) {
+    if(key.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+        && Character.toLowerCase(key.getCharacter()) == 'g') {
+      glyphStrip = !glyphStrip;
+      redraw();
+      return true;
+    }
+    return handleKey(key);
+  }
+
   private final class Canvas extends AbstractInteractableComponent<Canvas> {
     @Override
     protected InteractableRenderer<Canvas> createDefaultRenderer() {
@@ -82,13 +96,20 @@ abstract class ArtEditorWindow extends BasicWindow {
         @Override
         public void drawComponent(TextGUIGraphics graphics, Canvas component) {
           paint(graphics);
+          if(glyphStrip) {
+            graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
+            graphics.setBackgroundColor(com.googlecode.lanterna.TextColor.ANSI.BLACK);
+            graphics.putString(0, Math.max(0, component.getSize().getRows() - 1), EditorText.cut("glifos: "
+                + GLYPH_SAMPLE + "   (cada ┃: pegado al glifo = 2 columnas; con hueco = 1 columna)"
+                + "   · [g] quitar", component.getSize().getColumns()));
+          }
         }
       };
     }
 
     @Override
     public synchronized Result handleKeyStroke(KeyStroke key) {
-      return handleKey(key) ? Result.HANDLED : Result.UNHANDLED;
+      return handleKeyWithStrip(key) ? Result.HANDLED : Result.UNHANDLED;
     }
   }
 }

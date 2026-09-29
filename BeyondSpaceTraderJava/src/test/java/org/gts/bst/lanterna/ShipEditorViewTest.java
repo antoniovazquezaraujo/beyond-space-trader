@@ -224,6 +224,32 @@ class ShipEditorViewTest {
     }
   }
 
+  @Test
+  void showsTheGlyphStrip() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\n"));
+    List<ShipArtFile> pieces = List.of();
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(140, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKeyWithStrip(new KeyStroke('g', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("glifos:"), screenText(screen));
+      view.handleKeyWithStrip(new KeyStroke('g', false, false));
+      gui.updateScreen();
+      assertTrue(!screenText(screen).contains("glifos:"), "g hides it again: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {

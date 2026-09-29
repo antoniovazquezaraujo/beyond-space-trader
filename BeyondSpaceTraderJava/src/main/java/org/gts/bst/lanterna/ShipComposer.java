@@ -35,30 +35,31 @@ public final class ShipComposer {
     if(locale != null) {
       java.util.Locale.setDefault(locale);
     }
-    final List<ShipArtFile> chassis;
-    final List<ShipArtFile> pieces;
-    final List<org.gts.bst.view.ShipDesign> designs;
-    try {
-      chassis = ShipArtFile.load("chassis.txt");
-      pieces = ShipArtFile.load("pieces.txt");
-      designs = org.gts.bst.view.ShipDesign.load(ShipArtFile.resolve("ships.txt").toString());
-    } catch(IOException e) {
-      System.err.println(e.getMessage());
-      return;
-    }
     Screen screen = new DefaultTerminalFactory().createScreen();
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
-      int chosen = chooseMode(gui);
-      if(chosen == 0) {
-        gui.addWindowAndWait(new ShipEditorView(designs, chassis, pieces));
-      } else if(chosen == 1) {
-        gui.addWindowAndWait(new HullEditorView(chassis));
-      } else if(chosen == 2) {
-        gui.addWindowAndWait(new ShipComposerView(chassis, pieces,
-            org.gts.bst.view.ShipAssembly.load(ShipArtFile.resolve("ships.txt").toString())));
+      while(true) {
+        final List<ShipArtFile> chassis;
+        final List<ShipArtFile> pieces;
+        final List<org.gts.bst.view.ShipDesign> designs;
+        try {
+          chassis = ShipArtFile.load("chassis.txt");
+          pieces = ShipArtFile.load("pieces.txt");
+          designs = org.gts.bst.view.ShipDesign.load(ShipArtFile.resolve("ships.txt").toString());
+        } catch(IOException e) {
+          System.err.println(e.getMessage());
+          return;
+        }
+        int chosen = chooseMode(gui);
+        if(chosen == 0) {
+          gui.addWindowAndWait(new ShipEditorView(designs, chassis, pieces));
+        } else if(chosen == 1) {
+          gui.addWindowAndWait(new HullEditorView(chassis));
+        } else {
+          break;
+        }
       }
     } finally {
       screen.stopScreen();
@@ -66,7 +67,7 @@ public final class ShipComposer {
     }
   }
 
-  /** The little menu: the ship editor or the classic composer of pieces. */
+  /** The little menu: the ship editor or the hull editor (Esc goes back here). */
   private static int chooseMode(MultiWindowTextGUI gui) {
     com.googlecode.lanterna.gui2.ActionListBox menu = new com.googlecode.lanterna.gui2.ActionListBox();
     com.googlecode.lanterna.gui2.BasicWindow window = new com.googlecode.lanterna.gui2.BasicWindow(
@@ -78,10 +79,6 @@ public final class ShipComposer {
     });
     menu.addItem("Fuselajes: colorear los cascos", () -> {
       chosen[0] = 1;
-      window.close();
-    });
-    menu.addItem("Compositor clasico (piezas sueltas)", () -> {
-      chosen[0] = 2;
       window.close();
     });
     window.setComponent(menu);
