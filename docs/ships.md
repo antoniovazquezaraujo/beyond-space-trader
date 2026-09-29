@@ -346,7 +346,6 @@ kinds with no piece yet show `(-)`, so the missing art is visible at a glance.
 | `C M D B R A E G P` | Write that site letter at the cursor |
 | `n` / `r` | Add a ship / rename it |
 | `h` / `y` | Pick the chassis / the ship type from a list |
-| `g` | Glyph strip: check how the terminal paints the sample glyphs |
 | `v` | Preview: cycle which piece of the kind under the cursor is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
 | `←↑→↓` | Move the cursor |
 | space | Erase the whole group under the cursor |
