@@ -335,14 +335,15 @@ group=M x=6 y=3
 **hull editor**. Escape in an editor goes back to the menu (which reloads the
 files, so the changes are there); Escape in the menu quits.
 
-Both editors have a vertical panel on the left with the numbered elements, and
-the selected one has a background of its own: `n` and `p` move through them and
-the keys `1` to `9` pick one directly.
-
-The **ship editor** panel lists the piece keys the game may fill a site with
-(`1. Weapon (A)`), with how many the ship has against the maximum (and a mark:
-`✓` right, `⚠` missing, `✗` over, `?` without a type); then come the hull with
-its colours and the same ship with the real pieces painted over it.
+Both editors have a vertical panel on the left, and the selected row of every
+list has a background of its own. In the **ship editor** the first line is the
+ship type (`y` cycles it), then comes the list of ships (`TAB` and `⇧TAB` move
+through it and the open one is highlighted) and then the numbered elements:
+`n` and `p` move through them and the keys `1` to `9` pick one directly. Each
+element is a piece key the game may fill a site with (`1. Weapon (A)`), with how
+many the ship has against the maximum (and a mark: `✓` right, `⚠` missing, `✗`
+over, `?` without a type); then come the hull with its colours and the same ship
+with the real pieces painted over it.
 
 | Key | Action |
 | --- | --- |
@@ -352,7 +353,7 @@ its colours and the same ship with the real pieces painted over it.
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the element painted. The cursor moves one cell right either way |
 | `v` | Preview: cycle which piece of the element is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
 | `+` / `t` | Add a ship / rename it (title) |
-| `f` / `y` | Pick the frame (chassis) / the ship type from a list |
+| `f` / `y` | Pick the frame (chassis) from a list / cycle the ship type (first line of the panel) |
 | `TAB` / `⇧TAB` | Next / previous ship (the file keeps every design) |
 | `s` | Save every ship back to `ships.txt` |
 | `Esc` | Back to the menu |

@@ -79,7 +79,7 @@ class ShipEditorViewTest {
   }
 
   @Test
-  void picksTheChassisAndTheTypeFromLists() throws IOException {
+  void picksTheChassisFromTheListAndCyclesTheType() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\nchasis=nope\n"));
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\n"));
     List<ShipArtFile> pieces = List.of();
@@ -94,19 +94,21 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
       assertTrue(screenText(screen).contains("cannot find the chassis"), screenText(screen));
+      assertTrue(screenText(screen).contains("type: -"), screenText(screen));
 
+      // f opens the chassis list, on the first line of the panel
       view.handleKey(new KeyStroke('f', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("chassis:"), screenText(screen));
       assertTrue(screenText(screen).contains("uno"), screenText(screen));
       view.handleKey(new KeyStroke(KeyType.Enter));
 
-      view.handleKey(new KeyStroke('y', false, false));
+      // y cycles the type on the first line, with no menu at all
+      for(int i = 0; i < 3; i++) {
+        view.handleKey(new KeyStroke('y', false, false));
+      }
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("ship type:"), screenText(screen));
-      view.handleKey(new KeyStroke(KeyType.ArrowDown));
-      view.handleKey(new KeyStroke(KeyType.ArrowDown));
-      view.handleKey(new KeyStroke(KeyType.Enter));
+      assertTrue(screenText(screen).contains("type: Firefly"), screenText(screen));
       view.handleKey(new KeyStroke('s', false, false));
 
       List<ShipDesign> saved = ShipDesign.load(file.toString());
@@ -285,16 +287,23 @@ class ShipEditorViewTest {
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("[uno]"), screenText(screen));
+      // the open ship is the one with a background of its own in the ships list
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "uno")).getBackgroundColor(),
+          screenText(screen));
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowOf(screen, "dos")).getBackgroundColor(),
+          screenText(screen));
 
       view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("[dos]"), screenText(screen));
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "dos")).getBackgroundColor(),
+          screenText(screen));
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowOf(screen, "uno")).getBackgroundColor(),
+          screenText(screen));
 
       view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("[uno]"), "from the last one it goes back to the first: "
-          + screenText(screen));
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "uno")).getBackgroundColor(),
+          "from the last one it goes back to the first: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -356,8 +365,8 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
 
-      int weapon = rowOf(screen, "1. Weapon (A)");
-      int engine = rowOf(screen, "2. Engine (M)");
+      int weapon = panelRowOf(screen, "1. Weapon (A)");
+      int engine = panelRowOf(screen, "2. Engine (M)");
       assertTrue(weapon >= 0 && engine >= 0, screenText(screen));
 
       // the first element is selected: its row has a background of its own
@@ -369,9 +378,9 @@ class ShipEditorViewTest {
       // n moves the highlight to the engine
       view.handleKey(new KeyStroke('n', false, false));
       gui.updateScreen();
-      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, rowOf(screen, "2. Engine (M)")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "2. Engine (M)")).getBackgroundColor(),
           "the engine is now selected: " + screenText(screen));
-      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, rowOf(screen, "1. Weapon (A)")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowOf(screen, "1. Weapon (A)")).getBackgroundColor(),
           "and the weapon is not: " + screenText(screen));
     } finally {
       screen.stopScreen();
@@ -379,10 +388,10 @@ class ShipEditorViewTest {
     }
   }
 
-  private static int rowOf(Screen screen, String text) {
+  private static int panelRowOf(Screen screen, String text) {
     String[] lines = screenText(screen).split("\n", -1);
     for(int row = 0; row < lines.length; row++) {
-      if(lines[row].contains(text)) {
+      if(lines[row].startsWith("│" + text)) {
         return row;
       }
     }
