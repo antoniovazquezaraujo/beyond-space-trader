@@ -33,7 +33,7 @@ class ShipEditorViewTest {
   void writesLettersAndSavesThem() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\nxxxxx\n"));
-    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\nkey=M\ncolor=red\nM\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Engine]\nkey=M\ncolor=red\nM\n"));
     Path file = Files.createTempFile("naves", ".txt");
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -45,7 +45,7 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
       assertTrue(screenText(screen).contains("prueba"), screenText(screen));
-      assertTrue(screenText(screen).contains("motor(M)"), "the pieces list: " + screenText(screen));
+      assertTrue(screenText(screen).contains("Engine(M)"), "the pieces list: " + screenText(screen));
 
       view.handleKey(new KeyStroke('M', false, false));
       gui.updateScreen();

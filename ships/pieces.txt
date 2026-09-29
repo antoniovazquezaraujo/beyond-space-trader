@@ -1,50 +1,55 @@
 ;; Ship pieces. Editable by hand; the editors read the files when they open.
-;; One [name] line opens a piece; key= is the site it fills: A weapon,
-;; E shield, G gadget, C cockpit, M engines, D fuel, B cargo gauge, R role,
-;; P escape pod. color=, bgcolor= and blink= are optional.
+;; The [name] is the English name of the game item the piece draws (that is how
+;; the game finds the piece for each thing); key= is the site letter it fills.
+;; The letters are yours: keep the pieces and the hulls in agreement.
+;; Suggested letters: A weapon, E shield, G gadget, C cockpit, M engines,
+;; D fuel tank, B cargo gauge, R role, P escape pod.
+;; color=, bgcolor= and blink= are optional.
 ;; A space is empty; anything else (dots and unicode included) is drawn.
-;; Trailing spaces are kept; a blank line is a row of the piece.
 
-[antena]
+[Antenna]
 color=cyan
  ⦅
 ∫
-[motor]
+[Engine]
 key=M
 color=#ff0000
 bgcolor=#ffff00
 blink=true
 ⧯
-[torreta laser]
+[Pulse Laser]
 key=A
 color=red
 ⍡
-[torreta disruptor]
+[Photon Disruptor]
 key=A
 color=magenta
 ⎅
-[vaina de carga]
+[Cargo Pod]
 color=yellow
 ⏌
-[cabina]
+[Cockpit]
 key=C
 color=cyan
 ⎚.
-[deposito]
+[Fuel Tank]
 key=D
 color=green
 ⛁
+[Cargo Gauge]
+key=B
+▬
 
-;; role markers (the game shows the one of the encounter)
-[marca comerciante]
+;; role markers: the game shows the one of the encounter
+[Role Trader]
 key=R
 color=gold
 $
-[marca pirata]
+[Role Pirate]
 key=R
 color=white
 ☠
-[marca policia]
+[Role Police]
 key=R
 color=red
 bgcolor=blue

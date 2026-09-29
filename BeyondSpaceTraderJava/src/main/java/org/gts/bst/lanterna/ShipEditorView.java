@@ -384,7 +384,7 @@ public final class ShipEditorView extends ArtEditorWindow {
           }
         }
       }
-    } else if(run.letter() == ShipSites.CARGO) {
+    } else if(ShipSites.kindOfLetter(run.letter(), pieces) == ShipSites.Kind.CARGO) {
       String gauge = ShipSites.gauge(capacity());
       for(int i = 0; i < gauge.length() && i < run.n() && x + i < left + width; i++) {
         EditorText.glyph(graphics, x + i, y, gauge.codePointAt(i), color("green"), false);
@@ -441,34 +441,36 @@ public final class ShipEditorView extends ArtEditorWindow {
     return text.toString();
   }
 
+  /** The groups of the design, as the grid has them now. */
+  private List<ShipDesign.LetterGroup> currentGroups() {
+    List<ShipDesign.LetterGroup> groups = new ArrayList<>();
+    for(LetterGrid.Run run : grid.runs()) {
+      groups.add(new ShipDesign.LetterGroup(run.letter(), run.x(), run.y(), run.n(), ""));
+    }
+    return groups;
+  }
+
   private String sitesLine() {
     ShipDesign design = design();
     if(design == null) {
       return "";
     }
-    Map<Character, Integer> placed = new LinkedHashMap<>();
-    Map<Character, Integer> longest = new LinkedHashMap<>();
-    for(char site : ShipSites.letters().toCharArray()) {
-      placed.put(site, 0);
-      longest.put(site, 0);
-    }
-    for(LetterGrid.Run run : grid.runs()) {
-      placed.merge(run.letter(), run.n(), Integer::sum);
-      longest.merge(run.letter(), run.n(), Math::max);
-    }
     ShipSites.Budget budget = ShipSites.budgetOf(design.type());
+    if(budget == null) {
+      return "sitios: (sin type=: no se puede validar)";
+    }
+    List<ShipDesign.LetterGroup> groups = currentGroups();
+    Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(groups, pieces);
+    Map<ShipSites.Kind, Integer> longest = ShipSites.longestByKind(groups, pieces);
     StringBuilder text = new StringBuilder("sitios:");
-    for(char site : ShipSites.letters().toCharArray()) {
-      if(budget == null || ShipSites.maxOf(budget, site) <= 0) {
+    for(ShipSites.Kind kind : ShipSites.Kind.values()) {
+      int max = ShipSites.maxOfKind(budget, kind);
+      if(max <= 0) {
         continue;
       }
-      int max = ShipSites.maxOf(budget, site);
-      int there = site == ShipSites.CARGO ? longest.getOrDefault(site, 0) : placed.getOrDefault(site, 0);
-      text.append(' ').append(ShipSites.name(site)).append(' ').append(there).append('/').append(max);
+      int there = kind == ShipSites.Kind.CARGO ? longest.getOrDefault(kind, 0) : counts.getOrDefault(kind, 0);
+      text.append(' ').append(ShipSites.kindName(kind)).append(' ').append(there).append('/').append(max);
       text.append(there < max ? " ⚠" : there == max ? " ok" : " ✗");
-    }
-    if(budget == null) {
-      text.append(" (sin type=: no se puede validar)");
     }
     return text.toString();
   }

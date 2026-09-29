@@ -90,6 +90,30 @@ class ShipSitesTest {
   }
 
   @Test
+  void countsTheSitesByKindUsingThePieces() throws IOException {
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Engine]\nkey=M\ncolor=white\nM\n"));
+    List<ShipDesign.LetterGroup> groups = List.of(
+        new ShipDesign.LetterGroup('A', 1, 1, 2, "red"),
+        new ShipDesign.LetterGroup('M', 4, 1, 1, "white"),
+        new ShipDesign.LetterGroup('Z', 6, 1, 3, "white"));
+
+    assertEquals(ShipSites.Kind.WEAPON, ShipSites.kindOf("Pulse Laser"));
+    assertEquals(ShipSites.Kind.SHIELD, ShipSites.kindOf("Energy Shield"));
+    assertEquals(ShipSites.Kind.GADGET, ShipSites.kindOf("Cloaking Device"));
+    assertEquals(ShipSites.Kind.CARGO, ShipSites.kindOf("Cargo Gauge"));
+    assertEquals(ShipSites.Kind.PART, ShipSites.kindOf("Antenna"));
+    assertEquals(ShipSites.Kind.WEAPON, ShipSites.kindOfLetter('A', pieces));
+    assertEquals(ShipSites.Kind.ENGINES, ShipSites.kindOfLetter('M', pieces));
+    assertEquals(ShipSites.Kind.PART, ShipSites.kindOfLetter('Z', pieces), "a letter with no piece");
+
+    Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(groups, pieces);
+    assertEquals(2, counts.get(ShipSites.Kind.WEAPON));
+    assertEquals(1, counts.get(ShipSites.Kind.ENGINES));
+    assertEquals(3, counts.get(ShipSites.Kind.PART));
+  }
+
+  @Test
   void theCustomShipAdmitsExtraWeapons() throws IOException {
     List<ShipArtFile> parts = ShipArtFile.parse(new StringReader("[Custom]\nAAAAAAAA\n"));
     List<String> warnings = ShipSites.warnings("Custom", ShipSites.count(ShipSites.sitesOf(parts.get(0))),

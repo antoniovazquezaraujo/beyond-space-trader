@@ -33,7 +33,10 @@ blink=true                   ← optional; only true or false (false by default)
 
 - **Comments**: lines starting with `;;`. A single `;` is part of the drawing.
 - **`[name]`** opens a part and closes the previous one.
-- **In a piece**, `key=` says which site it fills (`key=M`).
+- **The `[name]` of a piece is the English name of the game item** it draws
+  (`[Pulse Laser]`, `[Energy Shield]`, `[Engine]`): that is how the game finds the
+  piece for each thing. **In a piece**, `key=` says which site letter it fills
+  (`key=M`).
 - **In a chassis**, `key=` with a style defines a **colour letter** (a free
   letter and the colour, background and blink it paints with:
   `key=X color=red bgcolor=blue blink=true`) and `zone=` paints a **colour
@@ -491,36 +494,34 @@ Every chassis is then drawn once with up to that many small mount positions, and
 nothing else has to change when a player refits. The composer should show the
 ship's budget (pending).
 
-### Site types
+### Sites and letters
 
-A **site** is a place in the chassis that the game fills with a piece. The
-letters are reserved in the art (declared at the top of the chassis file) and the
-**length of the run** tells how wide the piece may be:
+A **site** is a place the game fills with a **piece**. The letters are yours: the
+piece says which letter it fills with `key=` (in `pieces.txt`) and the ship paints
+that letter in its groups (in `ships.txt`). Keep the pieces and the ships in
+agreement. These are the suggested letters:
 
-| Letter | Site | Filled with | How many |
-| --- | --- | --- | --- |
-| `C` | Cockpit | The cockpit piece | One, always |
-| `M` | Engines | The engine piece | By size (1 to 3) |
-| `D` | Fuel | The fuel tank piece | One, two on the big ones |
-| `B` | Cargo | The braille gauge: one dot per bay, two to nine cells (10 bays = 2, 60 = 8, 70 with two cargo gadgets = 9) | One, if it carries cargo |
-| `R` | Role | The role marker ($, ☠ or the siren) | None on the player's ship |
-| `A` | Weapons | The piece of the mounted weapon | 0 to its weapon slots |
-| `E` | Shields | The piece of the mounted shield | 0 to its shield slots |
-| `G` | Gadgets | The piece of the mounted gadget | 0 to its gadget slots |
-| `P` | Pod | The escape pod piece | 0 or 1, only on the player's ship |
+| Letter | Site | Filled with |
+| --- | --- | --- |
+| `C` | Cockpit | the `Cockpit` piece |
+| `M` | Engines | the `Engine` piece (by size: 1 to 3) |
+| `D` | Fuel | the `Fuel Tank` piece (one, two on the big ones) |
+| `B` | Cargo | the `Cargo Gauge` piece: the game draws the braille gauge of the real capacity (one dot per bay, two to nine cells) |
+| `R` | Role | the role marker (`Role Trader`, `Role Pirate` or `Role Police`) |
+| `A` | Weapons | the piece of the mounted weapon, by its English name |
+| `E` | Shields | the piece of the mounted shield |
+| `G` | Gadgets | the piece of the mounted gadget |
+| `P` | Pod | the `Escape Pod` piece (the player's ship only) |
 
-The minimum is what the chassis must always show; the maximum is how many the
-game may fill, so **the chassis has to offer that many sites** (the composer
-checks it and warns). A dash means the ship has no site of that kind at all.
+The **length of the run** (`MMM`) tells how wide the piece may be. The minimum is
+what the ship must always show; the maximum comes from the game specs (the weapon,
+shield and gadget slots) and the size, so **the ship has to offer that many
+sites**: the editor counts them and warns when something is missing or spare.
 
 Three details: `D` is one tank, and a second one can appear when the fuel is
 increased (the fuel compactor adds three tanks); the `B` gauge is drawn by the
 game, and the hidden cargo bays (the hidden cargo gadget) can go in another
 colour; `P` is only for the player's ship, the NPCs never carry a pod.
-
-```
-sitios= C=cabina M=motor D=deposito B=bodega R=rol A=arma E=escudo G=artilugio
-```
 
 ### Sites per ship type
 

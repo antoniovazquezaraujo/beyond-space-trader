@@ -230,6 +230,135 @@ public final class ShipSites {
     return warnings;
   }
 
+  /** What a piece is, by the name of the game item it draws. */
+  public enum Kind {
+    WEAPON, SHIELD, GADGET, COCKPIT, ENGINES, FUEL, CARGO, ROLE, POD, PART
+  }
+
+  private static final Map<String, Kind> KINDS = kinds();
+
+  private static Map<String, Kind> kinds() {
+    Map<String, Kind> kinds = new LinkedHashMap<>();
+    kinds.put("pulse laser", Kind.WEAPON);
+    kinds.put("beam laser", Kind.WEAPON);
+    kinds.put("military laser", Kind.WEAPON);
+    kinds.put("morgan's laser", Kind.WEAPON);
+    kinds.put("photon disruptor", Kind.WEAPON);
+    kinds.put("quantum disruptor", Kind.WEAPON);
+    kinds.put("energy shield", Kind.SHIELD);
+    kinds.put("reflective shield", Kind.SHIELD);
+    kinds.put("lightning shield", Kind.SHIELD);
+    kinds.put("extra cargo bays", Kind.GADGET);
+    kinds.put("auto-repair system", Kind.GADGET);
+    kinds.put("navigating system", Kind.GADGET);
+    kinds.put("targeting system", Kind.GADGET);
+    kinds.put("cloaking device", Kind.GADGET);
+    kinds.put("fuel compactor", Kind.GADGET);
+    kinds.put("hidden cargo bays", Kind.GADGET);
+    kinds.put("cockpit", Kind.COCKPIT);
+    kinds.put("engine", Kind.ENGINES);
+    kinds.put("fuel tank", Kind.FUEL);
+    kinds.put("cargo gauge", Kind.CARGO);
+    kinds.put("escape pod", Kind.POD);
+    kinds.put("role trader", Kind.ROLE);
+    kinds.put("role pirate", Kind.ROLE);
+    kinds.put("role police", Kind.ROLE);
+    return kinds;
+  }
+
+  /** The kind of a piece, by the name of the game item it draws. */
+  public static Kind kindOf(String pieceName) {
+    return KINDS.getOrDefault(pieceName == null ? "" : pieceName.strip().toLowerCase(), Kind.PART);
+  }
+
+  /** The name of a kind, for the panels. */
+  public static String kindName(Kind kind) {
+    switch(kind) {
+      case WEAPON:
+        return "arma";
+      case SHIELD:
+        return "escudo";
+      case GADGET:
+        return "artilugio";
+      case COCKPIT:
+        return "cabina";
+      case ENGINES:
+        return "motor";
+      case FUEL:
+        return "deposito";
+      case CARGO:
+        return "bodega";
+      case ROLE:
+        return "rol";
+      case POD:
+        return "capsula";
+      default:
+        return "pieza";
+    }
+  }
+
+  /** The maximum of a kind for a ship type. */
+  public static int maxOfKind(Budget budget, Kind kind) {
+    switch(kind) {
+      case WEAPON:
+        return budget.weapons();
+      case SHIELD:
+        return budget.shields();
+      case GADGET:
+        return budget.gadgets();
+      case COCKPIT:
+        return budget.cockpit();
+      case ENGINES:
+        return budget.engines();
+      case FUEL:
+        return budget.fuel();
+      case CARGO:
+        return budget.cargoCells();
+      case ROLE:
+        return budget.role();
+      case POD:
+        return budget.pod();
+      default:
+        return -1;
+    }
+  }
+
+  /** The kind of a letter: that of the piece whose key= is that letter. */
+  public static Kind kindOfLetter(char letter, List<ShipArtFile> pieces) {
+    for(ShipArtFile piece : pieces) {
+      if(!piece.letter().isEmpty() && piece.letter().charAt(0) == letter) {
+        return kindOf(piece.name());
+      }
+    }
+    return Kind.PART;
+  }
+
+  /** How many sites of each kind the groups paint, using the pieces' keys. */
+  public static Map<Kind, Integer> countsByKind(List<ShipDesign.LetterGroup> groups, List<ShipArtFile> pieces) {
+    Map<Kind, Integer> counts = emptyKinds();
+    for(ShipDesign.LetterGroup group : groups) {
+      counts.merge(kindOfLetter(group.letter(), pieces), group.n(), Integer::sum);
+    }
+    return counts;
+  }
+
+  /** The longest run of each kind (what the cargo gauge needs). */
+  public static Map<Kind, Integer> longestByKind(List<ShipDesign.LetterGroup> groups, List<ShipArtFile> pieces) {
+    Map<Kind, Integer> longest = emptyKinds();
+    for(ShipDesign.LetterGroup group : groups) {
+      longest.merge(kindOfLetter(group.letter(), pieces), group.n(), Math::max);
+    }
+    return longest;
+  }
+
+  private static Map<Kind, Integer> emptyKinds() {
+    Map<Kind, Integer> counts = new LinkedHashMap<>();
+    for(Kind kind : Kind.values()) {
+      counts.put(kind, 0);
+    }
+    return counts;
+  }
+
   /** The braille gauge of a capacity: one dot per bay, in the owner's order. */
   public static String gauge(int bays) {
     StringBuilder gauge = new StringBuilder();
