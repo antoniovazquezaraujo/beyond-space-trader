@@ -111,6 +111,37 @@ class ShipEditorViewTest {
     }
   }
 
+  @Test
+  void refusesMorePiecesThanTheShipAdmits() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Pulse Laser]\nkey=A\ncolor=red\nA\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKey(new KeyStroke('A', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("arma 1/1"), "the Firefly admits one weapon: " + screenText(screen));
+
+      // otra arma, separada: se cuenta igual y no cabe
+      view.handleKey(new KeyStroke(KeyType.ArrowRight));
+      view.handleKey(new KeyStroke(KeyType.ArrowRight));
+      view.handleKey(new KeyStroke('A', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("admite 1"), "the warning: " + screenText(screen));
+      assertTrue(screenText(screen).contains("arma 1/1"), "it is not written: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {

@@ -516,7 +516,9 @@ agreement. These are the suggested letters:
 The **length of the run** (`MMM`) tells how wide the piece may be. The minimum is
 what the ship must always show; the maximum comes from the game specs (the weapon,
 shield and gadget slots) and the size, so **the ship has to offer that many
-sites**: the editor counts them and warns when something is missing or spare.
+sites**. The ship editor counts every group of a kind (side by side or apart) and
+**refuses to write more than the type admits**, with a warning; the message of
+each letter tells the quota (`arma 2/3`) and the summary line shows it too.
 
 Three details: `D` is one tank, and a second one can appear when the fuel is
 increased (the fuel compactor adds three tanks); the `B` gauge is drawn by the

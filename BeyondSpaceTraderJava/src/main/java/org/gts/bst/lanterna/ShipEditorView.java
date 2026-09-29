@@ -32,7 +32,7 @@ import org.gts.bst.view.ShipSites;
  */
 public final class ShipEditorView extends ArtEditorWindow {
   private static final String[] GROUP_COLORS = {"white", "cyan", "red", "yellow", "green", "magenta", "blue"};
-  private static final int STRIP_ROWS = 4;
+  private static final int STRIP_ROWS = 5;
   private final List<ShipDesign> designs;
   private final List<ShipArtFile> hulls;
   private final List<ShipArtFile> pieces;
@@ -184,8 +184,12 @@ public final class ShipEditorView extends ArtEditorWindow {
   private void character(char character) {
     char letter = Character.toUpperCase(character);
     if(ShipSites.isSite(letter)) {
-      grid.set(cursorX, cursorY, letter);
-      message = "sitio " + letter + " en x=" + cursorX + " y=" + cursorY;
+      if(canPlace(letter)) {
+        grid.set(cursorX, cursorY, letter);
+        ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
+        message = "sitio " + letter + " (" + ShipSites.kindName(kind) + " " + countOfKind(kind) + "/"
+            + maxOfKind(kind) + ")";
+      }
     } else if(character == ' ') {
       LetterGrid.Run run = grid.runAt(cursorX, cursorY);
       if(run == null) {
@@ -210,6 +214,48 @@ public final class ShipEditorView extends ArtEditorWindow {
     } else if(character == 's') {
       save();
     }
+  }
+
+  /** The count of a kind in the design, as the grid has it now. */
+  private int countOfKind(ShipSites.Kind kind) {
+    return ShipSites.countsByKind(currentGroups(), pieces).getOrDefault(kind, 0);
+  }
+
+  private int maxOfKind(ShipSites.Kind kind) {
+    ShipDesign design = design();
+    ShipSites.Budget budget = design == null ? null : ShipSites.budgetOf(design.type());
+    return budget == null ? -1 : ShipSites.maxOfKind(budget, kind);
+  }
+
+  /**
+   * True when that letter can go in the cell. It tries it and counts every group
+   * of the kind (next to each other or apart): if the ship type does not admit
+   * that many, it gives the cell back and warns.
+   */
+  private boolean canPlace(char letter) {
+    ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
+    if(kind == ShipSites.Kind.PART) {
+      message = "aviso: ninguna pieza usa la letra " + letter;
+      return true;
+    }
+    int max = maxOfKind(kind);
+    if(max < 0) {
+      return true;
+    }
+    char previous = grid.at(cursorX, cursorY);
+    grid.set(cursorX, cursorY, letter);
+    int count = countOfKind(kind);
+    if(previous == ' ') {
+      grid.clear(cursorX, cursorY);
+    } else {
+      grid.set(cursorX, cursorY, previous);
+    }
+    ShipDesign design = design();
+    if(count > max) {
+      message = "⚠ " + ShipSites.kindName(kind) + ": el " + design.type() + " admite " + max;
+      return false;
+    }
+    return true;
   }
 
   /** The items of the open list: the hulls of chassis.txt or the game ship types. */
@@ -306,7 +352,10 @@ public final class ShipEditorView extends ArtEditorWindow {
     graphics.putString(0, rows, EditorText.cut(shipsLine(), size.getColumns()));
     graphics.putString(0, rows + 1, EditorText.cut(piecesLine(), size.getColumns()));
     graphics.putString(0, rows + 2, EditorText.cut(sitesLine(), size.getColumns()));
-    graphics.putString(0, rows + 3, EditorText.cut(keysLine(), size.getColumns()));
+    graphics.setForegroundColor(message.startsWith("⚠") ? TextColor.ANSI.YELLOW : TextColor.ANSI.WHITE);
+    graphics.putString(0, rows + 3, EditorText.cut(message, size.getColumns()));
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    graphics.putString(0, rows + 4, EditorText.cut(keysLine(), size.getColumns()));
   }
 
   /** Draws the open list of hulls or ship types. */
@@ -479,8 +528,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = design();
     return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor · [,/.] color"
         + (design == null ? "" : " · chasis: " + design.chassis())
-        + " · [h] chasis · [y] type · [s] guardar · [TAB] nave · [ESC] salir"
-        + (message.isEmpty() ? "" : "   ||   " + message);
+        + " · [h] chasis · [y] type · [s] guardar · [TAB] nave · [ESC] salir";
   }
 
   private static TextColor color(String name) {
