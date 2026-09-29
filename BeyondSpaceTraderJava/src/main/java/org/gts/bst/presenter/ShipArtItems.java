@@ -36,13 +36,19 @@ public final class ShipArtItems {
   public static List<String> of(Ship ship) {
     List<String> items = new ArrayList<>();
     for(Weapon weapon : ship.Weapons()) {
-      items.add(weapon.Name());
+      if(weapon != null) {
+        items.add(weapon.Name());
+      }
     }
     for(Shield shield : ship.Shields()) {
-      items.add(shield.Name());
+      if(shield != null) {
+        items.add(shield.Name());
+      }
     }
     for(Gadget gadget : ship.Gadgets()) {
-      items.add(gadget.Name());
+      if(gadget != null) {
+        items.add(gadget.Name());
+      }
     }
     items.addAll(fixed(ship.Type()));
     if(ship.getEscapePod()) {
