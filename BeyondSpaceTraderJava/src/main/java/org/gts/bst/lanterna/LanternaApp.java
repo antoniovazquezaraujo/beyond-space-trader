@@ -114,29 +114,44 @@ public final class LanternaApp {
       return;
     }
     String name = InputDialog.show(gui, Strings.DialogNewNameTitle, Strings.DialogNewNamePrompt, "Antonio");
-    if(name == null || name.trim().isEmpty()) {
+    if(name == null) {
+      // Only backing out of the first dialog cancels the game; the rest is forgiving.
+      window.log(Strings.MainNewGameCancelled + " (" + Strings.DialogNewNameTitle + ")");
       return;
     }
+    name = name.trim().isEmpty() ? "Antonio" : name.trim();
     Difficulty difficulty = askDifficulty(gui);
     if(difficulty == null) {
-      return;
+      difficulty = Difficulty.Normal;
+      window.log(Strings.DialogDifficultyTitle + ": " + Strings.DifficultyLevels.get(difficulty.CastToInt()));
     }
     String[] labels = {Strings.SkillPilot, Strings.SkillFighter, Strings.SkillTrader, Strings.SkillEngineer};
     int[] extra = new int[labels.length];
     for(int i = 0; i < extra.length; i++) {
       int remaining = TOTAL_SKILL_POINTS - labels.length - (extra[0] + extra[1] + extra[2] + extra[3]);
-      int max = Math.min(Consts.MaxSkill - 1, remaining);
-      Integer value = LanternaDialogs.askAmount(gui, Strings.DialogSkillTitle,
-          Functions.StringVars(Strings.DialogSkillPrompt, labels[i], "" + max), max);
-      if(value == null) {
-        return;
-      }
-      extra[i] = value;
+      int max = Math.max(0, Math.min(Consts.MaxSkill - 1, remaining));
+      extra[i] = skillPoints(InputDialog.show(gui, Strings.DialogSkillTitle,
+          Functions.StringVars(Strings.DialogSkillPrompt, labels[i], "" + max), "0"), max);
     }
-    game[0] = new Game(name.trim(), difficulty, 1 + extra[0], 1 + extra[1], 1 + extra[2], 1 + extra[3],
+    game[0] = new Game(name, difficulty, 1 + extra[0], 1 + extra[1], 1 + extra[2], 1 + extra[3],
         window, dialogs);
     window.gameChanged();
-    window.log(Functions.StringVars(Strings.MainNewGame, name.trim()));
+    window.log(Functions.StringVars(Strings.MainNewGame, name));
+  }
+
+  /**
+   * The extra points typed in a skill dialog: a cancelled dialog, a nonsense value or
+   * one out of range counts as zero (or the maximum), so it never cancels the game.
+   */
+  static int skillPoints(String typed, int max) {
+    if(typed == null) {
+      return 0;
+    }
+    try {
+      return Math.max(0, Math.min(max, Integer.parseInt(typed.trim())));
+    } catch(NumberFormatException e) {
+      return 0;
+    }
   }
 
   private static Difficulty askDifficulty(WindowBasedTextGUI gui) {
