@@ -37,11 +37,11 @@ public final class ShipComposer {
     }
     final List<ShipArtFile> chassis;
     final List<ShipArtFile> pieces;
-    final org.gts.bst.view.ShipAssembly saved;
+    final List<org.gts.bst.view.ShipDesign> designs;
     try {
       chassis = ShipArtFile.load("chassis.txt");
       pieces = ShipArtFile.load("pieces.txt");
-      saved = org.gts.bst.view.ShipAssembly.load(ShipArtFile.resolve("ships.txt").toString());
+      designs = org.gts.bst.view.ShipDesign.load(ShipArtFile.resolve("ships.txt").toString());
     } catch(IOException e) {
       System.err.println(e.getMessage());
       return;
@@ -51,10 +51,35 @@ public final class ShipComposer {
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
-      gui.addWindowAndWait(new ShipComposerView(chassis, pieces, saved));
+      int chosen = chooseMode(gui);
+      if(chosen == 0) {
+        gui.addWindowAndWait(new ShipEditorView(designs, chassis, pieces));
+      } else if(chosen == 1) {
+        gui.addWindowAndWait(new ShipComposerView(chassis, pieces,
+            org.gts.bst.view.ShipAssembly.load(ShipArtFile.resolve("ships.txt").toString())));
+      }
     } finally {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  /** The little menu: the ship editor or the classic composer of pieces. */
+  private static int chooseMode(MultiWindowTextGUI gui) {
+    com.googlecode.lanterna.gui2.ActionListBox menu = new com.googlecode.lanterna.gui2.ActionListBox();
+    com.googlecode.lanterna.gui2.BasicWindow window = new com.googlecode.lanterna.gui2.BasicWindow(
+        "compositor de naves");
+    final int[] chosen = {-1};
+    menu.addItem("Naves: disenar las naves (letras y piezas)", () -> {
+      chosen[0] = 0;
+      window.close();
+    });
+    menu.addItem("Compositor clasico (piezas sueltas)", () -> {
+      chosen[0] = 1;
+      window.close();
+    });
+    window.setComponent(menu);
+    gui.addWindowAndWait(window);
+    return chosen[0];
   }
 }

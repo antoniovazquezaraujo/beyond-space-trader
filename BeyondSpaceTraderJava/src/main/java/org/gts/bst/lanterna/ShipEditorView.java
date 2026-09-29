@@ -1,0 +1,382 @@
+/*
+ * This file is part of Beyond Space Trader.
+ *
+ * Distributed under the GNU General Public License, version 3 or later; see
+ * the LICENSE file. Based on SpaceTrader for Java, which is based on Space
+ * Trader for Windows, which is based on Space Trader by Pieter Spronck; see
+ * the NOTICE file for the full provenance chain.
+ */
+package org.gts.bst.lanterna;
+
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.gui2.TextGUIGraphics;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.gts.bst.view.LetterGrid;
+import org.gts.bst.view.ShipArtFile;
+import org.gts.bst.view.ShipDesign;
+import org.gts.bst.view.ShipSites;
+
+
+/**
+ * The ship editor: on the left the hull of the ship with its site letters (typed
+ * with the keyboard; space erases a whole group), on the right the same ship with
+ * the real pieces. The hull is never touched: the letters are the groups the game
+ * will fill with the pieces that say `key=` them.
+ */
+public final class ShipEditorView extends ArtEditorWindow {
+  private static final String[] GROUP_COLORS = {"white", "cyan", "red", "yellow", "green", "magenta", "blue"};
+  private static final int STRIP_ROWS = 4;
+  private final List<ShipDesign> designs;
+  private final List<ShipArtFile> hulls;
+  private final List<ShipArtFile> pieces;
+  private final Map<Character, String> letterColors = new LinkedHashMap<>();
+  private int designIndex;
+  private LetterGrid grid = new LetterGrid();
+  private int cursorX = 2;
+  private int cursorY = 2;
+  private int colorIndex;
+  private String message = "";
+  /** The ships file the editor saves to (a field so the tests can point elsewhere). */
+  private String shipsPath = ShipArtFile.resolve("ships.txt").toString();
+
+  public ShipEditorView(List<ShipDesign> designs, List<ShipArtFile> hulls, List<ShipArtFile> pieces) {
+    super("editor de naves");
+    this.designs = new ArrayList<>(designs);
+    this.hulls = hulls;
+    this.pieces = pieces;
+    loadDesign(0);
+  }
+
+  /** Points the editor to another ships file (the tests use a temp one). */
+  void shipsPath(String path) {
+    shipsPath = path;
+  }
+
+  private void loadDesign(int index) {
+    designIndex = Math.max(0, Math.min(index, designs.size() - 1));
+    letterColors.clear();
+    if(designs.isEmpty()) {
+      grid = new LetterGrid();
+      message = "no hay naves: escribe [nombre] con type= y chasis= en ships.txt";
+      updateTitle();
+      return;
+    }
+    ShipDesign design = designs.get(designIndex);
+    grid = LetterGrid.ofDesign(design);
+    for(ShipDesign.LetterGroup group : design.groups()) {
+      letterColors.putIfAbsent(group.letter(), group.color().isEmpty() ? GROUP_COLORS[0] : group.color());
+    }
+    updateTitle();
+  }
+
+  private void storeCurrent() {
+    if(designs.isEmpty()) {
+      return;
+    }
+    ShipDesign design = designs.get(designIndex);
+    List<ShipDesign.LetterGroup> groups = new ArrayList<>();
+    for(LetterGrid.Run run : grid.runs()) {
+      groups.add(new ShipDesign.LetterGroup(run.letter(), run.x(), run.y(), run.n(),
+          letterColors.getOrDefault(run.letter(), GROUP_COLORS[colorIndex])));
+    }
+    designs.set(designIndex, new ShipDesign(design.name(), design.type(), design.chassis(), List.copyOf(groups)));
+  }
+
+  private ShipDesign design() {
+    return designs.isEmpty() ? null : designs.get(designIndex);
+  }
+
+  private ShipArtFile hull() {
+    ShipDesign design = design();
+    if(design == null) {
+      return null;
+    }
+    for(ShipArtFile hull : hulls) {
+      if(hull.name().equalsIgnoreCase(design.chassis())) {
+        return hull;
+      }
+    }
+    return null;
+  }
+
+  private ShipArtFile pieceFor(char letter) {
+    for(ShipArtFile piece : pieces) {
+      if(!piece.letter().isEmpty() && piece.letter().charAt(0) == letter) {
+        return piece;
+      }
+    }
+    return null;
+  }
+
+  private void updateTitle() {
+    ShipDesign design = design();
+    setTitle(design == null ? "editor de naves" : "naves: " + design.name() + " [" + design.type() + "]");
+  }
+
+  @Override
+  protected boolean handleKey(KeyStroke key) {
+    if(key.getKeyType() == KeyType.Escape) {
+      close();
+      return true;
+    }
+    if(key.getKeyType() == KeyType.Tab) {
+      storeCurrent();
+      loadDesign(designIndex + 1);
+      redraw();
+      return true;
+    }
+    if(key.getKeyType() == KeyType.ReverseTab) {
+      storeCurrent();
+      loadDesign(designIndex - 1);
+      redraw();
+      return true;
+    }
+    switch(key.getKeyType()) {
+      case ArrowLeft:
+        cursorX = Math.max(0, cursorX - 1);
+        break;
+      case ArrowRight:
+        cursorX++;
+        break;
+      case ArrowUp:
+        cursorY = Math.max(0, cursorY - 1);
+        break;
+      case ArrowDown:
+        cursorY++;
+        break;
+      case Character:
+        character(Character.toLowerCase(key.getCharacter()));
+        break;
+      default:
+        break;
+    }
+    redraw();
+    return true;
+  }
+
+  private void character(char character) {
+    char letter = Character.toUpperCase(character);
+    if(ShipSites.isSite(letter)) {
+      grid.set(cursorX, cursorY, letter);
+      message = "sitio " + letter + " en x=" + cursorX + " y=" + cursorY;
+    } else if(character == ' ') {
+      LetterGrid.Run run = grid.runAt(cursorX, cursorY);
+      if(run == null) {
+        message = "nada que borrar en x=" + cursorX + " y=" + cursorY;
+      } else {
+        for(int i = 0; i < run.n(); i++) {
+          grid.clear(run.x() + i, run.y());
+        }
+        message = "grupo " + run.letter() + " borrado";
+      }
+    } else if(character == ',' || character == '.') {
+      colorIndex = (colorIndex + (character == ',' ? GROUP_COLORS.length - 1 : 1)) % GROUP_COLORS.length;
+      LetterGrid.Run run = grid.runAt(cursorX, cursorY);
+      if(run != null) {
+        letterColors.put(run.letter(), GROUP_COLORS[colorIndex]);
+      }
+      message = "color " + GROUP_COLORS[colorIndex] + (run == null ? "" : " para " + run.letter());
+    } else if(character == 's') {
+      save();
+    }
+  }
+
+  private void save() {
+    if(designs.isEmpty()) {
+      message = "no hay naves que guardar";
+      return;
+    }
+    storeCurrent();
+    try {
+      ShipDesign.save(shipsPath, designs);
+      message = "guardado: " + shipsPath + " (" + designs.size() + " naves)";
+    } catch(IOException e) {
+      message = "no se pudo guardar: " + e.getMessage();
+    }
+  }
+
+  @Override
+  protected void paint(TextGUIGraphics graphics) {
+    TerminalSize size = getSize();
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    for(int row = 0; row < size.getRows(); row++) {
+      graphics.putString(0, row, " ".repeat(size.getColumns()));
+    }
+    int rows = size.getRows() - STRIP_ROWS;
+    int half = (size.getColumns() - 1) / 2;
+    for(int row = 0; row < rows; row++) {
+      graphics.setCharacter(half, row, '│');
+    }
+    ShipArtFile hull = hull();
+    if(hull == null) {
+      ShipDesign design = design();
+      graphics.putString(1, 1, design == null ? "no hay naves en ships.txt"
+          : "no encuentro el chasis " + design.chassis() + " en chassis.txt");
+    } else {
+      paintHull(graphics, hull, 0, 0, half, rows, true);
+      paintHull(graphics, hull, half + 1, 0, size.getColumns() - half - 1, rows, false);
+    }
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    graphics.putString(0, rows, EditorText.cut(shipsLine(), size.getColumns()));
+    graphics.putString(0, rows + 1, EditorText.cut(piecesLine(), size.getColumns()));
+    graphics.putString(0, rows + 2, EditorText.cut(sitesLine(), size.getColumns()));
+    graphics.putString(0, rows + 3, EditorText.cut(keysLine(), size.getColumns()));
+  }
+
+  /** Draws a hull (with its colour zones), the letters on the left, the pieces on the right. */
+  private void paintHull(TextGUIGraphics graphics, ShipArtFile hull, int left, int top, int width, int height,
+      boolean withLetters) {
+    int originX = left + Math.max(0, (width - hull.width()) / 2);
+    int originY = top + Math.max(0, (height - hull.height()) / 2);
+    for(int row = 0; row < hull.height() && originY + row < top + height; row++) {
+      for(int column = 0; column < hull.width() && originX + column < left + width; column++) {
+        int codePoint = hull.at(row, column);
+        if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
+          EditorText.glyph(graphics, originX + column, originY + row, codePoint, color(zoneColor(hull, column, row)),
+              false);
+        }
+      }
+    }
+    for(LetterGrid.Run run : grid.runs()) {
+      int x = originX + run.x();
+      int y = originY + run.y();
+      if(y < top || y >= top + height) {
+        continue;
+      }
+      if(withLetters) {
+        String colorName = letterColors.getOrDefault(run.letter(), GROUP_COLORS[colorIndex]);
+        for(int i = 0; i < run.n() && x + i < left + width; i++) {
+          EditorText.glyph(graphics, x + i, y, run.letter(), color(colorName), false);
+        }
+      } else {
+        paintPiece(graphics, run, x, y, left, width, top, height);
+      }
+    }
+    if(withLetters) {
+      int x = originX + cursorX;
+      int y = originY + cursorY;
+      if(y >= top && y < top + height && x >= left && x < left + width) {
+        char letter = grid.at(cursorX, cursorY);
+        int codePoint = letter != ' ' ? letter
+            : cursorY < hull.height() && cursorX < hull.width() ? hull.at(cursorY, cursorX) : '·';
+        if(codePoint == ' ' || codePoint == ShipArtFile.CONTINUATION) {
+          codePoint = '·';
+        }
+        EditorText.glyph(graphics, x, y, codePoint, TextColor.ANSI.YELLOW_BRIGHT, true);
+      }
+    }
+  }
+
+  private void paintPiece(TextGUIGraphics graphics, LetterGrid.Run run, int x, int y, int left, int width, int top,
+      int height) {
+    ShipArtFile piece = pieceFor(run.letter());
+    if(piece != null) {
+      for(int row = 0; row < piece.height() && y + row < top + height; row++) {
+        for(int column = 0; column < piece.width() && x + column < left + width; column++) {
+          int codePoint = piece.at(row, column);
+          if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
+            EditorText.glyph(graphics, x + column, y + row, codePoint, color(pieceColor(piece)), false);
+          }
+        }
+      }
+    } else if(run.letter() == ShipSites.CARGO) {
+      String gauge = ShipSites.gauge(capacity());
+      for(int i = 0; i < gauge.length() && i < run.n() && x + i < left + width; i++) {
+        EditorText.glyph(graphics, x + i, y, gauge.codePointAt(i), color("green"), false);
+      }
+    }
+  }
+
+  private String pieceColor(ShipArtFile piece) {
+    return piece.blink() && !blinkOn() ? (piece.bgColor().isEmpty() ? "black" : piece.bgColor()) : piece.color();
+  }
+
+  private String zoneColor(ShipArtFile hull, int x, int y) {
+    for(ShipArtFile.Zone zone : hull.zones()) {
+      if(x >= zone.x() && x < zone.x() + Math.max(1, zone.w()) && y >= zone.y()
+          && y < zone.y() + Math.max(1, zone.h())) {
+        for(ShipArtFile.ColorLetter letter : hull.letters()) {
+          if(letter.letter() == zone.letter()) {
+            return letter.color();
+          }
+        }
+      }
+    }
+    return hull.color();
+  }
+
+  private int capacity() {
+    ShipDesign design = design();
+    ShipSites.Budget budget = design == null ? null : ShipSites.budgetOf(design.type());
+    return budget == null ? 0 : budget.cargoBays();
+  }
+
+  private String shipsLine() {
+    StringBuilder text = new StringBuilder("[TAB] nave:");
+    for(int i = 0; i < designs.size(); i++) {
+      text.append(i == designIndex ? " [" : " ").append(designs.get(i).name()).append(i == designIndex ? "]" : "");
+    }
+    return text.toString();
+  }
+
+  private String piecesLine() {
+    StringBuilder text = new StringBuilder("piezas:");
+    for(ShipArtFile piece : pieces) {
+      text.append(' ').append(piece.name()).append('(')
+          .append(piece.letter().isEmpty() ? "?" : piece.letter()).append(')');
+    }
+    return text.toString();
+  }
+
+  private String sitesLine() {
+    ShipDesign design = design();
+    if(design == null) {
+      return "";
+    }
+    Map<Character, Integer> placed = new LinkedHashMap<>();
+    Map<Character, Integer> longest = new LinkedHashMap<>();
+    for(char site : ShipSites.letters().toCharArray()) {
+      placed.put(site, 0);
+      longest.put(site, 0);
+    }
+    for(LetterGrid.Run run : grid.runs()) {
+      placed.merge(run.letter(), run.n(), Integer::sum);
+      longest.merge(run.letter(), run.n(), Math::max);
+    }
+    ShipSites.Budget budget = ShipSites.budgetOf(design.type());
+    StringBuilder text = new StringBuilder("sitios:");
+    for(char site : ShipSites.letters().toCharArray()) {
+      if(budget == null || ShipSites.maxOf(budget, site) <= 0) {
+        continue;
+      }
+      int max = ShipSites.maxOf(budget, site);
+      int there = site == ShipSites.CARGO ? longest.getOrDefault(site, 0) : placed.getOrDefault(site, 0);
+      text.append(' ').append(ShipSites.name(site)).append(' ').append(there).append('/').append(max);
+      text.append(there < max ? " ⚠" : there == max ? " ok" : " ✗");
+    }
+    if(budget == null) {
+      text.append(" (sin type=: no se puede validar)");
+    }
+    return text.toString();
+  }
+
+  private String keysLine() {
+    ShipDesign design = design();
+    return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor · [,/.] color"
+        + (design == null ? "" : " · chasis: " + design.chassis())
+        + " · [s] guardar · [TAB] nave · [ESC] salir"
+        + (message.isEmpty() ? "" : "   ||   " + message);
+  }
+
+  private static TextColor color(String name) {
+    return org.gts.bst.view.ShipColors.color(name);
+  }
+}

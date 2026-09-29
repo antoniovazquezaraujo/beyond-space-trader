@@ -322,9 +322,26 @@ group=M x=6 y=3
 - A malformed line is skipped silently, and a comment is a line starting with
   `;;` (a single `;` is never a comment).
 
-## The composer
+## The editors
 
-`run-composer.sh`. Keys:
+`run-composer.sh` opens a menu: the **ship editor** and the **classic composer**.
+
+The **ship editor** has the hull on the left (with its colours) and the same ship
+on the right with the real pieces:
+
+| Key | Action |
+| --- | --- |
+| `C M D B R A E G P` | Write that site letter at the cursor |
+| `←↑→↓` | Move the cursor |
+| space | Erase the whole group under the cursor |
+| `,` / `.` | Cycle the colour of the letter under the cursor |
+| `TAB` / `⇧TAB` | Next / previous ship (the file keeps every design) |
+| `s` | Save every ship back to `ships.txt` |
+| `Esc` | Back to the menu |
+
+## The classic composer
+
+Keys:
 
 | Key | Action |
 | --- | --- |
