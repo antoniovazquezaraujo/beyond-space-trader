@@ -195,7 +195,7 @@ class ShipComposerViewTest {
 
   @Test
   void writesSitesWithTheCursor() throws IOException {
-    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Wasp]\ncolor=cyan\nxxxxx\nxxxxx\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Wasp]\ncolor=cyan\nx   x\nx   x\nx   x\nx   x\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -221,6 +221,14 @@ class ShipComposerViewTest {
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("1/3"), "the space erases: " + screenText(screen));
+
+      // el espacio sobre el dibujo no lo borra
+      for(int i = 0; i < 3; i++) {
+        view.handleKey(new KeyStroke(KeyType.ArrowLeft));
+      }
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("celda: x"), "the drawing is still there: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -229,7 +237,7 @@ class ShipComposerViewTest {
 
   @Test
   void savesTheSitesInTheChassisFile() throws IOException {
-    String content = ";; un comentario\n[Wasp]\ncolor=cyan\nxxxxx\nxxxxx\n";
+    String content = ";; un comentario\n[Wasp]\ncolor=cyan\nx   x\nx   x\n";
     java.nio.file.Path file = java.nio.file.Files.createTempFile("chassis", ".txt");
     java.nio.file.Files.writeString(file, content);
     try {
@@ -251,7 +259,7 @@ class ShipComposerViewTest {
         view.handleKey(new KeyStroke('s', false, false));
 
         String saved = java.nio.file.Files.readString(file);
-        assertTrue(saved.contains("xAxxx"), "the letter is in the file: " + saved);
+        assertTrue(saved.contains("xA  x"), "the letter is in the file: " + saved);
         assertTrue(saved.contains(";; un comentario"), "the comments survive: " + saved);
         assertTrue(saved.contains("color=cyan"), "the keys survive: " + saved);
       } finally {

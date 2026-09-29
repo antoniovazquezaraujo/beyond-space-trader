@@ -333,7 +333,7 @@ pieza=antena x=3 y=0 color=rojo
 | `u` | Undo the last placed piece |
 | `x` | Empty the assembly |
 | `Tab` | Next chassis |
-| `e` | Site mode: **type the letter** (`C M D B R A E G P`) and it is written at the cursor; space erases, `Esc` leaves |
+| `e` | Site mode: **type the letter** (`C M D B R A E G P`) and it is written at the cursor (empty cells only: a letter over the drawing is refused); space erases the site and gives the drawing back, `Esc` leaves |
 | `t` | Open the ship type list; the panel follows the chosen type |
 | `v` | Preview: hides the site letters and draws the real pieces and the gauge (`,` / `.` change the preset: vacia, comerciante, pirata, policia, a tope) |
 | `r` | Reload `chassis.txt` and `pieces.txt` |

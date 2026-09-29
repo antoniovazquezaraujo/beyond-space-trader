@@ -62,7 +62,9 @@ public final class ShipComposerView extends BasicWindow {
   /** -1 when the preview is off, else the index of PREVIEWS. */
   private int preview = -1;
   private boolean siteMode;
-  private final Map<Integer, Map<Integer, Character>> siteEdits = new LinkedHashMap<>();
+  private final Map<Integer, Map<Integer, Integer>> siteEdits = new LinkedHashMap<>();
+  /** The chassis as loaded: what the eraser restores. */
+  private List<int[]> originalCells = new ArrayList<>();
   /** The chassis file the site mode saves to (a field so tests can point elsewhere). */
   private String chassisPath = ShipArtFile.resolve("chassis.txt").toString();
   private boolean typeListOpen;
@@ -89,6 +91,7 @@ public final class ShipComposerView extends BasicWindow {
     pendingColor = pieces.isEmpty() ? "white" : pieces.get(0).color();
     updateTitle();
     shipType = budgetName(assembly.chassis());
+    snapshotCells();
   }
 
   public int placedCount() {
@@ -129,6 +132,7 @@ public final class ShipComposerView extends BasicWindow {
       updateTitle();
       shipType = budgetName(assembly.chassis());
       preview = -1;
+      snapshotCells();
       canvas.invalidate();
       return true;
     }
@@ -253,6 +257,7 @@ public final class ShipComposerView extends BasicWindow {
         chassis = loadedChassis;
         chassisIndex = Math.min(chassisIndex, chassis.size() - 1);
         updateTitle();
+        snapshotCells();
       }
       if(!loadedPieces.isEmpty()) {
         pieces = loadedPieces;
@@ -587,18 +592,49 @@ public final class ShipComposerView extends BasicWindow {
     return cut.toString();
   }
 
-  /** Writes a site letter (a space erases) at the cursor and remembers the edit. */
+  /** Writes a site letter (a space erases it and gives the drawing back) at the cursor. */
   private void writeSite(char letter) {
     ShipArtFile hull = chassis.get(chassisIndex);
     if(cursorY >= hull.height() || cursorX >= hull.cells().get(cursorY).length) {
       message = "esa celda no existe en el chasis (x=" + cursorX + " y=" + cursorY + ")";
       return;
     }
-    hull.cells().get(cursorY)[cursorX] = letter;
-    siteEdits.computeIfAbsent(cursorY, row -> new LinkedHashMap<>()).put(cursorX, letter);
-    message = letter == ' ' ? "sitio borrado en x=" + cursorX + " y=" + cursorY
-        : "sitio " + letter + " en x=" + cursorX + " y=" + cursorY;
+    int current = hull.cells().get(cursorY)[cursorX];
+    if(letter == ' ') {
+      setCell(originalCell(cursorY, cursorX));
+      message = ShipSites.isSite(current) ? "sitio borrado (dibujo restaurado)"
+          : "nada que borrar en x=" + cursorX + " y=" + cursorY;
+      return;
+    }
+    if(current != ' ' && !ShipSites.isSite(current)) {
+      message = "esa celda tiene dibujo (" + new String(Character.toChars(current)) + "): elige un hueco";
+      return;
+    }
+    setCell(letter);
+    message = "sitio " + letter + " en x=" + cursorX + " y=" + cursorY;
+  }
+
+  private void setCell(int codePoint) {
+    chassis.get(chassisIndex).cells().get(cursorY)[cursorX] = codePoint;
+    siteEdits.computeIfAbsent(cursorY, row -> new LinkedHashMap<>()).put(cursorX, codePoint);
     canvas.invalidate();
+  }
+
+  private int originalCell(int row, int column) {
+    if(row < originalCells.size() && column < originalCells.get(row).length) {
+      return originalCells.get(row)[column];
+    }
+    return ' ';
+  }
+
+  /** Keeps a copy of the chassis cells, so the eraser can give the drawing back. */
+  private void snapshotCells() {
+    originalCells = new ArrayList<>();
+    if(chassisIndex < chassis.size()) {
+      for(int[] row : chassis.get(chassisIndex).cells()) {
+        originalCells.add(row.clone());
+      }
+    }
   }
 
   /** Writes the site edits back to the chassis file, leaving the rest of it untouched. */
@@ -625,7 +661,7 @@ public final class ShipComposerView extends BasicWindow {
           continue;
         }
         row++;
-        Map<Integer, Character> edits = siteEdits.get(row);
+        Map<Integer, Integer> edits = siteEdits.get(row);
         if(edits == null) {
           continue;
         }
@@ -634,11 +670,12 @@ public final class ShipComposerView extends BasicWindow {
         columns.sort(java.util.Collections.reverseOrder());
         for(int column : columns) {
           int codePoints = text.codePointCount(0, text.length());
+          String replacement = new String(Character.toChars(edits.get(column)));
           if(column >= codePoints) {
-            text = text + edits.get(column);
+            text = text + replacement;
           } else {
             int index = text.offsetByCodePoints(0, column);
-            text = text.substring(0, index) + edits.get(column) + text.substring(text.offsetByCodePoints(index, 1));
+            text = text.substring(0, index) + replacement + text.substring(text.offsetByCodePoints(index, 1));
           }
           changes++;
         }
@@ -690,6 +727,7 @@ public final class ShipComposerView extends BasicWindow {
       chassisIndex = index;
       assembly = assembly.withChassis(chassis.get(index).name());
       updateTitle();
+      snapshotCells();
       message = "tipo: " + type;
     } else {
       message = "tipo: " + type + " (escribe [" + type + "] en chassis.txt)";
