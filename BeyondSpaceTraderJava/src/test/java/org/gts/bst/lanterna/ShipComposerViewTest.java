@@ -192,6 +192,67 @@ class ShipComposerViewTest {
     }
   }
 
+  @Test
+  void writesSitesWithTheCursor() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Wasp]\ncolor=cyan\nxxxxx\nxxxxx\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+      gui.addWindow(view);
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("0/3"), "no sites yet: " + screenText(screen));
+
+      view.handleKey(new KeyStroke('e', false, false));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("1/3"), "one weapon site: " + screenText(screen));
+      assertTrue(screenText(screen).contains("SITIOS"), "the site mode line: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void savesTheSitesInTheChassisFile() throws IOException {
+    String content = ";; un comentario\n[Wasp]\ncolor=cyan\nxxxxx\nxxxxx\n";
+    java.nio.file.Path file = java.nio.file.Files.createTempFile("chassis", ".txt");
+    java.nio.file.Files.writeString(file, content);
+    try {
+      List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader(content));
+      List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+      Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+      screen.startScreen();
+      try {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        gui.setTheme(LanternaTheme.create());
+        ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+        view.chassisPath(file.toString());
+        gui.addWindow(view);
+
+        view.handleKey(new KeyStroke('e', false, false));
+        view.handleKey(new KeyStroke(KeyType.ArrowLeft));
+        view.handleKey(new KeyStroke(KeyType.ArrowUp));
+        view.handleKey(new KeyStroke(KeyType.Enter));
+        view.handleKey(new KeyStroke('s', false, false));
+
+        String saved = java.nio.file.Files.readString(file);
+        assertTrue(saved.contains("xAxxx"), "the letter is in the file: " + saved);
+        assertTrue(saved.contains(";; un comentario"), "the comments survive: " + saved);
+        assertTrue(saved.contains("color=cyan"), "the keys survive: " + saved);
+      } finally {
+        screen.stopScreen();
+        screen.close();
+      }
+    } finally {
+      java.nio.file.Files.deleteIfExists(file);
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {

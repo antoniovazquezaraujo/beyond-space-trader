@@ -20,7 +20,11 @@ import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +60,11 @@ public final class ShipComposerView extends BasicWindow {
   private String shipType = "";
   /** -1 when the preview is off, else the index of PREVIEWS. */
   private int preview = -1;
+  private boolean siteMode;
+  private char siteLetter = ShipSites.WEAPON;
+  private final Map<Integer, Map<Integer, Character>> siteEdits = new LinkedHashMap<>();
+  /** The chassis file the site mode saves to (a field so tests can point elsewhere). */
+  private String chassisPath = ShipArtFile.resolve("chassis.txt").toString();
   private boolean typeListOpen;
   private int typeListIndex;
   private static final String[] PREVIEWS = {"vacia", "comerciante", "pirata", "policia", "a tope"};
@@ -93,6 +102,11 @@ public final class ShipComposerView extends BasicWindow {
         canvas.invalidate();
         return true;
       }
+      if(siteMode) {
+        siteMode = false;
+        canvas.invalidate();
+        return true;
+      }
       close();
       return true;
     }
@@ -119,7 +133,11 @@ public final class ShipComposerView extends BasicWindow {
       return true;
     }
     if(key.getKeyType() == KeyType.Enter) {
-      place();
+      if(siteMode) {
+        writeSite(siteLetter);
+      } else {
+        place();
+      }
       return true;
     }
     switch(key.getKeyType()) {
@@ -146,7 +164,18 @@ public final class ShipComposerView extends BasicWindow {
   }
 
   private void character(char character) {
-    if(character == 't') {
+    if(character == 'e') {
+      siteMode = !siteMode;
+      message = siteMode ? "modo sitios: elige letra con [ ] y escribe con ENTER" : "modo normal";
+    } else if(character == '[' && siteMode) {
+      siteLetter = nextSiteLetter(-1);
+    } else if(character == ']' && siteMode) {
+      siteLetter = nextSiteLetter(1);
+    } else if(character == 'd' && siteMode) {
+      writeSite(' ');
+    } else if(character == 's' && siteMode) {
+      saveChassis();
+    } else if(character == 't') {
       typeListOpen = true;
       typeListIndex = Math.max(0, shipTypes().indexOf(shipType));
     } else if(character == 'v') {
@@ -311,6 +340,10 @@ public final class ShipComposerView extends BasicWindow {
         width = Math.max(width, cursorX + pieces.get(pieceIndex).width() + 2);
         height = Math.max(height, cursorY + pieces.get(pieceIndex).height() + 2);
       }
+      if(siteMode) {
+        width = Math.max(width, cursorX + 2);
+        height = Math.max(height, cursorY + 2);
+      }
       int[][] cells = new int[height][width];
       TextColor[][] colors = new TextColor[height][width];
       for(int row = 0; row < height; row++) {
@@ -321,6 +354,14 @@ public final class ShipComposerView extends BasicWindow {
       }
       ShipArtFile hull = chassis.get(chassisIndex);
       overlay(cells, colors, hull, 1, 1, hull.color());
+      // los sitios se ven en amarillo para localizarlos de un vistazo
+      for(int row = 0; row < height; row++) {
+        for(int column = 0; column < width; column++) {
+          if(ShipSites.isSite(cells[row][column])) {
+            colors[row][column] = TextColor.ANSI.YELLOW;
+          }
+        }
+      }
       if(preview >= 0) {
         fillSites(cells, colors, hull);
       }
@@ -337,6 +378,10 @@ public final class ShipComposerView extends BasicWindow {
         String color = pending.blink() && !blinkOn ? (pending.bgColor().isEmpty() ? "black" : pending.bgColor())
             : pendingColor;
         overlay(cells, colors, pending, cursorX + 1, cursorY + 1, color);
+      }
+      if(siteMode && cursorY + 1 < height && cursorX + 1 < width) {
+        cells[cursorY + 1][cursorX + 1] = siteLetter;
+        colors[cursorY + 1][cursorX + 1] = TextColor.ANSI.YELLOW_BRIGHT;
       }
       int left = Math.max(0, (canvasWidth - width) / 2);
       int top = Math.max(0, (size.getRows() - height - 2) / 2);
@@ -359,11 +404,19 @@ public final class ShipComposerView extends BasicWindow {
             + " (" + (pieces.isEmpty() ? 0 : pieceIndex + 1) + "/" + pieces.size() + ") x=" + cursorX + " y=" + cursorY
             + " [" + pendingColor + "]  ·  " + assembly.pieces().size() + " colocadas");
       }
-      graphics.putString(1, size.getRows() - 1, "[h] pieza " + (showPending ? "(si)" : "(no)") + " · [x] vaciar"
-          + " · [flechas] mover · [ENTER] colocar · [n/p] pieza · [t] tipo · [v] previsualizar"
-          + (preview < 0 ? "" : " (" + PREVIEWS[preview] + ")")
-          + " · [TAB] chasis · [c] color · [u] deshacer · [g] glifos · [s] guardar · [l] cargar · [r] recargar"
-          + " · [ESC] salir" + (message.isEmpty() ? "" : "   ||   " + message));
+      if(siteMode) {
+        long pending = siteEdits.values().stream().mapToLong(Map::size).sum();
+        graphics.putString(1, size.getRows() - 1, "SITIOS: letra [" + siteLetter + "] cambia con [ ] · [ENTER] escribir"
+            + " · [d] borrar · [s] guardar en chassis.txt · [e]/[ESC] salir del modo"
+            + (pending == 0 ? "" : "  ·  " + pending + " cambios sin guardar")
+            + (message.isEmpty() ? "" : "   ||   " + message));
+      } else {
+        graphics.putString(1, size.getRows() - 1, "[h] pieza " + (showPending ? "(si)" : "(no)") + " · [x] vaciar"
+            + " · [flechas] mover · [ENTER] colocar · [n/p] pieza · [t] tipo · [v] previsualizar"
+            + (preview < 0 ? "" : " (" + PREVIEWS[preview] + ")")
+            + " · [e] sitios · [TAB] chasis · [c] color · [u] deshacer · [g] glifos · [s] guardar · [l] cargar"
+            + " · [r] recargar · [ESC] salir" + (message.isEmpty() ? "" : "   ||   " + message));
+      }
     }
 
     /** Draws the list of ship types while it is open. */
@@ -521,6 +574,80 @@ public final class ShipComposerView extends BasicWindow {
       cut.appendCodePoint(codePoint);
     }
     return cut.toString();
+  }
+
+  private char nextSiteLetter(int step) {
+    String letters = ShipSites.letters();
+    int index = letters.indexOf(siteLetter);
+    return letters.charAt((index + step + letters.length()) % letters.length());
+  }
+
+  /** Writes a site letter (a space erases) at the cursor and remembers the edit. */
+  private void writeSite(char letter) {
+    ShipArtFile hull = chassis.get(chassisIndex);
+    if(cursorY >= hull.height() || cursorX >= hull.cells().get(cursorY).length) {
+      message = "esa celda no existe en el chasis (x=" + cursorX + " y=" + cursorY + ")";
+      return;
+    }
+    hull.cells().get(cursorY)[cursorX] = letter;
+    siteEdits.computeIfAbsent(cursorY, row -> new LinkedHashMap<>()).put(cursorX, letter);
+    message = letter == ' ' ? "sitio borrado en x=" + cursorX + " y=" + cursorY
+        : "sitio " + letter + " en x=" + cursorX + " y=" + cursorY;
+    canvas.invalidate();
+  }
+
+  /** Writes the site edits back to the chassis file, leaving the rest of it untouched. */
+  private void saveChassis() {
+    try {
+      Path path = Path.of(chassisPath);
+      List<String> lines = new ArrayList<>(Files.readAllLines(path, StandardCharsets.UTF_8));
+      String section = chassis.get(chassisIndex).name();
+      boolean inSection = false;
+      int row = -1;
+      int changes = 0;
+      for(int i = 0; i < lines.size(); i++) {
+        String trimmed = lines.get(i).strip();
+        if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
+          inSection = trimmed.substring(1, trimmed.length() - 1).strip().equals(section);
+          row = -1;
+          continue;
+        }
+        if(!inSection || trimmed.startsWith(";;") || trimmed.startsWith("color=") || trimmed.startsWith("bgcolor=")
+            || trimmed.startsWith("blink=") || trimmed.startsWith("wide=") || trimmed.startsWith("narrow=")) {
+          continue;
+        }
+        row++;
+        Map<Integer, Character> edits = siteEdits.get(row);
+        if(edits == null) {
+          continue;
+        }
+        String text = lines.get(i);
+        List<Integer> columns = new ArrayList<>(edits.keySet());
+        columns.sort(java.util.Collections.reverseOrder());
+        for(int column : columns) {
+          int codePoints = text.codePointCount(0, text.length());
+          if(column >= codePoints) {
+            text = text + edits.get(column);
+          } else {
+            int index = text.offsetByCodePoints(0, column);
+            text = text.substring(0, index) + edits.get(column) + text.substring(text.offsetByCodePoints(index, 1));
+          }
+          changes++;
+        }
+        lines.set(i, text);
+      }
+      Files.write(path, lines, StandardCharsets.UTF_8);
+      siteEdits.clear();
+      message = "chasis guardado en " + chassisPath + " (" + changes + " sitios)";
+    } catch(IOException e) {
+      message = "no se pudo guardar el chasis: " + e.getMessage();
+    }
+    canvas.invalidate();
+  }
+
+  /** Points the site mode to another chassis file (the tests use a temp one). */
+  void chassisPath(String path) {
+    chassisPath = path;
   }
 
   /** The ship types, in the enum order, as names. */

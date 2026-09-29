@@ -333,6 +333,7 @@ pieza=antena x=3 y=0 color=rojo
 | `u` | Undo the last placed piece |
 | `x` | Empty the assembly |
 | `Tab` | Next chassis |
+| `e` | Site mode: write the letters with the cursor (`[` `]` change the letter, `Enter` writes, `d` erases, `s` saves `chassis.txt`) |
 | `t` | Open the ship type list; the panel follows the chosen type |
 | `v` | Preview the ship with a sample loadout (`,` / `.` change the preset: vacia, comerciante, pirata, policia, a tope) |
 | `r` | Reload `chassis.txt` and `pieces.txt` |
@@ -536,6 +537,11 @@ between `color` and `bgcolor`. The skull is emoji-capable but with text
 presentation, like ★, so terminals draw it as text; the strip (`g`) tells if one
 substitutes it (⚑, ⌾ and ☼ are in the palette as alternatives). The player's
 ship carries no marker.
+
+The sites are written by hand in `chassis.txt`, or with the site mode of the
+composer (`e`): it writes the letters with the cursor and saves them back to the
+file leaving the comments, the keys and the other sections untouched. They are
+drawn in yellow so they stand out from the art.
 
 The composer reads the sites of the chassis and shows them on a right panel
 against the type's budget (see **Sites per ship type**), with warnings, and the

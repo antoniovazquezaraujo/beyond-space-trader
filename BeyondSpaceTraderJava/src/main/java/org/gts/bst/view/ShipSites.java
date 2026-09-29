@@ -54,6 +54,11 @@ public final class ShipSites {
     return "?";
   }
 
+  /** The site letters, for the tools that let the artist choose one. */
+  public static String letters() {
+    return new String(ALL);
+  }
+
   /** True when the code point is one of the site letters. */
   public static boolean isSite(int codePoint) {
     for(char site : ALL) {
