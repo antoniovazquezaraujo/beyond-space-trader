@@ -7,3 +7,4 @@ cambia, se añade un ADR nuevo que la sustituye y se marca el viejo como
 *sustituido* en su cabecera.
 
 - [0001 — Diseño de las naves: chasis, piezas y sitios](0001-diseno-de-naves.md)
+- [0002 — Las letras como datos: fuselajes, piezas y naves](0002-letras-como-datos.md)
