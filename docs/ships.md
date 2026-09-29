@@ -340,6 +340,7 @@ kinds with no piece yet show `(-)`, so the missing art is visible at a glance.
 | `C M D B R A E G P` | Write that site letter at the cursor |
 | `h` / `y` | Pick the chassis / the ship type from a list |
 | `o` | Cycle the role of the preview (trader, pirate, police) |
+| `v` | Cycle which piece of the kind is shown in the preview (the game uses the real loadout) |
 | `←↑→↓` | Move the cursor |
 | space | Erase the whole group under the cursor |
 | `,` / `.` | Cycle the colour of the letter under the cursor |
@@ -517,7 +518,9 @@ agreement. These are the suggested letters:
 | `G` | Gadgets | the piece of the mounted gadget |
 | `P` | Pod | the `Escape Pod` piece (the player's ship only) |
 
-The **length of the run** (`MMM`) tells how wide the piece may be. The minimum is
+Every letter is **one piece**: a run of the same letter (`AAA`) is three weapons
+side by side, and each piece is drawn at its own letter (the gauge of the cargo
+is the exception: its run is the width of the gauge). The minimum is
 what the ship must always show; the maximum comes from the game specs (the weapon,
 shield and gadget slots) and the size, so **the ship has to offer that many
 sites**. The ship editor counts every group of a kind (side by side or apart) and

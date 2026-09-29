@@ -37,6 +37,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   private final List<ShipArtFile> hulls;
   private final List<ShipArtFile> pieces;
   private final Map<Character, String> letterColors = new LinkedHashMap<>();
+  private final Map<ShipSites.Kind, Integer> variants = new LinkedHashMap<>();
   private int designIndex;
   private LetterGrid grid = new LetterGrid();
   private int cursorX = 2;
@@ -111,24 +112,33 @@ public final class ShipEditorView extends ArtEditorWindow {
     return null;
   }
 
+  /** The pieces that fill a letter, in file order. */
+  private List<ShipArtFile> variantsOf(char letter) {
+    List<ShipArtFile> ofLetter = new ArrayList<>();
+    for(ShipArtFile piece : pieces) {
+      if(!piece.letter().isEmpty()
+          && Character.toUpperCase(piece.letter().charAt(0)) == Character.toUpperCase(letter)) {
+        ofLetter.add(piece);
+      }
+    }
+    return ofLetter;
+  }
+
+  /** The piece the preview draws for a letter (the chosen variant, or the role). */
   private ShipArtFile pieceFor(char letter) {
-    ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
-    if(kind == ShipSites.Kind.ROLE) {
+    List<ShipArtFile> ofLetter = variantsOf(letter);
+    if(ofLetter.isEmpty()) {
+      return null;
+    }
+    if(ShipSites.kindOfLetter(letter, pieces) == ShipSites.Kind.ROLE) {
       // el rol de la vista: el juego real elige el suyo en cada encuentro
-      for(ShipArtFile piece : pieces) {
-        if(ShipSites.kindOf(piece.name()) == ShipSites.Kind.ROLE
-            && piece.name().toLowerCase().endsWith(ROLES[previewRole])) {
+      for(ShipArtFile piece : ofLetter) {
+        if(piece.name().toLowerCase().endsWith(ROLES[previewRole])) {
           return piece;
         }
       }
     }
-    for(ShipArtFile piece : pieces) {
-      if(!piece.letter().isEmpty()
-          && Character.toUpperCase(piece.letter().charAt(0)) == Character.toUpperCase(letter)) {
-        return piece;
-      }
-    }
-    return null;
+    return ofLetter.get(variants.getOrDefault(ShipSites.kindOfLetter(letter, pieces), 0) % ofLetter.size());
   }
 
   private void updateTitle() {
@@ -231,6 +241,17 @@ public final class ShipEditorView extends ArtEditorWindow {
         letterColors.put(run.letter(), GROUP_COLORS[colorIndex]);
       }
       message = "color " + GROUP_COLORS[colorIndex] + (run == null ? "" : " para " + run.letter());
+    } else if(character == 'v') {
+      char under = grid.at(cursorX, cursorY);
+      if(under == ' ') {
+        message = "pon el cursor sobre una letra para cambiar la vista de la pieza";
+      } else if(variantsOf(under).size() <= 1) {
+        message = "la pieza " + ShipSites.kindName(ShipSites.kindOfLetter(under, pieces)) + " no tiene variantes";
+      } else {
+        ShipSites.Kind kind = ShipSites.kindOfLetter(under, pieces);
+        variants.merge(kind, 1, Integer::sum);
+        message = "vista: " + pieceFor(under).name();
+      }
     } else if(character == 'o') {
       previewRole = (previewRole + 1) % ROLES.length;
       message = "rol de la vista: " + ROLES[previewRole];
@@ -527,20 +548,26 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   private void paintPiece(TextGUIGraphics graphics, LetterGrid.Run run, int x, int y, int left, int width, int top,
       int height) {
-    ShipArtFile piece = pieceFor(run.letter());
-    if(piece != null) {
-      for(int row = 0; row < piece.height() && y + row < top + height; row++) {
-        for(int column = 0; column < piece.width() && x + column < left + width; column++) {
-          int codePoint = piece.at(row, column);
-          if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
-            EditorText.glyph(graphics, x + column, y + row, codePoint, color(pieceColor(piece)), false);
-          }
-        }
-      }
-    } else if(ShipSites.kindOfLetter(run.letter(), pieces) == ShipSites.Kind.CARGO) {
+    if(ShipSites.kindOfLetter(run.letter(), pieces) == ShipSites.Kind.CARGO) {
       String gauge = ShipSites.gauge(capacity());
       for(int i = 0; i < gauge.length() && i < run.n() && x + i < left + width; i++) {
         EditorText.glyph(graphics, x + i, y, gauge.codePointAt(i), color("green"), false);
+      }
+      return;
+    }
+    // una pieza por letra: una fila de AAA son tres armas
+    for(int i = 0; i < run.n(); i++) {
+      ShipArtFile piece = pieceFor(run.letter());
+      if(piece == null || x + i >= left + width) {
+        break;
+      }
+      for(int row = 0; row < piece.height() && y + row < top + height; row++) {
+        for(int column = 0; column < piece.width() && x + i + column < left + width; column++) {
+          int codePoint = piece.at(row, column);
+          if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
+            EditorText.glyph(graphics, x + i + column, y + row, codePoint, color(pieceColor(piece)), false);
+          }
+        }
       }
     }
   }
@@ -600,7 +627,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = design();
     return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor · [,/.] color"
         + (design == null ? "" : " · chasis: " + design.chassis())
-        + " · [h] chasis · [y] type · [o] role preview (" + ROLES[previewRole] + ")"
+        + " · [v] vista · [h] chasis · [y] type · [o] role preview (" + ROLES[previewRole] + ")"
         + " · [s] guardar · [TAB] nave · [ESC] salir";
   }
 

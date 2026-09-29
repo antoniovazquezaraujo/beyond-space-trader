@@ -184,6 +184,39 @@ class ShipEditorViewTest {
     }
   }
 
+  @Test
+  void drawsOnePiecePerLetterAndCyclesTheVariants() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Wasp\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxxxx\nxxxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nL\n[Beam Laser]\nkey=A\ncolor=cyan\nB\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(110, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      // dos armas seguidas: la vista dibuja una pieza en cada letra
+      view.handleKey(new KeyStroke('A', false, false));
+      view.handleKey(new KeyStroke(KeyType.ArrowRight));
+      view.handleKey(new KeyStroke('A', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("LL"), "one piece per letter: " + screenText(screen));
+
+      // v cambia la variante que se ve
+      view.handleKey(new KeyStroke('v', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("vista: Beam Laser"), screenText(screen));
+      assertTrue(screenText(screen).contains("BB"), "the other variant: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
