@@ -45,7 +45,7 @@ class HullEditorViewTest {
 
       view.handleKey(new KeyStroke('+', false, false));
       view.handleKey(new KeyStroke('c', false, false));
-      view.handleKey(new KeyStroke(KeyType.Enter));
+      view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("A=cyan"), "the letter list: " + screenText(screen));
 

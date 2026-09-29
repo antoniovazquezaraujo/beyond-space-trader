@@ -343,12 +343,12 @@ kinds with no piece yet show `(-)`, so the missing art is visible at a glance.
 
 | Key | Action |
 | --- | --- |
-| `C M D B R A E G P` | Write that site letter at the cursor |
+| `←↑→↓` or `hjkl` | Move the cursor |
+| `,` / `.` | Pick the element to paint (the letter of a kind, marked `>` in the tree) |
+| space | Paint the element at the cursor: if it is already there it erases it, and the cursor moves one cell right |
+| `v` | Preview: cycle which piece of the element is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
 | `n` / `r` | Add a ship / rename it |
-| `h` / `y` | Pick the chassis / the ship type from a list |
-| `v` | Preview: cycle which piece of the kind under the cursor is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
-| `←↑→↓` | Move the cursor |
-| space | Erase the whole group under the cursor |
+| `c` / `y` | Pick the chassis / the ship type from a list |
 | `,` / `.` | Cycle the colour of the letter under the cursor |
 | `TAB` / `⇧TAB` | Next / previous ship (the file keeps every design) |
 | `s` | Save every ship back to `ships.txt` |
@@ -361,13 +361,12 @@ over it.
 | Key | Action |
 | --- | --- |
 | `+` | Add a colour letter (the next free letter) |
-| `n` / `p` | Previous / next colour letter |
 | `e` | Rename the current colour letter (then type the letter) |
 | `z` | Cycle the size of the hull (empty, tiny, small, medium, large, huge, any) |
-| `c` / `b` / `k` | Cycle its colour / background / blink |
-| `←↑→↓` | Move the cursor |
-| `ENTER` | Paint the current letter at the cursor |
-| space | Erase the cell |
-| `,` / `.` | Previous / next hull |
+| `c` / `b` / `p` | Cycle its colour / background / blink |
+| `←↑→↓` or `hjkl` | Move the cursor |
+| `,` / `.` | Pick the colour letter to paint |
+| space | Paint the colour letter at the cursor: if it is already there it erases it, and the cursor moves one cell right |
+| `TAB` / `⇧TAB` | Previous / next hull |
 | `s` | Save every edited hull back to `chassis.txt` |
 | `Esc` | Back to the menu |

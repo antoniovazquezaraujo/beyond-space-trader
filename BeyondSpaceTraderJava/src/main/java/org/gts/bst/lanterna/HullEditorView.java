@@ -129,6 +129,14 @@ public final class HullEditorView extends ArtEditorWindow {
       redraw();
       return true;
     }
+    if(key.getKeyType() == KeyType.Tab) {
+      nextHull(1);
+      return true;
+    }
+    if(key.getKeyType() == KeyType.ReverseTab) {
+      nextHull(-1);
+      return true;
+    }
     switch(key.getKeyType()) {
       case ArrowLeft:
         cursorX = Math.max(0, cursorX - 1);
@@ -142,10 +150,6 @@ public final class HullEditorView extends ArtEditorWindow {
       case ArrowDown:
         cursorY++;
         break;
-      case Enter:
-        grid.set(cursorX, cursorY, currentLetter().letter());
-        message = "pintado " + currentLetter().letter() + " en x=" + cursorX + " y=" + cursorY;
-        break;
       case Character:
         character(Character.toLowerCase(key.getCharacter()));
         break;
@@ -156,47 +160,90 @@ public final class HullEditorView extends ArtEditorWindow {
     return true;
   }
 
-  private void character(char character) {
-    if(character == ' ') {
+  /** Espacio: si la letra del pincel esta en la celda la quita, si no la pone, y avanza. */
+  private void toggleCell() {
+    char pen = currentLetter().letter();
+    if(grid.at(cursorX, cursorY) == pen) {
       grid.clear(cursorX, cursorY);
-      message = "borrado en x=" + cursorX + " y=" + cursorY;
-    } else if(character == ',') {
-      nextHull(-1);
-    } else if(character == '.') {
-      nextHull(1);
-    } else if(character == 'n') {
-      letterIndex = letters.isEmpty() ? 0 : (letterIndex + letters.size() - 1) % letters.size();
-      message = "letra " + currentLetter().letter();
-    } else if(character == 'p') {
-      letterIndex = letters.isEmpty() ? 0 : (letterIndex + 1) % letters.size();
-      message = "letra " + currentLetter().letter();
-    } else if(character == '+') {
-      addLetter();
-    } else if(character == 'e') {
-      nameLetter = true;
-      message = "teclea la letra para la combinacion " + currentLetter().color();
-    } else if(character == 'z') {
-      int index = 0;
-      for(int i = 0; i < SIZES.length; i++) {
-        if(SIZES[i].equalsIgnoreCase(hullSize)) {
-          index = i;
-          break;
-        }
-      }
-      hullSize = SIZES[(index + 1) % SIZES.length];
-      message = "tamano: " + (hullSize.isEmpty() ? "(sin declarar)" : hullSize);
-    } else if(character == 'c') {
-      styleColor();
-    } else if(character == 'b') {
-      styleBackground();
-    } else if(character == 'k') {
-      ShipArtFile.ColorLetter letter = currentLetter();
-      letters.set(letterIndex, new ShipArtFile.ColorLetter(letter.letter(), letter.color(), letter.bgColor(),
-          !letter.blink()));
-      message = "parpadeo " + (!letter.blink() ? "si" : "no") + " para " + letter.letter();
-    } else if(character == 's') {
-      save();
+      message = "quitado " + pen + " en x=" + cursorX + " y=" + cursorY;
+    } else {
+      grid.set(cursorX, cursorY, pen);
+      message = "puesto " + pen + " en x=" + cursorX + " y=" + cursorY;
     }
+    cursorX++;
+    redraw();
+  }
+
+  private void character(char character) {
+    switch(Character.toLowerCase(character)) {
+      case 'h':
+        cursorX = Math.max(0, cursorX - 1);
+        break;
+      case 'l':
+        cursorX++;
+        break;
+      case 'k':
+        cursorY = Math.max(0, cursorY - 1);
+        break;
+      case 'j':
+        cursorY++;
+        break;
+      case ' ':
+        toggleCell();
+        break;
+      case ',':
+        letterIndex = letters.isEmpty() ? 0 : (letterIndex + letters.size() - 1) % letters.size();
+        message = "elemento: " + currentLetter().letter();
+        break;
+      case '.':
+        letterIndex = letters.isEmpty() ? 0 : (letterIndex + 1) % letters.size();
+        message = "elemento: " + currentLetter().letter();
+        break;
+      case '+':
+        addLetter();
+        break;
+      case 'e':
+        nameLetter = true;
+        message = "teclea la letra para la combinacion " + currentLetter().color();
+        break;
+      case 'c':
+        styleColor();
+        break;
+      case 'b':
+        styleBackground();
+        break;
+      case 'p':
+        styleBlink();
+        break;
+      case 'z':
+        styleSize();
+        break;
+      case 's':
+        save();
+        break;
+      default:
+        break;
+    }
+  }
+
+
+  private void styleBlink() {
+    ShipArtFile.ColorLetter letter = currentLetter();
+    letters.set(letterIndex, new ShipArtFile.ColorLetter(letter.letter(), letter.color(), letter.bgColor(),
+        !letter.blink()));
+    message = "parpadeo " + (!letter.blink() ? "si" : "no") + " para " + letter.letter();
+  }
+
+  private void styleSize() {
+    int index = 0;
+    for(int i = 0; i < SIZES.length; i++) {
+      if(SIZES[i].equalsIgnoreCase(hullSize)) {
+        index = i;
+        break;
+      }
+    }
+    hullSize = SIZES[(index + 1) % SIZES.length];
+    message = "tamano: " + (hullSize.isEmpty() ? "(sin declarar)" : hullSize);
   }
 
   private void addLetter() {
@@ -372,7 +419,7 @@ public final class HullEditorView extends ArtEditorWindow {
 
   private String keysLine() {
     return "[ENTER] pintar · espacio borrar · [n/p] letra · [+] anyadir · [e] renombrar · [c] color · [b] fondo"
-        + " · [k] parpadeo · [z] tamano · [s] guardar · [,/.] chasis · [ESC] salir"
+        + " · [p] parpadeo · [z] tamano · [s] guardar · [TAB] chasis · [ESC] salir"
         + (nameLetter ? "   ||   teclea la letra deseada" : message.isEmpty() ? "" : "   ||   " + message);
   }
 

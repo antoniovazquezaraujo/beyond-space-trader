@@ -37,6 +37,8 @@ public final class ShipEditorView extends ArtEditorWindow {
   private final List<ShipArtFile> pieces;
   private final Map<ShipSites.Kind, Integer> variants = new LinkedHashMap<>();
   private int designIndex;
+  /** La letra del elemento que se pone con espacio. */
+  private char pen;
   private LetterGrid grid = new LetterGrid();
   private int cursorX = 2;
   private int cursorY = 2;
@@ -70,6 +72,9 @@ public final class ShipEditorView extends ArtEditorWindow {
     }
     ShipDesign design = designs.get(designIndex);
     grid = LetterGrid.ofDesign(design);
+    if(pen == 0 || variantsOf(pen).isEmpty()) {
+      pen = firstPen();
+    }
     updateTitle();
   }
 
@@ -162,6 +167,61 @@ public final class ShipEditorView extends ArtEditorWindow {
     return null;
   }
 
+  /** The first key of the tree, for the pen. */
+  private char firstPen() {
+    List<Character> pens = pens();
+    return pens.isEmpty() ? 0 : pens.get(0);
+  }
+
+  /** The keys of the kinds with pieces, in the tree order. */
+  private List<Character> pens() {
+    List<Character> pens = new ArrayList<>();
+    for(ShipSites.Kind kind : ShipSites.Kind.values()) {
+      for(ShipArtFile piece : piecesOfKind(kind)) {
+        char key = piece.letter().charAt(0);
+        if(!pens.contains(key)) {
+          pens.add(key);
+        }
+      }
+    }
+    return pens;
+  }
+
+  /** Moves the pen through the elements of the tree. */
+  private void cyclePen(int step) {
+    List<Character> pens = pens();
+    if(pens.isEmpty()) {
+      message = "no hay piezas con letra en pieces.txt";
+      return;
+    }
+    pen = pens.get((pens.indexOf(pen) + step + pens.size()) % pens.size());
+    message = "elemento: " + pen + " (" + ShipSites.kindName(ShipSites.kindOfLetter(pen, pieces)) + ")"
+        + (variantsOf(pen).size() > 1 ? " · [v] variantes" : "");
+  }
+
+  /** Espacio: si la letra del pincel esta en la celda la quita, si no la pone, y avanza. */
+  private void toggleCell() {
+    if(pen == 0) {
+      message = "elige el elemento con , o .";
+      return;
+    }
+    char current = grid.at(cursorX, cursorY);
+    if(Character.toUpperCase(current) == Character.toUpperCase(pen)) {
+      grid.clear(cursorX, cursorY);
+      message = "quitado " + pen + " en x=" + cursorX + " y=" + cursorY;
+    } else {
+      if(!canPlace(pen)) {
+        return;
+      }
+      grid.set(cursorX, cursorY, pen);
+      ShipSites.Kind kind = ShipSites.kindOfLetter(pen, pieces);
+      message = "puesto " + pen + " (" + ShipSites.kindName(kind) + " " + countOfKind(kind) + "/" + maxOfKind(kind)
+          + ")";
+    }
+    cursorX++;
+    redraw();
+  }
+
   /** The pieces that fill a letter, in file order. */
   private List<ShipArtFile> variantsOf(char letter) {
     List<ShipArtFile> ofLetter = new ArrayList<>();
@@ -242,59 +302,54 @@ public final class ShipEditorView extends ArtEditorWindow {
     return true;
   }
 
-  /** The letter to paint for a typed character: a piece's key or a suggested one. */
-  private char keyLetter(char typed) {
-    for(ShipArtFile piece : pieces) {
-      if(!piece.letter().isEmpty()
-          && Character.toUpperCase(piece.letter().charAt(0)) == Character.toUpperCase(typed)) {
-        return piece.letter().charAt(0);
-      }
+  /** Las letras son de vim (moverse) y el resto, comandos; espacio pone o quita. */
+  private void character(char character) {
+    switch(Character.toLowerCase(character)) {
+      case 'h':
+        cursorX = Math.max(0, cursorX - 1);
+        break;
+      case 'l':
+        cursorX++;
+        break;
+      case 'k':
+        cursorY = Math.max(0, cursorY - 1);
+        break;
+      case 'j':
+        cursorY++;
+        break;
+      case ' ':
+        toggleCell();
+        break;
+      case ',':
+        cyclePen(-1);
+        break;
+      case '.':
+        cyclePen(1);
+        break;
+      case 'v':
+        cycleVariant();
+        break;
+      case 'n':
+        newDesign();
+        break;
+      case 'r':
+        renameDesign();
+        break;
+      case 'c':
+        openList(false);
+        break;
+      case 'y':
+        openList(true);
+        break;
+      case 's':
+        save();
+        break;
+      default:
+        break;
     }
-    return ShipSites.isSite(Character.toUpperCase(typed)) ? Character.toUpperCase(typed) : 0;
   }
 
-  private void character(char character) {
-    char letter = keyLetter(character);
-    if(letter != 0) {
-      if(canPlace(letter)) {
-        grid.set(cursorX, cursorY, letter);
-        ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
-        message = "sitio " + letter + " (" + ShipSites.kindName(kind) + " " + countOfKind(kind) + "/"
-            + maxOfKind(kind) + ")";
-      }
-    } else if(character == ' ') {
-      LetterGrid.Run run = grid.runAt(cursorX, cursorY);
-      if(run == null) {
-        message = "nada que borrar en x=" + cursorX + " y=" + cursorY;
-      } else {
-        for(int i = 0; i < run.n(); i++) {
-          grid.clear(run.x() + i, run.y());
-        }
-        message = "grupo " + run.letter() + " borrado";
-      }
-    } else if(character == 'n') {
-      newDesign();
-    } else if(character == 'r') {
-      renameDesign();
-    } else if(character == 'v') {
-      char under = grid.at(cursorX, cursorY);
-      if(under == ' ') {
-        message = "pon el cursor sobre una letra para cambiar el preview";
-      } else if(variantsOf(under).size() <= 1) {
-        message = "la pieza " + ShipSites.kindName(ShipSites.kindOfLetter(under, pieces)) + " no tiene variantes";
-      } else {
-        ShipSites.Kind kind = ShipSites.kindOfLetter(under, pieces);
-        variants.merge(kind, 1, Integer::sum);
-        message = "preview: " + pieceFor(under).name();
-      }
-    } else if(character == 'h') {
-      openList(false);
-    } else if(character == 'y') {
-      openList(true);
-    } else if(character == 's') {
-      save();
-    }
-  }
+
 
   /** The count of a kind in the design, as the grid has it now. */
   private int countOfKind(ShipSites.Kind kind) {
@@ -312,6 +367,17 @@ public final class ShipEditorView extends ArtEditorWindow {
    * of the kind (next to each other or apart): if the ship type does not admit
    * that many, it gives the cell back and warns.
    */
+  /** Cycles which piece of the kind of the pen is shown. */
+  private void cycleVariant() {
+    ShipSites.Kind kind = ShipSites.kindOfLetter(pen, pieces);
+    if(variantsOf(pen).size() <= 1) {
+      message = "la pieza " + ShipSites.kindName(kind) + " no tiene variantes";
+      return;
+    }
+    variants.merge(kind, 1, Integer::sum);
+    message = "preview: " + pieceFor(pen).name();
+  }
+
   private boolean canPlace(char letter) {
     ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
     if(kind == ShipSites.Kind.PART) {
@@ -513,8 +579,9 @@ public final class ShipEditorView extends ArtEditorWindow {
       String mark = max < 0 ? "?" : there < max ? "⚠" : there == max ? "✓" : "✗";
       graphics.setForegroundColor(mark.equals("⚠") || mark.equals("✗") ? TextColor.ANSI.YELLOW
           : TextColor.ANSI.WHITE);
-      graphics.putString(left, row++, EditorText.cut(keysOf(ofKind) + ": " + capitalized(ShipSites.kindName(kind))
-          + "  " + there + "/" + (max < 0 ? "?" : max) + " " + mark, size.getColumns() - left));
+      graphics.putString(left, row++, EditorText.cut((keysOf(ofKind).indexOf(pen) >= 0 ? "> " : "  ")
+          + keysOf(ofKind) + ": " + capitalized(ShipSites.kindName(kind)) + "  " + there + "/"
+          + (max < 0 ? "?" : max) + " " + mark, size.getColumns() - left));
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       for(ShipArtFile piece : ofKind) {
         if(row >= rows) {
@@ -670,9 +737,9 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   private String keysLine() {
     ShipDesign design = design();
-    return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor"
-        + (design == null ? "" : " · chasis: " + design.chassis())
-        + " · [v] preview · [n] nueva · [r] renombrar · [h] chasis · [y] type"
+    return "[flechas] o hjkl mover · espacio poner/quitar · [,/.] elemento " + (pen == 0 ? "-" : pen)
+        + " · [v] variante · [n] nueva · [r] renombrar · [c] chasis · [y] type"
+        + (design == null ? "" : " (" + design.chassis() + ")")
         + " · [s] guardar · [TAB] nave · [ESC] salir";
   }
 

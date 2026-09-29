@@ -47,7 +47,8 @@ class ShipEditorViewTest {
       assertTrue(screenText(screen).contains("prueba"), screenText(screen));
       assertTrue(screenText(screen).contains("Engine"), "the tree of pieces: " + screenText(screen));
 
-      view.handleKey(new KeyStroke('M', false, false));
+      // el pincel empieza en la letra del primer elemento (M, el motor): espacio pone
+      view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("M: Engine"), "the tree of sites: " + screenText(screen));
       assertTrue(screenText(screen).contains("1/1"), "the count: " + screenText(screen));
@@ -60,10 +61,16 @@ class ShipEditorViewTest {
       assertEquals(1, saved.get(0).groups().size());
       assertEquals(new ShipDesign.LetterGroup('M', 2, 2, 1), saved.get(0).groups().get(0));
 
-      // el espacio borra el grupo entero
+      // otra vez en la celda de al lado: se pasa del cupo y no la pone
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("M: Engine  0/1"), "the group is gone: " + screenText(screen));
+      assertTrue(screenText(screen).contains("admite 1"), "the quota: " + screenText(screen));
+
+      // y sobre la M puesta, espacio la quita
+      view.handleKey(new KeyStroke(KeyType.ArrowLeft));
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("M: Engine  0/1"), "the letter is gone: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -88,7 +95,7 @@ class ShipEditorViewTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains("no encuentro el chasis"), screenText(screen));
 
-      view.handleKey(new KeyStroke('h', false, false));
+      view.handleKey(new KeyStroke('c', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("chasis de la nave:"), screenText(screen));
       assertTrue(screenText(screen).contains("uno"), screenText(screen));
@@ -126,14 +133,14 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
 
-      view.handleKey(new KeyStroke('A', false, false));
+      view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("A: Weapon"), "the Firefly admits one weapon: " + screenText(screen));
 
       // otra arma, separada: se cuenta igual y no cabe
       view.handleKey(new KeyStroke(KeyType.ArrowRight));
       view.handleKey(new KeyStroke(KeyType.ArrowRight));
-      view.handleKey(new KeyStroke('A', false, false));
+      view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("admite 1"), "the warning: " + screenText(screen));
       assertTrue(screenText(screen).contains("A: Weapon  1/1"), "it is not written: " + screenText(screen));
@@ -159,7 +166,7 @@ class ShipEditorViewTest {
           ShipDesign.parse(new StringReader("[prueba]\nchasis=uno\n")), hulls, pieces);
       gui.addWindow(noType);
       gui.updateScreen();
-      noType.handleKey(new KeyStroke('M', false, false));
+      noType.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("elige el type"), screenText(screen));
       noType.handleKey(new KeyStroke(KeyType.Escape));
@@ -169,7 +176,7 @@ class ShipEditorViewTest {
           ShipDesign.parse(new StringReader("[prueba]\ntype=Wasp\nchasis=uno\n")), hulls, pieces);
       gui.addWindow(wasp);
       for(int i = 0; i < 3; i++) {
-        wasp.handleKey(new KeyStroke('M', false, false));
+        wasp.handleKey(new KeyStroke(' ', false, false));
         wasp.handleKey(new KeyStroke(KeyType.ArrowRight));
       }
       gui.updateScreen();
@@ -178,7 +185,7 @@ class ShipEditorViewTest {
       assertTrue(screenText(screen).contains("size tiny vs Huge"),
           "the size of the chassis is checked: " + screenText(screen));
 
-      wasp.handleKey(new KeyStroke('M', false, false));
+      wasp.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("admite 3"), screenText(screen));
       assertTrue(screenText(screen).contains("M: Engine  3/3"), "it is not written: " + screenText(screen));
@@ -205,9 +212,9 @@ class ShipEditorViewTest {
       gui.updateScreen();
 
       // dos armas seguidas: la vista dibuja una pieza en cada letra
-      view.handleKey(new KeyStroke('A', false, false));
-      view.handleKey(new KeyStroke(KeyType.ArrowRight));
-      view.handleKey(new KeyStroke('A', false, false));
+      // el espacio ya avanza a la derecha: las dos quedan seguidas
+      view.handleKey(new KeyStroke(' ', false, false));
+      view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("LL"), "one piece per letter: " + screenText(screen));
 
