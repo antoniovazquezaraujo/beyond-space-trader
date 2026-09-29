@@ -339,6 +339,7 @@ kinds with no piece yet show `(-)`, so the missing art is visible at a glance.
 | --- | --- |
 | `C M D B R A E G P` | Write that site letter at the cursor |
 | `h` / `y` | Pick the chassis / the ship type from a list |
+| `o` | Cycle the role of the preview (trader, pirate, police) |
 | `←↑→↓` | Move the cursor |
 | space | Erase the whole group under the cursor |
 | `,` / `.` | Cycle the colour of the letter under the cursor |
@@ -510,7 +511,7 @@ agreement. These are the suggested letters:
 | `M` | Engines | the `Engine` piece (by size: 1 to 3) |
 | `D` | Fuel | the `Fuel Tank` piece (one, two on the big ones) |
 | `B` | Cargo | the `Cargo Gauge` piece: the game draws the braille gauge of the real capacity (one dot per bay, two to nine cells) |
-| `T` `R` `L` | Role | the marker of the encounter: `Role Trader` (`$`), `Role Pirate` (`☠`), `Role Police` (`✶`) |
+| `R` | Role | the site of the marker: the game draws the glyph of the encounter (`Role Trader` `$`, `Role Pirate` `☠`, `Role Police` `✶`) |
 | `A` | Weapons | the piece of the mounted weapon, by its English name |
 | `E` | Shields | the piece of the mounted shield |
 | `G` | Gadgets | the piece of the mounted gadget |

@@ -42,6 +42,8 @@ public final class ShipEditorView extends ArtEditorWindow {
   private int cursorX = 2;
   private int cursorY = 2;
   private int colorIndex;
+  private int previewRole;
+  private static final String[] ROLES = {"trader", "pirate", "police"};
   private boolean listOpen;
   private boolean typeList;
   private int listIndex;
@@ -110,8 +112,19 @@ public final class ShipEditorView extends ArtEditorWindow {
   }
 
   private ShipArtFile pieceFor(char letter) {
+    ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
+    if(kind == ShipSites.Kind.ROLE) {
+      // el rol de la vista: el juego real elige el suyo en cada encuentro
+      for(ShipArtFile piece : pieces) {
+        if(ShipSites.kindOf(piece.name()) == ShipSites.Kind.ROLE
+            && piece.name().toLowerCase().endsWith(ROLES[previewRole])) {
+          return piece;
+        }
+      }
+    }
     for(ShipArtFile piece : pieces) {
-      if(!piece.letter().isEmpty() && piece.letter().charAt(0) == letter) {
+      if(!piece.letter().isEmpty()
+          && Character.toUpperCase(piece.letter().charAt(0)) == Character.toUpperCase(letter)) {
         return piece;
       }
     }
@@ -218,6 +231,9 @@ public final class ShipEditorView extends ArtEditorWindow {
         letterColors.put(run.letter(), GROUP_COLORS[colorIndex]);
       }
       message = "color " + GROUP_COLORS[colorIndex] + (run == null ? "" : " para " + run.letter());
+    } else if(character == 'o') {
+      previewRole = (previewRole + 1) % ROLES.length;
+      message = "rol de la vista: " + ROLES[previewRole];
     } else if(character == 'h') {
       openList(false);
     } else if(character == 'y') {
@@ -421,7 +437,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = design();
     ShipSites.Budget budget = design == null ? null : ShipSites.budgetOf(design.type());
     Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(currentGroups(), pieces);
-    graphics.putString(left, 0, EditorText.cut("sitios y piezas", size.getColumns() - left));
+    graphics.putString(left, 0, EditorText.cut("sites and pieces", size.getColumns() - left));
     int row = 1;
     for(ShipSites.Kind kind : ShipSites.Kind.values()) {
       List<ShipArtFile> ofKind = piecesOfKind(kind);
@@ -584,7 +600,8 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = design();
     return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor · [,/.] color"
         + (design == null ? "" : " · chasis: " + design.chassis())
-        + " · [h] chasis · [y] type · [s] guardar · [TAB] nave · [ESC] salir";
+        + " · [h] chasis · [y] type · [o] role preview (" + ROLES[previewRole] + ")"
+        + " · [s] guardar · [TAB] nave · [ESC] salir";
   }
 
   private static TextColor color(String name) {

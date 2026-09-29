@@ -275,25 +275,25 @@ public final class ShipSites {
   public static String kindName(Kind kind) {
     switch(kind) {
       case WEAPON:
-        return "arma";
+        return "weapon";
       case SHIELD:
-        return "escudo";
+        return "shield";
       case GADGET:
-        return "artilugio";
+        return "gadget";
       case COCKPIT:
-        return "cabina";
+        return "cockpit";
       case ENGINES:
-        return "motor";
+        return "engine";
       case FUEL:
-        return "deposito";
+        return "fuel";
       case CARGO:
-        return "bodega";
+        return "cargo";
       case ROLE:
-        return "rol";
+        return "role";
       case POD:
-        return "capsula";
+        return "pod";
       default:
-        return "pieza";
+        return "part";
     }
   }
 
