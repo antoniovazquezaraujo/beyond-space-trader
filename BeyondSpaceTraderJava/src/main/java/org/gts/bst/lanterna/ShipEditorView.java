@@ -115,6 +115,17 @@ public final class ShipEditorView extends ArtEditorWindow {
     }
   }
 
+  /** Moves to another ship, cycling: from the last one it goes back to the first. */
+  private void nextDesign(int step) {
+    if(designs.isEmpty()) {
+      return;
+    }
+    storeCurrent();
+    loadDesign((designIndex + step + designs.size()) % designs.size());
+    announceShip();
+    redraw();
+  }
+
   /** Says which ship is open, so TAB does not look like it does nothing. */
   private void announceShip() {
     ShipDesign design = design();
@@ -201,17 +212,11 @@ public final class ShipEditorView extends ArtEditorWindow {
       return true;
     }
     if(key.getKeyType() == KeyType.Tab) {
-      storeCurrent();
-      loadDesign(designIndex + 1);
-      announceShip();
-      redraw();
+      nextDesign(1);
       return true;
     }
     if(key.getKeyType() == KeyType.ReverseTab) {
-      storeCurrent();
-      loadDesign(designIndex - 1);
-      announceShip();
-      redraw();
+      nextDesign(-1);
       return true;
     }
     switch(key.getKeyType()) {

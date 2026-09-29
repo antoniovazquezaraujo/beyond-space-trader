@@ -257,6 +257,36 @@ class ShipEditorViewTest {
     }
   }
 
+  @Test
+  void tabCyclesTheShips() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader(
+        "[uno]\ntype=Firefly\nchasis=h1\n[dos]\ntype=Gnat\nchasis=h2\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[h1]\ncolor=cyan\nxxxxx\n[h2]\ncolor=red\nxxxxx\n"));
+    List<ShipArtFile> pieces = List.of();
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("[uno]"), screenText(screen));
+
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("[dos]"), screenText(screen));
+
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("[uno]"), "from the last one it goes back to the first: "
+          + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {

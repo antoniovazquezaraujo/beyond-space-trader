@@ -76,6 +76,16 @@ public final class HullEditorView extends ArtEditorWindow {
     updateTitle();
   }
 
+  /** Moves to another hull, cycling: from the last one it goes back to the first. */
+  private void nextHull(int step) {
+    if(hulls.isEmpty()) {
+      return;
+    }
+    loadHull((hullIndex + step + hulls.size()) % hulls.size());
+    message = "chasis " + hulls.get(hullIndex).name();
+    redraw();
+  }
+
   private void storeCurrent() {
     if(hulls.isEmpty()) {
       return;
@@ -151,9 +161,9 @@ public final class HullEditorView extends ArtEditorWindow {
       grid.clear(cursorX, cursorY);
       message = "borrado en x=" + cursorX + " y=" + cursorY;
     } else if(character == ',') {
-      loadHull(hullIndex - 1);
+      nextHull(-1);
     } else if(character == '.') {
-      loadHull(hullIndex + 1);
+      nextHull(1);
     } else if(character == 'n') {
       letterIndex = letters.isEmpty() ? 0 : (letterIndex + letters.size() - 1) % letters.size();
       message = "letra " + currentLetter().letter();
