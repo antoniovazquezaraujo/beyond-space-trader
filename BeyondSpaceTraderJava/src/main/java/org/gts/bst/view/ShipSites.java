@@ -177,7 +177,7 @@ public final class ShipSites {
       char site = ALL[i];
       int max = budget == null ? -1 : maxOf(budget, site);
       int there = site == CARGO ? runs.getOrDefault(site, 0) : placed.getOrDefault(site, 0);
-      lines.add(String.format("%-9s %c %4d/%-3s %s", NAMES[i], site, there, max < 0 ? "?" : max,
+      lines.add(String.format("%-9s %c %4s %s", NAMES[i], site, there + "/" + (max < 0 ? "?" : max),
           mark(there, max, site)));
     }
     return lines;
@@ -188,12 +188,12 @@ public final class ShipSites {
       return "";
     }
     if(site == ROLE || site == POD) {
-      return there == 0 ? "·" : there <= max ? "ok" : "sobran";
+      return there == 0 ? "·" : there <= max ? "ok" : "✗";
     }
     if(there < max) {
-      return "faltan " + (max - there);
+      return "⚠";
     }
-    return there == max ? "ok" : "sobran " + (there - max);
+    return there == max ? "ok" : "✗";
   }
 
   /** The warnings of a chassis against its type: empty when everything fits. */
