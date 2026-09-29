@@ -31,18 +31,15 @@ import org.gts.bst.view.ShipSites;
  * will fill with the pieces that say `key=` them.
  */
 public final class ShipEditorView extends ArtEditorWindow {
-  private static final String[] GROUP_COLORS = {"white", "cyan", "red", "yellow", "green", "magenta", "blue"};
   private static final int STRIP_ROWS = 3;
   private final List<ShipDesign> designs;
   private final List<ShipArtFile> hulls;
   private final List<ShipArtFile> pieces;
-  private final Map<Character, String> letterColors = new LinkedHashMap<>();
   private final Map<ShipSites.Kind, Integer> variants = new LinkedHashMap<>();
   private int designIndex;
   private LetterGrid grid = new LetterGrid();
   private int cursorX = 2;
   private int cursorY = 2;
-  private int colorIndex;
   private int previewRole;
   private static final String[] ROLES = {"trader", "pirate", "police"};
   private boolean listOpen;
@@ -67,7 +64,6 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   private void loadDesign(int index) {
     designIndex = Math.max(0, Math.min(index, designs.size() - 1));
-    letterColors.clear();
     if(designs.isEmpty()) {
       grid = new LetterGrid();
       message = "no hay naves: escribe [nombre] con type= y chasis= en ships.txt";
@@ -76,9 +72,6 @@ public final class ShipEditorView extends ArtEditorWindow {
     }
     ShipDesign design = designs.get(designIndex);
     grid = LetterGrid.ofDesign(design);
-    for(ShipDesign.LetterGroup group : design.groups()) {
-      letterColors.putIfAbsent(group.letter(), group.color().isEmpty() ? GROUP_COLORS[0] : group.color());
-    }
     updateTitle();
   }
 
@@ -89,8 +82,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipDesign design = designs.get(designIndex);
     List<ShipDesign.LetterGroup> groups = new ArrayList<>();
     for(LetterGrid.Run run : grid.runs()) {
-      groups.add(new ShipDesign.LetterGroup(run.letter(), run.x(), run.y(), run.n(),
-          letterColors.getOrDefault(run.letter(), GROUP_COLORS[colorIndex])));
+      groups.add(new ShipDesign.LetterGroup(run.letter(), run.x(), run.y(), run.n()));
     }
     designs.set(designIndex, new ShipDesign(design.name(), design.type(), design.chassis(), List.copyOf(groups)));
   }
@@ -234,13 +226,6 @@ public final class ShipEditorView extends ArtEditorWindow {
         }
         message = "grupo " + run.letter() + " borrado";
       }
-    } else if(character == ',' || character == '.') {
-      colorIndex = (colorIndex + (character == ',' ? GROUP_COLORS.length - 1 : 1)) % GROUP_COLORS.length;
-      LetterGrid.Run run = grid.runAt(cursorX, cursorY);
-      if(run != null) {
-        letterColors.put(run.letter(), GROUP_COLORS[colorIndex]);
-      }
-      message = "color " + GROUP_COLORS[colorIndex] + (run == null ? "" : " para " + run.letter());
     } else if(character == 'v') {
       char under = grid.at(cursorX, cursorY);
       if(under == ' ') {
@@ -533,9 +518,8 @@ public final class ShipEditorView extends ArtEditorWindow {
         continue;
       }
       if(withLetters) {
-        String colorName = letterColors.getOrDefault(run.letter(), GROUP_COLORS[colorIndex]);
         for(int i = 0; i < run.n() && x + i < left + width; i++) {
-          EditorText.glyph(graphics, x + i, y, run.letter(), color(colorName), false);
+          EditorText.glyph(graphics, x + i, y, run.letter(), TextColor.ANSI.YELLOW, false);
         }
       } else {
         paintPiece(graphics, run, x, y, left, width, top, height);
@@ -627,7 +611,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   private List<ShipDesign.LetterGroup> currentGroups() {
     List<ShipDesign.LetterGroup> groups = new ArrayList<>();
     for(LetterGrid.Run run : grid.runs()) {
-      groups.add(new ShipDesign.LetterGroup(run.letter(), run.x(), run.y(), run.n(), ""));
+      groups.add(new ShipDesign.LetterGroup(run.letter(), run.x(), run.y(), run.n()));
     }
     return groups;
   }
@@ -635,7 +619,7 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   private String keysLine() {
     ShipDesign design = design();
-    return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor · [,/.] color"
+    return "teclea C M D B R A E G P · espacio borra el grupo · [flechas] cursor"
         + (design == null ? "" : " · chasis: " + design.chassis())
         + " · [v] vista · [h] chasis · [y] type · [o] role preview (" + ROLES[previewRole] + ")"
         + " · [s] guardar · [TAB] nave · [ESC] salir";

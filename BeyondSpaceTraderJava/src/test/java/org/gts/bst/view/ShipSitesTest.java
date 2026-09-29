@@ -103,9 +103,9 @@ class ShipSitesTest {
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Engine]\nkey=M\ncolor=white\nM\n"));
     List<ShipDesign.LetterGroup> groups = List.of(
-        new ShipDesign.LetterGroup('A', 1, 1, 2, "red"),
-        new ShipDesign.LetterGroup('M', 4, 1, 1, "white"),
-        new ShipDesign.LetterGroup('Z', 6, 1, 3, "white"));
+        new ShipDesign.LetterGroup('A', 1, 1, 2),
+        new ShipDesign.LetterGroup('M', 4, 1, 1),
+        new ShipDesign.LetterGroup('Z', 6, 1, 3));
 
     assertEquals(ShipSites.Kind.WEAPON, ShipSites.kindOf("Pulse Laser"));
     assertEquals(ShipSites.Kind.SHIELD, ShipSites.kindOf("Energy Shield"));

@@ -58,7 +58,7 @@ class ShipEditorViewTest {
       assertEquals("Firefly", saved.get(0).type());
       assertEquals("uno", saved.get(0).chassis());
       assertEquals(1, saved.get(0).groups().size());
-      assertEquals(new ShipDesign.LetterGroup('M', 2, 2, 1, "white"), saved.get(0).groups().get(0));
+      assertEquals(new ShipDesign.LetterGroup('M', 2, 2, 1), saved.get(0).groups().get(0));
 
       // el espacio borra el grupo entero
       view.handleKey(new KeyStroke(' ', false, false));

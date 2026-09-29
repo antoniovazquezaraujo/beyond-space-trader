@@ -322,7 +322,7 @@ group=M x=6 y=3
 - `[nombre]` is free; `type=` names the ship type of the game specs (with no
   type, the panel cannot check the sites); `chasis=` must match a `[name]` of
   `chassis.txt` (`chassis=` is accepted too).
-- `group=<letter> x=<n> y=<n> [n=<count>] [color=<c>]`: a run of the same site
+- `group=<letter> x=<n> y=<n> [n=<count>]`: a run of the same site
   letter starting at `(x,y)`, `n` letters long (one by default), in a colour.
 - Coordinates: `(0,0)` is the first stored row and column of the chassis
   (leading spaces included).

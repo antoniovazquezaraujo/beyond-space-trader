@@ -26,7 +26,7 @@ import java.util.List;
  */
 public record ShipDesign(String name, String type, String chassis, List<LetterGroup> groups) {
   /** A group of the same site letter: where it starts, how many and its colour. */
-  public record LetterGroup(char letter, int x, int y, int n, String color) {
+  public record LetterGroup(char letter, int x, int y, int n) {
   }
 
   /** Parses every design of a reader. */
@@ -82,7 +82,6 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
     int x = 0;
     int y = 0;
     int n = 1;
-    String color = "";
     for(int i = 1; i < tokens.length; i++) {
       String[] pair = tokens[i].split("=", 2);
       if(pair.length != 2) {
@@ -99,9 +98,6 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
           case "n":
             n = Integer.parseInt(pair[1]);
             break;
-          case "color":
-            color = pair[1];
-            break;
           default:
             break;
         }
@@ -109,7 +105,7 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
         // un numero raro se ignora
       }
     }
-    return new LetterGroup(letter, x, y, n, color);
+    return new LetterGroup(letter, x, y, n);
   }
 
   /** Loads the designs of a file, or an empty list when the file does not exist. */
@@ -131,8 +127,7 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
         writer.println("type=" + design.type());
         writer.println("chasis=" + design.chassis());
         for(LetterGroup group : design.groups()) {
-          writer.println("group=" + group.letter() + " x=" + group.x() + " y=" + group.y() + " n=" + group.n()
-              + (group.color().isEmpty() ? "" : " color=" + group.color()));
+          writer.println("group=" + group.letter() + " x=" + group.x() + " y=" + group.y() + " n=" + group.n());
         }
       }
     }

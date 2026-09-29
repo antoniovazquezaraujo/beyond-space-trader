@@ -113,15 +113,6 @@ public final class LetterGrid {
     return runs;
   }
 
-  /** The groups of a design, from the grid. */
-  public List<ShipDesign.LetterGroup> groups(String color) {
-    List<ShipDesign.LetterGroup> groups = new ArrayList<>();
-    for(Run run : runs()) {
-      groups.add(new ShipDesign.LetterGroup(run.letter(), run.x(), run.y(), run.n(), color));
-    }
-    return groups;
-  }
-
   /** The colour zones of a hull, from the grid (one run per row). */
   public List<ShipArtFile.Zone> zones() {
     List<ShipArtFile.Zone> zones = new ArrayList<>();
