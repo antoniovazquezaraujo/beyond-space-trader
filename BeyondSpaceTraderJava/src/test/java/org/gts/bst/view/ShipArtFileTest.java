@@ -76,6 +76,28 @@ class ShipArtFileTest {
   }
 
   @Test
+  void readsTheLetterOfAPieceAndTheColourLettersOfAChassis() throws IOException {
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\nletra=M\ncolor=red\n⧯\n"));
+    assertEquals("M", pieces.get(0).letter(), "the site the piece fills");
+
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader(
+        "[uno]\n"
+        + "letra=X color=red bgcolor=blue blink=true\n"
+        + "letra=Y color=green\n"
+        + "zona=X x=1 y=2 w=3 h=4\n"
+        + "zona=Y x=0 y=0 w=1 h=1\n"
+        + "..\n"));
+
+    assertEquals(2, chassis.get(0).letters().size());
+    assertEquals(new ShipArtFile.ColorLetter('X', "red", "blue", true), chassis.get(0).letters().get(0));
+    assertEquals(new ShipArtFile.ColorLetter('Y', "green", "", false), chassis.get(0).letters().get(1));
+    assertEquals(2, chassis.get(0).zones().size());
+    assertEquals(new ShipArtFile.Zone('X', 1, 2, 3, 4), chassis.get(0).zones().get(0));
+    assertEquals(new ShipArtFile.Zone('Y', 0, 0, 1, 1), chassis.get(0).zones().get(1));
+    assertEquals("", chassis.get(0).letter(), "a chassis has no piece letter");
+  }
+
+  @Test
   void wideGlyphsTakeTwoCells() throws IOException {
     List<ShipArtFile> parts = ShipArtFile.parse(new StringReader(
         "[fichas]\n"

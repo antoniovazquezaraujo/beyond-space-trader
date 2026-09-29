@@ -33,6 +33,11 @@ blink=true                   ← optional; only true or false (false by default)
 
 - **Comments**: lines starting with `;;`. A single `;` is part of the drawing.
 - **`[name]`** opens a part and closes the previous one.
+- **In a piece**, `letra=` says which site it fills (`letra=M`).
+- **In a chassis**, `letra=` with a style defines a **colour letter** (a free
+  letter and the colour, background and blink it paints with:
+  `letra=X color=red bgcolor=blue blink=true`) and `zona=` paints a **colour
+  zone** with it (`zona=X x=1 y=2 w=3 h=4`).
 - **Keys**: `color=`, `bgcolor=`, `blink=`, lowercase, at the start of the line.
   A line starting with `Color=` is **art**, not a key.
 - **Drawing**: read literally. A space is empty; everything else (dots, unicode)
@@ -293,30 +298,29 @@ English** (there are no Spanish aliases: `color=rojo` is white).
 Anything unknown falls back to white **without warning**: `color=naranja` is
 white; write `color=orange` (or the index, or `#rrggbb`).
 
-## Format of `ships.txt` (one assembly)
+## Format of `ships.txt` (the ships)
 
-The rules are the same as above: comments are `;;` (a single `;` is never a comment
-and, here, it is ignored like any other unknown line).
+Every section is one ship: its name, its game type (the spec that sets the site
+budget), the chassis it uses and its **letter groups** (the sites the game fills).
 
 ```
 ;; a comment (two semicolons, like the other files)
-[borrador]
-chasis=insecto-diminuto
-pieza=antena x=3 y=0 color=rojo
+[firefly pirata]
+tipo=Firefly
+fuselaje=insecto-diminuto
+grupo=A x=3 y=1 n=2 color=red
+grupo=M x=6 y=3
 ```
 
-- `chasis=` must match a `[name]` of `chassis.txt`.
-- `pieza=<name> x=<n> y=<n> color=<c>`: all three fields in that order, at the
-  end of the line; the name may have spaces (the line is read from the right). A
-  malformed line is skipped silently.
-- The placement colour overrides the colour of the piece; `blink` and `bgcolor`
-  come from the piece and cannot be changed per placement.
-- Several `[name]` sections merge: the file holds **one** assembly (`borrador`
-  by default).
+- `[nombre]` is free; `tipo=` names the ship type of the game specs (with no
+  type, the panel cannot check the sites); `fuselaje=` must match a `[name]` of
+  `chassis.txt` (`chasis=` is accepted too).
+- `grupo=<letter> x=<n> y=<n> [n=<count>] [color=<c>]`: a run of the same site
+  letter starting at `(x,y)`, `n` letters long (one by default), in a colour.
 - Coordinates: `(0,0)` is the first stored row and column of the chassis
-  (leading spaces included). The top-left corner of the piece goes at `(x,y)`.
-- Draw order = file order: the last piece is on top. The composer's `u` removes
-  the last placed piece.
+  (leading spaces included).
+- A malformed line is skipped silently, and a comment is a line starting with
+  `;;` (a single `;` is never a comment).
 
 ## The composer
 

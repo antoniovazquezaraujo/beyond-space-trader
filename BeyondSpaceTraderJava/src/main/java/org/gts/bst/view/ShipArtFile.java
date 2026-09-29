@@ -26,10 +26,27 @@ import java.util.List;
  * included) is part of the art. Rows are read as code points, so glyphs outside
  * the basic plane (a domino tile, an emoji) work; a glyph that the terminal
  * paints two columns wide takes two cells (the second one is reserved).
+ *
+ * A piece also carries the site letter it fills; a chassis carries its colour
+ * letters (free letters with their style) and the colour zones painted with
+ * them.
  */
-public record ShipArtFile(String name, String color, List<int[]> cells, boolean blink, String bgColor) {
+public record ShipArtFile(String name, String color, List<int[]> cells, boolean blink, String bgColor,
+    String letter, List<ColorLetter> letters, List<Zone> zones) {
   /** The second cell of a glyph the terminal paints two columns wide. */
   public static final int CONTINUATION = -1;
+
+  /** A colour letter of a chassis: the letter and the style it paints with. */
+  public record ColorLetter(char letter, String color, String bgColor, boolean blink) {
+  }
+
+  /** A colour zone of a chassis: which letter, where it starts and its size. */
+  public record Zone(char letter, int x, int y, int w, int h) {
+  }
+
+  public ShipArtFile(String name, String color, List<int[]> cells, boolean blink, String bgColor) {
+    this(name, color, cells, blink, bgColor, "", List.of(), List.of());
+  }
 
   /** Loads the parts of a file, looking for it in the usual places. */
   public static List<ShipArtFile> load(String fileName) throws IOException {
@@ -63,7 +80,8 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
   }
 
   /** A part as read, before the glyph widths are applied. */
-  private record RawPart(String name, String color, List<String> lines, boolean blink, String bgColor) {
+  private record RawPart(String name, String color, List<String> lines, boolean blink, String bgColor, String letter,
+      List<ColorLetter> letters, List<Zone> zones) {
   }
 
   /**
@@ -75,6 +93,9 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
     List<RawPart> raw = new ArrayList<>();
     java.util.Set<Integer> wide = new java.util.HashSet<>();
     java.util.Set<Integer> narrow = new java.util.HashSet<>();
+    String letter = "";
+    List<ColorLetter> letters = new ArrayList<>();
+    List<Zone> zones = new ArrayList<>();
     String name = null;
     String color = "white";
     boolean blink = false;
@@ -92,7 +113,55 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
         }
         continue;
       }
-      if(trimmed.startsWith("wide=")) {
+      if(trimmed.startsWith("letra=")) {
+        String[] tokens = trimmed.substring("letra=".length()).strip().split("\\s+");
+        if(tokens.length == 1 && tokens[0].length() == 1) {
+          letter = tokens[0]; // la letra que rellena la pieza
+        } else if(tokens.length > 1) {
+          String letterColor = "", letterBg = "";
+          boolean letterBlink = false;
+          for(int i = 1; i < tokens.length; i++) {
+            String[] pair = tokens[i].split("=", 2);
+            if(pair.length == 2 && "color".equals(pair[0])) {
+              letterColor = pair[1];
+            } else if(pair.length == 2 && "bgcolor".equals(pair[0])) {
+              letterBg = pair[1];
+            } else if(pair.length == 2 && "blink".equals(pair[0])) {
+              letterBlink = pair[1].equalsIgnoreCase("true");
+            }
+          }
+          letters.add(new ColorLetter(tokens[0].charAt(0), letterColor, letterBg, letterBlink));
+        }
+        continue;
+      } else if(trimmed.startsWith("zona=")) {
+        char zoneLetter = 0;
+        int x = 0;
+        int y = 0;
+        int w = 0;
+        int h = 0;
+        for(String token : trimmed.substring("zona=".length()).strip().split("\\s+")) {
+          String[] pair = token.split("=", 2);
+          if(pair.length == 1 && pair[0].length() == 1) {
+            zoneLetter = pair[0].charAt(0);
+          } else if(pair.length == 2) {
+            try {
+              switch(pair[0]) {
+                case "x": x = Integer.parseInt(pair[1]); break;
+                case "y": y = Integer.parseInt(pair[1]); break;
+                case "w": w = Integer.parseInt(pair[1]); break;
+                case "h": h = Integer.parseInt(pair[1]); break;
+                default: break;
+              }
+            } catch(NumberFormatException e) {
+              // un numero raro se ignora
+            }
+          }
+        }
+        if(zoneLetter != 0) {
+          zones.add(new Zone(zoneLetter, x, y, w, h));
+        }
+        continue;
+      } else if(trimmed.startsWith("wide=")) {
         addCodePoints(wide, trimmed.substring("wide=".length()));
         continue;
       } else if(trimmed.startsWith("narrow=")) {
@@ -101,12 +170,16 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
       }
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
         if(name != null) {
-          raw.add(new RawPart(name, color, List.copyOf(lines), blink, bgColor));
+          raw.add(new RawPart(name, color, List.copyOf(lines), blink, bgColor, letter, List.copyOf(letters),
+              List.copyOf(zones)));
         }
         name = trimmed.substring(1, trimmed.length() - 1).strip();
         color = "white";
         blink = false;
         bgColor = "";
+        letter = "";
+        letters = new ArrayList<>();
+        zones = new ArrayList<>();
         lines.clear();
       } else if(name != null && trimmed.startsWith("color=")) {
         color = trimmed.substring("color=".length()).strip();
@@ -121,12 +194,13 @@ public record ShipArtFile(String name, String color, List<int[]> cells, boolean 
       }
     }
     if(name != null) {
-      raw.add(new RawPart(name, color, List.copyOf(lines), blink, bgColor));
+      raw.add(new RawPart(name, color, List.copyOf(lines), blink, bgColor, letter, List.copyOf(letters),
+          List.copyOf(zones)));
     }
     List<ShipArtFile> parts = new ArrayList<>();
     for(RawPart part : raw) {
       parts.add(new ShipArtFile(part.name(), part.color(), toCells(part.lines(), wide, narrow), part.blink(),
-          part.bgColor()));
+          part.bgColor(), part.letter(), part.letters(), part.zones()));
     }
     return parts;
   }
