@@ -511,7 +511,7 @@ agreement. These are the suggested letters:
 | `C` | Cockpit | the `Cockpit` piece |
 | `M` | Engines | the `Engine` piece (by size: 1 to 3) |
 | `D` | Fuel | the `Fuel Tank` piece (one, two on the big ones) |
-| `B` | Cargo | the `Cargo Gauge` piece: the game draws the braille gauge of the real capacity (one dot per bay, two to nine cells) |
+| `B` | Cargo | the `Cargo Gauge` piece: the game draws the braille gauge of the real capacity (one dot per bay, two to nine cells); the art of that piece is not used, it is a placeholder for the classic composer |
 | `R` | Role | the site of the marker: the game draws the glyph of the encounter (`Role Trader` `$`, `Role Pirate` `☠`, `Role Police` `✶`) |
 | `A` | Weapons | the piece of the mounted weapon, by its English name |
 | `E` | Shields | the piece of the mounted shield |

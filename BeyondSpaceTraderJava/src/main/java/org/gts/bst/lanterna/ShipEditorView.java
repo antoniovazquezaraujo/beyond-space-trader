@@ -477,7 +477,10 @@ public final class ShipEditorView extends ArtEditorWindow {
         if(row >= rows) {
           return;
         }
-        graphics.putString(left + 2, row++, EditorText.cut("· " + piece.name() + "  " + glyphOf(piece),
+        // el medidor de bodegas no usa el dibujo de la pieza: es braille, automatico
+        String glyph = ShipSites.kindOf(piece.name()) == ShipSites.Kind.CARGO ? ShipSites.gauge(capacity())
+            : glyphOf(piece);
+        graphics.putString(left + 2, row++, EditorText.cut("· " + piece.name() + "  " + glyph,
             Math.max(0, size.getColumns() - left - 2)));
       }
     }

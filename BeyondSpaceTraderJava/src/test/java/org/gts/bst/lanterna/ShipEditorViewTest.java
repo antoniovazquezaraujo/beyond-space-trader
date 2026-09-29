@@ -189,7 +189,8 @@ class ShipEditorViewTest {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Wasp\nchasis=uno\n"));
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxxxx\nxxxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
-        "[Pulse Laser]\nkey=A\ncolor=red\nL\n[Beam Laser]\nkey=A\ncolor=cyan\nB\n"));
+        "[Pulse Laser]\nkey=A\ncolor=red\nL\n[Beam Laser]\nkey=A\ncolor=cyan\nB\n"
+        + "[Cargo Gauge]\nkey=B\ncolor=green\n.\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(110, 30)));
     screen.startScreen();
     try {
@@ -211,6 +212,8 @@ class ShipEditorViewTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains("vista: Beam Laser"), screenText(screen));
       assertTrue(screenText(screen).contains("BB"), "the other variant: " + screenText(screen));
+      assertTrue(screenText(screen).contains("⣿⣿⣿⣿⣄"),
+          "the cargo gauge of the Wasp (35 bays) is drawn by itself: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
