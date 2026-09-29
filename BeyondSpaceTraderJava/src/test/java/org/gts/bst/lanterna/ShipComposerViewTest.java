@@ -116,6 +116,82 @@ class ShipComposerViewTest {
     }
   }
 
+  @Test
+  void showsTheSitePanelAndItsWarnings() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Wasp]\ncolor=cyan\nMA\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      gui.addWindow(new ShipComposerView(chassis, pieces, null));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains("Wasp (Huge)"), text);
+      assertTrue(text.contains("arma"), text);
+      assertTrue(text.contains("1/3"), "the panel counts the sites against the budget: " + text);
+      assertTrue(text.contains("faltan"), "the warnings are shown: " + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void previewsTheCargoGauge() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Flea]\ncolor=cyan\nBB\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKey(new KeyStroke('v', false, false));
+      gui.updateScreen();
+      String text = screenText(screen);
+      assertTrue(text.contains("⣿"), "ten bays are a full cell and two dots: " + text);
+      assertTrue(text.contains("vista: vacia"), "the panel shows the preview: " + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void opensTheShipTypeList() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader("[Wasp]\ncolor=cyan\nMA\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[motor]\ncolor=red\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipComposerView view = new ShipComposerView(chassis, pieces, null);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      view.handleKey(new KeyStroke('t', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("tipo de nave:"), screenText(screen));
+      assertTrue(screenText(screen).contains("Flea"), screenText(screen));
+
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("SpaceMonster (Huge)"),
+          "the panel follows the chosen type: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   private static String screenText(Screen screen) {
     StringBuilder text = new StringBuilder();
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {

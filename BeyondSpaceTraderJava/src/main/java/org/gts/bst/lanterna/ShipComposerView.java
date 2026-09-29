@@ -20,10 +20,13 @@ import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipAssembly;
+import org.gts.bst.view.ShipSites;
 
 
 /**
@@ -49,6 +52,13 @@ public final class ShipComposerView extends BasicWindow {
   private static final String GLYPH_SAMPLE = "🁣 🁩 🂓 ┃ ⚀ ⚅ ┃ ⣿ ⠿ ┃ ⧯ ⎅ ⏌ ⎚ ⛁ ┃ ↠ ⇉ ⦖ ⧎ ◒ ◈ ⍉ ⏚ ┃ 😀 中 ┃ ┌─┐";
   private boolean blinkOn = true;
   private String message = "";
+  /** The ship type of the design, or "" when the chassis has no spec. */
+  private String shipType = "";
+  /** -1 when the preview is off, else the index of PREVIEWS. */
+  private int preview = -1;
+  private boolean typeListOpen;
+  private int typeListIndex;
+  private static final String[] PREVIEWS = {"vacia", "comerciante", "pirata", "policia", "a tope"};
 
   public ShipComposerView(List<ShipArtFile> chassis, List<ShipArtFile> pieces, ShipAssembly saved) {
     setHints(Set.of(Window.Hint.FULL_SCREEN));
@@ -69,6 +79,7 @@ public final class ShipComposerView extends BasicWindow {
     chassisIndex = Math.max(0, indexOf(chassis, assembly.chassis()));
     pendingColor = pieces.isEmpty() ? "white" : pieces.get(0).color();
     updateTitle();
+    shipType = budgetName(assembly.chassis());
   }
 
   public int placedCount() {
@@ -77,13 +88,33 @@ public final class ShipComposerView extends BasicWindow {
 
   boolean handleKey(KeyStroke key) {
     if(key.getKeyType() == KeyType.Escape) {
+      if(typeListOpen) {
+        typeListOpen = false;
+        canvas.invalidate();
+        return true;
+      }
       close();
+      return true;
+    }
+    if(typeListOpen) {
+      List<String> types = shipTypes();
+      if(key.getKeyType() == KeyType.ArrowUp) {
+        typeListIndex = (typeListIndex + types.size() - 1) % types.size();
+      } else if(key.getKeyType() == KeyType.ArrowDown) {
+        typeListIndex = (typeListIndex + 1) % types.size();
+      } else if(key.getKeyType() == KeyType.Enter) {
+        selectType(types.get(typeListIndex));
+        return true;
+      }
+      canvas.invalidate();
       return true;
     }
     if(key.getKeyType() == KeyType.Tab) {
       chassisIndex = chassis.isEmpty() ? 0 : (chassisIndex + 1) % chassis.size();
       assembly = assembly.withChassis(chassis.get(chassisIndex).name());
       updateTitle();
+      shipType = budgetName(assembly.chassis());
+      preview = -1;
       canvas.invalidate();
       return true;
     }
@@ -115,7 +146,19 @@ public final class ShipComposerView extends BasicWindow {
   }
 
   private void character(char character) {
-    if(character == 'n') {
+    if(character == 't') {
+      typeListOpen = true;
+      typeListIndex = Math.max(0, shipTypes().indexOf(shipType));
+    } else if(character == 'v') {
+      preview = preview >= PREVIEWS.length - 1 ? -1 : preview + 1;
+      message = preview < 0 ? "previsualizacion: no" : "previsualizacion: " + PREVIEWS[preview];
+    } else if(character == ',' && preview >= 0) {
+      preview = (preview + PREVIEWS.length - 1) % PREVIEWS.length;
+      message = "previsualizacion: " + PREVIEWS[preview];
+    } else if(character == '.' && preview >= 0) {
+      preview = (preview + 1) % PREVIEWS.length;
+      message = "previsualizacion: " + PREVIEWS[preview];
+    } else if(character == 'n') {
       pieceIndex = pieces.isEmpty() ? 0 : (pieceIndex + 1) % pieces.size();
       pendingColor = pieces.isEmpty() ? "white" : pieces.get(pieceIndex).color();
     } else if(character == 'p') {
@@ -244,10 +287,16 @@ public final class ShipComposerView extends BasicWindow {
       for(int row = 0; row < size.getRows(); row++) {
         graphics.putString(0, row, " ".repeat(size.getColumns()));
       }
+      if(typeListOpen) {
+        drawTypeList(graphics, size);
+        return;
+      }
       if(chassis.isEmpty()) {
         graphics.putString(1, 1, "No hay chasis en ships/chassis.txt");
         return;
       }
+      int panelWidth = panelWidth(size);
+      int canvasWidth = size.getColumns() - panelWidth;
       // el montaje: chasis de fondo y las piezas encima, tapando lo de debajo
       int width = chassis.get(chassisIndex).width() + 2;
       int height = chassis.get(chassisIndex).height() + 2;
@@ -272,6 +321,9 @@ public final class ShipComposerView extends BasicWindow {
       }
       ShipArtFile hull = chassis.get(chassisIndex);
       overlay(cells, colors, hull, 1, 1, hull.color());
+      if(preview >= 0) {
+        fillSites(cells, colors, hull);
+      }
       for(ShipAssembly.ShipPlacement placement : assembly.pieces()) {
         ShipArtFile piece = findPiece(placement.piece());
         if(piece != null) {
@@ -286,16 +338,18 @@ public final class ShipComposerView extends BasicWindow {
             : pendingColor;
         overlay(cells, colors, pending, cursorX + 1, cursorY + 1, color);
       }
-      int left = Math.max(0, (size.getColumns() - width) / 2);
+      int left = Math.max(0, (canvasWidth - width) / 2);
       int top = Math.max(0, (size.getRows() - height - 2) / 2);
       for(int row = 0; row < height && top + row < size.getRows() - 2; row++) {
-        for(int column = 0; column < width && left + column < size.getColumns(); column++) {
+        for(int column = 0; column < width && left + column < canvasWidth; column++) {
           if(cells[row][column] != ' ' && cells[row][column] != ShipArtFile.CONTINUATION) {
             drawGlyph(graphics, left + column, top + row, cells[row][column], colors[row][column]);
           }
         }
       }
+      drawPanel(graphics, size, canvasWidth);
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
       if(showGlyphStrip) {
         graphics.putString(1, size.getRows() - 2, cut("glifos: " + GLYPH_SAMPLE
             + "   (cada ┃: pegado al glifo = ocupa 2 columnas; con hueco = 1 columna)", size.getColumns() - 2));
@@ -306,9 +360,130 @@ public final class ShipComposerView extends BasicWindow {
             + " [" + pendingColor + "]  ·  " + assembly.pieces().size() + " colocadas");
       }
       graphics.putString(1, size.getRows() - 1, "[h] pieza " + (showPending ? "(si)" : "(no)") + " · [x] vaciar"
-          + " · [flechas] mover · [ENTER] colocar · [n/p] pieza · [TAB] chasis · [c] color · [u] deshacer"
-          + " · [g] glifos · [s] guardar · [l] cargar · [r] recargar · [ESC] salir"
-          + (message.isEmpty() ? "" : "   ||   " + message));
+          + " · [flechas] mover · [ENTER] colocar · [n/p] pieza · [t] tipo · [v] previsualizar"
+          + (preview < 0 ? "" : " (" + PREVIEWS[preview] + ")")
+          + " · [TAB] chasis · [c] color · [u] deshacer · [g] glifos · [s] guardar · [l] cargar · [r] recargar"
+          + " · [ESC] salir" + (message.isEmpty() ? "" : "   ||   " + message));
+    }
+
+    /** Draws the list of ship types while it is open. */
+    private void drawTypeList(TextGUIGraphics graphics, TerminalSize size) {
+      List<String> types = shipTypes();
+      int left = Math.max(1, (size.getColumns() - 24) / 2);
+      int top = Math.max(0, (size.getRows() - types.size() - 2) / 2);
+      graphics.putString(left, top, "tipo de nave:");
+      for(int i = 0; i < types.size() && top + 1 + i < size.getRows() - 1; i++) {
+        if(i == typeListIndex) {
+          graphics.setForegroundColor(TextColor.ANSI.BLACK);
+          graphics.setBackgroundColor(TextColor.ANSI.WHITE);
+        }
+        graphics.putString(left, top + 1 + i, cut(String.format("%-22s", types.get(i)), 22));
+        graphics.setForegroundColor(TextColor.ANSI.WHITE);
+        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      }
+      graphics.putString(1, size.getRows() - 1, "[flechas] elegir · [ENTER] abrir · [ESC] cancelar");
+    }
+
+    /** The preview: fills the sites with the pieces the convention names. */
+    private void fillSites(int[][] cells, TextColor[][] colors, ShipArtFile hull) {
+      ShipSites.Budget budget = ShipSites.budgetOf(shipType);
+      int[] quota = previewQuota(budget);
+      String role = previewRole();
+      int bays = budget == null ? 0 : budget.cargoBays() + (preview == 4 ? 5 * budget.gadgets() : 0);
+      int weapons = 0;
+      int shields = 0;
+      int gadgets = 0;
+      for(ShipSites.Site site : ShipSites.sitesOf(hull)) {
+        ShipArtFile piece = null;
+        switch(site.site()) {
+          case ShipSites.COCKPIT:
+            piece = findPiece("cabina");
+            break;
+          case ShipSites.ENGINES:
+            piece = findPiece("motor");
+            break;
+          case ShipSites.FUEL:
+            piece = findPiece("deposito");
+            break;
+          case ShipSites.POD:
+            piece = findPiece("capsula");
+            break;
+          case ShipSites.ROLE:
+            piece = role.isEmpty() ? null : findPiece("marca " + role);
+            break;
+          case ShipSites.WEAPON:
+            piece = weapons++ < quota[0] ? findPieceStartingWith("torreta") : null;
+            break;
+          case ShipSites.SHIELD:
+            piece = shields++ < quota[1] ? findPieceStartingWith("escudo") : null;
+            break;
+          case ShipSites.GADGET:
+            piece = gadgets++ < quota[2] ? findPieceStartingWith("artilugio") : null;
+            break;
+          case ShipSites.CARGO:
+            clearRun(cells, site);
+            drawGauge(cells, colors, site, bays);
+            break;
+          default:
+            break;
+        }
+        if(piece != null) {
+          clearRun(cells, site);
+          overlay(cells, colors, piece, site.x() + 1, site.y() + 1, piece.color());
+        }
+      }
+    }
+
+    private int[] previewQuota(ShipSites.Budget budget) {
+      if(budget == null) {
+        return new int[3];
+      }
+      switch(preview) {
+        case 1:
+          return new int[] {0, 1, 1};
+        case 2:
+          return new int[] {budget.weapons(), 0, 0};
+        case 3:
+          return new int[] {budget.weapons(), budget.shields(), 0};
+        case 4:
+          return new int[] {budget.weapons(), budget.shields(), budget.gadgets()};
+        default:
+          return new int[3];
+      }
+    }
+
+    private String previewRole() {
+      switch(preview) {
+        case 1:
+          return "comerciante";
+        case 2:
+          return "pirata";
+        case 3:
+        case 4:
+          return "policia";
+        default:
+          return "";
+      }
+    }
+
+    /** Empties the cells of a site run, so nothing of the marker shows under a piece. */
+    private void clearRun(int[][] cells, ShipSites.Site site) {
+      for(int i = 0; i < site.length() && site.x() + 1 + i < cells[0].length; i++) {
+        cells[site.y() + 1][site.x() + 1 + i] = ' ';
+      }
+    }
+
+    /** Draws the braille gauge of a capacity inside its site run. */
+    private void drawGauge(int[][] cells, TextColor[][] colors, ShipSites.Site site, int bays) {
+      String gauge = ShipSites.gauge(bays);
+      int column = 0;
+      for(int i = 0; i < gauge.length() && column < site.length(); ) {
+        int codePoint = gauge.codePointAt(i);
+        i += Character.charCount(codePoint);
+        cells[site.y() + 1][site.x() + 1 + column] = codePoint;
+        colors[site.y() + 1][site.x() + 1 + column] = color("green");
+        column++;
+      }
     }
 
     /** Draws one glyph (a code point) in its colour; the terminal decides how wide it is. */
@@ -346,6 +521,97 @@ public final class ShipComposerView extends BasicWindow {
       cut.appendCodePoint(codePoint);
     }
     return cut.toString();
+  }
+
+  /** The ship types, in the enum order, as names. */
+  private static List<String> shipTypes() {
+    List<String> types = new ArrayList<>();
+    for(org.gts.bst.ship.ShipType type : org.gts.bst.ship.ShipType.values()) {
+      types.add(type.name());
+    }
+    return types;
+  }
+
+  /** The name of the chassis when it is also a ship type, else "". */
+  private static String budgetName(String chassisName) {
+    return ShipSites.budgetOf(chassisName) == null ? "" : chassisName;
+  }
+
+  private static int indexOfName(List<ShipArtFile> parts, String name) {
+    for(int i = 0; i < parts.size(); i++) {
+      if(parts.get(i).name().equalsIgnoreCase(name)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  /** Opens a ship type: selects its chassis and its site budget. */
+  private void selectType(String type) {
+    shipType = type;
+    typeListOpen = false;
+    preview = -1;
+    int index = indexOfName(chassis, type);
+    if(index >= 0) {
+      chassisIndex = index;
+      assembly = assembly.withChassis(chassis.get(index).name());
+      updateTitle();
+      message = "tipo: " + type;
+    } else {
+      message = "tipo: " + type + " (escribe [" + type + "] en chassis.txt)";
+    }
+    canvas.invalidate();
+  }
+
+  private ShipArtFile findPieceStartingWith(String prefix) {
+    for(ShipArtFile piece : pieces) {
+      if(piece.name().toLowerCase().startsWith(prefix)) {
+        return piece;
+      }
+    }
+    return null;
+  }
+
+  private int panelWidth(TerminalSize size) {
+    return size.getColumns() < 60 ? 0 : Math.min(32, Math.max(24, size.getColumns() / 4));
+  }
+
+  /** The site panel of the right side: the budget and the warnings. */
+  private void drawPanel(TextGUIGraphics graphics, TerminalSize size, int canvasWidth) {
+    int panelWidth = size.getColumns() - canvasWidth;
+    if(panelWidth <= 0) {
+      return;
+    }
+    ShipArtFile hull = chassis.get(chassisIndex);
+    List<ShipSites.Site> sites = ShipSites.sitesOf(hull);
+    Map<Character, Integer> placed = ShipSites.count(sites);
+    Map<Character, Integer> runs = ShipSites.longestRun(sites);
+    List<String> lines = new ArrayList<>(ShipSites.panel(shipType, placed, runs));
+    List<String> warnings = ShipSites.warnings(shipType, placed, runs);
+    if(preview >= 0) {
+      lines.add(1, "vista: " + PREVIEWS[preview]);
+    }
+    lines.add("");
+    int warningStart = lines.size();
+    int wide = Math.max(8, panelWidth - 4);
+    for(String warning : warnings) {
+      String rest = warning;
+      while(rest.length() > wide) {
+        int cutAt = rest.lastIndexOf(' ', wide);
+        if(cutAt <= 0) {
+          cutAt = wide;
+        }
+        lines.add("· " + rest.substring(0, cutAt));
+        rest = rest.substring(cutAt).stripLeading();
+      }
+      lines.add("· " + rest);
+    }
+    for(int row = 0; row < lines.size() && row < size.getRows() - 2; row++) {
+      graphics.setForegroundColor(row >= warningStart && !warnings.isEmpty() ? TextColor.ANSI.YELLOW
+          : TextColor.ANSI.WHITE);
+      graphics.putString(canvasWidth, row, cut("│ " + lines.get(row), panelWidth));
+    }
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
   }
 
   private ShipArtFile findPiece(String name) {
