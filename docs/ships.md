@@ -329,8 +329,11 @@ group=M x=6 y=3
 
 `run-composer.sh` opens a menu: the **ship editor** and the **classic composer**.
 
-The **ship editor** has the hull on the left (with its colours) and the same ship
-on the right with the real pieces:
+The **ship editor** has the hull on the left (with its colours), the same ship
+with the real pieces in the middle and, on the right, a vertical panel with the
+tree of sites and pieces: every kind with the keys of its pieces, how many the
+ship has against the maximum (with a mark), and each piece with its glyph. The
+kinds with no piece yet show `(-)`, so the missing art is visible at a glance.
 
 | Key | Action |
 | --- | --- |
@@ -507,7 +510,7 @@ agreement. These are the suggested letters:
 | `M` | Engines | the `Engine` piece (by size: 1 to 3) |
 | `D` | Fuel | the `Fuel Tank` piece (one, two on the big ones) |
 | `B` | Cargo | the `Cargo Gauge` piece: the game draws the braille gauge of the real capacity (one dot per bay, two to nine cells) |
-| `R` | Role | not used any more: each role marker has its own key (`$` trader, `☠` pirate, `✶` police) |
+| `T` `R` `L` | Role | the marker of the encounter: `Role Trader` (`$`), `Role Pirate` (`☠`), `Role Police` (`✶`) |
 | `A` | Weapons | the piece of the mounted weapon, by its English name |
 | `E` | Shields | the piece of the mounted shield |
 | `G` | Gadgets | the piece of the mounted gadget |
