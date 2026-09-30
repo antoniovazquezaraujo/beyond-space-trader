@@ -123,6 +123,56 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theShipTurnsAroundWhenItWithdraws() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      // A ship with its only cell at the left: normal it points right, turned around it does not.
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nx..\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\n.\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(new EncounterViewModel(EnumSet.of(EncounterAction.Attack), false, 0, "Flea",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate attacks.",
+          "Choose an action.", ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false,
+          false, 5, false, 0));
+      gui.updateScreen();
+      int before = columnOf(screen, 'x');
+
+      content.move(-1, 0);
+      gui.updateScreen();
+
+      assertEquals(before + 1, columnOf(screen, 'x'), "the drawing is mirrored (one cell right and one back)");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** The column of the first cell with a glyph. */
+  private static int columnOf(Screen screen, char glyph) {
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        if(screen.getBackCharacter(column, row).getCharacter() == glyph) {
+          return column;
+        }
+      }
+    }
+    return -1;
+  }
+
+  @Test
   void theStarsOfTheBackgroundMove() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

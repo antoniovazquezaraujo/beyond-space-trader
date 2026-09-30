@@ -229,5 +229,15 @@ class EncounterPresenterTest {
       return cargoSellAnswer;
     }
   }
+
+  @Test
+  void theOtherShipStopsBlockingWhenItLeavesTheFight() {
+    assertTrue(EncounterPresenter.opponentLeaves("PirateIgnore", false), "it ignores us");
+    assertTrue(EncounterPresenter.opponentLeaves("PirateFlee", false), "it flees");
+    assertTrue(EncounterPresenter.opponentLeaves("PoliceSurrender", false), "it surrenders");
+    assertTrue(EncounterPresenter.opponentLeaves("PirateAttack", true), "it cannot see a cloaked ship");
+    assertFalse(EncounterPresenter.opponentLeaves("PirateAttack", false), "while it attacks, it blocks");
+    assertFalse(EncounterPresenter.opponentLeaves("TraderBuy", false));
+  }
 }
 

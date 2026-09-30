@@ -244,7 +244,16 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   /** True when the other ship ignores us: it does not react to our manoeuvres. */
   private boolean opponentIgnores() {
-    return game.encounter().getEncounterType().name().endsWith("Ignore") || cmdrship.Cloaked();
+    return opponentLeaves(game.encounter().getEncounterType().name(), cmdrship.Cloaked());
+  }
+
+  /**
+   * True when the other ship is out of the fight (it ignores us, flees or
+   * surrenders), so it stops blocking the way; a cloaked ship is not seen either.
+   */
+  static boolean opponentLeaves(String encounterType, boolean cloaked) {
+    return encounterType.endsWith("Ignore") || encounterType.endsWith("Flee")
+        || encounterType.endsWith("Surrender") || cloaked;
   }
 
   private static EncounterViewModel.Bar bar(int value, int max) {

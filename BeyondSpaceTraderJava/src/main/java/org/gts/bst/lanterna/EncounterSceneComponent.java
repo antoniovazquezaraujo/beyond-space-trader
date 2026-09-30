@@ -48,7 +48,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int BAR_CELLS = 8;
   private static final char BAR_FULL = '█';
   private static final char BAR_EMPTY = '░';
-  private static final char BEAM = '─';
+  private static final char BEAM_DOT = '·';
   private static final char SPARK = '✶';
   private static final char BURST = '✱';
   private static final char[] SMOKE = {'░', '▒', '▓'};
@@ -83,6 +83,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int youColumn;
   private int opponentRow;
   private int opponentColumn;
+  private boolean youTurned;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -137,8 +138,15 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         youRow = row;
       }
     }
-    if(dx != 0 && canMove(dx, 0)) {
-      youColumn += dx;
+    if(dx != 0) {
+      // Withdrawing turns the ship around; advancing faces it to the other one again.
+      youTurned = dx < 0;
+      if(canMove(dx, 0)) {
+        youColumn += dx;
+      } else {
+        // Bump: the other ship is in the way.
+        flashes.add(new Flash(opponentX(), yourMiddleY(), "*", TextColor.ANSI.WHITE, 2, false));
+      }
     }
     invalidate();
     return youLeft + youColumn > screenWidth || youLeft + youColumn + youWidth < 0;
@@ -149,19 +157,26 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     youColumn = 0;
     opponentColumn = 0;
     opponentRow = 0;
+    youTurned = false;
     invalidate();
+  }
+
+  /** The drawing of the player ship, turned around when it is withdrawing. */
+  private ShipPicture yourPicture() {
+    ShipPicture picture = model.youPicture().cropped();
+    return youTurned ? picture.mirrored() : picture;
   }
 
   /** True when the player ship, moving by (dx, dy), does not run into the other drawing. */
   private boolean canMove(int dx, int dy) {
-    return !overlaps(model.youPicture().cropped(), yourX() + dx, yourY() + dy,
+    return !overlaps(yourPicture(), yourX() + dx, yourY() + dy,
         model.opponentPicture().cropped(), opponentX(), opponentY());
   }
 
   /** True when the other ship, moving by (dx, dy), does not run into the player drawing. */
   private boolean canOpponentMove(int dx, int dy) {
     return !overlaps(model.opponentPicture().cropped(), opponentX() + dx, opponentY() + dy,
-        model.youPicture().cropped(), yourX(), yourY());
+        yourPicture(), yourX(), yourY());
   }
 
   /** True when the ink of a ship at (left, top) meets the ink of the other one. */
@@ -309,7 +324,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       int targetY = opponentMiddleY();
       int toX = after.youHit() ? targetX : screenWidth - 1;
       int toY = after.youHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
-      beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.YELLOW_BRIGHT, BEAM_FRAMES));
+      beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.GREEN_BRIGHT, BEAM_FRAMES));
       if(after.youHit()) {
         impact(opponentX(), targetY, after.youDamage(), true);
       }
@@ -322,7 +337,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       int targetY = yourMiddleY();
       int toX = after.oppHit() ? targetX : 0;
       int toY = after.oppHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
-      beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
+      beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.CYAN_BRIGHT, BEAM_FRAMES));
       if(after.oppHit()) {
         impact(yourX(), targetY, after.oppDamage(), false);
       }
@@ -365,7 +380,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     drawBars(graphics, width);
     int logTop = Math.max(BARS_ROWS + 2, height - LOG_ROWS);
     int half = (width - 1) / 2;
-    ShipPicture you = model.youPicture().cropped();
+    ShipPicture you = yourPicture();
     ShipPicture opponent = model.opponentPicture().cropped();
     screenWidth = width;
     youLeft = shipLeft(0, half, you);
@@ -398,7 +413,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     UiPalette.reset(graphics);
   }
 
-  /** Draws a beam from its nose to its end, as a line (─, ╱ or ╲). */
+  /** Draws a beam from its nose to its end as a line of dots (the aim is kept). */
   private static void drawBeam(TextGUIGraphics graphics, Beam beam) {
     graphics.setForegroundColor(beam.color());
     graphics.setBackgroundColor(TextColor.ANSI.BLACK);
@@ -409,14 +424,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     int sx = x <= beam.x2() ? 1 : -1;
     int sy = y <= beam.y2() ? 1 : -1;
     int error = dx - dy;
-    char glyph = beam.y1() == beam.y2() ? BEAM : sy > 0 ? '╲' : '╱';
     while(true) {
-      graphics.setCharacter(x, y, glyph);
+      graphics.setCharacter(x, y, BEAM_DOT);
       if(x == beam.x2() && y == beam.y2()) {
         break;
       }
       int twice = 2 * error;
-      int stepY = 0;
       if(twice > -dy) {
         error -= dy;
         x += sx;
@@ -424,9 +437,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       if(twice < dx) {
         error += dx;
         y += sy;
-        stepY = sy;
       }
-      glyph = stepY == 0 ? BEAM : stepY > 0 ? '╲' : '╱';
     }
   }
 
