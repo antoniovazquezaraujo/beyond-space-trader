@@ -62,7 +62,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int CATWALK_FRAMES = 18;
   private static final int APPROACH_FRAMES = 8;
   private static final char[] SPARKLE = {'\\', '|', '/'};
-  private static final char WAVE = '·';
+  private static final char HORIZONTAL = '─';
+  private static final char VERTICAL = '│';
+  private static final char JOINT = '┼';
   private static final char BRIDGE = '═';
   private static final char BOX = '■';
   /** Cells the ship glides on every frame: the dashes go at double speed. */
@@ -582,13 +584,23 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private void drawInspection(TextGUIGraphics graphics) {
     graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     if(scanFrames > 0) {
-      int height = Math.max(1, youHeight + 2);
-      int row = yourY() - 1 + (SCAN_FRAMES - scanFrames) * height / SCAN_FRAMES;
+      // A green cross sweeps the ship: the horizontal line goes down while the
+      // vertical one goes across, and they meet in a joint.
+      int progress = SCAN_FRAMES - scanFrames;
+      int left = Math.max(0, yourX() - 2);
+      int right = yourX() + youWidth + 2;
+      int top = yourY() - 1;
+      int bottom = yourY() + youHeight + 1;
+      int row = top + progress * Math.max(1, bottom - top) / SCAN_FRAMES;
+      int column = left + progress * Math.max(1, right - left) / SCAN_FRAMES;
       graphics.setForegroundColor(TextColor.ANSI.GREEN_BRIGHT);
-      for(int x = Math.max(0, yourX() - 2); x < yourX() + youWidth + 2; x++) {
-        graphics.setCharacter(x, row, WAVE);
+      for(int x = left; x < right; x++) {
+        graphics.setCharacter(x, row, HORIZONTAL);
       }
-      graphics.setCharacter(yourX() - 2, row, BOX);
+      for(int y = top; y < bottom; y++) {
+        graphics.setCharacter(column, y, VERTICAL);
+      }
+      graphics.setCharacter(column, row, JOINT);
     }
     if(catwalkFrames > 0 && catwalkFrames <= CATWALK_FRAMES) {
       int row = yourMiddleY();
