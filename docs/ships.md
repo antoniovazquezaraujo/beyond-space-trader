@@ -374,7 +374,7 @@ with those colours.
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the colour letter painted. The cursor moves one cell right either way |
 | `+` / `-` | Add a colour element (the next free letter) / remove the selected one |
 | `r` | Rename the selected element's letter (then type the letter) |
-| `t` / `f` / `i` | Cycle its colour / background / blink |
+| `t` / `f` / `i` | Pick its colour or its background from a list / cycle its blink |
 | `z` | Cycle the size of the hull (empty, tiny, small, medium, large, huge, any) |
 | `TAB` / `⇧TAB` | Previous / next hull |
 | `s` | Save every edited hull back to `chassis.txt` |

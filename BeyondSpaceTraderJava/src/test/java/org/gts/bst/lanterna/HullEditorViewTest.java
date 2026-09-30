@@ -46,7 +46,10 @@ class HullEditorViewTest {
       assertTrue(screenText(screen).contains("uno"), screenText(screen));
 
       view.handleKey(new KeyStroke('+', false, false));
+      // t opens the colour list on white: one down (cyan) and take it
       view.handleKey(new KeyStroke('t', false, false));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("1. Cyan (A)"), "the panel of elements: " + screenText(screen));
@@ -79,7 +82,10 @@ class HullEditorViewTest {
       gui.updateScreen();
 
       view.handleKey(new KeyStroke('+', false, false));
+      // t opens the colour list on white: one down (cyan) and take it
       view.handleKey(new KeyStroke('t', false, false));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("1. Cyan (A)"), screenText(screen));
@@ -116,10 +122,12 @@ class HullEditorViewTest {
       gui.updateScreen();
       assertFalse(hasBackground(screen, TextColor.ANSI.BLUE), screenText(screen));
 
-      // + adds the element, f cycles its background to blue and space paints it
+      // + adds the element, f opens the backgrounds on (none): two downs (black, blue)
       view.handleKey(new KeyStroke('+', false, false));
       view.handleKey(new KeyStroke('f', false, false));
-      view.handleKey(new KeyStroke('f', false, false));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(hasBackground(screen, TextColor.ANSI.BLUE),
