@@ -95,6 +95,11 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    propias de esquiva (el veredicto sigue siendo del juego), el escaneo
    voluntario (el de la policía sí se ve, porque lo pide el juego), apuntar y
    los minijuegos de abordaje.
+8. **Las reglas del clásico, sin redes**: el juego se queda como era, también
+   en lo malo: sin combustible, sin dinero y sin nada que vender puedes
+   quedarte atrapado, igual que en el original. Cualquier red de seguridad
+   (fiar combustible, un préstamo de emergencia…) sería un ADR aparte, si el
+   autor lo pide.
 
 ## Consecuencias
 
