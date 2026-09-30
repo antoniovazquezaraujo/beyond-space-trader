@@ -11,7 +11,6 @@ package org.gts.bst.lanterna;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -19,6 +18,7 @@ import com.googlecode.lanterna.gui2.BasicWindow;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
+import com.googlecode.lanterna.gui2.TextBox;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.List;
+import org.gts.bst.cargo.CargoBuyOffer;
+import org.gts.bst.cargo.CargoBuyOp;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
@@ -375,6 +377,62 @@ class LanternaEncounterViewTest {
       // The speech is wrapped: the first words have to be on one line.
       String said = spacetrader.Strings.EncounterSaysPoliceAllClear.substring(0, 20);
       assertTrue(screenText(screen).contains(said), "the police say the outcome:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theTraderThanksWhenTheDealIsDone() throws Exception {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Trade),
+          false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Trader", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The trader offers to deal.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 0, ""));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+
+      // The player answers the question of the trade with 2 units.
+      Thread player = new Thread(() -> {
+        for(int i = 0; i < 1500 && gui.getWindows().size() < 2; i++) {
+          try {
+            Thread.sleep(20);
+          } catch(InterruptedException e) {
+            return;
+          }
+        }
+        Window dialog = gui.getActiveWindow();
+        if(dialog != null && dialog != view.asWindow()) {
+          if(dialog.getFocusedInteractable() instanceof TextBox) {
+            ((TextBox) dialog.getFocusedInteractable()).setText("2");
+          }
+          dialog.handleInput(new KeyStroke(KeyType.Enter));
+        }
+      });
+      player.setDaemon(true);
+      player.start();
+
+      Integer qty = view.askCargoBuyQuantity(new CargoBuyOffer(0, CargoBuyOp.BuyTrader, 120, 3));
+      assertEquals(2, qty);
+      gui.updateScreen();
+
+      // The trader thanks on its ship (the first words have to be on one line).
+      String thanks = spacetrader.Strings.EncounterSaysTradeThanks.substring(0, 12);
+      assertTrue(screenText(screen).contains(thanks), "the trader thanks:\n" + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();

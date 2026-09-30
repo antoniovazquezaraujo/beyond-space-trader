@@ -264,6 +264,10 @@ public final class LanternaEncounterView implements EncounterView {
       playUntil(content::catwalkOut);
     }
     content.deal();
+    if(qty != null && qty > 0) {
+      // The deal is done: the trader thanks, on its ship.
+      content.say(Strings.EncounterSaysTradeThanks);
+    }
     content.retract();
     playUntil(content::catwalkGone);
     awaitLeave();
@@ -285,6 +289,10 @@ public final class LanternaEncounterView implements EncounterView {
       playUntil(content::catwalkOut);
     }
     content.deal();
+    if(qty != null && qty > 0) {
+      // The deal is done: the trader thanks, on its ship.
+      content.say(Strings.EncounterSaysTradeThanks);
+    }
     content.retract();
     playUntil(content::catwalkGone);
     awaitLeave();
