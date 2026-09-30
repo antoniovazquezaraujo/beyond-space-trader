@@ -131,6 +131,18 @@ class LanternaEncounterViewTest {
       }
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
       assertEquals(List.of(EncounterAction.Attack), executed, "and after the reply it fires again");
+
+      // With a trader, the intro key deals.
+      view.render(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Trade),
+          false, 2, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Trader", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The trader offers to deal.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false, false, 5, false, 2));
+      content.resetPosition();
+      executed.clear();
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(EncounterAction.Trade), executed, "the intro key deals with the trader");
     } finally {
       screen.stopScreen();
       screen.close();

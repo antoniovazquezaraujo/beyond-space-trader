@@ -240,7 +240,7 @@ public final class LanternaEncounterView implements EncounterView {
         content.move(1, 0);
         return true;
       case Enter:
-        return giveUp();
+        return accept();
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'k') {
@@ -277,12 +277,17 @@ public final class LanternaEncounterView implements EncounterView {
     }
   }
 
-  /** The intro key: give up with whichever surrender the encounter offers. */
-  private boolean giveUp() {
-    for(EncounterAction give : java.util.List.of(EncounterAction.Surrender, EncounterAction.Submit,
+  /**
+   * The intro key: the natural action of the encounter (deal with the trader,
+   * allow the search, meet the captain, take the drink, board a disabled ship) or,
+   * if there is none, giving up (surrender, submit or yield the cargo).
+   */
+  private boolean accept() {
+    for(EncounterAction action : java.util.List.of(EncounterAction.Trade, EncounterAction.Submit,
+        EncounterAction.Meet, EncounterAction.Drink, EncounterAction.Board, EncounterAction.Surrender,
         EncounterAction.Yield)) {
-      if(model.actions().contains(give)) {
-        commands.execute(give);
+      if(model.actions().contains(action)) {
+        commands.execute(action);
         return true;
       }
     }
