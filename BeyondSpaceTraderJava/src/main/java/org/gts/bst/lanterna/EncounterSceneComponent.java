@@ -81,6 +81,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int frame;
   private int youRow;
   private int youColumn;
+  private int opponentRow;
+  private int opponentColumn;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -88,7 +90,6 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int opponentLeft;
   private int opponentWidth;
   private int opponentHeight;
-  private int opponentCentre;
   private int areaTop;
   private int areaBottom;
   private int screenWidth;
@@ -130,44 +131,112 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       return false;
     }
     if(dy != 0) {
-      youRow = Math.max(0, Math.min(areaBottom - areaTop - youHeight, youRow + dy));
+      int maxRow = Math.max(0, areaBottom - areaTop - youHeight);
+      int row = Math.max(0, Math.min(maxRow, youRow + dy));
+      if(row != youRow && canMove(0, row - youRow)) {
+        youRow = row;
+      }
     }
-    if(dx != 0 && canMove(dx)) {
+    if(dx != 0 && canMove(dx, 0)) {
       youColumn += dx;
     }
     invalidate();
     return youLeft + youColumn > screenWidth || youLeft + youColumn + youWidth < 0;
   }
 
-  /** Puts the ship back in its half (a failed flee, or the start of the fight). */
+  /** Puts both ships back in their places (a failed flee, or the start of the fight). */
   public void resetPosition() {
     youColumn = 0;
+    opponentColumn = 0;
+    opponentRow = 0;
     invalidate();
   }
 
-  /** True when moving the ship sideways does not run into the drawing of the other one. */
-  private boolean canMove(int dx) {
-    ShipPicture mine = model.youPicture().cropped();
-    ShipPicture other = model.opponentPicture().cropped();
-    int myLeft = youLeft + youColumn + dx;
-    int myTop = BARS_ROWS + youRow;
-    for(int y = 0; y < mine.height(); y++) {
-      for(int x = 0; x < mine.width(); x++) {
-        ShipPicture.Cell cell = mine.at(x, y);
+  /** True when the player ship, moving by (dx, dy), does not run into the other drawing. */
+  private boolean canMove(int dx, int dy) {
+    return !overlaps(model.youPicture().cropped(), yourX() + dx, yourY() + dy,
+        model.opponentPicture().cropped(), opponentX(), opponentY());
+  }
+
+  /** True when the other ship, moving by (dx, dy), does not run into the player drawing. */
+  private boolean canOpponentMove(int dx, int dy) {
+    return !overlaps(model.opponentPicture().cropped(), opponentX() + dx, opponentY() + dy,
+        model.youPicture().cropped(), yourX(), yourY());
+  }
+
+  /** True when the ink of a ship at (left, top) meets the ink of the other one. */
+  private static boolean overlaps(ShipPicture ship, int left, int top, ShipPicture other, int otherLeft,
+      int otherTop) {
+    for(int y = 0; y < ship.height(); y++) {
+      for(int x = 0; x < ship.width(); x++) {
+        ShipPicture.Cell cell = ship.at(x, y);
         if(cell == null || cell.continuation()) {
           continue;
         }
-        int column = myLeft + x - opponentLeft;
-        int row = myTop + y - BARS_ROWS;
+        int column = left + x - otherLeft;
+        int row = top + y - otherTop;
         if(column >= 0 && row >= 0 && column < other.width() && row < other.height()) {
           ShipPicture.Cell there = other.at(column, row);
           if(there != null && !there.continuation()) {
-            return false;
+            return true;
           }
         }
       }
     }
-    return true;
+    return false;
+  }
+
+  /** The frames the other ship takes to react: the better its pilot, the fewer. */
+  static int reactionFrames(int pilot) {
+    return Math.max(1, 5 - pilot / 2);
+  }
+
+  /** The rival: it ignores us, mirrors our height at its own pace, or chases us. */
+  private void moveOpponent() {
+    if(model == null || model.opponentIgnores() || model.opponentHull().value() <= 0 || model.opponentDisabled()) {
+      return;
+    }
+    if(model.commanderFleeing()) {
+      // The chase: it follows, keeping a distance, until the game decides.
+      if(frame % 2 == 0 && opponentX() - (yourX() + youWidth) > 4 && canOpponentMove(-1, 0)) {
+        opponentColumn--;
+      }
+      return;
+    }
+    // The mirror: it copies our height, a cell every so many frames.
+    if(opponentRow == youRow || frame % reactionFrames(model.opponentPilot()) != 0) {
+      return;
+    }
+    int step = youRow > opponentRow ? 1 : -1;
+    int maxRow = Math.max(0, areaBottom - areaTop - opponentHeight);
+    int row = Math.max(0, Math.min(maxRow, opponentRow + step));
+    if(row != opponentRow && canOpponentMove(0, row - opponentRow)) {
+      opponentRow = row;
+    }
+  }
+
+  private int yourX() {
+    return youLeft + youColumn;
+  }
+
+  private int yourY() {
+    return BARS_ROWS + youRow;
+  }
+
+  private int opponentX() {
+    return opponentLeft + opponentColumn;
+  }
+
+  private int opponentY() {
+    return BARS_ROWS + opponentRow;
+  }
+
+  private int opponentMiddleY() {
+    return opponentY() + Math.max(0, opponentHeight / 2);
+  }
+
+  private int yourMiddleY() {
+    return yourY() + Math.max(0, youHeight / 2);
   }
 
   /** Moves the stars and the fight: the window timer calls it on every frame. */
@@ -192,6 +261,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         flashes.set(i, flash.aged());
       }
     }
+    moveOpponent();
     invalidate();
   }
 
@@ -225,7 +295,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     boolean down = after.opponentHull().value() <= 0;
     if(down && before.opponentHull().value() > 0) {
       for(int i = 0; i < 4; i++) {
-        flashes.add(new Flash(opponentLeft + opponentWidth / 2 - 2 + i, opponentCentre - 1 + i % 2,
+        flashes.add(new Flash(opponentX() + opponentWidth / 2 - 2 + i, opponentMiddleY() - 1 + i % 2,
             String.valueOf(BURST), i % 2 == 0 ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.RED_BRIGHT,
             BURST_FRAMES, false));
       }
@@ -233,28 +303,28 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
     // My beam: aimed at the other ship, where it stops (a hit) or goes on (a miss).
     if(after.youAttacked()) {
-      int nose = youLeft + youColumn + youWidth;
-      int row = BARS_ROWS + youRow + Math.max(0, youHeight / 2);
-      int targetX = opponentLeft + opponentWidth / 2;
-      int targetY = opponentCentre;
+      int nose = yourX() + youWidth;
+      int row = yourMiddleY();
+      int targetX = opponentX() + opponentWidth / 2;
+      int targetY = opponentMiddleY();
       int toX = after.youHit() ? targetX : screenWidth - 1;
       int toY = after.youHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
       beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.YELLOW_BRIGHT, BEAM_FRAMES));
       if(after.youHit()) {
-        impact(opponentLeft, targetY, after.youDamage(), true);
+        impact(opponentX(), targetY, after.youDamage(), true);
       }
     }
     // Their beam: the same, the other way around.
     if(!down && !after.opponentDisabled()) {
-      int nose = opponentLeft;
-      int row = BARS_ROWS + Math.max(0, opponentHeight / 2);
-      int targetX = youLeft + youColumn + youWidth / 2;
-      int targetY = BARS_ROWS + youRow + Math.max(0, youHeight / 2);
+      int nose = opponentX();
+      int row = opponentMiddleY();
+      int targetX = yourX() + youWidth / 2;
+      int targetY = yourMiddleY();
       int toX = after.oppHit() ? targetX : 0;
       int toY = after.oppHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
       beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
       if(after.oppHit()) {
-        impact(youLeft + youColumn, targetY, after.oppDamage(), false);
+        impact(yourX(), targetY, after.oppDamage(), false);
       }
     }
   }
@@ -304,13 +374,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     opponentLeft = shipLeft(half + 1, width - half - 1, opponent);
     opponentWidth = opponent.width();
     opponentHeight = opponent.height();
-    opponentCentre = BARS_ROWS + Math.max(0, opponent.height() / 2);
     areaTop = BARS_ROWS;
     areaBottom = Math.max(BARS_ROWS + 1, logTop - 1);
     boolean down = model.opponentHull().value() <= 0;
     EditorText.picture(graphics, youLeft + youColumn, BARS_ROWS + youRow, you.width(), height, you);
     if(!down) {
-      EditorText.picture(graphics, half + 1, BARS_ROWS, width - half - 1, logTop - 1, opponent);
+      EditorText.picture(graphics, opponentX(), opponentY(), opponentWidth, height, opponent);
       if(model.opponentDisabled()) {
         drawSmoke(graphics);
       }
@@ -324,7 +393,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     for(int i = 0; i < 3; i++) {
       graphics.setForegroundColor(i % 2 == 0 ? TextColor.ANSI.WHITE : new TextColor.Indexed(240));
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
-      graphics.setCharacter(opponentLeft + i * 2, opponentCentre - 3 - i, SMOKE[(frame / 2 + i) % SMOKE.length]);
+      graphics.setCharacter(opponentX() + i * 2, opponentMiddleY() - 3 - i, SMOKE[(frame / 2 + i) % SMOKE.length]);
     }
     UiPalette.reset(graphics);
   }

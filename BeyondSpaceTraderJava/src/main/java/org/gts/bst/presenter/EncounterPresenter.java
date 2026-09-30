@@ -236,7 +236,15 @@ public class EncounterPresenter implements EncounterDialogHost {
             game.encounter().getOpponent().CargoBays()).mirrored(),
         game.encounter().getOpponentDisabled(),
         !game.encounter().getEncounterCmdrFleeing(),
+        opponentIgnores(),
+        game.encounter().getOpponent().Pilot(),
+        game.encounter().getEncounterCmdrFleeing(),
         round);
+  }
+
+  /** True when the other ship ignores us: it does not react to our manoeuvres. */
+  private boolean opponentIgnores() {
+    return game.encounter().getEncounterType().name().endsWith("Ignore") || cmdrship.Cloaked();
   }
 
   private static EncounterViewModel.Bar bar(int value, int max) {

@@ -61,7 +61,7 @@ class LanternaEncounterViewTest {
           false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
           "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
           "The pirate attacks.", "Choose an action.",
-          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, 0));
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 0));
       gui.addWindow(view.asWindow());
       gui.updateScreen();
 
@@ -113,6 +113,13 @@ class LanternaEncounterViewTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void theReactionOfTheOtherShipGoesWithItsPilot() {
+    assertEquals(5, EncounterSceneComponent.reactionFrames(1), "a poor pilot is slow to react");
+    assertEquals(3, EncounterSceneComponent.reactionFrames(5));
+    assertEquals(1, EncounterSceneComponent.reactionFrames(9), "a good pilot reacts at once");
   }
 
   @Test
