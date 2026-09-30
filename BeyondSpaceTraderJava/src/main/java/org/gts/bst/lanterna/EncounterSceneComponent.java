@@ -108,6 +108,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private boolean pendingOppHit;
   private int pendingOppDamage;
   private int scanFrames;
+  private String scanSpeech;
   private boolean catwalkPending;
   private Catwalk catwalk = Catwalk.NONE;
   private int catwalkFrames;
@@ -136,6 +137,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     EncounterViewModel before = this.model;
     this.model = model;
     dealt = false;
+    if(before != null && before.commanderFleeing() != model.commanderFleeing()) {
+      // The chase starts (or the fight is taken up again) and the ship turns with it.
+      youTurned = model.commanderFleeing();
+    }
     if(before == null) {
       // The encounter opens with the empty sky: both ships come in from the edges.
       enterFrames = ENTER_FRAMES;
@@ -203,8 +208,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** The drawing of the player ship, turned around when it is withdrawing. */
   private ShipPicture yourPicture() {
     ShipPicture picture = model.youPicture().cropped();
-    // Withdrawing, or fleeing while the other ship follows, turns the ship around.
-    return youTurned || model.commanderFleeing() ? picture.mirrored() : picture;
+    // Withdrawing (or being chased after a flee) turns the ship around; the
+    // manoeuvres of the player always have the last word on where it points.
+    return youTurned ? picture.mirrored() : picture;
   }
 
   /** The phases of the catwalk of a trade (or of a police seizure). */
@@ -339,9 +345,15 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(responseFrames > 0 && --responseFrames == 0) {
       playTheReply();
     }
-    if(scanFrames > 0 && --scanFrames == 0 && catwalkPending) {
-      catwalkPending = false;
-      startCatwalk(true);
+    if(scanFrames > 0 && --scanFrames == 0) {
+      if(catwalkPending) {
+        catwalkPending = false;
+        startCatwalk(true);
+      } else if(scanSpeech != null) {
+        // The police are done: they say how it went.
+        say(scanSpeech);
+        scanSpeech = null;
+      }
     }
     if(catwalk != Catwalk.NONE) {
       // The rival closes in, at a distance, while the catwalk stretches out.
@@ -462,8 +474,14 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** The police scanner over our ship, and then the catwalk if they take cargo. */
   public void inspection(boolean confiscated) {
+    inspection(confiscated, null);
+  }
+
+  /** The police scanner; when it ends, they say the outcome (all clear). */
+  public void inspection(boolean confiscated, String afterScan) {
     scanFrames = SCAN_FRAMES;
     catwalkPending = confiscated;
+    scanSpeech = afterScan;
     invalidate();
   }
 

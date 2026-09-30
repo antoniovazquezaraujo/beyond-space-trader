@@ -127,7 +127,7 @@ public final class LanternaEncounterView implements EncounterView {
   public void inspection(boolean confiscated) {
     // After the scan the ship stays until the player reads the outcome and leaves.
     awaitLeave();
-    content.inspection(confiscated);
+    content.inspection(confiscated, confiscated ? null : Strings.EncounterSaysPoliceAllClear);
   }
 
   /** The scene is over: it waits for the player to leave (intro, escape or flying away). */

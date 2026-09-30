@@ -222,6 +222,15 @@ class LanternaEncounterViewTest {
           false, 5, true, 0, ""));
       gui.updateScreen();
       assertEquals(facing + 2, columnOf(screen, 'x'), "fleeing, the ship faces away");
+
+      // Taking up the fight again turns the ship back to face the other one.
+      content.model(new EncounterViewModel(EnumSet.of(EncounterAction.Attack), false, 0, "Flea",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate attacks.",
+          "Choose an action.", ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false,
+          false, 5, false, 0, ""));
+      gui.updateScreen();
+      assertEquals(facing, columnOf(screen, 'x'), "attacking again, the ship faces the other one");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -331,6 +340,45 @@ class LanternaEncounterViewTest {
       return -1;
     }
     return text.substring(0, at).split("\n", -1).length - 1;
+  }
+
+  @Test
+  void thePoliceSayAllIsInOrderAfterTheScan() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(new EncounterViewModel(EnumSet.of(EncounterAction.Submit), false, 0, "Flea",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Police",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The police requests to inspect.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false, false, 5, false, 0,
+          spacetrader.Strings.EncounterSaysPolice));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+
+      view.inspection(false);
+      // The ships come in (14 frames) and then the scan runs (16 frames).
+      for(int i = 0; i < 14 + 16; i++) {
+        ((EncounterSceneComponent) view.asWindow().getComponent()).tick();
+      }
+      gui.updateScreen();
+
+      // The speech is wrapped: the first words have to be on one line.
+      String said = spacetrader.Strings.EncounterSaysPoliceAllClear.substring(0, 20);
+      assertTrue(screenText(screen).contains(said), "the police say the outcome:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
   }
 
   @Test
