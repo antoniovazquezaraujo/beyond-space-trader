@@ -66,6 +66,7 @@ public final class LanternaApp {
       // The game starts on the title screen: the logo, the starfield and the menu.
       // "New game (F2)" or "Load (F9)" bring a game in.
       MainPresenter presenter = new MainPresenter(() -> game[0], window);
+      dialogs.quietTo(window::alertLog);
       window.setPresenter(presenter);
       window.showTitleScreen();
       presenter.updateAll();

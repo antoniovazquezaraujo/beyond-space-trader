@@ -109,6 +109,7 @@ public final class LanternaMainWindow
   private ShipListPresenter shipListPresenter;
   private EquipmentPresenter equipmentPresenter;
   private ShipyardPresenter shipyardPresenter;
+  private LanternaEncounterView encounterView;
   private boolean gameOver;
   private final List<Runnable> menuActions = new ArrayList<>();
   private java.util.Timer starTimer;
@@ -164,6 +165,15 @@ public final class LanternaMainWindow
   public void log(String message) {
     content.log(message);
     content.invalidate();
+  }
+
+  /** A quiet alert: to the log of the encounter while it is open, or to the main one. */
+  public void alertLog(String message) {
+    if(encounterView != null) {
+      encounterView.log(message);
+    } else {
+      log(message);
+    }
   }
 
   @Override
@@ -250,6 +260,8 @@ public final class LanternaMainWindow
     EncounterPresenter[] presenter = new EncounterPresenter[1];
     LanternaEncounterView view = new LanternaEncounterView(gui,
         action -> dispatch(presenter[0], action), () -> presenter[0].tick(), this::showCargoTransfer);
+    encounterView = view;
+    view.onClose(() -> encounterView = null);
     presenter[0] = new EncounterPresenter(game, view);
     gui.addWindow(view.asWindow());
     try {

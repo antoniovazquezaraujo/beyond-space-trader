@@ -9,7 +9,9 @@
 package org.gts.bst.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import spacetrader.enums.AlertType;
@@ -40,6 +42,25 @@ class LanternaDialogServiceTest {
     assertEquals("Say Goodbye to Wild", host.buttons.get(0).text());
     assertEquals("Cancel", host.buttons.get(1).text());
     assertEquals(DialogResult.Cancel, host.buttons.get(1).result());
+  }
+
+  @Test
+  void sendsTheOutcomesToTheLogWhenTheQuietSinkIsSet() {
+    FakeHost host = new FakeHost();
+    List<String> log = new ArrayList<>();
+    LanternaDialogService service = new LanternaDialogService(host);
+    service.quietTo(log::add);
+
+    // An outcome (one button): one more line of the log, with no dialog.
+    assertEquals(DialogResult.OK, service.alert(AlertType.EncounterEscaped));
+
+    assertEquals(1, log.size());
+    assertEquals("You have managed to escape your opponent.", log.get(0));
+    assertNull(host.title, "an outcome opens no dialog");
+
+    // A question (two buttons) keeps its dialog.
+    service.alert(AlertType.WildWontStayAboardLaser, "Acamar");
+    assertEquals(2, host.buttons.size());
   }
 
   @Test

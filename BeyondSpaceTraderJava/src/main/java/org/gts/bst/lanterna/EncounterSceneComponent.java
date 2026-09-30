@@ -57,10 +57,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int BURST_FRAMES = 8;
   private static final int BEAM_FRAMES = 3;
 
-  /** A beam: the shot of a ship, a line of light from one nose to where it dies. */
-  private record Beam(int y, int from, int to, TextColor color, int frames) {
+  /** A beam: the shot of a ship, a line of light from its nose to where the game says. */
+  private record Beam(int x1, int y1, int x2, int y2, TextColor color, int frames) {
     Beam aged() {
-      return new Beam(y, from, to, color, frames - 1);
+      return new Beam(x1, y1, x2, y2, color, frames - 1);
     }
   }
 
@@ -73,6 +73,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   private final KeyHandler keyHandler;
   private final List<String> log = new ArrayList<>();
+  private final List<String> alerts = new ArrayList<>();
   private final List<Beam> beams = new ArrayList<>();
   private final List<Flash> flashes = new ArrayList<>();
   private EncounterViewModel model;
@@ -103,6 +104,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(before != null && before.round() != model.round() && screenWidth > 0) {
       play(before, model);
     }
+    invalidate();
+  }
+
+  /** A quiet alert of the game (an outcome, no question): one more line of the log. */
+  public void addAlert(String line) {
+    alerts.add(line);
     invalidate();
   }
 
@@ -224,32 +231,40 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       }
       return;
     }
-    // My beam: from my nose to the other ship (a hit) or past it (a miss).
+    // My beam: aimed at the other ship, where it stops (a hit) or goes on (a miss).
     if(after.youAttacked()) {
-      int from = youLeft + youColumn + youWidth;
+      int nose = youLeft + youColumn + youWidth;
       int row = BARS_ROWS + youRow + Math.max(0, youHeight / 2);
-      int to = after.youHit() ? opponentLeft : screenWidth - 1;
-      beams.add(new Beam(after.youHit() ? row : missRow(row), from, to, TextColor.ANSI.YELLOW_BRIGHT, BEAM_FRAMES));
+      int targetX = opponentLeft + opponentWidth / 2;
+      int targetY = opponentCentre;
+      int toX = after.youHit() ? targetX : screenWidth - 1;
+      int toY = after.youHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
+      beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.YELLOW_BRIGHT, BEAM_FRAMES));
       if(after.youHit()) {
-        impact(opponentLeft, after.youHit() ? row : missRow(row), after.youDamage(), true);
+        impact(opponentLeft, targetY, after.youDamage(), true);
       }
     }
     // Their beam: the same, the other way around.
     if(!down && !after.opponentDisabled()) {
+      int nose = opponentLeft;
       int row = BARS_ROWS + Math.max(0, opponentHeight / 2);
-      int to = after.oppHit() ? youLeft + youColumn + youWidth : 0;
-      beams.add(new Beam(after.oppHit() ? row : missRow(row), opponentLeft, to, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
+      int targetX = youLeft + youColumn + youWidth / 2;
+      int targetY = BARS_ROWS + youRow + Math.max(0, youHeight / 2);
+      int toX = after.oppHit() ? targetX : 0;
+      int toY = after.oppHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
+      beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
       if(after.oppHit()) {
-        impact(youLeft + youColumn, after.oppHit() ? row : missRow(row), after.oppDamage(), false);
+        impact(youLeft + youColumn, targetY, after.oppDamage(), false);
       }
     }
   }
 
-  /** A miss passes just over or under the ship, whichever is inside the field. */
-  private int missRow(int row) {
-    int above = BARS_ROWS - 1;
-    int below = areaBottom;
-    return row - BARS_ROWS < (areaBottom - BARS_ROWS) / 2 ? (row <= BARS_ROWS + 1 ? below : above) : above;
+  /** The y of the line from (x1,y1) to (x2,y2) when it reaches {@code x}: the aim is kept. */
+  private static int aimedY(int x1, int y1, int x2, int y2, int x) {
+    if(x2 == x1) {
+      return y1;
+    }
+    return (int)Math.round(y1 + (double)(y2 - y1) * (x - x1) / (x2 - x1));
   }
 
   /** A beam hit: sparks (or a shield flash) and the damage number. */
@@ -314,16 +329,42 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     UiPalette.reset(graphics);
   }
 
-  /** The projectiles in the air and the flashes of the round. */
+  /** Draws a beam from its nose to its end, as a line (─, ╱ or ╲). */
+  private static void drawBeam(TextGUIGraphics graphics, Beam beam) {
+    graphics.setForegroundColor(beam.color());
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    int x = beam.x1();
+    int y = beam.y1();
+    int dx = Math.abs(beam.x2() - x);
+    int dy = Math.abs(beam.y2() - y);
+    int sx = x <= beam.x2() ? 1 : -1;
+    int sy = y <= beam.y2() ? 1 : -1;
+    int error = dx - dy;
+    char glyph = beam.y1() == beam.y2() ? BEAM : sy > 0 ? '╲' : '╱';
+    while(true) {
+      graphics.setCharacter(x, y, glyph);
+      if(x == beam.x2() && y == beam.y2()) {
+        break;
+      }
+      int twice = 2 * error;
+      int stepY = 0;
+      if(twice > -dy) {
+        error -= dy;
+        x += sx;
+      }
+      if(twice < dx) {
+        error += dx;
+        y += sy;
+        stepY = sy;
+      }
+      glyph = stepY == 0 ? BEAM : stepY > 0 ? '╲' : '╱';
+    }
+  }
+
+  /** The shots of the round and the flashes. */
   private void drawFight(TextGUIGraphics graphics) {
     for(Beam beam : beams) {
-      graphics.setForegroundColor(beam.color());
-      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
-      int from = Math.min(beam.from(), beam.to());
-      int to = Math.max(beam.from(), beam.to());
-      for(int x = from; x <= to && x < screenWidth; x++) {
-        graphics.setCharacter(x, beam.y(), BEAM);
-      }
+      drawBeam(graphics, beam);
     }
     for(Flash flash : flashes) {
       graphics.setForegroundColor(flash.color());
@@ -384,6 +425,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         break;
       }
       UiPalette.draw(graphics, 1, row++, line, UiPalette.TEXT, width - 1);
+    }
+    for(String alert : alerts) {
+      if(row >= height - 1) {
+        break;
+      }
+      UiPalette.draw(graphics, 1, row++, alert, UiPalette.ACCENT, width - 1);
     }
   }
 

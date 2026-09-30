@@ -80,6 +80,7 @@ public final class LanternaEncounterView implements EncounterView {
   private EncounterViewModel model;
   private Timer timer;
   private Timer stars;
+  private Runnable onClose;
 
   public LanternaEncounterView(WindowBasedTextGUI gui, Commands commands, Runnable tick, CargoHost cargoHost) {
     this.gui = gui;
@@ -109,6 +110,16 @@ public final class LanternaEncounterView implements EncounterView {
     return window;
   }
 
+  /** A quiet alert of the game: one more line of the log of the scene. */
+  public void log(String line) {
+    content.addAlert(line);
+  }
+
+  /** Tells the window that the encounter is over (to stop sending it log lines). */
+  public void onClose(Runnable close) {
+    this.onClose = close;
+  }
+
   @Override
   public void render(EncounterViewModel model) {
     this.model = model;
@@ -126,6 +137,9 @@ public final class LanternaEncounterView implements EncounterView {
     if(stars != null) {
       stars.cancel();
       stars = null;
+    }
+    if(onClose != null) {
+      onClose.run();
     }
     window.close();
   }
