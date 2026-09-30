@@ -48,6 +48,18 @@ public final class InputDialog extends DialogWindow {
     setFocusedInteractable(textBox);
   }
 
+  /**
+   * The same dialog, but sitting at the bottom of the screen, so it does not cover
+   * the ships of the encounter scene.
+   */
+  public static String showAtBottom(WindowBasedTextGUI gui, String title, String prompt, String initial) {
+    InputDialog dialog = new InputDialog(title, prompt, initial);
+    TerminalSize size = gui.getScreen().getTerminalSize();
+    dialog.setHints(java.util.Set.of(com.googlecode.lanterna.gui2.Window.Hint.MODAL));
+    dialog.setPosition(new com.googlecode.lanterna.TerminalPosition(2, Math.max(0, size.getRows() - 9)));
+    return dialog.showDialog(gui);
+  }
+
   @Override
   public boolean handleInput(KeyStroke key) {
     if(key.getKeyType() == KeyType.Enter && !(getFocusedInteractable() instanceof Button)) {

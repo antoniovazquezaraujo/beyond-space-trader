@@ -60,6 +60,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int RESPONSE_FRAMES = 5;
   private static final int SCAN_FRAMES = 16;
   private static final int CATWALK_FRAMES = 18;
+  private static final int APPROACH_FRAMES = 8;
+  private static final char[] SPARKLE = {'\\', '|', '/'};
   private static final char WAVE = '·';
   private static final char BRIDGE = '═';
   private static final char BOX = '■';
@@ -103,6 +105,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int scanFrames;
   private boolean catwalkPending;
   private int catwalkFrames;
+  private boolean leaving;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -229,7 +232,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** The rival: it ignores us, mirrors our height at its own pace, or chases us. */
   private void moveOpponent() {
-    if(model == null || model.opponentIgnores() || model.opponentHull().value() <= 0 || model.opponentDisabled()) {
+    if(model == null || model.opponentIgnores() || model.opponentHull().value() <= 0 || model.opponentDisabled()
+        || catwalkFrames > 0) {
       return;
     }
     if(model.commanderFleeing()) {
@@ -305,6 +309,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       catwalkFrames = CATWALK_FRAMES;
     }
     if(catwalkFrames > 0) {
+      // First the ships come closer; then the catwalk goes out.
+      if(catwalkFrames > CATWALK_FRAMES && frame % 2 == 0 && opponentX() - (yourX() + youWidth) > 6) {
+        opponentColumn--;
+      }
       catwalkFrames--;
     }
     glidePlayer();
@@ -423,13 +431,19 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** A catwalk between the two ships: the cargo goes over it. */
   public void catwalk() {
-    catwalkFrames = CATWALK_FRAMES;
+    catwalkFrames = CATWALK_FRAMES + APPROACH_FRAMES;
+    invalidate();
+  }
+
+  /** The scene shows a result to read: it stays until the player leaves (intro). */
+  public void awaitLeave() {
+    leaving = true;
     invalidate();
   }
 
   /** True while the scene has something to finish (the close has to wait for it). */
   public boolean animating() {
-    return scanFrames > 0 || catwalkFrames > 0 || catwalkPending;
+    return scanFrames > 0 || catwalkFrames > 0 || catwalkPending || leaving;
   }
 
   /** The reply of the other ship, played a moment after our shot. */
@@ -503,6 +517,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
     drawFight(graphics);
     drawInspection(graphics);
+    drawBubble(graphics);
     drawLog(graphics, width, height, logTop);
   }
 
@@ -544,6 +559,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
   }
 
+  private static final int BUBBLE_WIDTH = 34;
+
   /** The green waves of the scanner and the catwalk of a transfer. */
   private void drawInspection(TextGUIGraphics graphics) {
     graphics.setBackgroundColor(TextColor.ANSI.BLACK);
@@ -556,7 +573,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       }
       graphics.setCharacter(yourX() - 2, row, BOX);
     }
-    if(catwalkFrames > 0) {
+    if(catwalkFrames > 0 && catwalkFrames <= CATWALK_FRAMES) {
       int row = yourMiddleY();
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       for(int x = yourX() + youWidth; x < opponentX(); x++) {
@@ -570,6 +587,54 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       graphics.setCharacter(opponentX() - walked - 1, row, BOX);
     }
     UiPalette.reset(graphics);
+  }
+
+  /** The speech of the other ship, in a comic bubble with its blinking marks. */
+  private void drawBubble(TextGUIGraphics graphics) {
+    if(model == null || model.encounterText().isBlank()) {
+      return;
+    }
+    java.util.List<String> lines = wrap(model.encounterText(), BUBBLE_WIDTH);
+    if(lines.size() > 4) {
+      lines = lines.subList(0, 4);
+    }
+    int boxWidth = BUBBLE_WIDTH + 4;
+    int left = Math.max(0, Math.min(screenWidth - boxWidth - 1, opponentX() + opponentWidth / 2 - boxWidth / 2));
+    int top = opponentY() - lines.size() - 3;
+    if(top < BARS_ROWS + 1) {
+      top = opponentY() + opponentHeight + 1;
+    }
+    char sparkle = SPARKLE[(frame / 2) % SPARKLE.length];
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    graphics.putString(left, top, "+" + "-".repeat(boxWidth - 2) + "+");
+    graphics.putString(left, top, String.valueOf(sparkle));
+    graphics.putString(left + boxWidth - 1, top, String.valueOf(sparkle));
+    for(int i = 0; i < lines.size(); i++) {
+      graphics.putString(left, top + 1 + i, "| " + String.format("%-" + BUBBLE_WIDTH + "s", lines.get(i)) + " |");
+    }
+    graphics.putString(left, top + lines.size() + 1, "+" + "-".repeat(boxWidth - 2) + "+");
+    UiPalette.reset(graphics);
+  }
+
+  /** Cuts a text into lines of a width, at the spaces. */
+  private static java.util.List<String> wrap(String text, int width) {
+    java.util.List<String> lines = new java.util.ArrayList<>();
+    for(String paragraph : text.split("\n")) {
+      String rest = paragraph.strip();
+      while(rest.length() > width) {
+        int cut = rest.lastIndexOf(' ', width);
+        if(cut <= 0) {
+          cut = width;
+        }
+        lines.add(rest.substring(0, cut).strip());
+        rest = rest.substring(cut).strip();
+      }
+      if(!rest.isEmpty()) {
+        lines.add(rest);
+      }
+    }
+    return lines;
   }
 
   /** The shots of the round and the flashes. */
@@ -642,6 +707,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         break;
       }
       UiPalette.draw(graphics, 1, row++, alert, UiPalette.ACCENT, width - 1);
+    }
+    if(leaving) {
+      UiPalette.draw(graphics, 1, height - 1, "[ENTER] continue", UiPalette.WARN, width - 1);
     }
   }
 

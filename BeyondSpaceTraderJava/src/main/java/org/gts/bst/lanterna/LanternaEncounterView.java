@@ -83,6 +83,7 @@ public final class LanternaEncounterView implements EncounterView {
   private Timer stars;
   private Runnable onClose;
   private boolean closing;
+  private boolean awaitingLeave;
 
   public LanternaEncounterView(WindowBasedTextGUI gui, Commands commands, Runnable tick, CargoHost cargoHost) {
     this.gui = gui;
@@ -118,6 +119,9 @@ public final class LanternaEncounterView implements EncounterView {
 
   @Override
   public void inspection(boolean confiscated) {
+    // After the scan the ship stays until the player reads the outcome and leaves.
+    awaitingLeave = true;
+    content.awaitLeave();
     content.inspection(confiscated);
   }
 
@@ -150,6 +154,10 @@ public final class LanternaEncounterView implements EncounterView {
   @Override
   public void close() {
     stopTimer();
+    if(awaitingLeave) {
+      // The scene waits for the player: the presenter has already set the result.
+      return;
+    }
     if(content.animating() && !closing) {
       // Let the scene finish (the scanner, the catwalk) before the window goes.
       closing = true;
@@ -223,20 +231,32 @@ public final class LanternaEncounterView implements EncounterView {
   @Override
   public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
-    return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoBuyTitle, item),
+    String title = Functions.StringVars(Strings.DialogCargoBuyTitle, item) + "  "
+        + Functions.FormatMoney(offer.unitPrice());
+    return LanternaDialogs.askAmountAtBottom(gui, title,
         Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount());
   }
 
   @Override
   public Integer askCargoSellQuantity(CargoSellOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
-    return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoSellTitle, item),
+    String title = Functions.StringVars(Strings.DialogCargoSellTitle, item) + "  "
+        + Functions.FormatMoney(offer.price());
+    return LanternaDialogs.askAmountAtBottom(gui, title,
         Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount());
   }
 
   private boolean handleKey(KeyStroke key) {
     if(model == null) {
       return false;
+    }
+    if(awaitingLeave) {
+      // The inspection is over: the player leaves when they are ready.
+      if(key.getKeyType() == KeyType.Enter || key.getKeyType() == KeyType.Escape) {
+        awaitingLeave = false;
+        closeNow();
+      }
+      return true;
     }
     switch(key.getKeyType()) {
       case ArrowUp:
