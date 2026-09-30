@@ -182,18 +182,32 @@ public final class LanternaEncounterView implements EncounterView {
     }
     switch(key.getKeyType()) {
       case ArrowUp:
-        content.move(-1);
+        content.move(0, -1);
         return true;
       case ArrowDown:
-        content.move(1);
+        content.move(0, 1);
         return true;
       case ArrowLeft:
-        commands.execute(EncounterAction.Flee);
-        return true;
+        return sideways(-1);
+      case ArrowRight:
+        return sideways(1);
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
+        if(character == 'k') {
+          content.move(0, -1);
+          return true;
+        }
+        if(character == 'j') {
+          content.move(0, 1);
+          return true;
+        }
+        if(character == 'h') {
+          return sideways(-1);
+        }
+        if(character == 'l') {
+          return sideways(1);
+        }
         if(character == ' ') {
-          content.youFire();
           commands.execute(EncounterAction.Attack);
           return true;
         }
@@ -206,6 +220,15 @@ public final class LanternaEncounterView implements EncounterView {
       default:
         return false;
     }
+  }
+
+  /** Moving sideways: leaving the screen is going past the ship (or fleeing). */
+  private boolean sideways(int dx) {
+    if(content.move(dx, 0)) {
+      content.resetPosition();
+      commands.execute(EncounterAction.Flee);
+    }
+    return true;
   }
 
   private static void addWrapped(List<String> lines, String text) {

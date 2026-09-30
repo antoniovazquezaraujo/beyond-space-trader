@@ -48,23 +48,19 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int BAR_CELLS = 8;
   private static final char BAR_FULL = '█';
   private static final char BAR_EMPTY = '░';
-  private static final char SHOT = '•';
+  private static final char BEAM = '─';
   private static final char SPARK = '✶';
   private static final char BURST = '✱';
   private static final char[] SMOKE = {'░', '▒', '▓'};
-  private static final int SHOT_SPEED = 6;
   private static final int SPARK_FRAMES = 3;
   private static final int NUMBER_FRAMES = 5;
   private static final int BURST_FRAMES = 8;
+  private static final int BEAM_FRAMES = 3;
 
-  /** A projectile: the game says if it lands on the ship or goes past it. */
-  private record Shot(int x, int y, boolean mine, boolean fated, boolean hit, int damage) {
-    Shot moved(int next) {
-      return new Shot(next, y, mine, fated, hit, damage);
-    }
-
-    Shot withFate(boolean hit, int damage) {
-      return new Shot(x, y, mine, true, hit, damage);
+  /** A beam: the shot of a ship, a line of light from one nose to where it dies. */
+  private record Beam(int y, int from, int to, TextColor color, int frames) {
+    Beam aged() {
+      return new Beam(y, from, to, color, frames - 1);
     }
   }
 
@@ -77,21 +73,23 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   private final KeyHandler keyHandler;
   private final List<String> log = new ArrayList<>();
-  private final List<Shot> shots = new ArrayList<>();
+  private final List<Beam> beams = new ArrayList<>();
   private final List<Flash> flashes = new ArrayList<>();
   private EncounterViewModel model;
   private Starfield starfield;
   private int frame;
   private int youRow;
+  private int youColumn;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
   private int youHeight;
-  private int youCentre;
   private int opponentLeft;
   private int opponentWidth;
   private int opponentHeight;
   private int opponentCentre;
+  private int areaTop;
+  private int areaBottom;
   private int screenWidth;
 
   public EncounterSceneComponent(KeyHandler keyHandler) {
@@ -115,20 +113,54 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     invalidate();
   }
 
-  /** The player fires: the shot flies towards the other ship. */
-  public void youFire() {
-    if(model == null || screenWidth <= 0 || model.opponentHull().value() <= 0) {
-      return;
+  /**
+   * Moves the player ship: up and down to look for a gap, right to go through it
+   * and left to withdraw. Returns true when the ship has just left the screen to
+   * the right (it has gone past the other ship) or to the left (it has fled).
+   */
+  public boolean move(int dx, int dy) {
+    if(model == null || screenWidth <= 0) {
+      return false;
     }
-    // The shot aims at the middle of the other ship; the part will say where it lands.
-    shots.add(new Shot(youLeft + youWidth, opponentCentre, true, false, false, 0));
+    if(dy != 0) {
+      youRow = Math.max(0, Math.min(areaBottom - areaTop - youHeight, youRow + dy));
+    }
+    if(dx != 0 && canMove(dx)) {
+      youColumn += dx;
+    }
+    invalidate();
+    return youLeft + youColumn > screenWidth || youLeft + youColumn + youWidth < 0;
+  }
+
+  /** Puts the ship back in its half (a failed flee, or the start of the fight). */
+  public void resetPosition() {
+    youColumn = 0;
     invalidate();
   }
 
-  /** Moves the player ship up or down (the arrows). */
-  public void move(int delta) {
-    youRow = Math.max(-3, Math.min(6, youRow + delta));
-    invalidate();
+  /** True when moving the ship sideways does not run into the drawing of the other one. */
+  private boolean canMove(int dx) {
+    ShipPicture mine = model.youPicture().cropped();
+    ShipPicture other = model.opponentPicture().cropped();
+    int myLeft = youLeft + youColumn + dx;
+    int myTop = BARS_ROWS + youRow;
+    for(int y = 0; y < mine.height(); y++) {
+      for(int x = 0; x < mine.width(); x++) {
+        ShipPicture.Cell cell = mine.at(x, y);
+        if(cell == null || cell.continuation()) {
+          continue;
+        }
+        int column = myLeft + x - opponentLeft;
+        int row = myTop + y - BARS_ROWS;
+        if(column >= 0 && row >= 0 && column < other.width() && row < other.height()) {
+          ShipPicture.Cell there = other.at(column, row);
+          if(there != null && !there.continuation()) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
   }
 
   /** Moves the stars and the fight: the window timer calls it on every frame. */
@@ -137,18 +169,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(starfield != null) {
       starfield.advance();
     }
-    for(int i = shots.size() - 1; i >= 0; i--) {
-      Shot shot = shots.get(i);
-      int next = shot.x() + (shot.mine() ? SHOT_SPEED : -SHOT_SPEED);
-      boolean impact = shot.mine() ? next >= opponentLeft : next <= youLeft + youWidth;
-      boolean edge = shot.mine() ? next >= screenWidth - 1 : next <= 1;
-      if(shot.hit() && impact) {
-        land(shot);
-        shots.remove(i);
-      } else if(edge) {
-        shots.remove(i);
+    for(int i = beams.size() - 1; i >= 0; i--) {
+      Beam beam = beams.get(i);
+      if(beam.frames() <= 1) {
+        beams.remove(i);
       } else {
-        shots.set(i, shot.moved(next));
+        beams.set(i, beam.aged());
       }
     }
     for(int i = flashes.size() - 1; i >= 0; i--) {
@@ -187,17 +213,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     };
   }
 
-  /** Plays a round with the game already resolved: fates, smoke and explosions. */
+  /** Plays a round with the game already resolved: beams, smoke and explosions. */
   private void play(EncounterViewModel before, EncounterViewModel after) {
-    // The fate of the oldest shot of the player still in the air.
-    for(int i = 0; i < shots.size(); i++) {
-      Shot shot = shots.get(i);
-      if(shot.mine() && !shot.fated()) {
-        int y = after.youHit() ? opponentCentre : opponentCentre - opponentHeight / 2 - 1;
-        shots.set(i, new Shot(shot.x(), y, true, true, after.youHit(), after.youDamage()));
-        break;
-      }
-    }
     boolean down = after.opponentHull().value() <= 0;
     if(down && before.opponentHull().value() > 0) {
       for(int i = 0; i < 4; i++) {
@@ -207,23 +224,44 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       }
       return;
     }
+    // My beam: from my nose to the other ship (a hit) or past it (a miss).
+    if(after.youAttacked()) {
+      int from = youLeft + youColumn + youWidth;
+      int row = BARS_ROWS + youRow + Math.max(0, youHeight / 2);
+      int to = after.youHit() ? opponentLeft : screenWidth - 1;
+      beams.add(new Beam(after.youHit() ? row : missRow(row), from, to, TextColor.ANSI.YELLOW_BRIGHT, BEAM_FRAMES));
+      if(after.youHit()) {
+        impact(opponentLeft, after.youHit() ? row : missRow(row), after.youDamage(), true);
+      }
+    }
+    // Their beam: the same, the other way around.
     if(!down && !after.opponentDisabled()) {
-      int y = after.oppHit() ? youCentre : youCentre - youHeight / 2 - 1;
-      shots.add(new Shot(opponentLeft, y, false, true, after.oppHit(), after.oppDamage()));
+      int row = BARS_ROWS + Math.max(0, opponentHeight / 2);
+      int to = after.oppHit() ? youLeft + youColumn + youWidth : 0;
+      beams.add(new Beam(after.oppHit() ? row : missRow(row), opponentLeft, to, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
+      if(after.oppHit()) {
+        impact(youLeft + youColumn, after.oppHit() ? row : missRow(row), after.oppDamage(), false);
+      }
     }
   }
 
-  /** The shot landed: sparks (or a shield flash) and the damage number. */
-  private void land(Shot shot) {
-    boolean shield = shot.mine() ? model.opponentShield().value() > 0 : model.youShield().value() > 0;
-    int x = shot.mine() ? opponentLeft + opponentWidth / 2 : youLeft + youWidth / 2;
-    int y = shot.mine() ? opponentCentre : youCentre;
+  /** A miss passes just over or under the ship, whichever is inside the field. */
+  private int missRow(int row) {
+    int above = BARS_ROWS - 1;
+    int below = areaBottom;
+    return row - BARS_ROWS < (areaBottom - BARS_ROWS) / 2 ? (row <= BARS_ROWS + 1 ? below : above) : above;
+  }
+
+  /** A beam hit: sparks (or a shield flash) and the damage number. */
+  private void impact(int shipLeft, int row, int damage, boolean onOpponent) {
+    boolean shield = onOpponent ? model.opponentShield().value() > 0 : model.youShield().value() > 0;
+    int x = shipLeft + (onOpponent ? opponentWidth : youWidth) / 2;
     TextColor color = shield ? TextColor.ANSI.CYAN_BRIGHT : TextColor.ANSI.YELLOW_BRIGHT;
     for(int i = 0; i < 3; i++) {
-      flashes.add(new Flash(x - 1 + i, y + i % 2, String.valueOf(shield ? SPARK : BURST), color, SPARK_FRAMES, false));
+      flashes.add(new Flash(x - 1 + i, row + i % 2, String.valueOf(shield ? SPARK : BURST), color, SPARK_FRAMES, false));
     }
-    if(shot.damage() > 0) {
-      flashes.add(new Flash(x, y - 2, "-" + shot.damage(), TextColor.ANSI.RED_BRIGHT, NUMBER_FRAMES, true));
+    if(damage > 0) {
+      flashes.add(new Flash(x, row - 2, "-" + damage, TextColor.ANSI.RED_BRIGHT, NUMBER_FRAMES, true));
     }
   }
 
@@ -248,13 +286,14 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     youLeft = shipLeft(0, half, you);
     youWidth = you.width();
     youHeight = you.height();
-    youCentre = BARS_ROWS + youRow + Math.max(0, you.height() / 2);
     opponentLeft = shipLeft(half + 1, width - half - 1, opponent);
     opponentWidth = opponent.width();
     opponentHeight = opponent.height();
     opponentCentre = BARS_ROWS + Math.max(0, opponent.height() / 2);
+    areaTop = BARS_ROWS;
+    areaBottom = Math.max(BARS_ROWS + 1, logTop - 1);
     boolean down = model.opponentHull().value() <= 0;
-    EditorText.picture(graphics, 0, BARS_ROWS + youRow, half, logTop - 1, you);
+    EditorText.picture(graphics, youLeft + youColumn, BARS_ROWS + youRow, you.width(), height, you);
     if(!down) {
       EditorText.picture(graphics, half + 1, BARS_ROWS, width - half - 1, logTop - 1, opponent);
       if(model.opponentDisabled()) {
@@ -277,10 +316,14 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** The projectiles in the air and the flashes of the round. */
   private void drawFight(TextGUIGraphics graphics) {
-    for(Shot shot : shots) {
-      graphics.setForegroundColor(shot.mine() ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.RED_BRIGHT);
+    for(Beam beam : beams) {
+      graphics.setForegroundColor(beam.color());
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
-      graphics.setCharacter(shot.x(), shot.y(), SHOT);
+      int from = Math.min(beam.from(), beam.to());
+      int to = Math.max(beam.from(), beam.to());
+      for(int x = from; x <= to && x < screenWidth; x++) {
+        graphics.setCharacter(x, beam.y(), BEAM);
+      }
     }
     for(Flash flash : flashes) {
       graphics.setForegroundColor(flash.color());

@@ -61,7 +61,7 @@ class LanternaEncounterViewTest {
           false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
           "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
           "The pirate attacks.", "Choose an action.",
-          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, 0));
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, 0));
       gui.addWindow(view.asWindow());
       gui.updateScreen();
 
@@ -100,7 +100,11 @@ class LanternaEncounterViewTest {
 
       executed.clear();
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
-      assertEquals(List.of(EncounterAction.Flee), executed, "the left arrow flees");
+      assertTrue(executed.isEmpty(), "the left arrow moves the ship, it does not flee by itself");
+
+      executed.clear();
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('k', false, false));
+      assertTrue(executed.isEmpty(), "the vim keys move the ship too");
 
       executed.clear();
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));

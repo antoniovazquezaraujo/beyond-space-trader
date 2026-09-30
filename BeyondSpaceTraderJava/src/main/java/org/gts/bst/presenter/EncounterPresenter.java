@@ -235,6 +235,7 @@ public class EncounterPresenter implements EncounterDialogHost {
         catalog.picture(game.encounter().getOpponent().Type(), opponentItems,
             game.encounter().getOpponent().CargoBays()).mirrored(),
         game.encounter().getOpponentDisabled(),
+        !game.encounter().getEncounterCmdrFleeing(),
         round);
   }
 
