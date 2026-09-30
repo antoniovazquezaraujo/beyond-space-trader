@@ -73,9 +73,8 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
      **registro policial**, con su escáner; la oferta del comerciante, con su
      **pasarela**; el encuentro con un capitán; el **abordaje** de una nave
      inutilizada, hasta tocarse); alejarse es negarse o ignorar.
-   - **Propuesta** para las rendiciones (rendirse, someterse, ceder la carga):
-     **quedarse quieto**, sin disparar ni moverse, cuando el juego lo exija. A
-     confirmar por el autor.
+   - Las rendiciones (rendirse, someterse, ceder la carga) se hacen **quedándose
+     quieto**, sin disparar ni moverse, cuando el juego lo exija.
    - El comercio y el transvase de carga abren sus pantallas de siempre; no son
      botones del combate.
 4. **El automático** (ataque o huida continuos) se muestra con un rótulo; no
