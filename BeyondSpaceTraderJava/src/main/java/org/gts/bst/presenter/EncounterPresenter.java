@@ -219,8 +219,11 @@ public class EncounterPresenter implements EncounterDialogHost {
     return new EncounterViewModel(actions(),
         game.encounter().getEncounterContinueAttacking() || game.encounter().getEncounterContinueFleeing(),
         game.encounter().EncounterImageIndex(),
-        cmdrship.Name(), cmdrship.HullText(), cmdrship.ShieldText(),
-        game.encounter().getOpponent().Name(), game.encounter().getOpponent().HullText(), game.encounter().getOpponent().ShieldText(),
+        cmdrship.Name(), bar(cmdrship.getHull(), cmdrship.HullStrength()),
+        bar(cmdrship.ShieldCharge(), cmdrship.ShieldStrength()),
+        game.encounter().getOpponent().Name(),
+        bar(game.encounter().getOpponent().getHull(), game.encounter().getOpponent().HullStrength()),
+        bar(game.encounter().getOpponent().ShieldCharge(), game.encounter().getOpponent().ShieldStrength()),
         encounterText, actionText,
         cmdrship.Type(), game.encounter().getOpponent().Type(),
         game.encounter().getEncounterOppHit(), game.encounter().getEncounterCmdrHit(),
@@ -228,6 +231,10 @@ public class EncounterPresenter implements EncounterDialogHost {
         catalog.picture(cmdrship.Type(), ShipArtItems.of(cmdrship), cmdrship.CargoBays()),
         catalog.picture(game.encounter().getOpponent().Type(), opponentItems,
             game.encounter().getOpponent().CargoBays()).mirrored());
+  }
+
+  private static EncounterViewModel.Bar bar(int value, int max) {
+    return new EncounterViewModel.Bar(value, max);
   }
 
   private Set<EncounterAction> actions() {

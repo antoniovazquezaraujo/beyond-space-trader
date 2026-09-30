@@ -88,6 +88,18 @@ class ShipRendererTest {
   }
 
   @Test
+  void cropsTheEmptyMargins() throws IOException {
+    ShipPicture picture = ShipRenderer.draw(design(), chassis("[uno]\ncolor=white\n  x x  \n"), List.of(), List.of(), 0);
+
+    ShipPicture cropped = picture.cropped();
+
+    assertEquals(3, cropped.width(), "from the first to the last ink cell");
+    assertEquals(1, cropped.height());
+    assertEquals('x', cropped.at(0, 0).codePoint());
+    assertEquals('x', cropped.at(2, 0).codePoint());
+  }
+
+  @Test
   void keepsWideGlyphsWholeWhenMirrored() throws IOException {
     ShipPicture picture = ShipRenderer.draw(design(), chassis("[uno]\ncolor=white\n漢x\n"), List.of(), List.of(), 0);
 

@@ -52,8 +52,8 @@ class LanternaEncounterViewTest {
           .picture(ShipType.Scorpion, List.of(), 0);
       view.render(new EncounterViewModel(
           EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
-          false, 0, "Flea", "Hull at 100%", "Shields at 100%",
-          "Pirate", "Hull at 100%", "Shields at 100%",
+          false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
           "The pirate attacks.", "Choose an action.",
           ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent));
       gui.addWindow(view.asWindow());
@@ -61,6 +61,8 @@ class LanternaEncounterViewTest {
 
       String text = screenText(screen);
       assertTrue(text.contains("Flea"), text);
+      assertTrue(text.contains("casco ████████"), "the hull bar of the player: " + text);
+      assertTrue(text.contains("casco ████░░░░"), "half hull for the opponent: " + text);
       assertTrue(text.contains("xxxxx"), "the ship of the player is painted: " + text);
       assertTrue(text.contains("yyyyy"), "and the opponent too: " + text);
       assertFalse(text.contains("| o o >"), "the old sprite is gone: " + text);

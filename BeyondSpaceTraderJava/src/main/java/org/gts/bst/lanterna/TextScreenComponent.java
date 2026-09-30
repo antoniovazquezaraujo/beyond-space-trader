@@ -15,7 +15,6 @@ import com.googlecode.lanterna.gui2.Interactable;
 import com.googlecode.lanterna.gui2.InteractableRenderer;
 import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
-import org.gts.bst.view.ShipPicture;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,11 +34,6 @@ public final class TextScreenComponent extends AbstractInteractableComponent<Tex
 
   private final KeyHandler keyHandler;
   private final List<String> lines = new ArrayList<>();
-  private ShipPicture leftPicture;
-  private int leftColumn;
-  private ShipPicture rightPicture;
-  private int rightColumn;
-  private int shipsRow;
 
   public TextScreenComponent(KeyHandler keyHandler) {
     this.keyHandler = keyHandler;
@@ -48,16 +42,6 @@ public final class TextScreenComponent extends AbstractInteractableComponent<Tex
   public void lines(List<String> lines) {
     this.lines.clear();
     this.lines.addAll(lines);
-    invalidate();
-  }
-
-  /** Paints two ship pictures over the lines (the encounter screen); empty ones are skipped. */
-  public void ships(ShipPicture left, int leftColumn, ShipPicture right, int rightColumn, int row) {
-    this.leftPicture = left;
-    this.leftColumn = leftColumn;
-    this.rightPicture = right;
-    this.rightColumn = rightColumn;
-    this.shipsRow = row;
     invalidate();
   }
 
@@ -97,12 +81,6 @@ public final class TextScreenComponent extends AbstractInteractableComponent<Tex
     }
     for(int i = 0; i < lines.size() && i < height; i++) {
       UiPalette.keys(graphics, 0, i, lines.get(i), width);
-    }
-    if(leftPicture != null && leftPicture.width() > 0) {
-      EditorText.picture(graphics, leftColumn, shipsRow, rightColumn - leftColumn, height, leftPicture);
-    }
-    if(rightPicture != null && rightPicture.width() > 0) {
-      EditorText.picture(graphics, rightColumn, shipsRow, width - rightColumn, height, rightPicture);
     }
   }
 }

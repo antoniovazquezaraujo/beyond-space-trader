@@ -21,11 +21,11 @@ public record EncounterViewModel(
     boolean continueVisible,
     int imageIndex,
     String youShip,
-    String youHull,
-    String youShields,
+    Bar youHull,
+    Bar youShield,
     String opponentShip,
-    String opponentHull,
-    String opponentShields,
+    Bar opponentHull,
+    Bar opponentShield,
     String encounterText,
     String actionText,
     ShipType youType,
@@ -36,5 +36,8 @@ public record EncounterViewModel(
     int oppDamage,
     ShipPicture youPicture,
     ShipPicture opponentPicture) {
+  /** A bar of the scene: the value and its maximum. */
+  public record Bar(int value, int max) {
+  }
 }
 

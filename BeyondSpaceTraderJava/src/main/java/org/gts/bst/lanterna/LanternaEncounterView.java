@@ -25,7 +25,6 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
-import org.gts.bst.view.ShipSprites;
 import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Strings;
@@ -55,8 +54,7 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   private static final int TICK_MILLIS = 1000;
-  private static final int TEXT_WIDTH = 78;
-  private static final int SHIP_COLUMN = 38;
+  private static final int TEXT_WIDTH = 110;
   private static final Map<Character, EncounterAction> KEYS = Map.ofEntries(
       Map.entry('a', EncounterAction.Attack),
       Map.entry('o', EncounterAction.Board),
@@ -77,7 +75,7 @@ public final class LanternaEncounterView implements EncounterView {
   private final Runnable tick;
   private final CargoHost cargoHost;
   private final BasicWindow window = new BasicWindow(Strings.EncounterTitle);
-  private final TextScreenComponent content;
+  private final EncounterSceneComponent content;
   private EncounterViewModel model;
   private Timer timer;
 
@@ -86,9 +84,9 @@ public final class LanternaEncounterView implements EncounterView {
     this.commands = commands;
     this.tick = tick;
     this.cargoHost = cargoHost;
-    this.content = new TextScreenComponent(this::handleKey);
+    this.content = new EncounterSceneComponent(this::handleKey);
     window.setHints(Set.of(Window.Hint.MODAL, Window.Hint.CENTERED, Window.Hint.FIT_TERMINAL_WINDOW));
-    content.setPreferredSize(new TerminalSize(78, 20));
+    content.setPreferredSize(new TerminalSize(120, 30));
     window.setComponent(content);
     window.setFocusedInteractable(content);
   }
@@ -101,15 +99,11 @@ public final class LanternaEncounterView implements EncounterView {
   public void render(EncounterViewModel model) {
     this.model = model;
     List<String> lines = new ArrayList<>();
-    addShips(lines, model);
-    lines.add("");
     addWrapped(lines, model.encounterText());
     lines.add("");
     addWrapped(lines, model.actionText());
-    lines.add("");
-    lines.add(actionsLine(model.actions()));
-    content.lines(lines);
-    content.ships(model.youPicture(), 0, model.opponentPicture(), SHIP_COLUMN, 1);
+    content.model(model);
+    content.log(lines, actionsLine(model.actions()));
   }
 
   @Override
@@ -127,7 +121,11 @@ public final class LanternaEncounterView implements EncounterView {
     timer.scheduleAtFixedRate(new TimerTask() {
       @Override
       public void run() {
-        gui.getGUIThread().invokeLater(tick);
+        // The game round and the stars of the background move together.
+        gui.getGUIThread().invokeLater(() -> {
+          tick.run();
+          content.tick();
+        });
       }
     }, TICK_MILLIS, TICK_MILLIS);
   }
@@ -174,31 +172,6 @@ public final class LanternaEncounterView implements EncounterView {
     }
     commands.execute(action);
     return true;
-  }
-
-  private static void addShips(List<String> lines, EncounterViewModel model) {
-    lines.add(pad(model.youShip(), SHIP_COLUMN) + model.opponentShip());
-    if(model.youPicture().width() > 0 || model.opponentPicture().width() > 0) {
-      // The pictures are painted over the lines (see TextScreenComponent.ships).
-      for(int i = 0; i < Math.max(model.youPicture().height(), model.opponentPicture().height()); i++) {
-        lines.add("");
-      }
-    } else {
-      // No art files: the old sprites, as a fallback.
-      List<String> you = ShipSprites.of(model.youType());
-      List<String> opponent = ShipSprites.of(model.opponentType());
-      for(int i = 0; i < Math.max(you.size(), opponent.size()); i++) {
-        String left = i < you.size() ? you.get(i) : "";
-        String right = i < opponent.size() ? opponent.get(i) : "";
-        lines.add(pad(left, SHIP_COLUMN) + right);
-      }
-    }
-    lines.add(pad(model.youHull() + "   " + model.youShields(), SHIP_COLUMN)
-        + model.opponentHull() + "   " + model.opponentShields());
-  }
-
-  private static String pad(String text, int width) {
-    return text.length() >= width ? text.substring(0, width) : text + " ".repeat(width - text.length());
   }
 
   private static String actionsLine(Set<EncounterAction> actions) {

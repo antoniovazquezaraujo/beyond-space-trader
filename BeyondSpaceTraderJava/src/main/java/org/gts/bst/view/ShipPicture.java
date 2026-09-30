@@ -53,6 +53,38 @@ public final class ShipPicture {
     return cells[y * width + x];
   }
 
+  /** The picture without the empty margins around its ink (the art is drawn with padding). */
+  public ShipPicture cropped() {
+    int minX = width;
+    int minY = height;
+    int maxX = -1;
+    int maxY = -1;
+    for(int y = 0; y < height; y++) {
+      for(int x = 0; x < width; x++) {
+        Cell cell = at(x, y);
+        if(cell != null && !cell.continuation()) {
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, ShipArtFile.isWide(cell.codePoint()) ? x + 1 : x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    }
+    if(maxX < 0) {
+      return new ShipPicture(0, 0);
+    }
+    ShipPicture cropped = new ShipPicture(maxX - minX + 1, maxY - minY + 1);
+    for(int y = minY; y <= maxY; y++) {
+      for(int x = minX; x <= maxX; x++) {
+        Cell cell = at(x, y);
+        if(cell != null && !cell.continuation()) {
+          cropped.put(x - minX, y - minY, cell.codePoint(), cell.color(), cell.background(), cell.blink());
+        }
+      }
+    }
+    return cropped;
+  }
+
   /** The picture seen from the other side: the opponent in an encounter faces the player. */
   public ShipPicture mirrored() {
     ShipPicture mirrored = new ShipPicture(width, height);
