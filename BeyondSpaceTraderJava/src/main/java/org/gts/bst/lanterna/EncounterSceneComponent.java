@@ -287,7 +287,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   }
 
   private int yourY() {
-    return BARS_ROWS + youRow;
+    return centreRow(true) + youRow;
   }
 
   private int opponentX() {
@@ -304,7 +304,13 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   }
 
   private int opponentY() {
-    return BARS_ROWS + opponentRow;
+    return centreRow(false) + opponentRow;
+  }
+
+  /** The row where a ship rests with no manoeuvre: the middle of the scene. */
+  private int centreRow(boolean yours) {
+    int shipHeight = yours ? youHeight : opponentHeight;
+    return areaTop + Math.max(0, (areaBottom - areaTop - shipHeight) / 2);
   }
 
   private int opponentMiddleY() {
@@ -556,6 +562,14 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     said = "";
     dealt = true;
     invalidate();
+  }
+
+  /** The player takes part while the ships come in: the entry stops at once. */
+  public void skipEntry() {
+    if(enterFrames > 0) {
+      enterFrames = 0;
+      invalidate();
+    }
   }
 
   /** The scene shows a result to read: it stays until the player leaves (intro). */

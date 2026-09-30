@@ -384,6 +384,43 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void aKeyDuringTheEntryStopsItAndAnswers() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
+          false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The pirate attacks.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 0, ""));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+
+      assertFalse(screenText(screen).contains("xxxxx"), "the ships are still coming in");
+
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('f', false, false));
+      gui.updateScreen();
+
+      assertEquals(List.of(EncounterAction.Flee), executed, "the key answers while they come in");
+      assertTrue(screenText(screen).contains("xxxxx"), "the entry stops at once:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theTraderThanksWhenTheDealIsDone() throws Exception {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

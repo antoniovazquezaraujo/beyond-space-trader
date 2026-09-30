@@ -319,6 +319,8 @@ public final class LanternaEncounterView implements EncounterView {
     if(model == null) {
       return false;
     }
+    // The ships come in fast when the player takes part: the keys answer at once.
+    content.skipEntry();
     if(awaitingLeave) {
       // The scene is over: the player leaves with intro, escape or flying the ship away.
       if(key.getKeyType() == KeyType.Enter || key.getKeyType() == KeyType.Escape) {
