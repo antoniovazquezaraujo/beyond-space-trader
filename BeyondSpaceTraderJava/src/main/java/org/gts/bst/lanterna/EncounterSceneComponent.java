@@ -172,10 +172,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(model == null || screenWidth <= 0 || enterFrames > 0 || catwalk != Catwalk.NONE) {
       return;
     }
+    int restRow = centreRow(true);
     if(dy < 0) {
-      rowTarget = 0;
+      rowTarget = areaTop - restRow;
     } else if(dy > 0) {
-      rowTarget = Math.max(0, areaBottom - areaTop - youHeight);
+      rowTarget = Math.max(areaTop - restRow, areaBottom - youHeight - restRow);
     }
     if(dx < 0) {
       // Withdrawing turns the ship around; advancing faces it to the other one again.
@@ -275,8 +276,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       return;
     }
     int step = youRow > opponentRow ? 1 : -1;
-    int maxRow = Math.max(0, areaBottom - areaTop - opponentHeight);
-    int row = Math.max(0, Math.min(maxRow, opponentRow + step));
+    int restRow = centreRow(false);
+    int topRow = areaTop - restRow;
+    int bottomRow = Math.max(topRow, areaBottom - opponentHeight - restRow);
+    int row = Math.max(topRow, Math.min(bottomRow, opponentRow + step));
     if(row != opponentRow && canOpponentMove(0, row - opponentRow)) {
       opponentRow = row;
     }

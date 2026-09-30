@@ -239,6 +239,94 @@ class LanternaEncounterViewTest {
     }
   }
 
+  @Test
+  void theShipKeepsInsideTheSceneMovingUpAndDown() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\n.\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(new EncounterViewModel(EnumSet.of(EncounterAction.Attack), false, 0, "Flea",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate attacks.",
+          "Choose an action.", ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false,
+          false, 5, false, 0, ""));
+      content.log(List.of("The pirate attacks.", "Choose an action."));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int rest = rowOf(screen, 'x');
+
+      content.move(0, -1);
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int top = rowOf(screen, 'x');
+      assertTrue(top < rest, "the ship rises above its resting row (" + top + " < " + rest + ")");
+
+      content.move(0, -1);
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertEquals(top, rowOf(screen, 'x'), "a wall stops it at the top");
+
+      content.move(0, 1);
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int bottom = rowOf(screen, 'x');
+      int logRow = rowOfText(screen, "The pirate attacks.");
+      assertTrue(bottom > top, "and then it goes down again");
+      assertTrue(bottom < logRow, "and stops over the log (" + bottom + " < " + logRow + ")");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** The row where a text appears on the screen, or -1. */
+  private static int rowOfText(Screen screen, String needle) {
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      StringBuilder line = new StringBuilder();
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        line.append(screen.getBackCharacter(column, row).getCharacterString());
+      }
+      if(line.toString().contains(needle)) {
+        return row;
+      }
+    }
+    return -1;
+  }
+
+  /** The row of the first cell with a glyph. */
+  private static int rowOf(Screen screen, char glyph) {
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        if(screen.getBackCharacter(column, row).getCharacter() == glyph) {
+          return row;
+        }
+      }
+    }
+    return -1;
+  }
+
   /** The column of the first cell with a glyph. */
   private static int columnOf(Screen screen, char glyph) {
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
