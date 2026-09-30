@@ -252,7 +252,7 @@ class LanternaEncounterViewTest {
     }
     assertTrue(content.animating(), "and then the catwalk, because they took cargo");
 
-    for(int i = 0; i < 18; i++) {
+    for(int i = 0; i < 40; i++) {
       content.tick();
     }
     assertFalse(content.animating(), "the scene is over");
@@ -262,6 +262,75 @@ class LanternaEncounterViewTest {
       content.tick();
     }
     assertFalse(content.animating(), "with nothing taken there is no catwalk");
+  }
+
+  @Test
+  void theCatwalkOfTheTradeGoesOutWaitsCrossesAndComesBack() {
+    EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+
+    content.catwalk();
+    assertFalse(content.catwalkOut(), "the catwalk is still on its way out");
+    for(int i = 0; i < 12; i++) {
+      content.tick();
+    }
+    assertTrue(content.catwalkOut(), "out, it waits for the question");
+
+    content.haul();
+    assertFalse(content.catwalkOut(), "the boxes cross with the goods");
+    for(int i = 0; i < 12; i++) {
+      content.tick();
+    }
+    assertTrue(content.catwalkOut(), "the crossing is over and the catwalk waits again");
+
+    content.retract();
+    assertTrue(content.animating(), "the catwalk is going back in");
+    for(int i = 0; i < 8; i++) {
+      content.tick();
+    }
+    assertFalse(content.animating(), "the scene of the trade is over");
+  }
+
+  @Test
+  void theTradeQuestionSitsAtTheBottom() throws Exception {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      BasicWindow scene = new BasicWindow();
+      scene.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      gui.addWindow(scene);
+      gui.updateScreen();
+
+      Thread asking = new Thread(() -> LanternaDialogs.askAmountAtBottom(gui, "Comprar armas",
+          "Cuántas unidades", 5));
+      asking.setDaemon(true);
+      asking.start();
+      for(int i = 0; i < 40 && gui.getWindows().size() < 2; i++) {
+        Thread.sleep(50);
+      }
+      gui.updateScreen();
+      String text = screenText(screen);
+      int row = rowOf(text, "Comprar armas");
+      assertTrue(row >= 24 / 2, "the question waits at the bottom (row " + row + "):\n" + text);
+
+      if(gui.getActiveWindow() != null) {
+        gui.getActiveWindow().close();
+      }
+      asking.join(2000);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** The row where a text appears on the screen, or -1. */
+  private static int rowOf(String text, String needle) {
+    int at = text.indexOf(needle);
+    if(at < 0) {
+      return -1;
+    }
+    return text.substring(0, at).split("\n", -1).length - 1;
   }
 
   @Test

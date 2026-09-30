@@ -93,6 +93,12 @@ public final class LanternaEncounterView implements EncounterView {
     this.content = new EncounterSceneComponent(this::handleKey);
     window.setHints(Set.of(Window.Hint.MODAL, Window.Hint.CENTERED, Window.Hint.FIT_TERMINAL_WINDOW));
     content.onExit(() -> {
+      if(awaitingLeave) {
+        // The scene is over: the ship leaves for real.
+        awaitingLeave = false;
+        closeNow();
+        return;
+      }
       content.resetPosition();
       commands.execute(EncounterAction.Flee);
     });
@@ -120,14 +126,14 @@ public final class LanternaEncounterView implements EncounterView {
   @Override
   public void inspection(boolean confiscated) {
     // After the scan the ship stays until the player reads the outcome and leaves.
-    awaitingLeave = true;
-    content.awaitLeave();
+    awaitLeave();
     content.inspection(confiscated);
   }
 
-  @Override
-  public void catwalk() {
-    content.catwalk();
+  /** The scene is over: it waits for the player to leave (intro, escape or flying away). */
+  private void awaitLeave() {
+    awaitingLeave = true;
+    content.awaitLeave();
   }
 
   /** A quiet alert of the game: one more line of the log of the scene. */
@@ -234,24 +240,67 @@ public final class LanternaEncounterView implements EncounterView {
         : Character.toLowerCase(item.charAt(0)) + item.substring(1);
   }
 
+  /**
+   * The trade as a cutscene: the other ship says the offer, comes closer with the
+   * catwalk out, the question is asked at the bottom, the boxes cross if there is a
+   * deal and then the catwalk comes back in. The scene waits for the player after it.
+   */
   @Override
   public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
     content.say(Functions.StringVars(Strings.EncounterSaysOffer, inSpeech(item), Functions.FormatMoney(offer.unitPrice())));
+    content.catwalk();
+    playUntil(content::catwalkOut);
     String title = Functions.StringVars(Strings.DialogCargoBuyTitle, item) + "  "
         + Functions.FormatMoney(offer.unitPrice());
-    return LanternaDialogs.askAmountAtBottom(gui, title,
+    Integer qty = LanternaDialogs.askAmountAtBottom(gui, title,
         Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount());
+    if(qty != null && qty > 0) {
+      content.haul();
+      playUntil(content::catwalkOut);
+    }
+    content.deal();
+    content.retract();
+    playUntil(content::catwalkGone);
+    awaitLeave();
+    return qty;
   }
 
   @Override
   public Integer askCargoSellQuantity(CargoSellOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
     content.say(Functions.StringVars(Strings.EncounterSaysWanted, inSpeech(item), Functions.FormatMoney(offer.price())));
+    content.catwalk();
+    playUntil(content::catwalkOut);
     String title = Functions.StringVars(Strings.DialogCargoSellTitle, item) + "  "
         + Functions.FormatMoney(offer.price());
-    return LanternaDialogs.askAmountAtBottom(gui, title,
+    Integer qty = LanternaDialogs.askAmountAtBottom(gui, title,
         Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount());
+    if(qty != null && qty > 0) {
+      content.haul();
+      playUntil(content::catwalkOut);
+    }
+    content.deal();
+    content.retract();
+    playUntil(content::catwalkGone);
+    awaitLeave();
+    return qty;
+  }
+
+  /** Runs the scene by hand while a cutscene of the trade lasts. */
+  private void playUntil(java.util.function.BooleanSupplier done) {
+    for(int frames = 0; frames < 300 && !done.getAsBoolean(); frames++) {
+      content.tick();
+      try {
+        gui.updateScreen();
+        Thread.sleep(FRAME_MILLIS);
+      } catch(java.io.IOException e) {
+        return;
+      } catch(InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
+      }
+    }
   }
 
   private boolean handleKey(KeyStroke key) {
@@ -259,13 +308,42 @@ public final class LanternaEncounterView implements EncounterView {
       return false;
     }
     if(awaitingLeave) {
-      // The inspection is over: the player leaves when they are ready.
+      // The scene is over: the player leaves with intro, escape or flying the ship away.
       if(key.getKeyType() == KeyType.Enter || key.getKeyType() == KeyType.Escape) {
         awaitingLeave = false;
         closeNow();
+        return true;
+      }
+      manoeuvre(key);
+      return true;
+    }
+    if(manoeuvre(key)) {
+      return true;
+    }
+    if(key.getKeyType() == KeyType.Enter) {
+      return accept();
+    }
+    if(key.getKeyType() != KeyType.Character) {
+      return false;
+    }
+    char character = Character.toLowerCase(key.getCharacter());
+    if(character == ' ') {
+      // The other ship has to answer first: no two of our shots in one exchange.
+      if(!content.responding()) {
+        commands.execute(EncounterAction.Attack);
       }
       return true;
     }
+    EncounterAction action = KEYS.get(character);
+    if(action == null || !model.actions().contains(action)) {
+      return false;
+    }
+    commands.execute(action);
+    return true;
+  }
+
+  /** The manoeuvres: the arrows and the vim keys move the ship. */
+  private boolean manoeuvre(KeyStroke key) {
     switch(key.getKeyType()) {
       case ArrowUp:
         content.move(0, -1);
@@ -279,8 +357,6 @@ public final class LanternaEncounterView implements EncounterView {
       case ArrowRight:
         content.move(1, 0);
         return true;
-      case Enter:
-        return accept();
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'k') {
@@ -299,19 +375,7 @@ public final class LanternaEncounterView implements EncounterView {
           content.move(1, 0);
           return true;
         }
-        if(character == ' ') {
-          // The other ship has to answer first: no two of our shots in one exchange.
-          if(!content.responding()) {
-            commands.execute(EncounterAction.Attack);
-          }
-          return true;
-        }
-        EncounterAction action = KEYS.get(character);
-        if(action == null || !model.actions().contains(action)) {
-          return false;
-        }
-        commands.execute(action);
-        return true;
+        return false;
       default:
         return false;
     }

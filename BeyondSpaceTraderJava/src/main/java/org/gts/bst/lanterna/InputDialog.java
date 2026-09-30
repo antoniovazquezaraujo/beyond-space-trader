@@ -53,11 +53,21 @@ public final class InputDialog extends DialogWindow {
    * the ships of the encounter scene.
    */
   public static String showAtBottom(WindowBasedTextGUI gui, String title, String prompt, String initial) {
-    InputDialog dialog = new InputDialog(title, prompt, initial);
-    TerminalSize size = gui.getScreen().getTerminalSize();
-    dialog.setHints(java.util.Set.of(com.googlecode.lanterna.gui2.Window.Hint.MODAL));
-    dialog.setPosition(new com.googlecode.lanterna.TerminalPosition(2, Math.max(0, size.getRows() - 9)));
-    return dialog.showDialog(gui);
+    return new InputDialog(title, prompt, initial).showAtBottom(gui);
+  }
+
+  /** Opens the dialog and pins it to the bottom once the window manager has placed it. */
+  private String showAtBottom(WindowBasedTextGUI gui) {
+    result = null;
+    gui.addWindow(this);
+    TerminalSize screen = gui.getScreen().getTerminalSize();
+    TerminalSize size = getDecoratedSize();
+    setPosition(new com.googlecode.lanterna.TerminalPosition(
+        Math.max(0, (screen.getColumns() - size.getColumns()) / 2),
+        Math.max(0, screen.getRows() - size.getRows() - 1)));
+    invalidate();
+    waitUntilClosed();
+    return result;
   }
 
   @Override

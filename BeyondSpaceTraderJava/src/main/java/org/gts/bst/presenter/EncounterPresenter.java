@@ -142,8 +142,7 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void trade() {
-    // The catwalk goes out between the two ships while the trade is dealt.
-    view.catwalk();
+    // The catwalk and the question run inside the offer (the scene of the trade).
     game.encounter().EncounterTrade(this);
     exit(EncounterResult.Normal);
   }

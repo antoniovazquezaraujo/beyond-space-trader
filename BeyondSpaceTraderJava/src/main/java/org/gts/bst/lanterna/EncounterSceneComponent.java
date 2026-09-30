@@ -59,8 +59,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** Frames between our beam and the reply of the other ship: the exchange is a turn. */
   private static final int RESPONSE_FRAMES = 5;
   private static final int SCAN_FRAMES = 16;
-  private static final int CATWALK_FRAMES = 18;
-  private static final int APPROACH_FRAMES = 8;
+  private static final int EXTEND_FRAMES = 12;
+  private static final int HAUL_FRAMES = 12;
+  private static final int RETRACT_FRAMES = 8;
+  private static final int TRADE_GAP = 12;
   private static final char[] SPARKLE = {'\\', '|', '/'};
   private static final int ENTER_FRAMES = 14;
   private static final char HORIZONTAL = '─';
@@ -107,7 +109,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int pendingOppDamage;
   private int scanFrames;
   private boolean catwalkPending;
+  private Catwalk catwalk = Catwalk.NONE;
   private int catwalkFrames;
+  private boolean catwalkAuto;
   private boolean leaving;
   private String said = "";
   private boolean dealt;
@@ -160,7 +164,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
    * bottom or out of the screen (advancing or withdrawing). A wall stops it.
    */
   public void move(int dx, int dy) {
-    if(model == null || screenWidth <= 0 || enterFrames > 0) {
+    if(model == null || screenWidth <= 0 || enterFrames > 0 || catwalk != Catwalk.NONE) {
       return;
     }
     if(dy < 0) {
@@ -201,6 +205,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     ShipPicture picture = model.youPicture().cropped();
     // Withdrawing, or fleeing while the other ship follows, turns the ship around.
     return youTurned || model.commanderFleeing() ? picture.mirrored() : picture;
+  }
+
+  /** The phases of the catwalk of a trade (or of a police seizure). */
+  private enum Catwalk {
+    NONE, EXTEND, HOLD, HAUL, RETRACT
   }
 
   /** True when the player ship, moving by (dx, dy), does not run into the other drawing. */
@@ -245,7 +254,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** The rival: it ignores us, mirrors our height at its own pace, or chases us. */
   private void moveOpponent() {
     if(model == null || model.opponentIgnores() || model.opponentHull().value() <= 0 || model.opponentDisabled()
-        || catwalkFrames > 0) {
+        || catwalk != Catwalk.NONE) {
       return;
     }
     if(model.commanderFleeing()) {
@@ -332,14 +341,17 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
     if(scanFrames > 0 && --scanFrames == 0 && catwalkPending) {
       catwalkPending = false;
-      catwalkFrames = CATWALK_FRAMES;
+      startCatwalk(true);
     }
-    if(catwalkFrames > 0) {
-      // First the ships come closer; then the catwalk goes out.
-      if(catwalkFrames > CATWALK_FRAMES && frame % 2 == 0 && opponentX() - (yourX() + youWidth) > 6) {
+    if(catwalk != Catwalk.NONE) {
+      // The rival closes in, at a distance, while the catwalk stretches out.
+      if(catwalk == Catwalk.EXTEND && model != null && frame % 2 == 0
+          && opponentX() - (yourX() + youWidth) > TRADE_GAP && canOpponentMove(-1, 0)) {
         opponentColumn--;
       }
-      catwalkFrames--;
+      if(catwalkFrames > 0 && --catwalkFrames == 0) {
+        advanceCatwalk();
+      }
     }
     glidePlayer();
     moveOpponent();
@@ -455,9 +467,62 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     invalidate();
   }
 
-  /** A catwalk between the two ships: the cargo goes over it. */
+  /** The catwalk of a trade: it goes out between the ships and waits there. */
   public void catwalk() {
-    catwalkFrames = CATWALK_FRAMES + APPROACH_FRAMES;
+    startCatwalk(false);
+  }
+
+  /** True when the catwalk is fully out and quiet: the question can be asked. */
+  public boolean catwalkOut() {
+    return catwalk == Catwalk.HOLD;
+  }
+
+  /** The boxes cross the catwalk with the goods of the deal. */
+  public void haul() {
+    if(catwalk == Catwalk.HOLD) {
+      catwalk = Catwalk.HAUL;
+      catwalkFrames = HAUL_FRAMES;
+      invalidate();
+    }
+  }
+
+  /** The catwalk is taken back in. */
+  public void retract() {
+    if(catwalk != Catwalk.NONE) {
+      catwalk = Catwalk.RETRACT;
+      catwalkFrames = RETRACT_FRAMES;
+      invalidate();
+    }
+  }
+
+  /** True when the catwalk is gone: the scene of the trade is over. */
+  public boolean catwalkGone() {
+    return catwalk == Catwalk.NONE;
+  }
+
+  private void startCatwalk(boolean auto) {
+    catwalkAuto = auto;
+    catwalk = Catwalk.EXTEND;
+    catwalkFrames = EXTEND_FRAMES;
+    invalidate();
+  }
+
+  /** A phase is over: the catwalk waits, or goes on by itself (the police seizure). */
+  private void advanceCatwalk() {
+    switch(catwalk) {
+      case EXTEND:
+        catwalk = catwalkAuto ? Catwalk.HAUL : Catwalk.HOLD;
+        catwalkFrames = catwalkAuto ? HAUL_FRAMES : 0;
+        break;
+      case HAUL:
+        catwalk = catwalkAuto ? Catwalk.RETRACT : Catwalk.HOLD;
+        catwalkFrames = catwalkAuto ? RETRACT_FRAMES : 0;
+        break;
+      default:
+        catwalk = Catwalk.NONE;
+        catwalkFrames = 0;
+        break;
+    }
     invalidate();
   }
 
@@ -483,7 +548,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** True while the scene has something to finish (the close has to wait for it). */
   public boolean animating() {
-    return scanFrames > 0 || catwalkFrames > 0 || catwalkPending || leaving;
+    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving;
   }
 
   /** The reply of the other ship, played a moment after our shot. */
@@ -623,18 +688,27 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       }
       graphics.setCharacter(column, row, JOINT);
     }
-    if(catwalkFrames > 0 && catwalkFrames <= CATWALK_FRAMES) {
+    if(catwalk != Catwalk.NONE) {
+      int start = yourX() + youWidth;
+      int span = Math.max(0, opponentX() - start);
+      int shown = span;
+      if(catwalk == Catwalk.EXTEND) {
+        shown = span * (EXTEND_FRAMES - catwalkFrames) / EXTEND_FRAMES;
+      } else if(catwalk == Catwalk.RETRACT) {
+        shown = span * catwalkFrames / RETRACT_FRAMES;
+      }
       int row = yourMiddleY();
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
-      for(int x = yourX() + youWidth; x < opponentX(); x++) {
-        graphics.setCharacter(x, row, BRIDGE);
+      for(int x = 0; x < shown; x++) {
+        graphics.setCharacter(start + x, row, BRIDGE);
       }
-      // The boxes cross the catwalk, one each way.
-      int span = Math.max(1, opponentX() - (yourX() + youWidth));
-      int walked = (CATWALK_FRAMES - catwalkFrames) * span / CATWALK_FRAMES;
-      graphics.setForegroundColor(TextColor.ANSI.YELLOW_BRIGHT);
-      graphics.setCharacter(yourX() + youWidth + walked, row, BOX);
-      graphics.setCharacter(opponentX() - walked - 1, row, BOX);
+      if(catwalk == Catwalk.HAUL) {
+        // The boxes cross the catwalk, one each way.
+        int walked = (HAUL_FRAMES - catwalkFrames) * Math.max(1, span) / HAUL_FRAMES;
+        graphics.setForegroundColor(TextColor.ANSI.YELLOW_BRIGHT);
+        graphics.setCharacter(start + Math.min(walked, Math.max(0, span - 1)), row, BOX);
+        graphics.setCharacter(Math.max(start, opponentX() - Math.min(walked, Math.max(0, span - 1)) - 1), row, BOX);
+      }
     }
     UiPalette.reset(graphics);
   }

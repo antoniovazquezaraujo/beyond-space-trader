@@ -39,8 +39,5 @@ public interface EncounterView {
   default void inspection(boolean confiscated) {
   }
 
-  /** A catwalk between the ships: the cargo goes over it. */
-  default void catwalk() {
-  }
 }
 
