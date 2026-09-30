@@ -48,12 +48,11 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
 2. **El parte de ronda**: el juego resuelve cada ronda como hoy (una por
    segundo) y la escena recibe un parte: quién disparó, acierto o fallo, el
    daño, si fue al escudo o al casco, y los cambios de estado (inutilizado,
-   destruido, huida). La animación **se deriva del parte**, no lo decide: al
-   atacar salen los disparos hacia la otra nave (una andanada, un disparo por
-   arma) y el parte dice el resultado de la ronda; el daño total es el del
-   juego y la escena solo reparte qué proyectiles pasan y cuáles estallan.
-   - **Fallo**: los proyectiles pasan de largo y la nave los esquiva (una
-     maniobra corta).
+   destruido, huida). La animación **se deriva del parte**, no lo decide: cada
+   ronda es **un disparo**, uno a uno con el mecanismo del juego (una sola
+   resolución por ronda), y el daño, si acierta, es el del juego.
+   - **Fallo**: el disparo pasa de largo y la nave lo esquiva (una maniobra
+     corta).
    - **Acierto al escudo**: destello del escudo, sin chispas; la barra baja.
    - **Acierto al casco**: el proyectil muere en la tinta y salen chispas, con
      el número de daño.
