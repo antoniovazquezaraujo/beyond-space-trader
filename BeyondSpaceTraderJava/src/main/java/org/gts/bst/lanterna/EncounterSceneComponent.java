@@ -126,7 +126,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     int columns = Math.max(1, width - 1);
     int rows = Math.max(1, height - 1);
     if(starfield == null || starfield.dotWidth() != columns * 2 || starfield.dotHeight() != rows * 4) {
-      starfield = new Starfield(columns, rows, 0.10, 42);
+      starfield = new Starfield(columns, rows, 0.12, 42);
     }
     Starfield.Frame frame = starfield.frame(columns, rows);
     for(int row = 0; row < rows; row++) {

@@ -10,12 +10,16 @@ package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.gui2.BasicWindow;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
+import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
@@ -24,6 +28,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.List;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.EncounterAction;
@@ -91,6 +96,48 @@ class LanternaEncounterViewTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void theStarsOfTheBackgroundMove() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      gui.updateScreen();
+
+      String before = braille(screen);
+      content.tick();
+      gui.updateScreen();
+      String after = braille(screen);
+
+      assertFalse(before.isEmpty(), "the sky is drawn in braille");
+      assertNotEquals(before, after, "the stars move with the clock");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** The braille glyphs of the screen (the stars of the sky). */
+  private static String braille(Screen screen) {
+    StringBuilder text = new StringBuilder();
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        char character = screen.getBackCharacter(column, row).getCharacter();
+        if(character >= 0x2800 && character <= 0x28FF) {
+          text.append(character);
+        }
+      }
+    }
+    return text.toString();
   }
 
   private static String screenText(Screen screen) {

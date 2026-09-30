@@ -54,6 +54,7 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   private static final int TICK_MILLIS = 1000;
+  private static final int FRAME_MILLIS = 110;
   private static final int TEXT_WIDTH = 110;
   private static final Map<Character, EncounterAction> KEYS = Map.ofEntries(
       Map.entry('a', EncounterAction.Attack),
@@ -78,6 +79,7 @@ public final class LanternaEncounterView implements EncounterView {
   private final EncounterSceneComponent content;
   private EncounterViewModel model;
   private Timer timer;
+  private Timer stars;
 
   public LanternaEncounterView(WindowBasedTextGUI gui, Commands commands, Runnable tick, CargoHost cargoHost) {
     this.gui = gui;
@@ -89,6 +91,18 @@ public final class LanternaEncounterView implements EncounterView {
     content.setPreferredSize(new TerminalSize(120, 30));
     window.setComponent(content);
     window.setFocusedInteractable(content);
+    // The sky moves like the one of the title screen, with its own clock.
+    stars = new Timer("encounter-stars", true);
+    stars.scheduleAtFixedRate(new TimerTask() {
+      @Override
+      public void run() {
+        try {
+          gui.getGUIThread().invokeLater(content::tick);
+        } catch(IllegalStateException e) {
+          return;
+        }
+      }
+    }, FRAME_MILLIS, FRAME_MILLIS);
   }
 
   public Window asWindow() {
@@ -109,6 +123,10 @@ public final class LanternaEncounterView implements EncounterView {
   @Override
   public void close() {
     stopTimer();
+    if(stars != null) {
+      stars.cancel();
+      stars = null;
+    }
     window.close();
   }
 
@@ -121,11 +139,7 @@ public final class LanternaEncounterView implements EncounterView {
     timer.scheduleAtFixedRate(new TimerTask() {
       @Override
       public void run() {
-        // The game round and the stars of the background move together.
-        gui.getGUIThread().invokeLater(() -> {
-          tick.run();
-          content.tick();
-        });
+        gui.getGUIThread().invokeLater(tick);
       }
     }, TICK_MILLIS, TICK_MILLIS);
   }
