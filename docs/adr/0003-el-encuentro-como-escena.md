@@ -29,7 +29,8 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    estrellado detrás**, y **se elimina el formulario** (no se esconde debajo).
    Las dos naves enfrentadas, la tuya a la izquierda y la suya a la derecha
    (espejada), cada una con su casco y su escudo encima, el registro de texto
-   abajo (los textos de siempre) y la barra de acciones con sus teclas.
+   abajo (los textos de siempre). **Sin botones ni barra de acciones**: se
+   juega con la nave.
 
    ```
    ╔════════════════════════════════════════════════════════════════════╗
@@ -41,7 +42,7 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    ║                ·──→        ←──·                                    ║
    ║                                                                    ║
    ║ El pirata abre fuego y tu escudo aguanta.                          ║
-   ║ [A] Atacar · [F] Huir · [B] Sobornar · [R] Rendirse …              ║
+   ║                                                                    ║
    ╚════════════════════════════════════════════════════════════════════╝
    ```
 
@@ -60,13 +61,23 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    - **Destruido**: explosión y la nave queda a la deriva.
    - **Huida**: persecución animada; se gana cuando el juego lo dice (la
      distancia crece hasta perderse de vista).
-3. **Las acciones son las del clásico**, con sus teclas, y cada una tiene su
-   escena: las de diálogo (comerciar, sobornar, hablar, beber, abordar)
-   **pausan** la escena y usan los diálogos actuales; el **registro policial**
-   (si lo aceptamos) acerca las naves y pasa un **escáner** por la nuestra; el
-   **transvase de mercancía** tiende una **pasarela** entre las dos naves, con
-   algo que se mueve por ella (puede ser intermitente); **abordar** acerca las
-   naves hasta tocarse.
+3. **Los mandos: se juega con la nave, sin botones.** No hay barra de acciones
+   ni formularios que contestar:
+   - `espacio` **dispara** (una ronda por disparo; repetir es el ataque
+     continuo del clásico).
+   - `↑` / `↓` **esquivan**: subir o bajar, y la otra nave responde según el
+     veredicto del juego.
+   - `←` **huye** (te alejas; el juego decide si te sigue o te pierde de
+     vista); `→` **acerca** la nave a la otra.
+   - Las decisiones del clásico se toman **volando**: acercarse es aceptar (el
+     **registro policial**, con su escáner; la oferta del comerciante, con su
+     **pasarela**; el encuentro con un capitán; el **abordaje** de una nave
+     inutilizada, hasta tocarse); alejarse es negarse o ignorar.
+   - **Propuesta** para las rendiciones (rendirse, someterse, ceder la carga):
+     **quedarse quieto**, sin disparar ni moverse, cuando el juego lo exija. A
+     confirmar por el autor.
+   - El comercio y el transvase de carga abren sus pantallas de siempre; no son
+     botones del combate.
 4. **El automático** (ataque o huida continuos) se muestra con un rótulo; no
    cambia nada de lógica.
 5. **Se maneja la nave, decide el juego**: el jugador mueve su nave (subir y
@@ -95,11 +106,12 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
   pura**: se prueba sin GUI, como el resto de `view/`.
 - `Encounter`, `EncounterPresenter` y sus tests **no se tocan**: las reglas no
   cambian.
-- **Pendiente**: los hitos y el repaso del autor — **M1** la escena quieta
-  (estrellas, naves, barras, registro y acciones), **M2** las rondas animadas
-  (andanada, impacto, humo, destrucción), **M3** el manejo de la nave
-  (esquivar y colar, huir con persecución) y **M4** las escenas de las demás
-  acciones (escáner policial, pasarela de mercancía, abordaje).
+- **Pendiente**: los hitos y el repaso del autor — **M1** la escena (estrellas,
+  naves, barras y registro; **sin botones**), **M2** los mandos y las rondas
+  animadas (espacio dispara; las flechas mueven y esquivan; el disparo, el
+  impacto, el humo y la destrucción), **M3** las reacciones del rival (ignorar
+  o copiar, con su retardo) y la huida con persecución, y **M4** las escenas de
+  las decisiones (escáner policial, pasarela, abordaje).
 
 ## Alternativas descartadas
 
