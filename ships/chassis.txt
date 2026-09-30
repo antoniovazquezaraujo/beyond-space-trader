@@ -48,7 +48,7 @@ color=red
              
 [corvette]
 size=medium
-key=A color=blue bgcolor=yellow
+key=A color=blue
 key=B color=red
 key=C color=yellow
 zone=B x=8 y=2 w=1 h=1
@@ -179,6 +179,20 @@ color=yellow
 ;; new chassis from the author's draft: names are proposals; colours and size pending
 
 [courier]
+key=A color=magenta
+key=B color=blue bgcolor=cyan
+zone=A x=4 y=0 w=4 h=1
+zone=A x=11 y=0 w=6 h=1
+zone=A x=1 y=1 w=3 h=1
+zone=A x=17 y=1 w=1 h=1
+zone=A x=18 y=2 w=1 h=1
+zone=A x=0 y=3 w=3 h=1
+zone=A x=4 y=3 w=1 h=1
+zone=B x=10 y=3 w=2 h=1
+zone=A x=19 y=3 w=1 h=1
+zone=A x=5 y=4 w=2 h=1
+zone=A x=10 y=4 w=7 h=1
+zone=A x=18 y=4 w=2 h=1
     ∙--┬┬-┬-----∙
  ▄▄/   ╘┘┘┘┘≡═ ┐ \
 ════        ┘┘┘┘═\\┐

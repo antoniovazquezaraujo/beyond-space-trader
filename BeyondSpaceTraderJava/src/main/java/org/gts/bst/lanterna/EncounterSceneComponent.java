@@ -106,6 +106,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private boolean catwalkPending;
   private int catwalkFrames;
   private boolean leaving;
+  private String said = "";
+  private boolean dealt;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -125,6 +127,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   public void model(EncounterViewModel model) {
     EncounterViewModel before = this.model;
     this.model = model;
+    dealt = false;
     if(before != null && before.round() != model.round() && screenWidth > 0) {
       play(before, model);
     }
@@ -435,6 +438,19 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     invalidate();
   }
 
+  /** What the other ship is saying now (an offer of the trader), under it. */
+  public void say(String text) {
+    said = text == null ? "" : text;
+    invalidate();
+  }
+
+  /** The speech has been dealt with: it goes away. */
+  public void deal() {
+    said = "";
+    dealt = true;
+    invalidate();
+  }
+
   /** The scene shows a result to read: it stays until the player leaves (intro). */
   public void awaitLeave() {
     leaving = true;
@@ -517,7 +533,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
     drawFight(graphics);
     drawInspection(graphics);
-    drawBubble(graphics);
+    drawSpeech(graphics);
     drawLog(graphics, width, height, logTop);
   }
 
@@ -559,7 +575,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
   }
 
-  private static final int BUBBLE_WIDTH = 34;
+  private static final int SPEECH_WIDTH = 44;
 
   /** The green waves of the scanner and the catwalk of a transfer. */
   private void drawInspection(TextGUIGraphics graphics) {
@@ -589,31 +605,24 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     UiPalette.reset(graphics);
   }
 
-  /** The speech of the other ship, in a comic bubble with its blinking marks. */
-  private void drawBubble(TextGUIGraphics graphics) {
-    if(model == null || model.encounterText().isBlank()) {
+  /** What the other ship says: the text floating under it, with no frame. */
+  private void drawSpeech(TextGUIGraphics graphics) {
+    String speech = dealt ? "" : said.isEmpty() && model != null ? model.speech() : said;
+    if(speech.isBlank() || screenWidth <= 0) {
       return;
     }
-    java.util.List<String> lines = wrap(model.encounterText(), BUBBLE_WIDTH);
-    if(lines.size() > 4) {
-      lines = lines.subList(0, 4);
+    java.util.List<String> lines = wrap(speech, SPEECH_WIDTH);
+    if(lines.size() > 3) {
+      lines = lines.subList(0, 3);
     }
-    int boxWidth = BUBBLE_WIDTH + 4;
-    int left = Math.max(0, Math.min(screenWidth - boxWidth - 1, opponentX() + opponentWidth / 2 - boxWidth / 2));
-    int top = opponentY() - lines.size() - 3;
-    if(top < BARS_ROWS + 1) {
-      top = opponentY() + opponentHeight + 1;
-    }
-    char sparkle = SPARKLE[(frame / 2) % SPARKLE.length];
-    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    int row = opponentY() + opponentHeight + 1;
+    graphics.setForegroundColor(TextColor.ANSI.YELLOW_BRIGHT);
     graphics.setBackgroundColor(TextColor.ANSI.BLACK);
-    graphics.putString(left, top, "+" + "-".repeat(boxWidth - 2) + "+");
-    graphics.putString(left, top, String.valueOf(sparkle));
-    graphics.putString(left + boxWidth - 1, top, String.valueOf(sparkle));
-    for(int i = 0; i < lines.size(); i++) {
-      graphics.putString(left, top + 1 + i, "| " + String.format("%-" + BUBBLE_WIDTH + "s", lines.get(i)) + " |");
+    for(String line : lines) {
+      int left = Math.max(0, Math.min(screenWidth - line.length() - 1,
+          opponentX() + opponentWidth / 2 - line.length() / 2));
+      graphics.putString(left, row++, line);
     }
-    graphics.putString(left, top + lines.size() + 1, "+" + "-".repeat(boxWidth - 2) + "+");
     UiPalette.reset(graphics);
   }
 

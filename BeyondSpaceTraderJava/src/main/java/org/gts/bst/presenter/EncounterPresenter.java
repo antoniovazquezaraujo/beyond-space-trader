@@ -18,6 +18,7 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.view.EncounterAction;
+import spacetrader.Strings;
 import org.gts.bst.view.EncounterDialogHost;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
@@ -252,7 +253,20 @@ public class EncounterPresenter implements EncounterDialogHost {
         opponentIgnores(),
         game.encounter().getOpponent().Pilot(),
         game.encounter().getEncounterCmdrFleeing(),
-        round);
+        round,
+        speech());
+  }
+
+  /** What the other ship says: the police demand, the trader hail; nothing for the rest. */
+  private String speech() {
+    String type = game.encounter().getEncounterType().name();
+    if(type.equals("PoliceInspect")) {
+      return Strings.EncounterTextPoliceInspection;
+    }
+    if(type.startsWith("Trader")) {
+      return Strings.EncounterTextTrader;
+    }
+    return "";
   }
 
   /** True when the other ship ignores us: it does not react to our manoeuvres. */

@@ -61,7 +61,7 @@ class LanternaEncounterViewTest {
           false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
           "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
           "The pirate attacks.", "Choose an action.",
-          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 0));
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 0, ""));
       gui.addWindow(view.asWindow());
       gui.updateScreen();
 
@@ -122,7 +122,7 @@ class LanternaEncounterViewTest {
           false, 1, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
           "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
           "The pirate attacks.", "Choose an action.",
-          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 1));
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 1, ""));
       executed.clear();
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
       assertTrue(executed.isEmpty(), "while the other ship is answering, our shot waits");
@@ -138,7 +138,7 @@ class LanternaEncounterViewTest {
           false, 2, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
           "Trader", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
           "The trader offers to deal.", "Choose an action.",
-          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false, false, 5, false, 2));
+          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false, false, 5, false, 2, "La policia te ordena someterte a una inspeccion."));
       content.resetPosition();
       executed.clear();
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
@@ -180,7 +180,7 @@ class LanternaEncounterViewTest {
           new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
           new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate attacks.",
           "Choose an action.", ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false,
-          false, 5, false, 0));
+          false, 5, false, 0, ""));
       gui.updateScreen();
       int before = columnOf(screen, 'x');
 

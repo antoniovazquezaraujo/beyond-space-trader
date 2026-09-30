@@ -231,6 +231,7 @@ public final class LanternaEncounterView implements EncounterView {
   @Override
   public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
+    content.say(Functions.StringVars(Strings.EncounterSaysOffer, item, Functions.FormatMoney(offer.unitPrice())));
     String title = Functions.StringVars(Strings.DialogCargoBuyTitle, item) + "  "
         + Functions.FormatMoney(offer.unitPrice());
     return LanternaDialogs.askAmountAtBottom(gui, title,
@@ -240,6 +241,7 @@ public final class LanternaEncounterView implements EncounterView {
   @Override
   public Integer askCargoSellQuantity(CargoSellOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
+    content.say(Functions.StringVars(Strings.EncounterSaysWanted, item, Functions.FormatMoney(offer.price())));
     String title = Functions.StringVars(Strings.DialogCargoSellTitle, item) + "  "
         + Functions.FormatMoney(offer.price());
     return LanternaDialogs.askAmountAtBottom(gui, title,
@@ -319,6 +321,8 @@ public final class LanternaEncounterView implements EncounterView {
         EncounterAction.Meet, EncounterAction.Drink, EncounterAction.Board, EncounterAction.Surrender,
         EncounterAction.Yield)) {
       if(model.actions().contains(action)) {
+        // The speech has been dealt with: it goes away and the scene plays.
+        content.deal();
         commands.execute(action);
         return true;
       }

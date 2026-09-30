@@ -430,6 +430,8 @@ public final class Strings {
   public static final String MainNewGame = text("MainNewGame");
   public static final String MainNewGameUnavailable = text("MainNewGameUnavailable");
   public static final String MainNewGameCancelled = text("MainNewGameCancelled");
+  public static final String EncounterSaysOffer = text("EncounterSaysOffer");
+  public static final String EncounterSaysWanted = text("EncounterSaysWanted");
   public static final String MainSaveUnavailable = text("MainSaveUnavailable");
   public static final String SkillEngineer = text("SkillEngineer");
   public static final String SkillFighter = text("SkillFighter");
