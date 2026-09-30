@@ -56,6 +56,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int NUMBER_FRAMES = 5;
   private static final int BURST_FRAMES = 8;
   private static final int BEAM_FRAMES = 3;
+  /** Cells the ship glides on every frame: the dashes go at double speed. */
+  private static final int GLIDE_SPEED = 3;
 
   /** A beam: the shot of a ship, a line of light from its nose to where the game says. */
   private record Beam(int x1, int y1, int x2, int y2, TextColor color, int frames) {
@@ -289,8 +291,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** The player ship glides to its target a few cells per frame; a wall stops it. */
   private void glidePlayer() {
-    int speed = 3;
-    for(int i = 0; i < speed && rowTarget != Integer.MIN_VALUE && youRow != rowTarget; i++) {
+    for(int i = 0; i < GLIDE_SPEED && rowTarget != Integer.MIN_VALUE && youRow != rowTarget; i++) {
       int step = rowTarget > youRow ? 1 : -1;
       if(!canMove(0, step)) {
         rowTarget = Integer.MIN_VALUE;
@@ -299,7 +300,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       }
       youRow += step;
     }
-    for(int i = 0; i < speed && columnTarget != Integer.MIN_VALUE && youColumn != columnTarget; i++) {
+    // Advancing (to slip through the gap) and escaping go at double speed.
+    for(int i = 0; i < GLIDE_SPEED * 2 && columnTarget != Integer.MIN_VALUE && youColumn != columnTarget; i++) {
       int step = columnTarget > youColumn ? 1 : -1;
       if(!canMove(step, 0)) {
         columnTarget = Integer.MIN_VALUE;

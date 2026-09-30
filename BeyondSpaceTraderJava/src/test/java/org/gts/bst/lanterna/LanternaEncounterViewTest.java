@@ -158,6 +158,12 @@ class LanternaEncounterViewTest {
       gui.updateScreen();
 
       assertEquals(before + 2, columnOf(screen, 'x'), "the drawing is mirrored in place");
+
+      // Advancing is a dash: six cells on the first frame (double of the vertical glide).
+      content.move(1, 0);
+      content.tick();
+      gui.updateScreen();
+      assertEquals(before + 6, columnOf(screen, 'x'), "the dash goes at double speed");
     } finally {
       screen.stopScreen();
       screen.close();
