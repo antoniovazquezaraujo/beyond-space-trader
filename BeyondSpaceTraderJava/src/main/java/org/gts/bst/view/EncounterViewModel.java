@@ -35,7 +35,9 @@ public record EncounterViewModel(
     int youDamage,
     int oppDamage,
     ShipPicture youPicture,
-    ShipPicture opponentPicture) {
+    ShipPicture opponentPicture,
+    boolean opponentDisabled,
+    int round) {
   /** A bar of the scene: the value and its maximum. */
   public record Bar(int value, int max) {
   }

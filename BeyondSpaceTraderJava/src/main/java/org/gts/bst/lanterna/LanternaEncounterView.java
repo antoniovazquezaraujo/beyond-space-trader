@@ -177,15 +177,35 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   private boolean handleKey(KeyStroke key) {
-    if(model == null || key.getKeyType() != KeyType.Character) {
+    if(model == null) {
       return false;
     }
-    EncounterAction action = KEYS.get(Character.toLowerCase(key.getCharacter()));
-    if(action == null || !model.actions().contains(action)) {
-      return false;
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        content.move(-1);
+        return true;
+      case ArrowDown:
+        content.move(1);
+        return true;
+      case ArrowLeft:
+        commands.execute(EncounterAction.Flee);
+        return true;
+      case Character:
+        char character = Character.toLowerCase(key.getCharacter());
+        if(character == ' ') {
+          content.youFire();
+          commands.execute(EncounterAction.Attack);
+          return true;
+        }
+        EncounterAction action = KEYS.get(character);
+        if(action == null || !model.actions().contains(action)) {
+          return false;
+        }
+        commands.execute(action);
+        return true;
+      default:
+        return false;
     }
-    commands.execute(action);
-    return true;
   }
 
   private static void addWrapped(List<String> lines, String text) {

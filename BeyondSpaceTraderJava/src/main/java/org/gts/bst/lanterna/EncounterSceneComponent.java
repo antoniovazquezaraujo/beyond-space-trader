@@ -19,14 +19,19 @@ import com.googlecode.lanterna.input.KeyStroke;
 import java.util.ArrayList;
 import java.util.List;
 import org.gts.bst.view.EncounterViewModel;
+import org.gts.bst.view.ShipPicture;
 import org.gts.bst.view.Starfield;
 
 
 /**
- * The encounter scene: both ships facing each other over a starfield, with
- * their hull and shield bars above, the log under them and the actions with
- * their keys at the bottom. The presenter fills the model; this component only
- * paints it and forwards the keys.
+ * The encounter scene: both ships facing each other over a moving starfield,
+ * with their hull and shield bars above, the log under them and the fight over
+ * the drawing (projectiles, sparks, damage numbers, smoke and explosions).
+ *
+ * <p>The game is the referee: the presenter fills the model (one round at a
+ * time) and this component only plays it. The shot of the player is born when
+ * it fires and learns its fate on the next round; the shot of the other ship is
+ * born with the part of the round already decided.
  */
 public final class EncounterSceneComponent extends AbstractInteractableComponent<EncounterSceneComponent> {
   /**
@@ -43,19 +48,63 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int BAR_CELLS = 8;
   private static final char BAR_FULL = '█';
   private static final char BAR_EMPTY = '░';
+  private static final char SHOT = '•';
+  private static final char SPARK = '✶';
+  private static final char BURST = '✱';
+  private static final char[] SMOKE = {'░', '▒', '▓'};
+  private static final int SHOT_SPEED = 6;
+  private static final int SPARK_FRAMES = 3;
+  private static final int NUMBER_FRAMES = 5;
+  private static final int BURST_FRAMES = 8;
+
+  /** A projectile: the game says if it lands on the ship or goes past it. */
+  private record Shot(int x, int y, boolean mine, boolean fated, boolean hit, int damage) {
+    Shot moved(int next) {
+      return new Shot(next, y, mine, fated, hit, damage);
+    }
+
+    Shot withFate(boolean hit, int damage) {
+      return new Shot(x, y, mine, true, hit, damage);
+    }
+  }
+
+  /** A flash of the fight: sparks, bursts, a damage number or a puff of smoke. */
+  private record Flash(int x, int y, String text, TextColor color, int frames, boolean rises) {
+    Flash aged() {
+      return new Flash(x, y + (rises ? -1 : 0), text, color, frames - 1, rises);
+    }
+  }
 
   private final KeyHandler keyHandler;
   private final List<String> log = new ArrayList<>();
+  private final List<Shot> shots = new ArrayList<>();
+  private final List<Flash> flashes = new ArrayList<>();
   private EncounterViewModel model;
   private Starfield starfield;
+  private int frame;
+  private int youRow;
+  /** The geometry of the last paint: where the shots are born and where they land. */
+  private int youLeft;
+  private int youWidth;
+  private int youHeight;
+  private int youCentre;
+  private int opponentLeft;
+  private int opponentWidth;
+  private int opponentHeight;
+  private int opponentCentre;
+  private int screenWidth;
 
   public EncounterSceneComponent(KeyHandler keyHandler) {
     this.keyHandler = keyHandler;
   }
 
-  /** The scene model: both ships, their pictures and their bars. */
+  /** The scene model: both ships, their pictures, their bars and the round. */
   public void model(EncounterViewModel model) {
+    EncounterViewModel before = this.model;
     this.model = model;
+    if(before != null && before.round() != model.round() && screenWidth > 0) {
+      play(before, model);
+    }
     invalidate();
   }
 
@@ -66,12 +115,51 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     invalidate();
   }
 
-  /** Moves the stars of the background (the window timer calls it). */
+  /** The player fires: the shot flies towards the other ship. */
+  public void youFire() {
+    if(model == null || screenWidth <= 0 || model.opponentHull().value() <= 0) {
+      return;
+    }
+    // The shot aims at the middle of the other ship; the part will say where it lands.
+    shots.add(new Shot(youLeft + youWidth, opponentCentre, true, false, false, 0));
+    invalidate();
+  }
+
+  /** Moves the player ship up or down (the arrows). */
+  public void move(int delta) {
+    youRow = Math.max(-3, Math.min(6, youRow + delta));
+    invalidate();
+  }
+
+  /** Moves the stars and the fight: the window timer calls it on every frame. */
   public void tick() {
+    frame++;
     if(starfield != null) {
       starfield.advance();
-      invalidate();
     }
+    for(int i = shots.size() - 1; i >= 0; i--) {
+      Shot shot = shots.get(i);
+      int next = shot.x() + (shot.mine() ? SHOT_SPEED : -SHOT_SPEED);
+      boolean impact = shot.mine() ? next >= opponentLeft : next <= youLeft + youWidth;
+      boolean edge = shot.mine() ? next >= screenWidth - 1 : next <= 1;
+      if(shot.hit() && impact) {
+        land(shot);
+        shots.remove(i);
+      } else if(edge) {
+        shots.remove(i);
+      } else {
+        shots.set(i, shot.moved(next));
+      }
+    }
+    for(int i = flashes.size() - 1; i >= 0; i--) {
+      Flash flash = flashes.get(i);
+      if(flash.frames() <= 1) {
+        flashes.remove(i);
+      } else {
+        flashes.set(i, flash.aged());
+      }
+    }
+    invalidate();
   }
 
   @Override
@@ -99,6 +187,46 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     };
   }
 
+  /** Plays a round with the game already resolved: fates, smoke and explosions. */
+  private void play(EncounterViewModel before, EncounterViewModel after) {
+    // The fate of the oldest shot of the player still in the air.
+    for(int i = 0; i < shots.size(); i++) {
+      Shot shot = shots.get(i);
+      if(shot.mine() && !shot.fated()) {
+        int y = after.youHit() ? opponentCentre : opponentCentre - opponentHeight / 2 - 1;
+        shots.set(i, new Shot(shot.x(), y, true, true, after.youHit(), after.youDamage()));
+        break;
+      }
+    }
+    boolean down = after.opponentHull().value() <= 0;
+    if(down && before.opponentHull().value() > 0) {
+      for(int i = 0; i < 4; i++) {
+        flashes.add(new Flash(opponentLeft + opponentWidth / 2 - 2 + i, opponentCentre - 1 + i % 2,
+            String.valueOf(BURST), i % 2 == 0 ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.RED_BRIGHT,
+            BURST_FRAMES, false));
+      }
+      return;
+    }
+    if(!down && !after.opponentDisabled()) {
+      int y = after.oppHit() ? youCentre : youCentre - youHeight / 2 - 1;
+      shots.add(new Shot(opponentLeft, y, false, true, after.oppHit(), after.oppDamage()));
+    }
+  }
+
+  /** The shot landed: sparks (or a shield flash) and the damage number. */
+  private void land(Shot shot) {
+    boolean shield = shot.mine() ? model.opponentShield().value() > 0 : model.youShield().value() > 0;
+    int x = shot.mine() ? opponentLeft + opponentWidth / 2 : youLeft + youWidth / 2;
+    int y = shot.mine() ? opponentCentre : youCentre;
+    TextColor color = shield ? TextColor.ANSI.CYAN_BRIGHT : TextColor.ANSI.YELLOW_BRIGHT;
+    for(int i = 0; i < 3; i++) {
+      flashes.add(new Flash(x - 1 + i, y + i % 2, String.valueOf(shield ? SPARK : BURST), color, SPARK_FRAMES, false));
+    }
+    if(shot.damage() > 0) {
+      flashes.add(new Flash(x, y - 2, "-" + shot.damage(), TextColor.ANSI.RED_BRIGHT, NUMBER_FRAMES, true));
+    }
+  }
+
   private void paint(TextGUIGraphics graphics) {
     TerminalSize size = getSize();
     int width = size.getColumns();
@@ -112,13 +240,54 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       return;
     }
     drawBars(graphics, width);
-    int shipsTop = BARS_ROWS;
-    int logTop = Math.max(shipsTop + 2, height - LOG_ROWS);
+    int logTop = Math.max(BARS_ROWS + 2, height - LOG_ROWS);
     int half = (width - 1) / 2;
-    EditorText.picture(graphics, 0, shipsTop, half, logTop - 1, model.youPicture().cropped());
-    EditorText.picture(graphics, half + 1, shipsTop, width - half - 1, logTop - 1,
-        model.opponentPicture().cropped());
+    ShipPicture you = model.youPicture().cropped();
+    ShipPicture opponent = model.opponentPicture().cropped();
+    screenWidth = width;
+    youLeft = shipLeft(0, half, you);
+    youWidth = you.width();
+    youHeight = you.height();
+    youCentre = BARS_ROWS + youRow + Math.max(0, you.height() / 2);
+    opponentLeft = shipLeft(half + 1, width - half - 1, opponent);
+    opponentWidth = opponent.width();
+    opponentHeight = opponent.height();
+    opponentCentre = BARS_ROWS + Math.max(0, opponent.height() / 2);
+    boolean down = model.opponentHull().value() <= 0;
+    EditorText.picture(graphics, 0, BARS_ROWS + youRow, half, logTop - 1, you);
+    if(!down) {
+      EditorText.picture(graphics, half + 1, BARS_ROWS, width - half - 1, logTop - 1, opponent);
+      if(model.opponentDisabled()) {
+        drawSmoke(graphics);
+      }
+    }
+    drawFight(graphics);
     drawLog(graphics, width, height, logTop);
+  }
+
+  /** The smoke of a ship with its systems disabled. */
+  private void drawSmoke(TextGUIGraphics graphics) {
+    for(int i = 0; i < 3; i++) {
+      graphics.setForegroundColor(i % 2 == 0 ? TextColor.ANSI.WHITE : new TextColor.Indexed(240));
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      graphics.setCharacter(opponentLeft + i * 2, opponentCentre - 3 - i, SMOKE[(frame / 2 + i) % SMOKE.length]);
+    }
+    UiPalette.reset(graphics);
+  }
+
+  /** The projectiles in the air and the flashes of the round. */
+  private void drawFight(TextGUIGraphics graphics) {
+    for(Shot shot : shots) {
+      graphics.setForegroundColor(shot.mine() ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.RED_BRIGHT);
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      graphics.setCharacter(shot.x(), shot.y(), SHOT);
+    }
+    for(Flash flash : flashes) {
+      graphics.setForegroundColor(flash.color());
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      graphics.putString(flash.x(), flash.y(), flash.text());
+    }
+    UiPalette.reset(graphics);
   }
 
   /** The parallax starfield of the title screen, as the backdrop of the fight. */
@@ -173,5 +342,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       }
       UiPalette.draw(graphics, 1, row++, line, UiPalette.TEXT, width - 1);
     }
+  }
+
+  /** The left of a ship picture centred in a column. */
+  private static int shipLeft(int left, int width, ShipPicture picture) {
+    return left + Math.max(0, (width - picture.width()) / 2);
   }
 }

@@ -21,6 +21,7 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
@@ -60,7 +61,7 @@ class LanternaEncounterViewTest {
           false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
           "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
           "The pirate attacks.", "Choose an action.",
-          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent));
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, 0));
       gui.addWindow(view.asWindow());
       gui.updateScreen();
 
@@ -92,6 +93,18 @@ class LanternaEncounterViewTest {
 
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('f', false, false));
       assertEquals(List.of(EncounterAction.Flee), executed);
+
+      executed.clear();
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      assertEquals(List.of(EncounterAction.Attack), executed, "space fires");
+
+      executed.clear();
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      assertEquals(List.of(EncounterAction.Flee), executed, "the left arrow flees");
+
+      executed.clear();
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      assertTrue(executed.isEmpty(), "the up arrow only moves the ship");
     } finally {
       screen.stopScreen();
       screen.close();

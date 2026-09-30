@@ -37,6 +37,8 @@ public class EncounterPresenter implements EncounterDialogHost {
   private final Ship cmdrship;
   private final EncounterView view;
   private EncounterResult result = EncounterResult.Continue;
+  /** The number of the round: every one is a new part for the scene. */
+  private int round;
   private boolean running;
 
   public EncounterPresenter(Game game, EncounterView view) {
@@ -185,6 +187,7 @@ public class EncounterPresenter implements EncounterDialogHost {
       running = false;
     }
     if(result == EncounterResult.Continue) {
+      round++;
       update();
       if(game.encounter().getEncounterContinueFleeing() || game.encounter().getEncounterContinueAttacking()) {
         view.startTimer();
@@ -230,7 +233,9 @@ public class EncounterPresenter implements EncounterDialogHost {
         game.encounter().getEncounterOppDamage(), game.encounter().getEncounterCmdrDamage(),
         catalog.picture(cmdrship.Type(), ShipArtItems.of(cmdrship), cmdrship.CargoBays()),
         catalog.picture(game.encounter().getOpponent().Type(), opponentItems,
-            game.encounter().getOpponent().CargoBays()).mirrored());
+            game.encounter().getOpponent().CargoBays()).mirrored(),
+        game.encounter().getOpponentDisabled(),
+        round);
   }
 
   private static EncounterViewModel.Bar bar(int value, int max) {
