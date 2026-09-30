@@ -103,7 +103,7 @@ public final class LanternaEncounterView implements EncounterView {
     lines.add("");
     addWrapped(lines, model.actionText());
     content.model(model);
-    content.log(lines, actionsLine(model.actions()));
+    content.log(lines);
   }
 
   @Override
@@ -172,59 +172,6 @@ public final class LanternaEncounterView implements EncounterView {
     }
     commands.execute(action);
     return true;
-  }
-
-  private static String actionsLine(Set<EncounterAction> actions) {
-    StringBuilder line = new StringBuilder();
-    for(EncounterAction action : actions) {
-      if(line.length() > 0) {
-        line.append("  ");
-      }
-      line.append('[').append(keyOf(action)).append(']').append(label(action));
-    }
-    return line.toString();
-  }
-
-  private static char keyOf(EncounterAction action) {
-    for(Map.Entry<Character, EncounterAction> entry : KEYS.entrySet()) {
-      if(entry.getValue() == action) {
-        return Character.toUpperCase(entry.getKey());
-      }
-    }
-    return '?';
-  }
-
-  private static String label(EncounterAction action) {
-    switch(action) {
-      case Attack:
-        return Strings.EncounterActionAttack;
-      case Board:
-        return Strings.EncounterActionBoard;
-      case Bribe:
-        return Strings.EncounterActionBribe;
-      case Drink:
-        return Strings.EncounterActionDrink;
-      case Flee:
-        return Strings.EncounterActionFlee;
-      case Ignore:
-        return Strings.EncounterActionIgnore;
-      case Interrupt:
-        return Strings.EncounterActionInterrupt;
-      case Meet:
-        return Strings.EncounterActionMeet;
-      case Plunder:
-        return Strings.EncounterActionPlunder;
-      case Submit:
-        return Strings.EncounterActionSubmit;
-      case Surrender:
-        return Strings.EncounterActionSurrender;
-      case Trade:
-        return Strings.EncounterActionTrade;
-      case Yield:
-        return Strings.EncounterActionYield;
-      default:
-        return action.name();
-    }
   }
 
   private static void addWrapped(List<String> lines, String text) {

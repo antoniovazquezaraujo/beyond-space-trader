@@ -46,7 +46,6 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   private final KeyHandler keyHandler;
   private final List<String> log = new ArrayList<>();
-  private String actions = "";
   private EncounterViewModel model;
   private Starfield starfield;
 
@@ -60,11 +59,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     invalidate();
   }
 
-  /** The log lines (already wrapped) and the actions line with their keys. */
-  public void log(List<String> lines, String actionsLine) {
+  /** The log lines of the encounter, already wrapped. */
+  public void log(List<String> lines) {
     this.log.clear();
     this.log.addAll(lines);
-    this.actions = actionsLine;
     invalidate();
   }
 
@@ -166,7 +164,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     return String.valueOf(BAR_FULL).repeat(filled) + String.valueOf(BAR_EMPTY).repeat(BAR_CELLS - filled);
   }
 
-  /** The log of the encounter, with the actions and their keys on the last row. */
+  /** The log of the encounter, over the stars. */
   private void drawLog(TextGUIGraphics graphics, int width, int height, int logTop) {
     int row = logTop;
     for(String line : log) {
@@ -175,6 +173,5 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       }
       UiPalette.draw(graphics, 1, row++, line, UiPalette.TEXT, width - 1);
     }
-    UiPalette.keys(graphics, 1, height - 1, actions, width - 1);
   }
 }

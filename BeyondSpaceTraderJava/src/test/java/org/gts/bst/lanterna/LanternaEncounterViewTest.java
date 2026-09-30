@@ -67,25 +67,19 @@ class LanternaEncounterViewTest {
       assertTrue(text.contains("yyyyy"), "and the opponent too: " + text);
       assertFalse(text.contains("| o o >"), "the old sprite is gone: " + text);
       assertTrue(text.contains("The pirate attacks."), text);
-      assertTrue(text.contains("[A]Attack"), text);
-      assertTrue(text.contains("[F]Flee"), text);
-      assertTrue(text.contains("[S]Surrender"), text);
+      assertFalse(text.contains("[A]Attack"), "no buttons in the scene: " + text);
+      assertFalse(text.contains("[F]Flee"), "no buttons in the scene: " + text);
 
-      boolean keyYellow = false;
       boolean frameCyan = false;
       for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
         for(int x = 0; x < screen.getTerminalSize().getColumns(); x++) {
           TextCharacter character = screen.getBackCharacter(x, y);
-          if(character.getCharacter() == '[' && character.getForegroundColor() == TextColor.ANSI.YELLOW) {
-            keyYellow = true;
-          }
           if("┌┐└┘".indexOf(character.getCharacter()) >= 0
               && character.getForegroundColor() == TextColor.ANSI.CYAN) {
             frameCyan = true;
           }
         }
       }
-      assertTrue(keyYellow, "the action keys must be yellow:\n" + text);
       assertTrue(frameCyan, "the window frame must be cyan:\n" + text);
 
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('i', false, false));
