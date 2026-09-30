@@ -109,6 +109,7 @@ public final class LanternaEncounterView implements EncounterView {
     lines.add("");
     lines.add(actionsLine(model.actions()));
     content.lines(lines);
+    content.ships(model.youPicture(), 0, model.opponentPicture(), SHIP_COLUMN, 1);
   }
 
   @Override
@@ -176,13 +177,21 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   private static void addShips(List<String> lines, EncounterViewModel model) {
-    List<String> you = ShipSprites.of(model.youType());
-    List<String> opponent = ShipSprites.of(model.opponentType());
     lines.add(pad(model.youShip(), SHIP_COLUMN) + model.opponentShip());
-    for(int i = 0; i < Math.max(you.size(), opponent.size()); i++) {
-      String left = i < you.size() ? you.get(i) : "";
-      String right = i < opponent.size() ? opponent.get(i) : "";
-      lines.add(pad(left, SHIP_COLUMN) + right);
+    if(model.youPicture().width() > 0 || model.opponentPicture().width() > 0) {
+      // The pictures are painted over the lines (see TextScreenComponent.ships).
+      for(int i = 0; i < Math.max(model.youPicture().height(), model.opponentPicture().height()); i++) {
+        lines.add("");
+      }
+    } else {
+      // No art files: the old sprites, as a fallback.
+      List<String> you = ShipSprites.of(model.youType());
+      List<String> opponent = ShipSprites.of(model.opponentType());
+      for(int i = 0; i < Math.max(you.size(), opponent.size()); i++) {
+        String left = i < you.size() ? you.get(i) : "";
+        String right = i < opponent.size() ? opponent.get(i) : "";
+        lines.add(pad(left, SHIP_COLUMN) + right);
+      }
     }
     lines.add(pad(model.youHull() + "   " + model.youShields(), SHIP_COLUMN)
         + model.opponentHull() + "   " + model.opponentShields());

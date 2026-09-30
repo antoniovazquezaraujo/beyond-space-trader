@@ -33,6 +33,8 @@ public record EncounterViewModel(
     boolean youHit,
     boolean oppHit,
     int youDamage,
-    int oppDamage) {
+    int oppDamage,
+    ShipPicture youPicture,
+    ShipPicture opponentPicture) {
 }
 

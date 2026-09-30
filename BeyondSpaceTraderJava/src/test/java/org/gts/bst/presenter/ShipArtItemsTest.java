@@ -9,9 +9,11 @@
 package org.gts.bst.presenter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import org.gts.bst.events.EncounterType;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.ship.equip.ShieldType;
@@ -39,6 +41,14 @@ class ShipArtItemsTest {
     assertTrue(items.contains("Engine"), items.toString());
     assertTrue(items.contains("Fuel Tank"), items.toString());
     assertTrue(items.contains("Escape Pod"), items.toString());
+  }
+
+  @Test
+  void marksTheRoleOfTheOpponent() {
+    assertEquals("Role Pirate", ShipArtItems.role(EncounterType.PirateAttack));
+    assertEquals("Role Police", ShipArtItems.role(EncounterType.PoliceInspect));
+    assertEquals("Role Trader", ShipArtItems.role(EncounterType.TraderSell));
+    assertNull(ShipArtItems.role(EncounterType.CaptainAhab), "the famous captains have no role marker");
   }
 
   @Test

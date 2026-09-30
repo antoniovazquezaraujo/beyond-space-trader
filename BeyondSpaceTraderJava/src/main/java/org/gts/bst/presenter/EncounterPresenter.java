@@ -8,7 +8,9 @@
  */
 package org.gts.bst.presenter;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoBuyOp;
@@ -19,6 +21,7 @@ import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterDialogHost;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
+import org.gts.bst.view.ShipCatalog;
 import spacetrader.Game;
 import spacetrader.Trade;
 import spacetrader.Ship;
@@ -207,6 +210,12 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   private EncounterViewModel model(String encounterText, String actionText) {
+    List<String> opponentItems = new ArrayList<>(ShipArtItems.of(game.encounter().getOpponent()));
+    String role = ShipArtItems.role(game.encounter().getEncounterType());
+    if(role != null) {
+      opponentItems.add(role);
+    }
+    ShipCatalog catalog = ShipCatalog.shared();
     return new EncounterViewModel(actions(),
         game.encounter().getEncounterContinueAttacking() || game.encounter().getEncounterContinueFleeing(),
         game.encounter().EncounterImageIndex(),
@@ -215,7 +224,10 @@ public class EncounterPresenter implements EncounterDialogHost {
         encounterText, actionText,
         cmdrship.Type(), game.encounter().getOpponent().Type(),
         game.encounter().getEncounterOppHit(), game.encounter().getEncounterCmdrHit(),
-        game.encounter().getEncounterOppDamage(), game.encounter().getEncounterCmdrDamage());
+        game.encounter().getEncounterOppDamage(), game.encounter().getEncounterCmdrDamage(),
+        catalog.picture(cmdrship.Type(), ShipArtItems.of(cmdrship), cmdrship.CargoBays()),
+        catalog.picture(game.encounter().getOpponent().Type(), opponentItems,
+            game.encounter().getOpponent().CargoBays()));
   }
 
   private Set<EncounterAction> actions() {

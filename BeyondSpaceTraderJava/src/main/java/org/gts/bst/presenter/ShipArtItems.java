@@ -10,7 +10,9 @@ package org.gts.bst.presenter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.List;
 import org.gts.bst.ship.ShipType;
+import org.gts.bst.events.EncounterType;
 import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.Shield;
 import org.gts.bst.ship.equip.Weapon;
@@ -28,6 +30,9 @@ public final class ShipArtItems {
   private static final String ENGINE = "Engine";
   private static final String FUEL_TANK = "Fuel Tank";
   private static final String ESCAPE_POD = "Escape Pod";
+  private static final String ROLE_TRADER = "Role Trader";
+  private static final String ROLE_PIRATE = "Role Pirate";
+  private static final String ROLE_POLICE = "Role Police";
 
   private ShipArtItems() {
   }
@@ -55,6 +60,36 @@ public final class ShipArtItems {
       items.add(ESCAPE_POD);
     }
     return items;
+  }
+
+  /** The role marker of an encounter: pirate, police or trader; null for the rest. */
+  public static String role(EncounterType type) {
+    switch(type) {
+      case PirateAttack:
+      case PirateIgnore:
+      case PirateFlee:
+      case PirateSurrender:
+      case PirateDisabled:
+        return ROLE_PIRATE;
+      case PoliceAttack:
+      case PoliceIgnore:
+      case PoliceFlee:
+      case PoliceSurrender:
+      case PoliceDisabled:
+      case PoliceInspect:
+      case MarieCelestePolice:
+        return ROLE_POLICE;
+      case TraderAttack:
+      case TraderIgnore:
+      case TraderFlee:
+      case TraderSurrender:
+      case TraderDisabled:
+      case TraderBuy:
+      case TraderSell:
+        return ROLE_TRADER;
+      default:
+        return null;
+    }
   }
 
   /** The pieces of a ship nobody has equipped yet: its cockpit, engines and fuel tanks. */

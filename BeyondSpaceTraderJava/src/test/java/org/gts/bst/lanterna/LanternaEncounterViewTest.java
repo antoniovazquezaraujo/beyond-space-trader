@@ -9,6 +9,7 @@
 package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -20,12 +21,16 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
+import org.gts.bst.view.ShipArtFile;
+import org.gts.bst.view.ShipCatalog;
+import org.gts.bst.view.ShipPicture;
 import org.junit.jupiter.api.Test;
 
 
@@ -39,18 +44,26 @@ class LanternaEncounterViewTest {
       gui.setTheme(LanternaTheme.create());
       List<EncounterAction> executed = new ArrayList<>();
       LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
       view.render(new EncounterViewModel(
           EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
           false, 0, "Flea", "Hull at 100%", "Shields at 100%",
           "Pirate", "Hull at 100%", "Shields at 100%",
           "The pirate attacks.", "Choose an action.",
-          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0));
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent));
       gui.addWindow(view.asWindow());
       gui.updateScreen();
 
       String text = screenText(screen);
       assertTrue(text.contains("Flea"), text);
-      assertTrue(text.contains("| o o >"), text);
+      assertTrue(text.contains("xxxxx"), "the ship of the player is painted: " + text);
+      assertTrue(text.contains("yyyyy"), "and the opponent too: " + text);
+      assertFalse(text.contains("| o o >"), "the old sprite is gone: " + text);
       assertTrue(text.contains("The pirate attacks."), text);
       assertTrue(text.contains("[A]Attack"), text);
       assertTrue(text.contains("[F]Flee"), text);
