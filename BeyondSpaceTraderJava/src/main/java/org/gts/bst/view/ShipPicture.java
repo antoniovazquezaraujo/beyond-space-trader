@@ -53,6 +53,22 @@ public final class ShipPicture {
     return cells[y * width + x];
   }
 
+  /** The picture seen from the other side: the opponent in an encounter faces the player. */
+  public ShipPicture mirrored() {
+    ShipPicture mirrored = new ShipPicture(width, height);
+    for(int y = 0; y < height; y++) {
+      for(int x = 0; x < width; x++) {
+        Cell cell = at(x, y);
+        if(cell == null || cell.continuation()) {
+          continue;
+        }
+        int target = width - 1 - x - (ShipArtFile.isWide(cell.codePoint()) ? 1 : 0);
+        mirrored.put(Math.max(0, target), y, cell.codePoint(), cell.color(), cell.background(), cell.blink());
+      }
+    }
+    return mirrored;
+  }
+
   /** The cells of a row, left to right (empty cells are null). */
   public List<Cell> row(int y) {
     List<Cell> row = new ArrayList<>(width);

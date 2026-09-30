@@ -10,6 +10,7 @@ package org.gts.bst.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -72,6 +73,29 @@ class ShipRendererTest {
 
     assertEquals('x', picture.at(0, 0).codePoint(), "nothing to draw");
     assertEquals("white", picture.at(0, 0).color(), "the hull keeps its colour");
+  }
+
+  @Test
+  void mirrorsThePictureForTheOpponent() throws IOException {
+    ShipPicture picture = ShipRenderer.draw(design(), chassis("[uno]\ncolor=white\n  xx \n"), List.of(), List.of(), 0);
+
+    ShipPicture mirrored = picture.mirrored();
+
+    assertNull(mirrored.at(0, 0));
+    assertEquals('x', mirrored.at(1, 0).codePoint());
+    assertEquals('x', mirrored.at(2, 0).codePoint());
+    assertNull(mirrored.at(3, 0), "the empty right end goes to the left");
+  }
+
+  @Test
+  void keepsWideGlyphsWholeWhenMirrored() throws IOException {
+    ShipPicture picture = ShipRenderer.draw(design(), chassis("[uno]\ncolor=white\n漢x\n"), List.of(), List.of(), 0);
+
+    ShipPicture mirrored = picture.mirrored();
+
+    assertEquals('x', mirrored.at(0, 0).codePoint());
+    assertEquals('漢', mirrored.at(1, 0).codePoint());
+    assertTrue(mirrored.at(2, 0).continuation(), "the wide glyph keeps its right half");
   }
 
   private static ShipArtFile chassis(String art) throws IOException {

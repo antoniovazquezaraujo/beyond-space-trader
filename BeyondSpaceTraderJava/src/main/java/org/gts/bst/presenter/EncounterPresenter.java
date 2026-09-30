@@ -227,7 +227,7 @@ public class EncounterPresenter implements EncounterDialogHost {
         game.encounter().getEncounterOppDamage(), game.encounter().getEncounterCmdrDamage(),
         catalog.picture(cmdrship.Type(), ShipArtItems.of(cmdrship), cmdrship.CargoBays()),
         catalog.picture(game.encounter().getOpponent().Type(), opponentItems,
-            game.encounter().getOpponent().CargoBays()));
+            game.encounter().getOpponent().CargoBays()).mirrored());
   }
 
   private Set<EncounterAction> actions() {
