@@ -24,6 +24,7 @@ import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
 import org.junit.jupiter.api.Test;
 import spacetrader.Game;
+import spacetrader.Strings;
 import spacetrader.TestDialogService;
 import spacetrader.enums.AlertType;
 import spacetrader.enums.StarSystemId;
@@ -62,6 +63,42 @@ class EncounterPresenterTest {
     new EncounterPresenter(game, view).start();
 
     assertEquals(Set.of(EncounterAction.Attack, EncounterAction.Ignore, EncounterAction.Trade), view.model.actions());
+  }
+
+  @Test
+  void thePoliceSaysTheDemandOnItsShip() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.PoliceInspect);
+
+    new EncounterPresenter(game, view).start();
+
+    assertEquals(Strings.EncounterSaysPolice, view.model.speech());
+  }
+
+  @Test
+  void theTraderSaysWhatItWantsOnItsShip() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+
+    new EncounterPresenter(game, view).start();
+    assertEquals(Strings.EncounterSaysTraderSells, view.model.speech());
+
+    game.encounter().setEncounterType(EncounterType.TraderBuy);
+    new EncounterPresenter(game, view).start();
+    assertEquals(Strings.EncounterSaysTraderBuys, view.model.speech());
+  }
+
+  @Test
+  void aPirateSaysNothing() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+
+    new EncounterPresenter(game, view).start();
+
+    assertEquals("", view.model.speech());
   }
 
   @Test

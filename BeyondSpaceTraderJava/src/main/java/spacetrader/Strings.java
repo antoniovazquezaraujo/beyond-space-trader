@@ -432,6 +432,9 @@ public final class Strings {
   public static final String MainNewGameCancelled = text("MainNewGameCancelled");
   public static final String EncounterSaysOffer = text("EncounterSaysOffer");
   public static final String EncounterSaysWanted = text("EncounterSaysWanted");
+  public static final String EncounterSaysPolice = text("EncounterSaysPolice");
+  public static final String EncounterSaysTraderSells = text("EncounterSaysTraderSells");
+  public static final String EncounterSaysTraderBuys = text("EncounterSaysTraderBuys");
   public static final String MainSaveUnavailable = text("MainSaveUnavailable");
   public static final String SkillEngineer = text("SkillEngineer");
   public static final String SkillFighter = text("SkillFighter");

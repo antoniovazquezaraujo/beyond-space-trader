@@ -261,10 +261,13 @@ public class EncounterPresenter implements EncounterDialogHost {
   private String speech() {
     String type = game.encounter().getEncounterType().name();
     if(type.equals("PoliceInspect")) {
-      return Strings.EncounterTextPoliceInspection;
+      return Strings.EncounterSaysPolice;
     }
-    if(type.startsWith("Trader")) {
-      return Strings.EncounterTextTrader;
+    if(type.equals("TraderSell")) {
+      return Strings.EncounterSaysTraderSells;
+    }
+    if(type.equals("TraderBuy")) {
+      return Strings.EncounterSaysTraderBuys;
     }
     return "";
   }

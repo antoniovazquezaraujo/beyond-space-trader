@@ -441,6 +441,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** What the other ship is saying now (an offer of the trader), under it. */
   public void say(String text) {
     said = text == null ? "" : text;
+    dealt = false;
     invalidate();
   }
 

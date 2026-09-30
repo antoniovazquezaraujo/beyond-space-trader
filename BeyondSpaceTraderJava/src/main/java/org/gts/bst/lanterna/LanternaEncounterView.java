@@ -228,10 +228,16 @@ public final class LanternaEncounterView implements EncounterView {
     cargoHost.show(true);
   }
 
+  /** The item name, in lowercase, to fit in the sentence the other ship says. */
+  private static String inSpeech(String item) {
+    return item == null || item.isEmpty() ? item
+        : Character.toLowerCase(item.charAt(0)) + item.substring(1);
+  }
+
   @Override
   public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
-    content.say(Functions.StringVars(Strings.EncounterSaysOffer, item, Functions.FormatMoney(offer.unitPrice())));
+    content.say(Functions.StringVars(Strings.EncounterSaysOffer, inSpeech(item), Functions.FormatMoney(offer.unitPrice())));
     String title = Functions.StringVars(Strings.DialogCargoBuyTitle, item) + "  "
         + Functions.FormatMoney(offer.unitPrice());
     return LanternaDialogs.askAmountAtBottom(gui, title,
@@ -241,7 +247,7 @@ public final class LanternaEncounterView implements EncounterView {
   @Override
   public Integer askCargoSellQuantity(CargoSellOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
-    content.say(Functions.StringVars(Strings.EncounterSaysWanted, item, Functions.FormatMoney(offer.price())));
+    content.say(Functions.StringVars(Strings.EncounterSaysWanted, inSpeech(item), Functions.FormatMoney(offer.price())));
     String title = Functions.StringVars(Strings.DialogCargoSellTitle, item) + "  "
         + Functions.FormatMoney(offer.price());
     return LanternaDialogs.askAmountAtBottom(gui, title,
