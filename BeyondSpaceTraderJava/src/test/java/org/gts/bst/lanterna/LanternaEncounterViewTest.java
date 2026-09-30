@@ -109,6 +109,10 @@ class LanternaEncounterViewTest {
       executed.clear();
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
       assertTrue(executed.isEmpty(), "the up arrow only moves the ship");
+
+      executed.clear();
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(EncounterAction.Surrender), executed, "the intro key gives up");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -153,7 +157,7 @@ class LanternaEncounterViewTest {
       content.move(-1, 0);
       gui.updateScreen();
 
-      assertEquals(before + 1, columnOf(screen, 'x'), "the drawing is mirrored (one cell right and one back)");
+      assertEquals(before + 2, columnOf(screen, 'x'), "the drawing is mirrored in place");
     } finally {
       screen.stopScreen();
       screen.close();

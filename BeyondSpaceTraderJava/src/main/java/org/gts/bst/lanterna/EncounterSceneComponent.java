@@ -84,6 +84,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int opponentRow;
   private int opponentColumn;
   private boolean youTurned;
+  private int rowTarget = Integer.MIN_VALUE;
+  private int columnTarget = Integer.MIN_VALUE;
+  private boolean exiting;
+  private Runnable onExit;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -123,33 +127,32 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   }
 
   /**
-   * Moves the player ship: up and down to look for a gap, right to go through it
-   * and left to withdraw. Returns true when the ship has just left the screen to
-   * the right (it has gone past the other ship) or to the left (it has fled).
+   * One press, the whole manoeuvre: the ship glides on its own to the top, to the
+   * bottom or out of the screen (advancing or withdrawing). A wall stops it.
    */
-  public boolean move(int dx, int dy) {
+  public void move(int dx, int dy) {
     if(model == null || screenWidth <= 0) {
-      return false;
+      return;
     }
-    if(dy != 0) {
-      int maxRow = Math.max(0, areaBottom - areaTop - youHeight);
-      int row = Math.max(0, Math.min(maxRow, youRow + dy));
-      if(row != youRow && canMove(0, row - youRow)) {
-        youRow = row;
-      }
+    if(dy < 0) {
+      rowTarget = 0;
+    } else if(dy > 0) {
+      rowTarget = Math.max(0, areaBottom - areaTop - youHeight);
     }
-    if(dx != 0) {
+    if(dx < 0) {
       // Withdrawing turns the ship around; advancing faces it to the other one again.
-      youTurned = dx < 0;
-      if(canMove(dx, 0)) {
-        youColumn += dx;
-      } else {
-        // Bump: the other ship is in the way.
-        flashes.add(new Flash(opponentX(), yourMiddleY(), "*", TextColor.ANSI.WHITE, 2, false));
-      }
+      youTurned = true;
+      columnTarget = -youLeft - youWidth - 1;
+    } else if(dx > 0) {
+      youTurned = false;
+      columnTarget = screenWidth - youLeft + 1;
     }
     invalidate();
-    return youLeft + youColumn > screenWidth || youLeft + youColumn + youWidth < 0;
+  }
+
+  /** Tells the view when the ship has left the screen (it went past or fled). */
+  public void onExit(Runnable exit) {
+    this.onExit = exit;
   }
 
   /** Puts both ships back in their places (a failed flee, or the start of the fight). */
@@ -158,6 +161,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     opponentColumn = 0;
     opponentRow = 0;
     youTurned = false;
+    exiting = false;
+    rowTarget = Integer.MIN_VALUE;
+    columnTarget = Integer.MIN_VALUE;
     invalidate();
   }
 
@@ -276,8 +282,47 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         flashes.set(i, flash.aged());
       }
     }
+    glidePlayer();
     moveOpponent();
     invalidate();
+  }
+
+  /** The player ship glides to its target a few cells per frame; a wall stops it. */
+  private void glidePlayer() {
+    int speed = 3;
+    for(int i = 0; i < speed && rowTarget != Integer.MIN_VALUE && youRow != rowTarget; i++) {
+      int step = rowTarget > youRow ? 1 : -1;
+      if(!canMove(0, step)) {
+        rowTarget = Integer.MIN_VALUE;
+        bump();
+        break;
+      }
+      youRow += step;
+    }
+    for(int i = 0; i < speed && columnTarget != Integer.MIN_VALUE && youColumn != columnTarget; i++) {
+      int step = columnTarget > youColumn ? 1 : -1;
+      if(!canMove(step, 0)) {
+        columnTarget = Integer.MIN_VALUE;
+        bump();
+        break;
+      }
+      youColumn += step;
+    }
+    if(rowTarget != Integer.MIN_VALUE && youRow == rowTarget) {
+      rowTarget = Integer.MIN_VALUE;
+    }
+    boolean out = yourX() > screenWidth || yourX() + youWidth < 0;
+    if(out && !exiting) {
+      exiting = true;
+      if(onExit != null) {
+        onExit.run();
+      }
+    }
+  }
+
+  /** A knock against the other ship, so the wall reads as a wall. */
+  private void bump() {
+    flashes.add(new Flash(opponentX(), yourMiddleY(), "*", TextColor.ANSI.WHITE, 2, false));
   }
 
   @Override

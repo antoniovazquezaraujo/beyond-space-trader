@@ -89,6 +89,10 @@ public final class LanternaEncounterView implements EncounterView {
     this.cargoHost = cargoHost;
     this.content = new EncounterSceneComponent(this::handleKey);
     window.setHints(Set.of(Window.Hint.MODAL, Window.Hint.CENTERED, Window.Hint.FIT_TERMINAL_WINDOW));
+    content.onExit(() -> {
+      content.resetPosition();
+      commands.execute(EncounterAction.Flee);
+    });
     content.setPreferredSize(new TerminalSize(120, 30));
     window.setComponent(content);
     window.setFocusedInteractable(content);
@@ -202,9 +206,13 @@ public final class LanternaEncounterView implements EncounterView {
         content.move(0, 1);
         return true;
       case ArrowLeft:
-        return sideways(-1);
+        content.move(-1, 0);
+        return true;
       case ArrowRight:
-        return sideways(1);
+        content.move(1, 0);
+        return true;
+      case Enter:
+        return giveUp();
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'k') {
@@ -216,10 +224,12 @@ public final class LanternaEncounterView implements EncounterView {
           return true;
         }
         if(character == 'h') {
-          return sideways(-1);
+          content.move(-1, 0);
+          return true;
         }
         if(character == 'l') {
-          return sideways(1);
+          content.move(1, 0);
+          return true;
         }
         if(character == ' ') {
           commands.execute(EncounterAction.Attack);
@@ -236,11 +246,14 @@ public final class LanternaEncounterView implements EncounterView {
     }
   }
 
-  /** Moving sideways: leaving the screen is going past the ship (or fleeing). */
-  private boolean sideways(int dx) {
-    if(content.move(dx, 0)) {
-      content.resetPosition();
-      commands.execute(EncounterAction.Flee);
+  /** The intro key: give up with whichever surrender the encounter offers. */
+  private boolean giveUp() {
+    for(EncounterAction give : java.util.List.of(EncounterAction.Surrender, EncounterAction.Submit,
+        EncounterAction.Yield)) {
+      if(model.actions().contains(give)) {
+        commands.execute(give);
+        return true;
+      }
     }
     return true;
   }
