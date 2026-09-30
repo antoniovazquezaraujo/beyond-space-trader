@@ -334,6 +334,48 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theTradeLeavesTheSceneWaitingForThePlayer() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Trade),
+          false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Trader", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The trader offers to deal.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 0, ""));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(EncounterAction.Trade), executed, "the intro key deals");
+
+      // The presenter closes the encounter when the trade is over: the scene waits.
+      view.close();
+      gui.updateScreen();
+      assertTrue(gui.getWindows().contains(view.asWindow()), "the scene waits for the player");
+
+      // And the player leaves with the intro key when they are ready.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertFalse(gui.getWindows().contains(view.asWindow()), "the player leaves with intro");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theCloseWaitsForADialogOfTheEncounter() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

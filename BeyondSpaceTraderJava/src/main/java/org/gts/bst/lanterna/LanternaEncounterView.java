@@ -180,6 +180,10 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   private void closeNow() {
+    if(awaitingLeave) {
+      // The scene is waiting for the player: no pending close takes it away.
+      return;
+    }
     // Never close under a dialog of the encounter (a trade, a question): closing the
     // owner leaves the main screen with no way in. Wait for the dialog to go first.
     if(gui.getActiveWindow() != null && gui.getActiveWindow() != window) {
@@ -338,7 +342,7 @@ public final class LanternaEncounterView implements EncounterView {
     if(action == null || !model.actions().contains(action)) {
       return false;
     }
-    commands.execute(action);
+    execute(action);
     return true;
   }
 
@@ -393,11 +397,23 @@ public final class LanternaEncounterView implements EncounterView {
       if(model.actions().contains(action)) {
         // The speech has been dealt with: it goes away and the scene plays.
         content.deal();
-        commands.execute(action);
+        execute(action);
         return true;
       }
     }
     return true;
+  }
+
+  /**
+   * Runs an action of the encounter. The trade ends with the scene waiting for the
+   * player (they leave with intro, escape or flying the ship away), so the window
+   * must not go when the presenter closes it after the deal.
+   */
+  private void execute(EncounterAction action) {
+    if(action == EncounterAction.Trade) {
+      awaitingLeave = true;
+    }
+    commands.execute(action);
   }
 
   private static void addWrapped(List<String> lines, String text) {
