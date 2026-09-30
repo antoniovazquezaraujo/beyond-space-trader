@@ -73,7 +73,12 @@ class EncounterPresenterTest {
 
     new EncounterPresenter(game, view).start();
 
-    assertEquals(Strings.EncounterSaysPolice, view.model.speech());
+    assertEquals(Strings.EncounterSaysPolice, view.model.speech(), "the demand of the inspection");
+
+    game.encounter().setEncounterType(EncounterType.PoliceSurrender);
+    new EncounterPresenter(game, view).start();
+
+    assertEquals(Strings.EncounterSaysPoliceArrest, view.model.speech(), "the demand of the surrender");
   }
 
   @Test

@@ -262,6 +262,9 @@ public class EncounterPresenter implements EncounterDialogHost {
     if(type.equals("PoliceInspect")) {
       return Strings.EncounterSaysPolice;
     }
+    if(type.equals("PoliceSurrender")) {
+      return Strings.EncounterSaysPoliceArrest;
+    }
     if(type.equals("TraderSell")) {
       return Strings.EncounterSaysTraderSells;
     }
