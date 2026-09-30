@@ -232,7 +232,10 @@ public final class LanternaEncounterView implements EncounterView {
           return true;
         }
         if(character == ' ') {
-          commands.execute(EncounterAction.Attack);
+          // The other ship has to answer first: no two of our shots in one exchange.
+          if(!content.responding()) {
+            commands.execute(EncounterAction.Attack);
+          }
           return true;
         }
         EncounterAction action = KEYS.get(character);

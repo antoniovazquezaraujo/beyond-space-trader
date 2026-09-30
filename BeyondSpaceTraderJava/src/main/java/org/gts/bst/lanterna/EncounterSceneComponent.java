@@ -56,6 +56,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int NUMBER_FRAMES = 5;
   private static final int BURST_FRAMES = 8;
   private static final int BEAM_FRAMES = 3;
+  /** Frames between our beam and the reply of the other ship: the exchange is a turn. */
+  private static final int RESPONSE_FRAMES = 5;
   /** Cells the ship glides on every frame: the dashes go at double speed. */
   private static final int GLIDE_SPEED = 3;
 
@@ -90,6 +92,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int columnTarget = Integer.MIN_VALUE;
   private boolean exiting;
   private Runnable onExit;
+  private int responseFrames;
+  private boolean pendingOppHit;
+  private int pendingOppDamage;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -284,6 +289,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         flashes.set(i, flash.aged());
       }
     }
+    if(responseFrames > 0 && --responseFrames == 0) {
+      playTheReply();
+    }
     glidePlayer();
     moveOpponent();
     invalidate();
@@ -376,18 +384,32 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         impact(opponentX(), targetY, after.youDamage(), true);
       }
     }
-    // Their beam: the same, the other way around.
+    // Their beam is kept for a short lapse, so the two shots do not get mixed up.
     if(!down && !after.opponentDisabled()) {
-      int nose = opponentX();
-      int row = opponentMiddleY();
-      int targetX = yourX() + youWidth / 2;
-      int targetY = yourMiddleY();
-      int toX = after.oppHit() ? targetX : 0;
-      int toY = after.oppHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
-      beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.CYAN_BRIGHT, BEAM_FRAMES));
-      if(after.oppHit()) {
-        impact(yourX(), targetY, after.oppDamage(), false);
-      }
+      pendingOppHit = after.oppHit();
+      pendingOppDamage = after.oppDamage();
+      responseFrames = RESPONSE_FRAMES;
+    } else {
+      responseFrames = 0;
+    }
+  }
+
+  /** True while the other ship is about to answer: attacking again has to wait. */
+  public boolean responding() {
+    return responseFrames > 0;
+  }
+
+  /** The reply of the other ship, played a moment after our shot. */
+  private void playTheReply() {
+    int nose = opponentX();
+    int row = opponentMiddleY();
+    int targetX = yourX() + youWidth / 2;
+    int targetY = yourMiddleY();
+    int toX = pendingOppHit ? targetX : 0;
+    int toY = pendingOppHit ? targetY : aimedY(nose, row, targetX, targetY, toX);
+    beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.CYAN_BRIGHT, BEAM_FRAMES));
+    if(pendingOppHit) {
+      impact(yourX(), targetY, pendingOppDamage, false);
     }
   }
 

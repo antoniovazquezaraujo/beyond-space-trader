@@ -113,6 +113,24 @@ class LanternaEncounterViewTest {
       executed.clear();
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       assertEquals(List.of(EncounterAction.Surrender), executed, "the intro key gives up");
+
+      // A new round leaves the other ship about to answer: our shot has to wait.
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      content.resetPosition();
+      view.render(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
+          false, 1, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The pirate attacks.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 1));
+      executed.clear();
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      assertTrue(executed.isEmpty(), "while the other ship is answering, our shot waits");
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      assertEquals(List.of(EncounterAction.Attack), executed, "and after the reply it fires again");
     } finally {
       screen.stopScreen();
       screen.close();
