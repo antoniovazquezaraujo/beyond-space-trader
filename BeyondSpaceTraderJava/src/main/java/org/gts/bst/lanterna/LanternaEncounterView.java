@@ -166,6 +166,18 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   private void closeNow() {
+    // Never close under a dialog of the encounter (a trade, a question): closing the
+    // owner leaves the main screen with no way in. Wait for the dialog to go first.
+    if(gui.getActiveWindow() != null && gui.getActiveWindow() != window) {
+      java.util.Timer timer = new java.util.Timer("encounter-close", true);
+      timer.schedule(new java.util.TimerTask() {
+        @Override
+        public void run() {
+          gui.getGUIThread().invokeLater(LanternaEncounterView.this::closeNow);
+        }
+      }, CLOSE_MILLIS);
+      return;
+    }
     if(stars != null) {
       stars.cancel();
       stars = null;

@@ -237,6 +237,30 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theCloseWaitsForADialogOfTheEncounter() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      gui.addWindow(view.asWindow());
+      BasicWindow dialog = new BasicWindow("Question");
+      gui.addWindow(dialog);
+      gui.updateScreen();
+
+      view.close();
+      gui.updateScreen();
+
+      assertTrue(gui.getWindows().contains(view.asWindow()),
+          "the encounter does not close under a dialog of its own");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theStarsOfTheBackgroundMove() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
