@@ -1274,7 +1274,7 @@ public final class LanternaMainWindow
       case 'g':
         jump();
         return true;
-      case 'w':
+      case ' ':
         warp();
         return true;
       case 'r':

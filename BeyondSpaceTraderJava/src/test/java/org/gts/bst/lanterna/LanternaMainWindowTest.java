@@ -1081,13 +1081,13 @@ class LanternaMainWindowTest {
       holder[0].SelectedSystemId(target.Id());
       presenter.updateAll();
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("[W] warp"), screenText(screen));
+      assertTrue(screenText(screen).contains("[Space] warp"), screenText(screen));
 
       int fuel = holder[0].Commander().getShip().getFuel();
       boolean wormhole = Functions.WormholeExists(current, target);
       int distance = Functions.Distance(current, target);
 
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('w', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
       gui.updateScreen();
 
       assertSame(target, holder[0].Commander().CurrentSystem(), screenText(screen));
@@ -1126,13 +1126,13 @@ class LanternaMainWindowTest {
       }
       assertNotNull(far, "the galaxy must have a system out of range");
       holder[0].SelectedSystemId(far.Id());
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('w', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertSame(current, holder[0].Commander().CurrentSystem());
       assertTrue(screenText(screen).contains(Strings.MainWarpOutOfRange), screenText(screen));
 
       holder[0].SelectedSystemId(current.Id());
-      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('w', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertSame(current, holder[0].Commander().CurrentSystem());
       assertTrue(screenText(screen).contains(Strings.MainWarpCurrent), screenText(screen));
