@@ -93,7 +93,8 @@ public final class ShipCatalog {
         }
       }
       for(ShipArtFile hull : chassis) {
-        if(ShipSites.sizeFits(hull.size(), size)) {
+        // A chassis without a size is never the fallback of a type: it is still a draft.
+        if(!hull.size().isEmpty() && ShipSites.sizeFits(hull.size(), size)) {
           return hull;
         }
       }

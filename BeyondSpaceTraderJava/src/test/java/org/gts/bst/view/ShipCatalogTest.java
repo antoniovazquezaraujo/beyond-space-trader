@@ -46,6 +46,17 @@ class ShipCatalogTest {
   }
 
   @Test
+  void theFallbackIgnoresAChassisWithoutSize() throws IOException {
+    List<ShipArtFile> chassis = ShipArtFile.parse(new StringReader(
+        "[borrador]\nxxx\n[pequeno]\nsize=small\nxxxxx\n"));
+    ShipCatalog catalog = new ShipCatalog(List.of(), chassis, List.of());
+
+    ShipPicture picture = catalog.picture(ShipType.Firefly, List.of(), 0);
+
+    assertEquals(5, picture.width(), "the chassis with the size of the type");
+  }
+
+  @Test
   void withoutArtThePictureIsEmpty() {
     ShipPicture picture = new ShipCatalog(List.of(), List.of(), List.of())
         .picture(ShipType.Firefly, List.of(), 0);
