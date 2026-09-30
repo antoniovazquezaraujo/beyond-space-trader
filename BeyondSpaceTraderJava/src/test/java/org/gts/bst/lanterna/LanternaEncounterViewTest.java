@@ -472,6 +472,95 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void myShotsAreGreenTheirsRedAndTheHitsBurst() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // My shot hits: a green beam and the hull of the other ship bursting.
+      content.model(fight(you, opponent, 1, true, true, false, 5, 0));
+      gui.updateScreen();
+      assertTrue(hasColor(screen, TextColor.ANSI.GREEN_BRIGHT), "my shot is green");
+      int pieces = debrisGlyphs(screen);
+      assertTrue(pieces >= 2, "the hit bursts into pieces (" + pieces + ")");
+
+      // Their reply lands on me: the beam is red.
+      content.model(fight(you, opponent, 2, false, false, true, 0, 3));
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int red = countColor(screen, TextColor.ANSI.RED_BRIGHT);
+      assertTrue(red >= 10, "their shot is red (" + red + " cells)");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static EncounterViewModel fight(ShipPicture you, ShipPicture opponent, int round, boolean youAttacked,
+      boolean youHit, boolean oppHit, int youDamage, int oppDamage) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
+        false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+        "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+        "The pirate attacks.", "Choose an action.",
+        ShipType.Flea, ShipType.Scorpion, youHit, oppHit, youDamage, oppDamage, you, opponent, false, youAttacked,
+        false, 5, false, round, "");
+  }
+
+  /** True when a colour is on the screen. */
+  private static boolean hasColor(Screen screen, TextColor color) {
+    return countColor(screen, color) > 0;
+  }
+
+  private static int countColor(Screen screen, TextColor color) {
+    int count = 0;
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        TextCharacter character = screen.getBackCharacter(column, row);
+        if(character.getCharacter() != ' ' && character.getForegroundColor() == color) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  /** The pieces of a burst on the screen. */
+  private static int debrisGlyphs(Screen screen) {
+    int count = 0;
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        if("*\u00b7+".indexOf(screen.getBackCharacter(column, row).getCharacter()) >= 0) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  @Test
   void aKeyDuringTheEntryStopsItAndAnswers() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

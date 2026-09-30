@@ -52,6 +52,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final char SPARK = '✶';
   private static final char BURST = '✱';
   private static final char[] SMOKE = {'░', '▒', '▓'};
+  private static final int HIT_FRAMES = 6;
+  private static final int DEBRIS_FRAMES = 5;
+  private static final char[] DEBRIS = {'*', '\u00b7', '+', 'x', '/', '\\', '|', '-'};
+  private static final int[][] SPREAD = {{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}};
   private static final int SPARK_FRAMES = 3;
   private static final int NUMBER_FRAMES = 5;
   private static final int BURST_FRAMES = 8;
@@ -80,6 +84,13 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
   }
 
+  /** A piece of a hit ship flying away. */
+  private record Debris(int x, int y, int dx, int dy, char glyph, TextColor color, int frames) {
+    Debris aged() {
+      return new Debris(x + dx, y + dy, dx, dy, glyph, color, frames - 1);
+    }
+  }
+
   /** A flash of the fight: sparks, bursts, a damage number or a puff of smoke. */
   private record Flash(int x, int y, String text, TextColor color, int frames, boolean rises) {
     Flash aged() {
@@ -92,6 +103,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private final List<String> alerts = new ArrayList<>();
   private final List<Beam> beams = new ArrayList<>();
   private final List<Flash> flashes = new ArrayList<>();
+  private final List<Debris> debris = new ArrayList<>();
   private EncounterViewModel model;
   private Starfield starfield;
   private int frame;
@@ -117,6 +129,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private String said = "";
   private boolean dealt;
   private int enterFrames;
+  private int hitFrames;
+  private boolean hitShipIsOpponent;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -350,6 +364,17 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       } else {
         flashes.set(i, flash.aged());
       }
+    }
+    for(int i = debris.size() - 1; i >= 0; i--) {
+      Debris piece = debris.get(i);
+      if(piece.frames() <= 1) {
+        debris.remove(i);
+      } else {
+        debris.set(i, piece.aged());
+      }
+    }
+    if(hitFrames > 0) {
+      hitFrames--;
     }
     if(responseFrames > 0 && --responseFrames == 0) {
       playTheReply();
@@ -594,7 +619,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     int targetY = yourMiddleY();
     int toX = pendingOppHit ? targetX : 0;
     int toY = pendingOppHit ? targetY : aimedY(nose, row, targetX, targetY, toX);
-    beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.CYAN_BRIGHT, BEAM_FRAMES));
+    beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
     if(pendingOppHit) {
       impact(yourX(), targetY, pendingOppDamage, false);
     }
@@ -608,13 +633,32 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     return (int)Math.round(y1 + (double)(y2 - y1) * (x - x1) / (x2 - x1));
   }
 
-  /** A beam hit: sparks (or a shield flash) and the damage number. */
+  /**
+   * A beam hit. The shield takes it with a flash of sparks; the hull takes it with a
+   * crack: the ship breaks up for a moment and the pieces fly out in every direction.
+   */
   private void impact(int shipLeft, int row, int damage, boolean onOpponent) {
     boolean shield = onOpponent ? model.opponentShield().value() > 0 : model.youShield().value() > 0;
     int x = shipLeft + (onOpponent ? opponentWidth : youWidth) / 2;
-    TextColor color = shield ? TextColor.ANSI.CYAN_BRIGHT : TextColor.ANSI.YELLOW_BRIGHT;
+    if(shield) {
+      for(int i = 0; i < 3; i++) {
+        flashes.add(new Flash(x - 1 + i, row + i % 2, String.valueOf(SPARK), TextColor.ANSI.CYAN_BRIGHT, SPARK_FRAMES, false));
+      }
+      if(damage > 0) {
+        flashes.add(new Flash(x, row - 2, "-" + damage, TextColor.ANSI.RED_BRIGHT, NUMBER_FRAMES, true));
+      }
+      return;
+    }
+    hitFrames = HIT_FRAMES;
+    hitShipIsOpponent = onOpponent;
+    TextColor burst = onOpponent ? TextColor.ANSI.GREEN_BRIGHT : TextColor.ANSI.RED_BRIGHT;
+    for(int i = 0; i < SPREAD.length; i++) {
+      int[] direction = SPREAD[i];
+      debris.add(new Debris(x, row, direction[0], direction[1], DEBRIS[i % DEBRIS.length],
+          i % 3 == 0 ? TextColor.ANSI.WHITE : burst, DEBRIS_FRAMES + i % 3));
+    }
     for(int i = 0; i < 3; i++) {
-      flashes.add(new Flash(x - 1 + i, row + i % 2, String.valueOf(shield ? SPARK : BURST), color, SPARK_FRAMES, false));
+      flashes.add(new Flash(x - 1 + i, row + i % 2, String.valueOf(BURST), TextColor.ANSI.YELLOW_BRIGHT, SPARK_FRAMES, false));
     }
     if(damage > 0) {
       flashes.add(new Flash(x, row - 2, "-" + damage, TextColor.ANSI.RED_BRIGHT, NUMBER_FRAMES, true));
@@ -648,9 +692,17 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     areaTop = BARS_ROWS;
     areaBottom = Math.max(BARS_ROWS + 1, logTop - 1);
     boolean down = model.opponentHull().value() <= 0;
-    EditorText.picture(graphics, yourX(), yourY(), you.width(), height, you);
+    if(hitFrames > 0 && !hitShipIsOpponent) {
+      crackedPicture(graphics, yourX(), yourY(), height, you);
+    } else {
+      EditorText.picture(graphics, yourX(), yourY(), you.width(), height, you);
+    }
     if(!down) {
-      EditorText.picture(graphics, opponentX(), opponentY(), opponentWidth, height, opponent);
+      if(hitFrames > 0 && hitShipIsOpponent) {
+        crackedPicture(graphics, opponentX(), opponentY(), height, opponent);
+      } else {
+        EditorText.picture(graphics, opponentX(), opponentY(), opponentWidth, height, opponent);
+      }
       if(model.opponentDisabled()) {
         drawSmoke(graphics);
       }
@@ -789,10 +841,37 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     return lines;
   }
 
+  /** The hit ship for a moment: some of its cells turn into flying debris. */
+  private void crackedPicture(TextGUIGraphics graphics, int left, int row, int maxRow, ShipPicture picture) {
+    for(int y = 0; y < picture.height() && row + y < maxRow; y++) {
+      for(int x = 0; x < picture.width(); x++) {
+        ShipPicture.Cell cell = picture.at(x, y);
+        if(cell == null || cell.continuation()) {
+          continue;
+        }
+        if((x * 7 + y * 5 + frame) % 4 == 0) {
+          graphics.setForegroundColor((x + y + frame) % 2 == 0 ? TextColor.ANSI.WHITE : TextColor.ANSI.RED_BRIGHT);
+          graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+          graphics.setCharacter(left + x, row + y, DEBRIS[(x + y + frame) % DEBRIS.length]);
+        } else {
+          EditorText.glyph(graphics, left + x, row + y, cell);
+        }
+      }
+    }
+  }
+
   /** The shots of the round and the flashes. */
   private void drawFight(TextGUIGraphics graphics) {
     for(Beam beam : beams) {
       drawBeam(graphics, beam);
+    }
+    for(Debris piece : debris) {
+      if(piece.x() >= 0 && piece.y() >= 0 && piece.x() < graphics.getSize().getColumns()
+          && piece.y() < graphics.getSize().getRows()) {
+        graphics.setForegroundColor(piece.color());
+        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+        graphics.setCharacter(piece.x(), piece.y(), piece.glyph());
+      }
     }
     for(Flash flash : flashes) {
       graphics.setForegroundColor(flash.color());
