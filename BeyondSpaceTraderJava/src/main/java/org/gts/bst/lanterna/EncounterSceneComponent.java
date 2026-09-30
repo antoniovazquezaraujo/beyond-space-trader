@@ -62,6 +62,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int CATWALK_FRAMES = 18;
   private static final int APPROACH_FRAMES = 8;
   private static final char[] SPARKLE = {'\\', '|', '/'};
+  private static final int ENTER_FRAMES = 14;
   private static final char HORIZONTAL = '─';
   private static final char VERTICAL = '│';
   private static final char JOINT = '┼';
@@ -110,6 +111,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private boolean leaving;
   private String said = "";
   private boolean dealt;
+  private int enterFrames;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -130,6 +132,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     EncounterViewModel before = this.model;
     this.model = model;
     dealt = false;
+    if(before == null) {
+      // The encounter opens with the empty sky: both ships come in from the edges.
+      enterFrames = ENTER_FRAMES;
+    }
     if(before != null && before.round() != model.round() && screenWidth > 0) {
       play(before, model);
     }
@@ -154,7 +160,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
    * bottom or out of the screen (advancing or withdrawing). A wall stops it.
    */
   public void move(int dx, int dy) {
-    if(model == null || screenWidth <= 0) {
+    if(model == null || screenWidth <= 0 || enterFrames > 0) {
       return;
     }
     if(dy < 0) {
@@ -193,7 +199,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** The drawing of the player ship, turned around when it is withdrawing. */
   private ShipPicture yourPicture() {
     ShipPicture picture = model.youPicture().cropped();
-    return youTurned ? picture.mirrored() : picture;
+    // Withdrawing, or fleeing while the other ship follows, turns the ship around.
+    return youTurned || model.commanderFleeing() ? picture.mirrored() : picture;
   }
 
   /** True when the player ship, moving by (dx, dy), does not run into the other drawing. */
@@ -261,7 +268,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   }
 
   private int yourX() {
-    return youLeft + youColumn;
+    return youLeft + youColumn + enteringOffset(true);
   }
 
   private int yourY() {
@@ -269,7 +276,16 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   }
 
   private int opponentX() {
-    return opponentLeft + opponentColumn;
+    return opponentLeft + opponentColumn + enteringOffset(false);
+  }
+
+  /** While the ships are coming in, they are still beyond their edge. */
+  private int enteringOffset(boolean yours) {
+    if(enterFrames <= 0 || screenWidth <= 0 || (yours ? youWidth : opponentWidth) <= 0) {
+      return 0;
+    }
+    int off = yours ? -(youLeft + youWidth + 2) : screenWidth - opponentLeft + 2;
+    return off * enterFrames / ENTER_FRAMES;
   }
 
   private int opponentY() {
@@ -289,6 +305,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     frame++;
     if(starfield != null) {
       starfield.advance();
+    }
+    if(enterFrames > 0 && screenWidth > 0) {
+      enterFrames--;
+      invalidate();
+      return;
     }
     for(int i = beams.size() - 1; i >= 0; i--) {
       Beam beam = beams.get(i);
@@ -527,7 +548,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     areaTop = BARS_ROWS;
     areaBottom = Math.max(BARS_ROWS + 1, logTop - 1);
     boolean down = model.opponentHull().value() <= 0;
-    EditorText.picture(graphics, youLeft + youColumn, BARS_ROWS + youRow, you.width(), height, you);
+    EditorText.picture(graphics, yourX(), yourY(), you.width(), height, you);
     if(!down) {
       EditorText.picture(graphics, opponentX(), opponentY(), opponentWidth, height, opponent);
       if(model.opponentDisabled()) {

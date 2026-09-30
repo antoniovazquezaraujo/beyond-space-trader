@@ -62,10 +62,18 @@ class LanternaEncounterViewTest {
           "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
           "The pirate attacks.", "Choose an action.",
           ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false, false, 5, false, 0, ""));
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
       gui.addWindow(view.asWindow());
       gui.updateScreen();
 
       String text = screenText(screen);
+      assertFalse(text.contains("xxxxx"), "the encounter opens with the empty sky: " + text);
+      assertFalse(text.contains("yyyyy"), "and the other ship is still coming in: " + text);
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      text = screenText(screen);
       assertTrue(text.contains("Flea"), text);
       assertTrue(text.contains("casco ████████"), "the hull bar of the player: " + text);
       assertTrue(text.contains("casco ████░░░░"), "half hull for the opponent: " + text);
@@ -115,7 +123,6 @@ class LanternaEncounterViewTest {
       assertEquals(List.of(EncounterAction.Surrender), executed, "the intro key gives up");
 
       // A new round leaves the other ship about to answer: our shot has to wait.
-      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
       content.resetPosition();
       view.render(new EncounterViewModel(
           EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
@@ -182,6 +189,10 @@ class LanternaEncounterViewTest {
           "Choose an action.", ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false,
           false, 5, false, 0, ""));
       gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
       int before = columnOf(screen, 'x');
 
       content.move(-1, 0);
@@ -194,6 +205,23 @@ class LanternaEncounterViewTest {
       content.tick();
       gui.updateScreen();
       assertEquals(before + 6, columnOf(screen, 'x'), "the dash goes at double speed");
+
+      // A ship that flees with the other one behind also points away, even standing still.
+      content.resetPosition();
+      content.model(new EncounterViewModel(EnumSet.of(EncounterAction.Attack), false, 0, "Flea",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate attacks.",
+          "Choose an action.", ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false,
+          false, 5, false, 0, ""));
+      gui.updateScreen();
+      int facing = columnOf(screen, 'x');
+      content.model(new EncounterViewModel(EnumSet.of(EncounterAction.Attack), false, 0, "Flea",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate attacks.",
+          "Choose an action.", ShipType.Flea, ShipType.Scorpion, true, false, 5, 0, you, opponent, false, false,
+          false, 5, true, 0, ""));
+      gui.updateScreen();
+      assertEquals(facing + 2, columnOf(screen, 'x'), "fleeing, the ship faces away");
     } finally {
       screen.stopScreen();
       screen.close();
