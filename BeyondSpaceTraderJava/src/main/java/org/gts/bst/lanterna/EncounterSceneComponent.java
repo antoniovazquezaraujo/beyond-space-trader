@@ -58,6 +58,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int BEAM_FRAMES = 3;
   /** Frames between our beam and the reply of the other ship: the exchange is a turn. */
   private static final int RESPONSE_FRAMES = 5;
+  private static final int SCAN_FRAMES = 16;
+  private static final int CATWALK_FRAMES = 18;
+  private static final char WAVE = '·';
+  private static final char BRIDGE = '═';
+  private static final char BOX = '■';
   /** Cells the ship glides on every frame: the dashes go at double speed. */
   private static final int GLIDE_SPEED = 3;
 
@@ -95,6 +100,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int responseFrames;
   private boolean pendingOppHit;
   private int pendingOppDamage;
+  private int scanFrames;
+  private boolean catwalkPending;
+  private int catwalkFrames;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -292,6 +300,13 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(responseFrames > 0 && --responseFrames == 0) {
       playTheReply();
     }
+    if(scanFrames > 0 && --scanFrames == 0 && catwalkPending) {
+      catwalkPending = false;
+      catwalkFrames = CATWALK_FRAMES;
+    }
+    if(catwalkFrames > 0) {
+      catwalkFrames--;
+    }
     glidePlayer();
     moveOpponent();
     invalidate();
@@ -399,6 +414,24 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     return responseFrames > 0;
   }
 
+  /** The police scanner over our ship, and then the catwalk if they take cargo. */
+  public void inspection(boolean confiscated) {
+    scanFrames = SCAN_FRAMES;
+    catwalkPending = confiscated;
+    invalidate();
+  }
+
+  /** A catwalk between the two ships: the cargo goes over it. */
+  public void catwalk() {
+    catwalkFrames = CATWALK_FRAMES;
+    invalidate();
+  }
+
+  /** True while the scene has something to finish (the close has to wait for it). */
+  public boolean animating() {
+    return scanFrames > 0 || catwalkFrames > 0 || catwalkPending;
+  }
+
   /** The reply of the other ship, played a moment after our shot. */
   private void playTheReply() {
     int nose = opponentX();
@@ -469,6 +502,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       }
     }
     drawFight(graphics);
+    drawInspection(graphics);
     drawLog(graphics, width, height, logTop);
   }
 
@@ -508,6 +542,34 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         y += sy;
       }
     }
+  }
+
+  /** The green waves of the scanner and the catwalk of a transfer. */
+  private void drawInspection(TextGUIGraphics graphics) {
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    if(scanFrames > 0) {
+      int height = Math.max(1, youHeight + 2);
+      int row = yourY() - 1 + (SCAN_FRAMES - scanFrames) * height / SCAN_FRAMES;
+      graphics.setForegroundColor(TextColor.ANSI.GREEN_BRIGHT);
+      for(int x = Math.max(0, yourX() - 2); x < yourX() + youWidth + 2; x++) {
+        graphics.setCharacter(x, row, WAVE);
+      }
+      graphics.setCharacter(yourX() - 2, row, BOX);
+    }
+    if(catwalkFrames > 0) {
+      int row = yourMiddleY();
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      for(int x = yourX() + youWidth; x < opponentX(); x++) {
+        graphics.setCharacter(x, row, BRIDGE);
+      }
+      // The boxes cross the catwalk, one each way.
+      int span = Math.max(1, opponentX() - (yourX() + youWidth));
+      int walked = (CATWALK_FRAMES - catwalkFrames) * span / CATWALK_FRAMES;
+      graphics.setForegroundColor(TextColor.ANSI.YELLOW_BRIGHT);
+      graphics.setCharacter(yourX() + youWidth + walked, row, BOX);
+      graphics.setCharacter(opponentX() - walked - 1, row, BOX);
+    }
+    UiPalette.reset(graphics);
   }
 
   /** The shots of the round and the flashes. */

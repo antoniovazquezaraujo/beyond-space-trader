@@ -55,6 +55,7 @@ public final class LanternaEncounterView implements EncounterView {
 
   private static final int TICK_MILLIS = 1000;
   private static final int FRAME_MILLIS = 110;
+  private static final int CLOSE_MILLIS = 2200;
   private static final int TEXT_WIDTH = 110;
   private static final Map<Character, EncounterAction> KEYS = Map.ofEntries(
       Map.entry('a', EncounterAction.Attack),
@@ -81,6 +82,7 @@ public final class LanternaEncounterView implements EncounterView {
   private Timer timer;
   private Timer stars;
   private Runnable onClose;
+  private boolean closing;
 
   public LanternaEncounterView(WindowBasedTextGUI gui, Commands commands, Runnable tick, CargoHost cargoHost) {
     this.gui = gui;
@@ -114,6 +116,16 @@ public final class LanternaEncounterView implements EncounterView {
     return window;
   }
 
+  @Override
+  public void inspection(boolean confiscated) {
+    content.inspection(confiscated);
+  }
+
+  @Override
+  public void catwalk() {
+    content.catwalk();
+  }
+
   /** A quiet alert of the game: one more line of the log of the scene. */
   public void log(String line) {
     content.addAlert(line);
@@ -138,6 +150,22 @@ public final class LanternaEncounterView implements EncounterView {
   @Override
   public void close() {
     stopTimer();
+    if(content.animating() && !closing) {
+      // Let the scene finish (the scanner, the catwalk) before the window goes.
+      closing = true;
+      java.util.Timer timer = new java.util.Timer("encounter-close", true);
+      timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+          gui.getGUIThread().invokeLater(LanternaEncounterView.this::closeNow);
+        }
+      }, CLOSE_MILLIS);
+      return;
+    }
+    closeNow();
+  }
+
+  private void closeNow() {
     if(stars != null) {
       stars.cancel();
       stars = null;

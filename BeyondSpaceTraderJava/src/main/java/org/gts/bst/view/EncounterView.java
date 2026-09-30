@@ -34,5 +34,13 @@ public interface EncounterView {
   Integer askCargoBuyQuantity(CargoBuyOffer offer);
 
   Integer askCargoSellQuantity(CargoSellOffer offer);
+
+  /** The police inspecting the ship: the scanner, and the catwalk if they take cargo. */
+  default void inspection(boolean confiscated) {
+  }
+
+  /** A catwalk between the ships: the cargo goes over it. */
+  default void catwalk() {
+  }
 }
 

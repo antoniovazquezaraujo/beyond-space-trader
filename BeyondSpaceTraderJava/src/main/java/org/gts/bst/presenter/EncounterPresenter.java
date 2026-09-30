@@ -116,9 +116,20 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void submit() {
+    int before = cargoItems();
     if(game.encounter().EncounterVerifySubmit()) {
+      // The scanner goes over the ship; if they took cargo, the catwalk follows.
+      view.inspection(cargoItems() < before);
       exit(cmdrship.IllegalSpecialCargo() ? EncounterResult.Arrested : EncounterResult.Normal);
     }
+  }
+
+  private int cargoItems() {
+    int total = 0;
+    for(int bays : cmdrship.Cargo()) {
+      total += bays;
+    }
+    return total;
   }
 
   public void surrender() {
@@ -130,6 +141,8 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void trade() {
+    // The catwalk goes out between the two ships while the trade is dealt.
+    view.catwalk();
     game.encounter().EncounterTrade(this);
     exit(EncounterResult.Normal);
   }

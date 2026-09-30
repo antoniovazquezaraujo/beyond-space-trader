@@ -201,6 +201,30 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theInspectionScansAndThenTheCatwalkGoesOut() {
+    EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+
+    content.inspection(true);
+    assertTrue(content.animating(), "the scanner runs over the ship");
+
+    for(int i = 0; i < 16; i++) {
+      content.tick();
+    }
+    assertTrue(content.animating(), "and then the catwalk, because they took cargo");
+
+    for(int i = 0; i < 18; i++) {
+      content.tick();
+    }
+    assertFalse(content.animating(), "the scene is over");
+
+    content.inspection(false);
+    for(int i = 0; i < 16; i++) {
+      content.tick();
+    }
+    assertFalse(content.animating(), "with nothing taken there is no catwalk");
+  }
+
+  @Test
   void theStarsOfTheBackgroundMove() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
