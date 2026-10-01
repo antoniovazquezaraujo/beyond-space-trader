@@ -486,7 +486,7 @@ class LanternaEncounterViewTest {
           new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
           new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate attacks.",
           "Choose an action.", ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
-          false, 5, false, 0, "", List.of("Engine", "Cockpit"), List.of("Pulse Laser", "Energy Shield")));
+          false, 5, false, 0, "", List.of("Engine", "Cockpit"), List.of("Pulse Laser", "Energy Shield"), 15, 8));
       gui.updateScreen();
       String text = screenText(screen);
 
@@ -495,6 +495,9 @@ class LanternaEncounterViewTest {
       assertTrue(text.contains("Pulse Laser"), text);
       assertTrue(text.contains("Energy Shield"), text);
       assertTrue(text.contains("\u29ef"), "the glyph of the engine, as it is painted:\n" + text);
+      assertTrue(text.contains(spacetrader.Strings.EncounterLegendCargo), text);
+      String gauge = org.gts.bst.view.ShipSites.gauge(15).substring(0, 1);
+      assertTrue(text.contains(gauge), "the braille of the cargo, one dot per bay:\n" + text);
     } finally {
       screen.stopScreen();
       screen.close();

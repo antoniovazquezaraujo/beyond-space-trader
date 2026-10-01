@@ -45,7 +45,9 @@ public record EncounterViewModel(
     int round,
     String speech,
     List<String> youPieces,
-    List<String> opponentPieces) {
+    List<String> opponentPieces,
+    int youCargoBays,
+    int opponentCargoBays) {
   /** A model with no legend of pieces (small scenes and tests). */
   public EncounterViewModel(
       Set<EncounterAction> actions,
@@ -77,7 +79,7 @@ public record EncounterViewModel(
     this(actions, continueVisible, imageIndex, youShip, youHull, youShield, opponentShip, opponentHull,
         opponentShield, encounterText, actionText, youType, opponentType, youHit, oppHit, youDamage, oppDamage,
         youPicture, opponentPicture, opponentDisabled, youAttacked, opponentIgnores, opponentPilot,
-        commanderFleeing, round, speech, List.of(), List.of());
+        commanderFleeing, round, speech, List.of(), List.of(), 0, 0);
   }
 
   /** A bar of the scene: the value and its maximum. */

@@ -437,6 +437,7 @@ public final class Strings {
   public static final String EncounterSaysPoliceAllClear = text("EncounterSaysPoliceAllClear");
   public static final String EncounterSaysTradeThanks = text("EncounterSaysTradeThanks");
   public static final String EncounterLegend = text("EncounterLegend");
+  public static final String EncounterLegendCargo = text("EncounterLegendCargo");
   public static final String EncounterSaysTraderSells = text("EncounterSaysTraderSells");
   public static final String EncounterSaysTraderBuys = text("EncounterSaysTraderBuys");
   public static final String MainSaveUnavailable = text("MainSaveUnavailable");

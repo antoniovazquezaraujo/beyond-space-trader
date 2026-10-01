@@ -22,6 +22,7 @@ import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipPicture;
+import org.gts.bst.view.ShipSites;
 import spacetrader.Strings;
 import org.gts.bst.view.Starfield;
 
@@ -734,14 +735,15 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     graphics.setForegroundColor(UiPalette.TITLE);
     graphics.putString(column + 2, row, Strings.EncounterLegend);
     row += 2;
-    row = legendPieces(graphics, column, row, model.youPieces(), model.youShip());
-    legendPieces(graphics, column, row, model.opponentPieces(), model.opponentShip());
+    row = legendPieces(graphics, column, row, model.youPieces(), model.youShip(), model.youCargoBays());
+    legendPieces(graphics, column, row, model.opponentPieces(), model.opponentShip(), model.opponentCargoBays());
     UiPalette.reset(graphics);
   }
 
-  /** The pieces of a ship: the glyph of each part of it and its name. */
-  private int legendPieces(TextGUIGraphics graphics, int column, int row, List<String> pieces, String ship) {
-    if(pieces.isEmpty()) {
+  /** The pieces of a ship and its cargo gauge: the glyph of each part and its name. */
+  private int legendPieces(TextGUIGraphics graphics, int column, int row, List<String> pieces, String ship,
+      int cargoBays) {
+    if(pieces.isEmpty() && cargoBays <= 0) {
       return row;
     }
     graphics.setForegroundColor(UiPalette.ACCENT);
@@ -764,6 +766,17 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
           new ShipPicture.Cell(codePoint, piece.color(), piece.bgColor(), piece.blink()));
       graphics.setForegroundColor(UiPalette.TEXT);
       graphics.putString(column + 6, row, EditorText.cut(name, LEGEND_COLUMNS - 7));
+      row++;
+    }
+    if(cargoBays > 0 && row < getSize().getRows() - 1) {
+      // The cargo: one braille dot per bay, as the art of the ships paints it.
+      String gauge = ShipSites.gauge(cargoBays);
+      for(int i = 0; i < gauge.length() && column + 2 + i < column + 6; i++) {
+        EditorText.glyph(graphics, column + 2 + i, row,
+            new ShipPicture.Cell(gauge.codePointAt(i), "green", "", false));
+      }
+      graphics.setForegroundColor(UiPalette.TEXT);
+      graphics.putString(column + 6, row, Strings.EncounterLegendCargo);
       row++;
     }
     return row + 1;
