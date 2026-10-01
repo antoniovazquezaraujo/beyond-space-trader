@@ -347,9 +347,24 @@ public final class LanternaMainWindow
 
   private boolean handleKey(KeyStroke key) {
     if(content.titleScreen()) {
-      // Any key enters the program from the title screen.
+      // Any key enters the program from the title screen, and the menu keys do their
+      // job at once: F2 there starts a game instead of being swallowed.
       content.titleScreen(false);
-      return true;
+      if(starTimer != null) {
+        // The sky is never seen again: stop ticking it.
+        starTimer.cancel();
+        starTimer = null;
+      }
+      switch(key.getKeyType()) {
+        case F2:
+        case F3:
+        case F8:
+        case F9:
+        case F10:
+          return handleTitleKey(key);
+        default:
+          return true;
+      }
     }
     Game game = gameSupplier.get();
     if(game == null) {
@@ -1137,8 +1152,13 @@ public final class LanternaMainWindow
     starTimer.scheduleAtFixedRate(new java.util.TimerTask() {
       @Override
       public void run() {
-        if(content.titleScreen()) {
+        // The tick checks on the GUI thread whether the title is still up; this
+        // timer only asks it. invokeLater throws before the GUI thread is running
+        // (it starts a moment after us), so a slow start does not kill the timer.
+        try {
           gui.getGUIThread().invokeLater(() -> content.tickStarfield());
+        } catch(IllegalStateException e) {
+          return;
         }
       }
     }, 110, 110);

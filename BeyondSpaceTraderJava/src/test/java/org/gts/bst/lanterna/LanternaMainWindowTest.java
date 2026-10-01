@@ -72,6 +72,8 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('x', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.MainNoGame), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.MenuNewGame),
+          "the empty screen points at the menu: " + screenText(screen));
 
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F2));
       assertTrue(newGame[0], "F2 starts a new game from the program");
@@ -84,6 +86,37 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('a', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.AboutTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theTitleScreenActsOnTheMenuKeysAtOnce() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
+      MainPresenter presenter = new MainPresenter(() -> null, window);
+      window.setPresenter(presenter);
+      boolean[] newGame = {false};
+      window.setGameActions(() -> newGame[0] = true, null, null);
+      window.showTitleScreen();
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // F2 on the title screen starts a game in one press, not the second
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F2));
+      assertTrue(newGame[0], "F2 works on the first press");
+
+      // and F10 opens the menu there too
+      window.showTitleScreen();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F10));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.MenuTitle), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
