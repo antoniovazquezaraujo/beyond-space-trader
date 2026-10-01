@@ -56,7 +56,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final char SPARK = '✶';
   private static final char BURST = '✱';
   private static final char[] SMOKE = {'░', '▒', '▓'};
-  private static final int HIT_FRAMES = 6;
+  private static final int HIT_FRAMES = 8;
   private static final int DEBRIS_FRAMES = 5;
   private static final char[] DEBRIS = {'*', '\u00b7', '+', 'x', '/', '\\', '|', '-'};
   private static final int[][] SPREAD = {{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}};
@@ -134,8 +134,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private String said = "";
   private boolean dealt;
   private int enterFrames;
-  private int hitFrames;
-  private boolean hitShipIsOpponent;
+  private int youHitFrames;
+  private int opponentHitFrames;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -378,8 +378,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         debris.set(i, piece.aged());
       }
     }
-    if(hitFrames > 0) {
-      hitFrames--;
+    if(youHitFrames > 0) {
+      youHitFrames--;
+    }
+    if(opponentHitFrames > 0) {
+      opponentHitFrames--;
     }
     if(responseFrames > 0 && --responseFrames == 0) {
       playTheReply();
@@ -654,8 +657,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       }
       return;
     }
-    hitFrames = HIT_FRAMES;
-    hitShipIsOpponent = onOpponent;
+    if(onOpponent) {
+      opponentHitFrames = HIT_FRAMES;
+    } else {
+      youHitFrames = HIT_FRAMES;
+    }
     TextColor burst = onOpponent ? TextColor.ANSI.GREEN_BRIGHT : TextColor.ANSI.RED_BRIGHT;
     for(int i = 0; i < SPREAD.length; i++) {
       int[] direction = SPREAD[i];
@@ -698,13 +704,13 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     areaTop = BARS_ROWS;
     areaBottom = Math.max(BARS_ROWS + 1, logTop - 1);
     boolean down = model.opponentHull().value() <= 0;
-    if(hitFrames > 0 && !hitShipIsOpponent) {
+    if(youHitFrames > 0) {
       crackedPicture(graphics, yourX(), yourY(), height, you);
     } else {
       EditorText.picture(graphics, yourX(), yourY(), you.width(), height, you);
     }
     if(!down) {
-      if(hitFrames > 0 && hitShipIsOpponent) {
+      if(opponentHitFrames > 0) {
         crackedPicture(graphics, opponentX(), opponentY(), height, opponent);
       } else {
         EditorText.picture(graphics, opponentX(), opponentY(), opponentWidth, height, opponent);
@@ -923,18 +929,25 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     return lines;
   }
 
-  /** The hit ship for a moment: some of its cells turn into flying debris. */
+  /**
+   * The hit ship for a moment: some of its cells turn into flying debris and the
+   * whole drawing flashes white on alternate frames, as if it were coming apart.
+   */
   private void crackedPicture(TextGUIGraphics graphics, int left, int row, int maxRow, ShipPicture picture) {
+    boolean flash = frame % 2 == 0;
     for(int y = 0; y < picture.height() && row + y < maxRow; y++) {
       for(int x = 0; x < picture.width(); x++) {
         ShipPicture.Cell cell = picture.at(x, y);
         if(cell == null || cell.continuation()) {
           continue;
         }
+        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
         if((x * 7 + y * 5 + frame) % 4 == 0) {
           graphics.setForegroundColor((x + y + frame) % 2 == 0 ? TextColor.ANSI.WHITE : TextColor.ANSI.RED_BRIGHT);
-          graphics.setBackgroundColor(TextColor.ANSI.BLACK);
           graphics.setCharacter(left + x, row + y, DEBRIS[(x + y + frame) % DEBRIS.length]);
+        } else if(flash) {
+          graphics.setForegroundColor(TextColor.ANSI.WHITE);
+          graphics.putString(left + x, row + y, new String(Character.toChars(cell.codePoint())));
         } else {
           EditorText.glyph(graphics, left + x, row + y, cell);
         }

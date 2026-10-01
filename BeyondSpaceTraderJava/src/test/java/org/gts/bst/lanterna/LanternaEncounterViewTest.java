@@ -530,12 +530,14 @@ class LanternaEncounterViewTest {
       }
       gui.updateScreen();
 
-      // My shot hits: a green beam and the hull of the other ship bursting.
+      // My shot hits: a green beam, the hull of the other ship bursting and cracking.
       content.model(fight(you, opponent, 1, true, true, false, 5, 0));
       gui.updateScreen();
       assertTrue(hasColor(screen, TextColor.ANSI.GREEN_BRIGHT), "my shot is green");
       int pieces = debrisGlyphs(screen);
       assertTrue(pieces >= 2, "the hit bursts into pieces (" + pieces + ")");
+      assertTrue(countGlyph(screen, 'y') < 15,
+          "the rival cracks (its cells turn into debris): " + countGlyph(screen, 'y'));
 
       // Their reply lands on me: the beam is red.
       content.model(fight(you, opponent, 2, false, false, true, 0, 3));
@@ -560,6 +562,19 @@ class LanternaEncounterViewTest {
         "The pirate attacks.", "Choose an action.",
         ShipType.Flea, ShipType.Scorpion, youHit, oppHit, youDamage, oppDamage, you, opponent, false, youAttacked,
         false, 5, false, round, "");
+  }
+
+  /** How many times a glyph is on the screen. */
+  private static int countGlyph(Screen screen, char glyph) {
+    int count = 0;
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        if(screen.getBackCharacter(column, row).getCharacter() == glyph) {
+          count++;
+        }
+      }
+    }
+    return count;
   }
 
   /** True when a colour is on the screen. */
