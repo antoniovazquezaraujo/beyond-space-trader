@@ -86,17 +86,9 @@ class LanternaEncounterViewTest {
       assertFalse(text.contains("[A]Attack"), "no buttons in the scene: " + text);
       assertFalse(text.contains("[F]Flee"), "no buttons in the scene: " + text);
 
-      boolean frameCyan = false;
-      for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
-        for(int x = 0; x < screen.getTerminalSize().getColumns(); x++) {
-          TextCharacter character = screen.getBackCharacter(x, y);
-          if("┌┐└┘".indexOf(character.getCharacter()) >= 0
-              && character.getForegroundColor() == TextColor.ANSI.CYAN) {
-            frameCyan = true;
-          }
-        }
-      }
-      assertTrue(frameCyan, "the window frame must be cyan:\n" + text);
+      assertTrue(text.contains(spacetrader.Strings.EncounterLegend),
+          "the legend of the glyphs is on the right:\n" + text);
+      assertTrue(text.contains(spacetrader.Strings.EncounterLegendDebris), text);
 
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('i', false, false));
       assertTrue(executed.isEmpty(), "an unavailable action must be ignored");

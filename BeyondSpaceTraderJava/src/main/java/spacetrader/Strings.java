@@ -436,6 +436,15 @@ public final class Strings {
   public static final String EncounterSaysPoliceArrest = text("EncounterSaysPoliceArrest");
   public static final String EncounterSaysPoliceAllClear = text("EncounterSaysPoliceAllClear");
   public static final String EncounterSaysTradeThanks = text("EncounterSaysTradeThanks");
+  public static final String EncounterLegend = text("EncounterLegend");
+  public static final String EncounterLegendShot = text("EncounterLegendShot");
+  public static final String EncounterLegendCargo = text("EncounterLegendCargo");
+  public static final String EncounterLegendCatwalk = text("EncounterLegendCatwalk");
+  public static final String EncounterLegendScanner = text("EncounterLegendScanner");
+  public static final String EncounterLegendShield = text("EncounterLegendShield");
+  public static final String EncounterLegendHit = text("EncounterLegendHit");
+  public static final String EncounterLegendDebris = text("EncounterLegendDebris");
+  public static final String EncounterLegendDamage = text("EncounterLegendDamage");
   public static final String EncounterSaysTraderSells = text("EncounterSaysTraderSells");
   public static final String EncounterSaysTraderBuys = text("EncounterSaysTraderBuys");
   public static final String MainSaveUnavailable = text("MainSaveUnavailable");

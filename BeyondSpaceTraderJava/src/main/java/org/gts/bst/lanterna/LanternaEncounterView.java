@@ -91,7 +91,7 @@ public final class LanternaEncounterView implements EncounterView {
     this.tick = tick;
     this.cargoHost = cargoHost;
     this.content = new EncounterSceneComponent(this::handleKey);
-    window.setHints(Set.of(Window.Hint.MODAL, Window.Hint.CENTERED, Window.Hint.FIT_TERMINAL_WINDOW));
+    window.setHints(Set.of(Window.Hint.MODAL, Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
     content.onExit(() -> {
       if(awaitingLeave) {
         // The scene is over: the ship leaves for real.

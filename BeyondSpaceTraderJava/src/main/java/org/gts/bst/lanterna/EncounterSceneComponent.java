@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipPicture;
+import spacetrader.Strings;
 import org.gts.bst.view.Starfield;
 
 
@@ -76,6 +77,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final char BOX = '■';
   /** Cells the ship glides on every frame: the dashes go at double speed. */
   private static final int GLIDE_SPEED = 3;
+  private static final int LEGEND_COLUMNS = 18;
 
   /** A beam: the shot of a ship, a line of light from its nose to where the game says. */
   private record Beam(int x1, int y1, int x2, int y2, TextColor color, int frames) {
@@ -677,16 +679,17 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(model == null) {
       return;
     }
-    drawBars(graphics, width);
+    int sceneWidth = Math.max(40, width - LEGEND_COLUMNS);
+    drawBars(graphics, sceneWidth);
     int logTop = Math.max(BARS_ROWS + 2, height - LOG_ROWS);
-    int half = (width - 1) / 2;
+    int half = (sceneWidth - 1) / 2;
     ShipPicture you = yourPicture();
     ShipPicture opponent = model.opponentPicture().cropped();
-    screenWidth = width;
+    screenWidth = sceneWidth;
     youLeft = shipLeft(0, half, you);
     youWidth = you.width();
     youHeight = you.height();
-    opponentLeft = shipLeft(half + 1, width - half - 1, opponent);
+    opponentLeft = shipLeft(half + 1, sceneWidth - half - 1, opponent);
     opponentWidth = opponent.width();
     opponentHeight = opponent.height();
     areaTop = BARS_ROWS;
@@ -710,7 +713,45 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     drawFight(graphics);
     drawInspection(graphics);
     drawSpeech(graphics);
-    drawLog(graphics, width, height, logTop);
+    drawLegend(graphics, width, height);
+    drawLog(graphics, sceneWidth, height, logTop);
+  }
+
+  /** The column of the right: every glyph of the scene and what it means. */
+  private void drawLegend(TextGUIGraphics graphics, int width, int height) {
+    int column = Math.max(0, width - LEGEND_COLUMNS);
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    for(int row = BARS_ROWS; row < height; row++) {
+      graphics.putString(column, row, " ".repeat(Math.max(0, width - column)));
+    }
+    graphics.setForegroundColor(UiPalette.TEXT);
+    for(int row = BARS_ROWS; row < height; row++) {
+      graphics.setCharacter(column, row, VERTICAL);
+    }
+    int row = BARS_ROWS + 1;
+    graphics.setForegroundColor(UiPalette.TITLE);
+    graphics.putString(column + 2, row, Strings.EncounterLegend);
+    row += 2;
+    row = legendRow(graphics, column, row, String.valueOf(BEAM_DOT), TextColor.ANSI.GREEN_BRIGHT, Strings.EncounterLegendShot);
+    row = legendRow(graphics, column, row, String.valueOf(BOX), TextColor.ANSI.YELLOW_BRIGHT, Strings.EncounterLegendCargo);
+    row = legendRow(graphics, column, row, String.valueOf(BRIDGE), TextColor.ANSI.WHITE, Strings.EncounterLegendCatwalk);
+    row = legendRow(graphics, column, row, HORIZONTAL + "" + VERTICAL + JOINT, TextColor.ANSI.GREEN_BRIGHT, Strings.EncounterLegendScanner);
+    row = legendRow(graphics, column, row, String.valueOf(SPARK), TextColor.ANSI.CYAN_BRIGHT, Strings.EncounterLegendShield);
+    row = legendRow(graphics, column, row, String.valueOf(BURST), TextColor.ANSI.YELLOW_BRIGHT, Strings.EncounterLegendHit);
+    row = legendRow(graphics, column, row, "*", TextColor.ANSI.WHITE, Strings.EncounterLegendDebris);
+    legendRow(graphics, column, row, "-3", TextColor.ANSI.RED_BRIGHT, Strings.EncounterLegendDamage);
+    UiPalette.reset(graphics);
+  }
+
+  private int legendRow(TextGUIGraphics graphics, int column, int row, String glyph, TextColor color, String meaning) {
+    if(row < getSize().getRows()) {
+      graphics.setForegroundColor(color);
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      graphics.putString(column + 2, row, glyph);
+      graphics.setForegroundColor(UiPalette.TEXT);
+      graphics.putString(column + 6, row, meaning);
+    }
+    return row + 1;
   }
 
   /** The smoke of a ship with its systems disabled. */
