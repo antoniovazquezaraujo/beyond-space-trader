@@ -73,7 +73,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int TRADE_GAP = 12;
   private static final int OPPONENT_LEAVE_FRAMES = 12;
   /** The ships never touch: they stop this many cells apart (their drawings). */
-  private static final int MIN_GAP = 3;
+  private static final int MIN_GAP = 2;
   private static final char[] SPARKLE = {'\\', '|', '/'};
   private static final int ENTER_FRAMES = 14;
   private static final char HORIZONTAL = '─';

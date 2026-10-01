@@ -90,6 +90,10 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   public void flee() {
     disableAuto();
+    if(result != EncounterResult.Continue) {
+      // The encounter is over: there is nothing to flee from.
+      return;
+    }
     if(game.encounter().EncounterVerifyFlee()) {
       executeAction();
     }

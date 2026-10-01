@@ -99,8 +99,9 @@ public final class LanternaEncounterView implements EncounterView {
         closeNow();
         return;
       }
-      // The ship never leaves the scene on its own: it comes back to its place.
+      // Slipping past the other one and leaving the scene: an escape attempt.
       content.resetPosition();
+      commands.execute(EncounterAction.Flee);
     });
     content.setPreferredSize(new TerminalSize(120, 30));
     window.setComponent(content);

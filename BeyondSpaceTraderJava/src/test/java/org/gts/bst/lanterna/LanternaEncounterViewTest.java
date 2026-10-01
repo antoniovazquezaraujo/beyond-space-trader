@@ -538,6 +538,56 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void slippingPastTheOtherShipLeavesTheScene() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      // A slow pilot (1) does not close the gap in time to stop the dodge.
+      view.render(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
+          false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The pirate attacks.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+          false, 1, false, 0, ""));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // Up, to slip past the other one, and then advancing forward: the ship
+      // dodges it, leaves the scene and that is an escape attempt.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      for(int i = 0; i < 30; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      assertEquals(List.of(EncounterAction.Flee), executed, "slipping past is an escape attempt");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void advancingAwayIsAnEscapeAttempt() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
@@ -713,7 +763,7 @@ class LanternaEncounterViewTest {
 
       int lastX = lastColumnOf(screen, 'x');
       int firstY = firstColumnOf(screen, 'y');
-      assertTrue(firstY - lastX - 1 >= 3,
+      assertTrue(firstY - lastX - 1 >= 2,
           "they stop with a gap between them (" + (firstY - lastX - 1) + " cells)");
     } finally {
       screen.stopScreen();
