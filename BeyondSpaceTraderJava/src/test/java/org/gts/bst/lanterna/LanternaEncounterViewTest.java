@@ -496,6 +496,54 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theSkyFollowsTheShip() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // A star in the middle of the sky, so it does not wrap in one step.
+      java.util.List<org.gts.bst.view.Starfield.Star> sorted =
+          new java.util.ArrayList<>(content.sky().stars());
+      sorted.sort(java.util.Comparator.comparingDouble(org.gts.bst.view.Starfield.Star::x));
+      int index = content.sky().stars().indexOf(sorted.get(sorted.size() / 2));
+
+      org.gts.bst.view.Starfield.Star before = content.sky().stars().get(index);
+      content.tick();
+      assertEquals(before.x() - before.speed(), content.sky().stars().get(index).x(), 1e-9,
+          "going forward, the sky drifts left");
+
+      content.turnAway();
+      before = content.sky().stars().get(index);
+      content.tick();
+      assertEquals(before.x() + before.speed(), content.sky().stars().get(index).x(), 1e-9,
+          "and turning back, it drags the other way");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void aFailedEscapeBringsTheOtherShipCloser() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

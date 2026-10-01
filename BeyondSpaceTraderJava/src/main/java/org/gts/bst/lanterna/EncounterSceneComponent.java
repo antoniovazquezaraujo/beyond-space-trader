@@ -368,8 +368,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   public void tick() {
     frame++;
     if(starfield != null) {
-      // The sky drags the other way when the scene goes backwards (the chase).
-      starfield.advance(retreating());
+      // The camera follows the ship: facing forward the sky drifts left, facing
+      // away (turning back, or fleeing) it drags the other way.
+      starfield.advance(youTurned);
     }
     if(enterFrames > 0 && screenWidth > 0) {
       enterFrames--;
@@ -653,9 +654,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
   }
 
-  /** True while the scene goes backwards: the ship turns away or the other chases it. */
-  private boolean retreating() {
-    return model != null && (youTurned || model.commanderFleeing());
+  /** The sky of the scene (the tests follow its drift). */
+  Starfield sky() {
+    return starfield;
   }
 
   /** The scene shows a result to read: it stays until the player leaves (intro). */
