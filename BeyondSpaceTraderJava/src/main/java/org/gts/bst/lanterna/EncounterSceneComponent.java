@@ -849,10 +849,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     int half = (sceneWidth - 1) / 2;
     ShipPicture you = yourPicture();
     ShipPicture opponent = model.opponentPicture().cropped();
-    // It faces its way: forward when it chases us from behind, its travel side when
-    // it leaves. One that ignores us never turns: it just goes.
-    boolean faceRight = opponentLeaving ? opponentLeavesRight
-        : !model.opponentIgnores() && opponentX() < yourX();
+    // It faces us when it chases us from behind. One that ignores us, and one that
+    // loses us and goes, never turn: it leaves the scene in reverse.
+    boolean faceRight = !opponentLeaving && !model.opponentIgnores() && opponentX() < yourX();
     if(faceRight) {
       opponent = opponent.mirrored();
     }
