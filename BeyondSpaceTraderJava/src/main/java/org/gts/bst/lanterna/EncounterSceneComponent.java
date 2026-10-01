@@ -140,6 +140,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int youHitFrames;
   private int opponentHitFrames;
   private boolean opponentLeaving;
+  private boolean opponentLeavesRight;
   private boolean opponentGone;
   private boolean exitedRight;
   /** The geometry of the last paint: where the shots are born and where they land. */
@@ -447,9 +448,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
     if(opponentLeaving && !opponentGone) {
       // It goes away through its side of the scene, losing us: all the way out.
-      int distance = Math.max(1, screenWidth + opponentWidth - opponentX());
-      opponentColumn += Math.max(3, distance / OPPONENT_LEAVE_FRAMES);
-      if(opponentX() >= screenWidth + 2) {
+      int toward = opponentLeavesRight ? 1 : -1;
+      int distance = toward > 0 ? Math.max(1, screenWidth + opponentWidth - opponentX())
+          : Math.max(1, opponentX() + opponentWidth + 1);
+      opponentColumn += toward * Math.max(3, distance / OPPONENT_LEAVE_FRAMES);
+      if(toward > 0 && opponentX() >= screenWidth + 2
+          || toward < 0 && opponentX() + opponentWidth <= -2) {
         opponentGone = true;
         opponentLeaving = false;
       }
@@ -687,8 +691,17 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** The other ship loses us: it goes away through its side of the scene. */
   public void opponentLeaves() {
+    opponentLeaves(true);
+  }
+
+  /**
+   * The same, towards the side asked for: away from us, so it never reads as if
+   * it were chasing when it is the one that leaves.
+   */
+  public void opponentLeaves(boolean toTheRight) {
     if(model != null && !opponentGone && !opponentLeaving) {
       opponentLeaving = true;
+      opponentLeavesRight = toTheRight;
       invalidate();
     }
   }

@@ -791,6 +791,51 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void aShipThatIgnoresUsLeavesTheOtherWay() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nx....\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(chase(you, opponent, 0, false));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int before = firstColumnOf(screen, 'y');
+
+      // It has no interest in us and we dodge it: it leaves through our back.
+      content.opponentLeaves(false);
+      content.tick();
+      gui.updateScreen();
+      assertTrue(firstColumnOf(screen, 'y') < before,
+          "it goes away through the left (" + firstColumnOf(screen, 'y') + " < " + before + ")");
+
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains("yyyyy"), "all the way out");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theSpeechLeavesWithTheShip() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

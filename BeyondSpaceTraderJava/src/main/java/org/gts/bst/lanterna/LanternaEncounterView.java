@@ -102,7 +102,8 @@ public final class LanternaEncounterView implements EncounterView {
       // Leaving the scene: if it has no interest in us, it loses us and goes;
       // if it chases us, the game decides (a failed attempt loops the scene).
       if(model.opponentIgnores()) {
-        content.opponentLeaves();
+        // It was not interested in us: it goes away through the other side.
+        content.opponentLeaves(!content.exitedRight());
         execute(EncounterAction.Ignore);
       } else {
         execute(EncounterAction.Flee);
@@ -134,7 +135,7 @@ public final class LanternaEncounterView implements EncounterView {
     if(!content.exitedRight()) {
       // Running away: the ship goes on facing away and the other loses us, leaving.
       content.turnAway();
-      content.opponentLeaves();
+      content.opponentLeaves(true);
     }
     // Dodging past it: we are already out; the scene just ends.
   }
