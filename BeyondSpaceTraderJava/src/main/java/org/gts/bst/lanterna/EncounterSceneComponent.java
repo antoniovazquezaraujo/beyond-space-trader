@@ -139,7 +139,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int enterFrames;
   private int youHitFrames;
   private int opponentHitFrames;
-  private int opponentLeaveFrames;
+  private boolean opponentLeaving;
   private boolean opponentGone;
   private boolean exitedRight;
   /** The geometry of the last paint: where the shots are born and where they land. */
@@ -336,7 +336,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** The rival: it ignores us, mirrors our height at its own pace, or chases us. */
   private void moveOpponent() {
     if(model == null || model.opponentIgnores() || model.opponentHull().value() <= 0 || model.opponentDisabled()
-        || catwalk != Catwalk.NONE || opponentGone || opponentLeaveFrames > 0) {
+        || catwalk != Catwalk.NONE || opponentGone || opponentLeaving) {
       return;
     }
     if(model.commanderFleeing()) {
@@ -445,13 +445,13 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(opponentHitFrames > 0) {
       opponentHitFrames--;
     }
-    if(opponentLeaveFrames > 0) {
-      // It goes away through its side of the scene, losing us.
+    if(opponentLeaving && !opponentGone) {
+      // It goes away through its side of the scene, losing us: all the way out.
       int distance = Math.max(1, screenWidth + opponentWidth - opponentX());
-      opponentColumn += Math.max(2, distance / opponentLeaveFrames);
-      opponentLeaveFrames--;
-      if(opponentLeaveFrames == 0) {
+      opponentColumn += Math.max(3, distance / OPPONENT_LEAVE_FRAMES);
+      if(opponentX() >= screenWidth + 2) {
         opponentGone = true;
+        opponentLeaving = false;
       }
     }
     if(responseFrames > 0 && --responseFrames == 0) {
@@ -687,8 +687,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** The other ship loses us: it goes away through its side of the scene. */
   public void opponentLeaves() {
-    if(model != null && !opponentGone && opponentLeaveFrames == 0) {
-      opponentLeaveFrames = OPPONENT_LEAVE_FRAMES;
+    if(model != null && !opponentGone && !opponentLeaving) {
+      opponentLeaving = true;
       invalidate();
     }
   }
@@ -706,7 +706,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** True while the scene has something to finish (the close has to wait for it). */
   public boolean animating() {
-    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving || opponentLeaveFrames > 0;
+    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving || opponentLeaving;
   }
 
   /** The reply of the other ship, played a moment after our shot. */
@@ -998,8 +998,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     graphics.setForegroundColor(TextColor.ANSI.YELLOW_BRIGHT);
     graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     for(String line : lines) {
-      int left = Math.max(0, Math.min(screenWidth - line.length() - 1,
-          opponentX() + opponentWidth / 2 - line.length() / 2));
+      int centered = opponentX() + opponentWidth / 2 - line.length() / 2;
+      // Saying goodbye while leaving: the bubble goes out with the ship, no clamp.
+      int left = opponentLeaving ? centered
+          : Math.max(0, Math.min(screenWidth - line.length() - 1, centered));
       graphics.putString(left, row++, line);
     }
     UiPalette.reset(graphics);
