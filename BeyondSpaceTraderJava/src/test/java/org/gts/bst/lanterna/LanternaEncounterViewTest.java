@@ -496,6 +496,48 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theOtherShipLeavesTheSceneWhenItLosesYou() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("yyyyy"), "the other ship is in the scene");
+
+      content.opponentLeaves();
+      assertTrue(content.animating(), "and now it is leaving");
+
+      for(int i = 0; i < 12; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertFalse(content.animating(), "it is gone");
+      assertFalse(screenText(screen).contains("yyyyy"), "out through its side:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theShipsNeverTouch() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

@@ -206,6 +206,10 @@ public class EncounterPresenter implements EncounterDialogHost {
         view.startTimer();
       }
     } else {
+      // A chase that ends with us getting away: the other ship loses us.
+      if(result == EncounterResult.Normal && game.encounter().getEncounterCmdrFleeing()) {
+        view.escaped();
+      }
       view.close();
     }
   }

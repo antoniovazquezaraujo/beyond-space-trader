@@ -35,6 +35,10 @@ public interface EncounterView {
 
   Integer askCargoSellQuantity(CargoSellOffer offer);
 
+  /** You got away while fleeing: the other ship loses you and leaves the scene. */
+  default void escaped() {
+  }
+
   /** The police inspecting the ship: the scanner, and the catwalk if they take cargo. */
   default void inspection(boolean confiscated) {
   }

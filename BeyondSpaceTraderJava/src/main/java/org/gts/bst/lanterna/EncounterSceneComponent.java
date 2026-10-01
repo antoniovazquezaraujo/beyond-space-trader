@@ -71,6 +71,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int HAUL_FRAMES = 12;
   private static final int RETRACT_FRAMES = 8;
   private static final int TRADE_GAP = 12;
+  private static final int OPPONENT_LEAVE_FRAMES = 12;
   /** The ships never touch: they stop this many cells apart (their drawings). */
   private static final int MIN_GAP = 3;
   private static final char[] SPARKLE = {'\\', '|', '/'};
@@ -138,6 +139,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int enterFrames;
   private int youHitFrames;
   private int opponentHitFrames;
+  private int opponentLeaveFrames;
+  private boolean opponentGone;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -281,7 +284,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** The rival: it ignores us, mirrors our height at its own pace, or chases us. */
   private void moveOpponent() {
     if(model == null || model.opponentIgnores() || model.opponentHull().value() <= 0 || model.opponentDisabled()
-        || catwalk != Catwalk.NONE) {
+        || catwalk != Catwalk.NONE || opponentGone || opponentLeaveFrames > 0) {
       return;
     }
     if(model.commanderFleeing()) {
@@ -348,7 +351,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   public void tick() {
     frame++;
     if(starfield != null) {
-      starfield.advance();
+      // The sky drags the other way when the scene goes backwards (the chase).
+      starfield.advance(retreating());
     }
     if(enterFrames > 0 && screenWidth > 0) {
       enterFrames--;
@@ -384,6 +388,15 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
     if(opponentHitFrames > 0) {
       opponentHitFrames--;
+    }
+    if(opponentLeaveFrames > 0) {
+      // It goes away through its side of the scene, losing us.
+      int distance = Math.max(1, screenWidth + opponentWidth - opponentX());
+      opponentColumn += Math.max(2, distance / opponentLeaveFrames);
+      opponentLeaveFrames--;
+      if(opponentLeaveFrames == 0) {
+        opponentGone = true;
+      }
     }
     if(responseFrames > 0 && --responseFrames == 0) {
       playTheReply();
@@ -609,6 +622,19 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
   }
 
+  /** The other ship loses us: it goes away through its side of the scene. */
+  public void opponentLeaves() {
+    if(model != null && !opponentGone && opponentLeaveFrames == 0) {
+      opponentLeaveFrames = OPPONENT_LEAVE_FRAMES;
+      invalidate();
+    }
+  }
+
+  /** True while the scene goes backwards: the ship turns away or the other chases it. */
+  private boolean retreating() {
+    return model != null && (youTurned || model.commanderFleeing());
+  }
+
   /** The scene shows a result to read: it stays until the player leaves (intro). */
   public void awaitLeave() {
     leaving = true;
@@ -617,7 +643,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** True while the scene has something to finish (the close has to wait for it). */
   public boolean animating() {
-    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving;
+    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving || opponentLeaveFrames > 0;
   }
 
   /** The reply of the other ship, played a moment after our shot. */
@@ -712,7 +738,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     } else {
       EditorText.picture(graphics, yourX(), yourY(), you.width(), height, you, blinkOn);
     }
-    if(!down) {
+    if(!down && !opponentGone) {
       if(opponentHitFrames > 0) {
         crackedPicture(graphics, opponentX(), opponentY(), height, opponent, blinkOn);
       } else {

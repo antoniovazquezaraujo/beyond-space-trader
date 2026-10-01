@@ -124,6 +124,12 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   @Override
+  public void escaped() {
+    // You got away: the other ship loses you and leaves through its side.
+    content.opponentLeaves();
+  }
+
+  @Override
   public void inspection(boolean confiscated) {
     // After the scan the ship stays until the player reads the outcome and leaves.
     awaitLeave();

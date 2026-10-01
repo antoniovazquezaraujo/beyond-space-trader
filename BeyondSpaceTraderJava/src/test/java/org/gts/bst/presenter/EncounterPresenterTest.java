@@ -180,6 +180,7 @@ class EncounterPresenterTest {
     assertEquals(hull, game.Commander().getShip().getHull(), "on Beginner fleeing is unharmed");
     assertTrue(dialogs.alerts().contains(AlertType.EncounterEscaped), dialogs.alerts().toString());
     assertTrue(view.closed);
+    assertTrue(view.escaped, "and the scene is told that the other ship loses us");
   }
 
   @Test
@@ -227,6 +228,7 @@ class EncounterPresenterTest {
     private boolean closed;
     private boolean timer;
     private boolean jettisonShown;
+    private boolean escaped;
     private boolean plunderShown;
     private Integer cargoBuyAnswer;
     private Integer cargoSellAnswer;
@@ -249,6 +251,11 @@ class EncounterPresenterTest {
     @Override
     public void stopTimer() {
       timer = false;
+    }
+
+    @Override
+    public void escaped() {
+      escaped = true;
     }
 
     @Override

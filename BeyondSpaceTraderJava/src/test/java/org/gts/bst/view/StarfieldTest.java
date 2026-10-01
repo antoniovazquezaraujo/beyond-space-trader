@@ -60,4 +60,27 @@ class StarfieldTest {
       assertTrue(star.y() >= 0 && star.y() < sky.dotHeight());
     }
   }
+
+  @Test
+  void theStarsDriftRightGoingBackwards() {
+    Starfield sky = new Starfield(40, 10, 0.2, 3);
+    int leftmost = 0;
+    for(int i = 0; i < sky.stars().size(); i++) {
+      if(sky.stars().get(i).x() < sky.stars().get(leftmost).x()) {
+        leftmost = i;
+      }
+    }
+    Starfield.Star before = sky.stars().get(leftmost);
+    sky.advance(true);
+    assertEquals(before.x() + before.speed(), sky.stars().get(leftmost).x(), 1e-9,
+        "going backwards, the stars drift right at their own speed");
+
+    for(int i = 0; i < 500; i++) {
+      sky.advance(true);
+    }
+    for(Starfield.Star star : sky.stars()) {
+      assertTrue(star.x() > -sky.dotWidth() * 0.3 && star.x() < sky.dotWidth() + 2, "wraps back from the left");
+      assertTrue(star.y() >= 0 && star.y() < sky.dotHeight());
+    }
+  }
 }
