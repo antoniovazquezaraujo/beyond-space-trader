@@ -37,6 +37,16 @@ public final class ShipCatalog {
     return SHARED;
   }
 
+  /** The art of a piece by the name of its item, or null when it has no art yet. */
+  public ShipArtFile piece(String name) {
+    for(ShipArtFile piece : pieces) {
+      if(piece.name().equalsIgnoreCase(name)) {
+        return piece;
+      }
+    }
+    return null;
+  }
+
   private static ShipCatalog load() {
     try {
       return new ShipCatalog(ShipDesign.load(ShipArtFile.resolve("ships.txt").toString()),

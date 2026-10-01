@@ -19,6 +19,8 @@ import com.googlecode.lanterna.input.KeyStroke;
 import java.util.ArrayList;
 import java.util.List;
 import org.gts.bst.view.EncounterViewModel;
+import org.gts.bst.view.ShipArtFile;
+import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipPicture;
 import spacetrader.Strings;
 import org.gts.bst.view.Starfield;
@@ -77,7 +79,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final char BOX = '■';
   /** Cells the ship glides on every frame: the dashes go at double speed. */
   private static final int GLIDE_SPEED = 3;
-  private static final int LEGEND_COLUMNS = 18;
+  private static final int LEGEND_COLUMNS = 24;
 
   /** A beam: the shot of a ship, a line of light from its nose to where the game says. */
   private record Beam(int x1, int y1, int x2, int y2, TextColor color, int frames) {
@@ -717,7 +719,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     drawLog(graphics, sceneWidth, height, logTop);
   }
 
-  /** The column of the right: every glyph of the scene and what it means. */
+  /** The column of the right: the pieces of both ships, each with its glyph. */
   private void drawLegend(TextGUIGraphics graphics, int width, int height) {
     int column = Math.max(0, width - LEGEND_COLUMNS);
     graphics.setBackgroundColor(TextColor.ANSI.BLACK);
@@ -732,26 +734,52 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     graphics.setForegroundColor(UiPalette.TITLE);
     graphics.putString(column + 2, row, Strings.EncounterLegend);
     row += 2;
-    row = legendRow(graphics, column, row, String.valueOf(BEAM_DOT), TextColor.ANSI.GREEN_BRIGHT, Strings.EncounterLegendShot);
-    row = legendRow(graphics, column, row, String.valueOf(BOX), TextColor.ANSI.YELLOW_BRIGHT, Strings.EncounterLegendCargo);
-    row = legendRow(graphics, column, row, String.valueOf(BRIDGE), TextColor.ANSI.WHITE, Strings.EncounterLegendCatwalk);
-    row = legendRow(graphics, column, row, HORIZONTAL + "" + VERTICAL + JOINT, TextColor.ANSI.GREEN_BRIGHT, Strings.EncounterLegendScanner);
-    row = legendRow(graphics, column, row, String.valueOf(SPARK), TextColor.ANSI.CYAN_BRIGHT, Strings.EncounterLegendShield);
-    row = legendRow(graphics, column, row, String.valueOf(BURST), TextColor.ANSI.YELLOW_BRIGHT, Strings.EncounterLegendHit);
-    row = legendRow(graphics, column, row, "*", TextColor.ANSI.WHITE, Strings.EncounterLegendDebris);
-    legendRow(graphics, column, row, "-3", TextColor.ANSI.RED_BRIGHT, Strings.EncounterLegendDamage);
+    row = legendPieces(graphics, column, row, model.youPieces(), model.youShip());
+    legendPieces(graphics, column, row, model.opponentPieces(), model.opponentShip());
     UiPalette.reset(graphics);
   }
 
-  private int legendRow(TextGUIGraphics graphics, int column, int row, String glyph, TextColor color, String meaning) {
-    if(row < getSize().getRows()) {
-      graphics.setForegroundColor(color);
+  /** The pieces of a ship: the glyph of each part of it and its name. */
+  private int legendPieces(TextGUIGraphics graphics, int column, int row, List<String> pieces, String ship) {
+    if(pieces.isEmpty()) {
+      return row;
+    }
+    graphics.setForegroundColor(UiPalette.ACCENT);
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    graphics.putString(column + 2, row++, EditorText.cut(ship, LEGEND_COLUMNS - 4));
+    for(String name : pieces) {
+      if(row >= getSize().getRows() - 1) {
+        return row;
+      }
+      ShipArtFile piece = ShipCatalog.shared().piece(name);
+      if(piece == null) {
+        continue;
+      }
+      int codePoint = firstCodePoint(piece);
+      if(codePoint < 0) {
+        continue;
+      }
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
-      graphics.putString(column + 2, row, glyph);
+      EditorText.glyph(graphics, column + 2, row,
+          new ShipPicture.Cell(codePoint, piece.color(), piece.bgColor(), piece.blink()));
       graphics.setForegroundColor(UiPalette.TEXT);
-      graphics.putString(column + 6, row, meaning);
+      graphics.putString(column + 6, row, EditorText.cut(name, LEGEND_COLUMNS - 7));
+      row++;
     }
     return row + 1;
+  }
+
+  /** The first glyph of the art of a piece: the one the legend shows. */
+  private static int firstCodePoint(ShipArtFile piece) {
+    for(int row = 0; row < piece.height(); row++) {
+      for(int column = 0; column < piece.width(); column++) {
+        int codePoint = piece.at(row, column);
+        if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
+          return codePoint;
+        }
+      }
+    }
+    return -1;
   }
 
   /** The smoke of a ship with its systems disabled. */

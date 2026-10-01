@@ -253,7 +253,9 @@ public class EncounterPresenter implements EncounterDialogHost {
         game.encounter().getOpponent().Pilot(),
         game.encounter().getEncounterCmdrFleeing(),
         round,
-        speech());
+        speech(),
+        ShipArtItems.of(cmdrship),
+        opponentItems);
   }
 
   /** What the other ship says: the police demand, the trader hail; nothing for the rest. */

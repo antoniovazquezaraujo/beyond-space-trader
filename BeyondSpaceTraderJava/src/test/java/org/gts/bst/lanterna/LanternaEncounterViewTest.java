@@ -87,8 +87,7 @@ class LanternaEncounterViewTest {
       assertFalse(text.contains("[F]Flee"), "no buttons in the scene: " + text);
 
       assertTrue(text.contains(spacetrader.Strings.EncounterLegend),
-          "the legend of the glyphs is on the right:\n" + text);
-      assertTrue(text.contains(spacetrader.Strings.EncounterLegendDebris), text);
+          "the legend of the pieces is on the right:\n" + text);
 
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('i', false, false));
       assertTrue(executed.isEmpty(), "an unavailable action must be ignored");
@@ -457,6 +456,45 @@ class LanternaEncounterViewTest {
       // The speech is wrapped: the first words have to be on one line.
       String said = spacetrader.Strings.EncounterSaysPoliceAllClear.substring(0, 20);
       assertTrue(screenText(screen).contains(said), "the police say the outcome:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theLegendListsThePiecesOfBothShips() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 28)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(100, 28));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\nyyyyy\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nzzzzz\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee), false, 0, "Gnat",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate attacks.",
+          "Choose an action.", ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+          false, 5, false, 0, "", List.of("Engine", "Cockpit"), List.of("Pulse Laser", "Energy Shield")));
+      gui.updateScreen();
+      String text = screenText(screen);
+
+      assertTrue(text.contains("Engine"), "the engine of the player:\n" + text);
+      assertTrue(text.contains("Cockpit"), text);
+      assertTrue(text.contains("Pulse Laser"), text);
+      assertTrue(text.contains("Energy Shield"), text);
+      assertTrue(text.contains("\u29ef"), "the glyph of the engine, as it is painted:\n" + text);
     } finally {
       screen.stopScreen();
       screen.close();
