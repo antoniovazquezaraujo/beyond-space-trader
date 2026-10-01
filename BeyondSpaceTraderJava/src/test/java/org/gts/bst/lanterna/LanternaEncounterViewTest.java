@@ -496,6 +496,56 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void aFailedEscapeBringsTheOtherShipCloser() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nx....\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int shipBefore = columnOf(screen, 'x');
+      int enemyBefore = firstColumnOf(screen, 'y');
+
+      // Leaving the scene is an escape attempt: the other ship gains ground.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      assertEquals(List.of(EncounterAction.Flee), executed, "leaving the scene asks to flee");
+      int closer = firstColumnOf(screen, 'y');
+      assertTrue(closer < enemyBefore, "the other ship gains ground (" + closer + " < " + enemyBefore + ")");
+      assertEquals(shipBefore + 4, columnOf(screen, 'x'), "and our ship comes back facing away");
+
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(firstColumnOf(screen, 'y') < closer, "and closer again on the next attempt");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theOtherShipLeavesTheSceneWhenItLosesYou() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

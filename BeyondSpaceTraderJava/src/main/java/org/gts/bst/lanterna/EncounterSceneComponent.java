@@ -231,6 +231,23 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     this.onExit = exit;
   }
 
+  /**
+   * After an escape attempt that failed: our ship comes back to its place, still
+   * facing away, and the other keeps the ground it has gained, a bit closer every
+   * attempt (it never gets in front of us: it stays behind, chasing).
+   */
+  public void chaseReset() {
+    youColumn = 0;
+    youTurned = true;
+    rowTarget = Integer.MIN_VALUE;
+    columnTarget = Integer.MIN_VALUE;
+    exiting = false;
+    opponentRow = 0;
+    int behind = 4 + youLeft + youWidth - opponentLeft;
+    opponentColumn = Math.max(behind, opponentColumn - 3);
+    invalidate();
+  }
+
   /** Puts both ships back in their places (a failed flee, or the start of the fight). */
   public void resetPosition() {
     youColumn = 0;

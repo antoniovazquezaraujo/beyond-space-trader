@@ -99,7 +99,8 @@ public final class LanternaEncounterView implements EncounterView {
         closeNow();
         return;
       }
-      content.resetPosition();
+      // We could not leave: our ship comes back and the other gains ground.
+      content.chaseReset();
       commands.execute(EncounterAction.Flee);
     });
     content.setPreferredSize(new TerminalSize(120, 30));
