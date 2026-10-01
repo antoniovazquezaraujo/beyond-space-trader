@@ -791,6 +791,56 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theShipThatIgnoresUsSlipsOutOfOurWay() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Ignore), false, 0, "Flea",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Police",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The police ignores.",
+          "Choose an action.", ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+          true, 5, false, 0, ""));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int enemyRow = rowOf(screen, 'y');
+
+      // We go above it and advance: it slips away, downwards, instead of waiting.
+      content.move(0, -1);
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      content.move(1, 0);
+      for(int i = 0; i < 12; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(rowOf(screen, 'y') > enemyRow,
+          "the one that ignores us dodges away from us (" + enemyRow + " -> " + rowOf(screen, 'y') + ")");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void aShipThatIgnoresUsDoesNotTurn() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

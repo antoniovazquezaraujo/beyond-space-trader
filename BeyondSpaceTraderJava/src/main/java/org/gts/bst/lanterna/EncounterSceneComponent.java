@@ -140,6 +140,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int youHitFrames;
   private int opponentHitFrames;
   private boolean opponentLeaving;
+  private int opponentRowTarget = Integer.MIN_VALUE;
   private boolean opponentLeavesRight;
   private boolean opponentGone;
   private boolean exitedRight;
@@ -336,8 +337,20 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** The rival: it ignores us, mirrors our height at its own pace, or chases us. */
   private void moveOpponent() {
-    if(model == null || model.opponentIgnores() || model.opponentHull().value() <= 0 || model.opponentDisabled()
+    if(model == null || model.opponentHull().value() <= 0 || model.opponentDisabled()
         || catwalk != Catwalk.NONE || opponentGone || opponentLeaving) {
+      return;
+    }
+    if(model.opponentIgnores()) {
+      // It wants nothing to do with us: it slips out of our way, like we do.
+      glideOpponent();
+      if(opponentRowTarget == Integer.MIN_VALUE && !clearOfUs()) {
+        int restRow = centreRow(false);
+        // Away from us: if we are below, it slips upwards, and the other way round.
+        boolean toTop = yourMiddleY() > opponentMiddleY();
+        opponentRowTarget = toTop ? areaTop - restRow
+            : Math.max(areaTop - restRow, areaBottom - opponentHeight - restRow);
+      }
       return;
     }
     if(model.commanderFleeing()) {
@@ -484,6 +497,27 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     glidePlayer();
     moveOpponent();
     invalidate();
+  }
+
+  /** True when the other drawing is well away from ours, head on. */
+  private boolean clearOfUs() {
+    return opponentX() - (yourX() + youWidth) >= 16 || yourX() - (opponentX() + opponentWidth) >= 16;
+  }
+
+  /** The other ship glides to the side it dodged to, like our own manoeuvre. */
+  private void glideOpponent() {
+    for(int i = 0; i < GLIDE_SPEED && opponentRowTarget != Integer.MIN_VALUE
+        && opponentRow != opponentRowTarget; i++) {
+      int step = opponentRowTarget > opponentRow ? 1 : -1;
+      if(!canOpponentMove(0, step)) {
+        opponentRowTarget = Integer.MIN_VALUE;
+        break;
+      }
+      opponentRow += step;
+    }
+    if(opponentRowTarget != Integer.MIN_VALUE && opponentRow == opponentRowTarget) {
+      opponentRowTarget = Integer.MIN_VALUE;
+    }
   }
 
   /** The player ship glides to its target a few cells per frame; a wall stops it. */
