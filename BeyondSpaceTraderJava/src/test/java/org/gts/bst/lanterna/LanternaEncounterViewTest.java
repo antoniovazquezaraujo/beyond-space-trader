@@ -590,33 +590,51 @@ class LanternaEncounterViewTest {
         content.tick();
       }
       gui.updateScreen();
-      assertTrue(badgesOver(screen, TextColor.ANSI.BLUE) > 0, "the blink is on: the shape over its colour");
-      assertEquals(0, badgesOver(screen, TextColor.ANSI.RED), "and nothing swapped yet");
+      // The colours of the badge, as the piece file paints them.
+      org.gts.bst.view.ShipArtFile badge = ShipCatalog.shared().piece("Role Police");
+      String glyph = new String(Character.toChars(firstGlyph(badge)));
+      TextColor shape = org.gts.bst.view.ShipColors.color(badge.color());
+      TextColor behind = org.gts.bst.view.ShipColors.color(badge.bgColor());
+      assertTrue(badgesOver(screen, glyph, behind) > 0, "the blink is on: the shape over its colour");
+      assertEquals(0, badgesOver(screen, glyph, shape), "and nothing swapped yet");
 
       for(int i = 0; i < 3; i++) {
         content.tick();
       }
       gui.updateScreen();
-      assertTrue(badgesOver(screen, TextColor.ANSI.RED) > 0, "the blink is off: shape and background swap");
-      assertEquals(0, badgesOver(screen, TextColor.ANSI.BLUE), "and the other way around");
+      assertTrue(badgesOver(screen, glyph, shape) > 0, "the blink is off: shape and background swap");
+      assertEquals(0, badgesOver(screen, glyph, behind), "and the other way around");
     } finally {
       screen.stopScreen();
       screen.close();
     }
   }
 
-  /** The badges of the ships painted over a background colour. */
-  private static int badgesOver(Screen screen, TextColor background) {
+  /** The glyphs of the screen painted over a background colour. */
+  private static int badgesOver(Screen screen, String glyph, TextColor background) {
     int count = 0;
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
       for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
         TextCharacter character = screen.getBackCharacter(column, row);
-        if(character.getCharacter() == '*' && character.getBackgroundColor().equals(background)) {
+        if(character.getCharacterString().equals(glyph) && character.getBackgroundColor().equals(background)) {
           count++;
         }
       }
     }
     return count;
+  }
+
+  /** The first glyph of the art of a piece. */
+  private static int firstGlyph(org.gts.bst.view.ShipArtFile piece) {
+    for(int row = 0; row < piece.height(); row++) {
+      for(int column = 0; column < piece.width(); column++) {
+        int codePoint = piece.at(row, column);
+        if(codePoint != ' ' && codePoint != org.gts.bst.view.ShipArtFile.CONTINUATION) {
+          return codePoint;
+        }
+      }
+    }
+    return '?';
   }
 
   @Test
