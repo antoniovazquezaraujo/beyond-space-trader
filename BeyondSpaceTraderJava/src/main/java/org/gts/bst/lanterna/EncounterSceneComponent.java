@@ -71,6 +71,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int HAUL_FRAMES = 12;
   private static final int RETRACT_FRAMES = 8;
   private static final int TRADE_GAP = 12;
+  /** The ships never touch: they stop this many cells apart (their drawings). */
+  private static final int MIN_GAP = 3;
   private static final char[] SPARKLE = {'\\', '|', '/'};
   private static final int ENTER_FRAMES = 14;
   private static final char HORIZONTAL = '─';
@@ -191,6 +193,19 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(model == null || screenWidth <= 0 || enterFrames > 0 || catwalk != Catwalk.NONE) {
       return;
     }
+    // A press against the movement brakes the ship; the next one turns it around.
+    if(dx != 0 && columnTarget != Integer.MIN_VALUE
+        && Integer.signum(columnTarget - youColumn) == -Integer.signum(dx)) {
+      columnTarget = Integer.MIN_VALUE;
+      invalidate();
+      return;
+    }
+    if(dy != 0 && rowTarget != Integer.MIN_VALUE
+        && Integer.signum(rowTarget - youRow) == -Integer.signum(dy)) {
+      rowTarget = Integer.MIN_VALUE;
+      invalidate();
+      return;
+    }
     int restRow = centreRow(true);
     if(dy < 0) {
       rowTarget = areaTop - restRow;
@@ -238,38 +253,24 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     NONE, EXTEND, HOLD, HAUL, RETRACT
   }
 
-  /** True when the player ship, moving by (dx, dy), does not run into the other drawing. */
+  /** True when the player ship, moving by (dx, dy), keeps a distance from the other one. */
   private boolean canMove(int dx, int dy) {
-    return !overlaps(yourPicture(), yourX() + dx, yourY() + dy,
+    return farEnough(yourPicture(), yourX() + dx, yourY() + dy,
         model.opponentPicture().cropped(), opponentX(), opponentY());
   }
 
-  /** True when the other ship, moving by (dx, dy), does not run into the player drawing. */
+  /** True when the other ship, moving by (dx, dy), keeps a distance from the player one. */
   private boolean canOpponentMove(int dx, int dy) {
-    return !overlaps(model.opponentPicture().cropped(), opponentX() + dx, opponentY() + dy,
+    return farEnough(model.opponentPicture().cropped(), opponentX() + dx, opponentY() + dy,
         yourPicture(), yourX(), yourY());
   }
 
-  /** True when the ink of a ship at (left, top) meets the ink of the other one. */
-  private static boolean overlaps(ShipPicture ship, int left, int top, ShipPicture other, int otherLeft,
+  /** True when the drawings of two ships stay apart (they never touch, see MIN_GAP). */
+  private static boolean farEnough(ShipPicture ship, int left, int top, ShipPicture other, int otherLeft,
       int otherTop) {
-    for(int y = 0; y < ship.height(); y++) {
-      for(int x = 0; x < ship.width(); x++) {
-        ShipPicture.Cell cell = ship.at(x, y);
-        if(cell == null || cell.continuation()) {
-          continue;
-        }
-        int column = left + x - otherLeft;
-        int row = top + y - otherTop;
-        if(column >= 0 && row >= 0 && column < other.width() && row < other.height()) {
-          ShipPicture.Cell there = other.at(column, row);
-          if(there != null && !there.continuation()) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
+    int gapX = Math.max(left - (otherLeft + other.width()), otherLeft - (left + ship.width()));
+    int gapY = Math.max(top - (otherTop + other.height()), otherTop - (top + ship.height()));
+    return gapX >= MIN_GAP || gapY >= MIN_GAP;
   }
 
   /** The frames the other ship takes to react: the better its pilot, the fewer. */
@@ -680,6 +681,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     TerminalSize size = getSize();
     int width = size.getColumns();
     int height = size.getRows();
+    // The blink of the drawings (the badges and the like) goes with the clock.
+    boolean blinkOn = frame / 3 % 2 == 0;
     UiPalette.reset(graphics);
     for(int row = 0; row < height; row++) {
       graphics.putString(0, row, " ".repeat(width));
@@ -705,15 +708,15 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     areaBottom = Math.max(BARS_ROWS + 1, logTop - 1);
     boolean down = model.opponentHull().value() <= 0;
     if(youHitFrames > 0) {
-      crackedPicture(graphics, yourX(), yourY(), height, you);
+      crackedPicture(graphics, yourX(), yourY(), height, you, blinkOn);
     } else {
-      EditorText.picture(graphics, yourX(), yourY(), you.width(), height, you);
+      EditorText.picture(graphics, yourX(), yourY(), you.width(), height, you, blinkOn);
     }
     if(!down) {
       if(opponentHitFrames > 0) {
-        crackedPicture(graphics, opponentX(), opponentY(), height, opponent);
+        crackedPicture(graphics, opponentX(), opponentY(), height, opponent, blinkOn);
       } else {
-        EditorText.picture(graphics, opponentX(), opponentY(), opponentWidth, height, opponent);
+        EditorText.picture(graphics, opponentX(), opponentY(), opponentWidth, height, opponent, blinkOn);
       }
       if(model.opponentDisabled()) {
         drawSmoke(graphics);
@@ -933,7 +936,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
    * The hit ship for a moment: some of its cells turn into flying debris and the
    * whole drawing flashes white on alternate frames, as if it were coming apart.
    */
-  private void crackedPicture(TextGUIGraphics graphics, int left, int row, int maxRow, ShipPicture picture) {
+  private void crackedPicture(TextGUIGraphics graphics, int left, int row, int maxRow, ShipPicture picture,
+      boolean blinkOn) {
     boolean flash = frame % 2 == 0;
     for(int y = 0; y < picture.height() && row + y < maxRow; y++) {
       for(int x = 0; x < picture.width(); x++) {
@@ -949,7 +953,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
           graphics.setForegroundColor(TextColor.ANSI.WHITE);
           graphics.putString(left + x, row + y, new String(Character.toChars(cell.codePoint())));
         } else {
-          EditorText.glyph(graphics, left + x, row + y, cell);
+          EditorText.glyph(graphics, left + x, row + y, cell, blinkOn);
         }
       }
     }

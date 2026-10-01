@@ -194,10 +194,26 @@ class LanternaEncounterViewTest {
       assertEquals(before + 2, columnOf(screen, 'x'), "the drawing is mirrored in place");
 
       // Advancing is a dash: six cells on the first frame (double of the vertical glide).
+      // A press against the movement brakes the ship; the next one turns it around.
+      content.move(1, 0);
+      content.tick();
+      gui.updateScreen();
+      assertEquals(before + 2, columnOf(screen, 'x'), "the press against the movement only stops it");
+
       content.move(1, 0);
       content.tick();
       gui.updateScreen();
       assertEquals(before + 6, columnOf(screen, 'x'), "the dash goes at double speed");
+
+      content.move(-1, 0);
+      content.tick();
+      gui.updateScreen();
+      assertEquals(before + 6, columnOf(screen, 'x'), "the press against the dash only stops it");
+
+      content.move(-1, 0);
+      content.tick();
+      gui.updateScreen();
+      assertTrue(columnOf(screen, 'x') < before + 6, "and the next press turns it around");
 
       // A ship that flees with the other one behind also points away, even standing still.
       content.resetPosition();
@@ -286,6 +302,23 @@ class LanternaEncounterViewTest {
       int logRow = rowOfText(screen, "The pirate attacks.");
       assertTrue(bottom > top, "and then it goes down again");
       assertTrue(bottom < logRow, "and stops over the log (" + bottom + " < " + logRow + ")");
+
+      // The vertical brake, the same as the horizontal one.
+      content.move(0, -1);
+      for(int i = 0; i < 2; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int rising = rowOf(screen, 'x');
+      content.move(0, 1);
+      content.tick();
+      gui.updateScreen();
+      assertEquals(rising, rowOf(screen, 'x'), "the press against the rise only stops it");
+
+      content.move(0, 1);
+      content.tick();
+      gui.updateScreen();
+      assertTrue(rowOf(screen, 'x') > rising, "and the next one sends it down");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -460,6 +493,130 @@ class LanternaEncounterViewTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void theShipsNeverTouch() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // Advancing: the wall of the other ship stops ours before touching it.
+      content.move(1, 0);
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      int lastX = lastColumnOf(screen, 'x');
+      int firstY = firstColumnOf(screen, 'y');
+      assertTrue(firstY - lastX - 1 >= 3,
+          "they stop with a gap between them (" + (firstY - lastX - 1) + " cells)");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** The last column with a glyph. */
+  private static int lastColumnOf(Screen screen, char glyph) {
+    int last = -1;
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        if(screen.getBackCharacter(column, row).getCharacter() == glyph) {
+          last = column;
+        }
+      }
+    }
+    return last;
+  }
+
+  /** The first column with a glyph. */
+  private static int firstColumnOf(Screen screen, char glyph) {
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        if(screen.getBackCharacter(column, row).getCharacter() == glyph) {
+          return column;
+        }
+      }
+    }
+    return -1;
+  }
+
+  @Test
+  void theBlinkingPiecesBlinkWithTheClock() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 28)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(100, 28));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      // The badge of the police blinks (red over blue): with the blink off it hides.
+      ShipPicture you = ShipCatalog.shared().picture(ShipType.Gnat, List.of("Role Police"), 15);
+      ShipPicture opponent = ShipCatalog.shared().picture(ShipType.Wasp, List.of(), 20).mirrored();
+      content.model(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee), false, 0, "Gnat",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Police",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The police attacks.",
+          "Choose an action.", ShipType.Gnat, ShipType.Wasp, false, false, 0, 0, you, opponent, false, false,
+          false, 5, false, 0, ""));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(badgesOver(screen, TextColor.ANSI.BLUE) > 0, "the blink is on: the shape over its colour");
+      assertEquals(0, badgesOver(screen, TextColor.ANSI.RED), "and nothing swapped yet");
+
+      for(int i = 0; i < 3; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(badgesOver(screen, TextColor.ANSI.RED) > 0, "the blink is off: shape and background swap");
+      assertEquals(0, badgesOver(screen, TextColor.ANSI.BLUE), "and the other way around");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** The badges of the ships painted over a background colour. */
+  private static int badgesOver(Screen screen, TextColor background) {
+    int count = 0;
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        TextCharacter character = screen.getBackCharacter(column, row);
+        if(character.getCharacter() == '*' && character.getBackgroundColor().equals(background)) {
+          count++;
+        }
+      }
+    }
+    return count;
   }
 
   @Test
