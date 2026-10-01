@@ -622,6 +622,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
   }
 
+  /** The ship goes on facing away (it is running, even if the other falls behind). */
+  public void turnAway() {
+    youTurned = true;
+    invalidate();
+  }
+
   /** The other ship loses us: it goes away through its side of the scene. */
   public void opponentLeaves() {
     if(model != null && !opponentGone && opponentLeaveFrames == 0) {

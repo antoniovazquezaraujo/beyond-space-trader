@@ -508,8 +508,9 @@ class LanternaEncounterViewTest {
       window.setHints(Set.of(Window.Hint.FULL_SCREEN));
       window.setComponent(content);
       gui.addWindow(window);
+      // An asymmetric ship, so the turn is seen: the ink lives at its left cell.
       ShipPicture you = new ShipCatalog(List.of(),
-          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          ShipArtFile.parse(new StringReader("[uno]\nx...\n")), List.of())
           .picture(ShipType.Flea, List.of(), 0);
       ShipPicture opponent = new ShipCatalog(List.of(),
           ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
@@ -521,9 +522,14 @@ class LanternaEncounterViewTest {
       }
       gui.updateScreen();
       assertTrue(screenText(screen).contains("yyyyy"), "the other ship is in the scene");
+      int facing = columnOf(screen, 'x');
 
+      content.turnAway();
       content.opponentLeaves();
       assertTrue(content.animating(), "and now it is leaving");
+      gui.updateScreen();
+      assertEquals(facing + 3, columnOf(screen, 'x'),
+          "our ship goes on facing away while the other falls behind");
 
       for(int i = 0; i < 12; i++) {
         content.tick();

@@ -125,7 +125,8 @@ public final class LanternaEncounterView implements EncounterView {
 
   @Override
   public void escaped() {
-    // You got away: the other ship loses you and leaves through its side.
+    // You got away: the ship goes on facing away while the other loses you and leaves.
+    content.turnAway();
     content.opponentLeaves();
   }
 
