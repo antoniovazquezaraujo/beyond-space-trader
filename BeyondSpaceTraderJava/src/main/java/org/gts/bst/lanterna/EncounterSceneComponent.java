@@ -74,6 +74,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int OPPONENT_LEAVE_FRAMES = 12;
   /** The ships never touch: they stop this many cells apart (their drawings). */
   private static final int MIN_GAP = 2;
+  /** The wide berth a ship that ignores us keeps from our path. */
+  private static final int KEEPS_CLEAR = 40;
   private static final char[] SPARKLE = {'\\', '|', '/'};
   private static final int ENTER_FRAMES = 14;
   private static final char HORIZONTAL = '─';
@@ -517,7 +519,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** True when the other drawing is well away from ours, head on. */
   private boolean clearOfUs() {
-    return opponentX() - (yourX() + youWidth) >= 16 || yourX() - (opponentX() + opponentWidth) >= 16;
+    return opponentX() - (yourX() + youWidth) >= KEEPS_CLEAR || yourX() - (opponentX() + opponentWidth) >= KEEPS_CLEAR;
   }
 
   /** The other ship glides to the side it dodged to, like our own manoeuvre. */

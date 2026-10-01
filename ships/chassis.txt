@@ -34,10 +34,21 @@ zone=A x=16 y=3 w=5 h=1
 size=small
 key=A color=white bgcolor=black
 key=B color=green
+key=C color=maroon
 zone=B x=3 y=1 w=3 h=1
+zone=C x=1 y=2 w=1 h=1
 zone=B x=7 y=2 w=7 h=1
+zone=C x=0 y=3 w=1 h=1
 zone=B x=1 y=3 w=3 h=1
 zone=A x=4 y=3 w=6 h=1
+zone=C x=11 y=3 w=1 h=1
+zone=C x=13 y=3 w=1 h=1
+zone=C x=15 y=4 w=1 h=1
+zone=C x=5 y=5 w=1 h=1
+zone=C x=7 y=5 w=1 h=1
+zone=C x=9 y=5 w=1 h=1
+zone=C x=11 y=5 w=1 h=1
+zone=C x=13 y=5 w=2 h=1
 color=red
              
  ||───.          
@@ -136,26 +147,21 @@ zone=A x=11 y=4 w=2 h=1
 zone=A x=33 y=4 w=3 h=1
 zone=A x=8 y=5 w=2 h=1
 zone=A x=11 y=5 w=2 h=1
-zone=A x=0 y=6 w=1 h=1
 zone=A x=8 y=6 w=2 h=1
 zone=A x=11 y=6 w=2 h=1
 zone=A x=16 y=6 w=2 h=1
 zone=A x=23 y=6 w=3 h=1
 zone=A x=27 y=6 w=1 h=1
-zone=A x=1 y=7 w=1 h=1
 zone=A x=14 y=7 w=3 h=1
 zone=A x=19 y=7 w=3 h=1
 zone=A x=25 y=7 w=3 h=1
 zone=A x=50 y=7 w=1 h=1
-zone=A x=2 y=8 w=1 h=1
 zone=A x=10 y=8 w=1 h=1
 zone=A x=42 y=8 w=1 h=1
 zone=A x=46 y=8 w=3 h=1
-zone=A x=3 y=9 w=1 h=1
 zone=A x=11 y=9 w=1 h=1
 zone=A x=32 y=9 w=3 h=1
 zone=A x=42 y=9 w=1 h=1
-zone=A x=4 y=10 w=1 h=1
 zone=A x=12 y=10 w=1 h=1
 zone=A x=17 y=10 w=4 h=1
 zone=A x=32 y=10 w=5 h=1
@@ -180,18 +186,20 @@ color=yellow
 
 [courier]
 key=A color=magenta
-key=B color=blue bgcolor=cyan
-zone=A x=4 y=0 w=4 h=1
-zone=A x=11 y=0 w=6 h=1
-zone=A x=1 y=1 w=3 h=1
+key=B color=gold bgcolor=darkgrey
+key=C color=lime bgcolor=black
+zone=C x=1 y=1 w=2 h=1
+zone=A x=3 y=1 w=1 h=1
+zone=A x=7 y=1 w=9 h=1
 zone=A x=17 y=1 w=1 h=1
-zone=A x=18 y=2 w=1 h=1
-zone=A x=0 y=3 w=3 h=1
-zone=A x=4 y=3 w=1 h=1
-zone=B x=10 y=3 w=2 h=1
-zone=A x=19 y=3 w=1 h=1
-zone=A x=5 y=4 w=2 h=1
-zone=A x=10 y=4 w=7 h=1
+zone=A x=16 y=2 w=3 h=1
+zone=C x=0 y=3 w=2 h=1
+zone=A x=2 y=3 w=1 h=1
+zone=C x=3 y=3 w=7 h=1
+zone=C x=11 y=3 w=1 h=1
+zone=C x=14 y=3 w=1 h=1
+zone=A x=18 y=3 w=2 h=1
+zone=A x=5 y=4 w=12 h=1
 zone=A x=18 y=4 w=2 h=1
     ∙--┬┬-┬-----∙
  ▄▄/   ╘┘┘┘┘≡═ ┐ \
@@ -200,6 +208,49 @@ zone=A x=18 y=4 w=2 h=1
      `∙═--_______+─°
 
 [gunship]
+key=A color=orange
+key=B color=brown
+key=C color=gold
+key=D color=brightred
+zone=A x=4 y=0 w=2 h=1
+zone=B x=6 y=0 w=4 h=1
+zone=D x=10 y=0 w=3 h=1
+zone=A x=13 y=0 w=1 h=1
+zone=B x=14 y=0 w=1 h=1
+zone=A x=1 y=1 w=1 h=1
+zone=B x=2 y=1 w=1 h=1
+zone=C x=3 y=1 w=1 h=1
+zone=D x=7 y=1 w=1 h=1
+zone=B x=8 y=1 w=1 h=1
+zone=D x=9 y=1 w=1 h=1
+zone=D x=13 y=1 w=1 h=1
+zone=D x=15 y=1 w=1 h=1
+zone=A x=0 y=2 w=1 h=1
+zone=B x=1 y=2 w=1 h=1
+zone=C x=2 y=2 w=1 h=1
+zone=D x=3 y=2 w=1 h=1
+zone=D x=16 y=2 w=3 h=1
+zone=C x=19 y=2 w=1 h=1
+zone=B x=0 y=3 w=2 h=1
+zone=A x=2 y=3 w=1 h=1
+zone=B x=3 y=3 w=3 h=1
+zone=A x=6 y=3 w=4 h=1
+zone=B x=10 y=3 w=1 h=1
+zone=D x=11 y=3 w=1 h=1
+zone=D x=14 y=3 w=1 h=1
+zone=A x=16 y=3 w=1 h=1
+zone=B x=17 y=3 w=2 h=1
+zone=C x=19 y=3 w=1 h=1
+zone=B x=5 y=4 w=1 h=1
+zone=A x=6 y=4 w=1 h=1
+zone=B x=7 y=4 w=1 h=1
+zone=C x=8 y=4 w=1 h=1
+zone=D x=9 y=4 w=1 h=1
+zone=A x=10 y=4 w=1 h=1
+zone=B x=11 y=4 w=1 h=1
+zone=C x=12 y=4 w=1 h=1
+zone=A x=15 y=4 w=1 h=1
+zone=D x=16 y=4 w=3 h=1
     ▄--▐º┐═══▄▄
  ▄▄▄   ╘▐═   ═ ┐
 ════            ═\─┐
@@ -207,6 +258,30 @@ zone=A x=18 y=4 w=2 h=1
      \═══════  ▀\──
 
 [frigate]
+key=A color=olive
+key=B color=gold
+key=C color=white bgcolor=orange
+zone=A x=0 y=0 w=1 h=1
+zone=A x=2 y=0 w=1 h=1
+zone=C x=4 y=0 w=1 h=1
+zone=B x=6 y=0 w=1 h=1
+zone=C x=7 y=0 w=1 h=1
+zone=A x=9 y=0 w=1 h=1
+zone=A x=11 y=0 w=1 h=1
+zone=A x=18 y=0 w=1 h=1
+zone=A x=3 y=1 w=2 h=1
+zone=A x=9 y=1 w=1 h=1
+zone=B x=11 y=1 w=6 h=1
+zone=A x=1 y=2 w=1 h=1
+zone=A x=15 y=2 w=1 h=1
+zone=A x=17 y=2 w=2 h=1
+zone=A x=20 y=2 w=4 h=1
+zone=C x=5 y=3 w=1 h=1
+zone=A x=7 y=3 w=4 h=1
+zone=B x=11 y=3 w=4 h=1
+zone=A x=19 y=3 w=5 h=1
+zone=B x=8 y=4 w=7 h=1
+zone=A x=19 y=4 w=4 h=1
 ─▐┐▐▓▐▒▓▒▐º┐ ▄▄▄▄▄┐
    ╘═    ╘▐══════  ═
  └▀▄▄          ═ ══\───┐
@@ -250,6 +325,49 @@ zone=A x=18 y=4 w=2 h=1
      ╙------/
 
 [hauler]
+key=A color=teal
+key=B color=skyblue
+key=C color=blue
+zone=B x=3 y=0 w=1 h=1
+zone=B x=7 y=0 w=2 h=1
+zone=A x=9 y=0 w=1 h=1
+zone=B x=10 y=0 w=1 h=1
+zone=B x=1 y=1 w=1 h=1
+zone=A x=2 y=1 w=1 h=1
+zone=A x=8 y=1 w=3 h=1
+zone=B x=11 y=1 w=2 h=1
+zone=A x=0 y=2 w=1 h=1
+zone=A x=9 y=2 w=1 h=1
+zone=B x=21 y=2 w=1 h=1
+zone=A x=22 y=2 w=1 h=1
+zone=B x=23 y=2 w=1 h=1
+zone=A x=24 y=2 w=1 h=1
+zone=B x=25 y=2 w=1 h=1
+zone=A x=26 y=2 w=1 h=1
+zone=B x=27 y=2 w=1 h=1
+zone=A x=28 y=2 w=1 h=1
+zone=B x=29 y=2 w=1 h=1
+zone=A x=30 y=2 w=1 h=1
+zone=B x=31 y=2 w=1 h=1
+zone=A x=1 y=3 w=3 h=1
+zone=C x=12 y=3 w=4 h=1
+zone=C x=18 y=3 w=4 h=1
+zone=A x=5 y=4 w=1 h=1
+zone=A x=20 y=4 w=6 h=1
+zone=A x=29 y=4 w=4 h=1
+zone=A x=34 y=4 w=4 h=1
+zone=B x=5 y=5 w=5 h=1
+zone=A x=33 y=5 w=1 h=1
+zone=A x=37 y=5 w=1 h=1
+zone=A x=9 y=6 w=1 h=1
+zone=B x=12 y=6 w=7 h=1
+zone=A x=23 y=6 w=1 h=1
+zone=A x=28 y=6 w=1 h=1
+zone=A x=30 y=6 w=1 h=1
+zone=C x=14 y=7 w=1 h=1
+zone=C x=16 y=7 w=1 h=1
+zone=C x=18 y=7 w=1 h=1
+zone=C x=20 y=7 w=1 h=1
    ╒▐▐▒∩─▐┐
  ╒▐     ▐▐▐╥╥▐▒▓▒▐º┐
 ▐        ▐■ ▐     /  ■■■▄▄▄▄▄▄▄▄┐

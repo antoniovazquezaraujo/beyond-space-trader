@@ -834,6 +834,8 @@ class LanternaEncounterViewTest {
       gui.updateScreen();
       assertTrue(rowOf(screen, 'y') > enemyRow,
           "the one that ignores us dodges away from us (" + enemyRow + " -> " + rowOf(screen, 'y') + ")");
+      assertFalse(screenText(screen).contains("x"),
+          "and we slip past it without bumping:\n" + screenText(screen));
 
       // And it goes on with its way, out of the scene, minding its own business.
       for(int i = 0; i < 200; i++) {
