@@ -99,9 +99,8 @@ public final class LanternaEncounterView implements EncounterView {
         closeNow();
         return;
       }
-      // We could not leave: our ship comes back and the other gains ground.
-      content.chaseReset();
-      commands.execute(EncounterAction.Flee);
+      // The ship never leaves the scene on its own: it comes back to its place.
+      content.resetPosition();
     });
     content.setPreferredSize(new TerminalSize(120, 30));
     window.setComponent(content);
@@ -364,6 +363,25 @@ public final class LanternaEncounterView implements EncounterView {
     return true;
   }
 
+  /**
+   * The half turn, and the advance away: the ship holds its place while the sky
+   * moves the other way. Advancing away is an escape attempt: the game decides
+   * whether the other one follows (it closes in) or loses us (it leaves the scene).
+   */
+  private void advanceAway() {
+    if(!content.facingAway()) {
+      content.move(-1, 0);
+      return;
+    }
+    if(model.actions().contains(EncounterAction.Flee)) {
+      execute(EncounterAction.Flee);
+    } else if(model.actions().contains(EncounterAction.Ignore)) {
+      // It has no interest in us: it loses us and leaves through its side.
+      content.opponentLeaves();
+      execute(EncounterAction.Ignore);
+    }
+  }
+
   /** The manoeuvres: the arrows and the vim keys move the ship. */
   private boolean manoeuvre(KeyStroke key) {
     switch(key.getKeyType()) {
@@ -374,7 +392,7 @@ public final class LanternaEncounterView implements EncounterView {
         content.move(0, 1);
         return true;
       case ArrowLeft:
-        content.move(-1, 0);
+        advanceAway();
         return true;
       case ArrowRight:
         content.move(1, 0);
@@ -390,7 +408,7 @@ public final class LanternaEncounterView implements EncounterView {
           return true;
         }
         if(character == 'h') {
-          content.move(-1, 0);
+          advanceAway();
           return true;
         }
         if(character == 'l') {

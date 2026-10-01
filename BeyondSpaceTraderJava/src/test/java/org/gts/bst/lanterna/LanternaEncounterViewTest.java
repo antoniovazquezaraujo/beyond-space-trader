@@ -193,27 +193,21 @@ class LanternaEncounterViewTest {
 
       assertEquals(before + 2, columnOf(screen, 'x'), "the drawing is mirrored in place");
 
-      // Advancing is a dash: six cells on the first frame (double of the vertical glide).
-      // A press against the movement brakes the ship; the next one turns it around.
-      content.move(1, 0);
+      // Advancing away holds the place: the world moves, not the ship.
+      content.move(-1, 0);
       content.tick();
       gui.updateScreen();
-      assertEquals(before + 2, columnOf(screen, 'x'), "the press against the movement only stops it");
+      assertEquals(before + 2, columnOf(screen, 'x'), "advancing away the ship holds its place");
 
+      content.move(1, 0);
+      gui.updateScreen();
+      assertEquals(before, columnOf(screen, 'x'), "and facing forward it is not moved either");
+
+      // Advancing forward is a dash: six cells on the first frame.
       content.move(1, 0);
       content.tick();
       gui.updateScreen();
       assertEquals(before + 6, columnOf(screen, 'x'), "the dash goes at double speed");
-
-      content.move(-1, 0);
-      content.tick();
-      gui.updateScreen();
-      assertEquals(before + 6, columnOf(screen, 'x'), "the press against the dash only stops it");
-
-      content.move(-1, 0);
-      content.tick();
-      gui.updateScreen();
-      assertTrue(columnOf(screen, 'x') < before + 6, "and the next press turns it around");
 
       // A ship that flees with the other one behind also points away, even standing still.
       content.resetPosition();
@@ -544,7 +538,7 @@ class LanternaEncounterViewTest {
   }
 
   @Test
-  void aFailedEscapeBringsTheOtherShipCloser() throws IOException {
+  void advancingAwayIsAnEscapeAttempt() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
     try {
@@ -567,30 +561,73 @@ class LanternaEncounterViewTest {
       }
       gui.updateScreen();
       int shipBefore = columnOf(screen, 'x');
-      int enemyBefore = firstColumnOf(screen, 'y');
 
-      // Leaving the scene is an escape attempt: the other ship gains ground.
+      // The first press away is only the half turn: the ship holds its place.
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
-      for(int i = 0; i < 40; i++) {
-        content.tick();
-      }
       gui.updateScreen();
+      assertTrue(executed.isEmpty(), "the half turn asks nothing of the game");
+      assertEquals(shipBefore + 4, columnOf(screen, 'x'), "the ship turns away where it stands");
 
-      assertEquals(List.of(EncounterAction.Flee), executed, "leaving the scene asks to flee");
-      int closer = firstColumnOf(screen, 'y');
-      assertTrue(closer < enemyBefore, "the other ship gains ground (" + closer + " < " + enemyBefore + ")");
-      assertEquals(shipBefore + 4, columnOf(screen, 'x'), "and our ship comes back facing away");
-
+      // The next one is an escape attempt: the game decides (it may lose us).
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
-      for(int i = 0; i < 40; i++) {
-        content.tick();
-      }
-      gui.updateScreen();
-      assertTrue(firstColumnOf(screen, 'y') < closer, "and closer again on the next attempt");
+      assertEquals(List.of(EncounterAction.Flee), executed, "advancing away asks to flee");
     } finally {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void aFailedEscapeBringsTheOtherShipCloser() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nx....\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(chase(you, opponent, 0, false));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int enemyBefore = firstColumnOf(screen, 'y');
+
+      // A failed escape (the game keeps the chase): the other one closes in.
+      content.model(chase(you, opponent, 1, true));
+      gui.updateScreen();
+      int closer = firstColumnOf(screen, 'y');
+      assertTrue(closer < enemyBefore, "the other ship gains ground (" + closer + " < " + enemyBefore + ")");
+
+      content.model(chase(you, opponent, 2, true));
+      gui.updateScreen();
+      assertTrue(firstColumnOf(screen, 'y') < closer, "and closer again with the next round");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** A round of a chase (or of the fight) over the ships of the test. */
+  private static EncounterViewModel chase(ShipPicture you, ShipPicture opponent, int round, boolean fleeing) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
+        false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+        "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+        "The pirate attacks.", "Choose an action.",
+        ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+        false, 5, fleeing, round, "");
   }
 
   @Test

@@ -165,6 +165,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       // The chase starts (or the fight is taken up again) and the ship turns with it.
       youTurned = model.commanderFleeing();
     }
+    if(before != null && model.commanderFleeing() && screenWidth > 0) {
+      // Every round of the chase brings the other one closer, always behind us.
+      int behind = 4 + youLeft + youWidth - opponentLeft;
+      opponentColumn = Math.max(behind, opponentColumn - 3);
+    }
     if(before == null) {
       // The encounter opens with the empty sky: both ships come in from the edges.
       enterFrames = ENTER_FRAMES;
@@ -189,16 +194,17 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   }
 
   /**
-   * One press, the whole manoeuvre: the ship glides on its own to the top, to the
-   * bottom or out of the screen (advancing or withdrawing). A wall stops it.
+   * One press does one thing. Sideways: the ship turns away (the sky sells the
+   * retreat) or faces the other one again, and advancing forward glides it on,
+   * stopping at a distance; the ship never leaves the scene on its own. Vertically
+   * it glides to the top or to the bottom, and a press against the glide brakes it.
    */
   public void move(int dx, int dy) {
     if(model == null || screenWidth <= 0 || enterFrames > 0 || catwalk != Catwalk.NONE) {
       return;
     }
-    // A press against the movement brakes the ship; the next one turns it around.
-    if(dx != 0 && columnTarget != Integer.MIN_VALUE
-        && Integer.signum(columnTarget - youColumn) == -Integer.signum(dx)) {
+    if(dx < 0 && columnTarget != Integer.MIN_VALUE) {
+      // Advancing forward and pressing back: first it stops, the next press turns it.
       columnTarget = Integer.MIN_VALUE;
       invalidate();
       return;
@@ -216,36 +222,27 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       rowTarget = Math.max(areaTop - restRow, areaBottom - youHeight - restRow);
     }
     if(dx < 0) {
-      // Withdrawing turns the ship around; advancing faces it to the other one again.
+      // The half turn: the ship holds its place and the world moves the other way.
       youTurned = true;
-      columnTarget = -youLeft - youWidth - 1;
     } else if(dx > 0) {
-      youTurned = false;
-      columnTarget = screenWidth - youLeft + 1;
+      if(youTurned) {
+        // Facing the other one again.
+        youTurned = false;
+      } else {
+        columnTarget = screenWidth - youLeft + 1;
+      }
     }
     invalidate();
+  }
+
+  /** True while the ship is turned away (running from the other one). */
+  public boolean facingAway() {
+    return youTurned;
   }
 
   /** Tells the view when the ship has left the screen (it went past or fled). */
   public void onExit(Runnable exit) {
     this.onExit = exit;
-  }
-
-  /**
-   * After an escape attempt that failed: our ship comes back to its place, still
-   * facing away, and the other keeps the ground it has gained, a bit closer every
-   * attempt (it never gets in front of us: it stays behind, chasing).
-   */
-  public void chaseReset() {
-    youColumn = 0;
-    youTurned = true;
-    rowTarget = Integer.MIN_VALUE;
-    columnTarget = Integer.MIN_VALUE;
-    exiting = false;
-    opponentRow = 0;
-    int behind = 4 + youLeft + youWidth - opponentLeft;
-    opponentColumn = Math.max(behind, opponentColumn - 3);
-    invalidate();
   }
 
   /** Puts both ships back in their places (a failed flee, or the start of the fight). */
@@ -275,8 +272,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** True when the player ship, moving by (dx, dy), keeps a distance from the other one. */
   private boolean canMove(int dx, int dy) {
-    return farEnough(yourPicture(), yourX() + dx, yourY() + dy,
-        model.opponentPicture().cropped(), opponentX(), opponentY());
+    return opponentGone || model.opponentHull().value() <= 0
+        || farEnough(yourPicture(), yourX() + dx, yourY() + dy,
+            model.opponentPicture().cropped(), opponentX(), opponentY());
   }
 
   /** True when the other ship, moving by (dx, dy), keeps a distance from the player one. */
