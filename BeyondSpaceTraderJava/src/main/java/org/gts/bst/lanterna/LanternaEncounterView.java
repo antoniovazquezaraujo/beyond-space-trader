@@ -99,9 +99,14 @@ public final class LanternaEncounterView implements EncounterView {
         closeNow();
         return;
       }
-      // Slipping past the other one and leaving the scene: an escape attempt.
-      content.resetPosition();
-      commands.execute(EncounterAction.Flee);
+      // Leaving the scene: if it has no interest in us, it loses us and goes;
+      // if it chases us, the game decides (a failed attempt loops the scene).
+      if(model.opponentIgnores()) {
+        content.opponentLeaves();
+        execute(EncounterAction.Ignore);
+      } else {
+        execute(EncounterAction.Flee);
+      }
     });
     content.setPreferredSize(new TerminalSize(120, 30));
     window.setComponent(content);
@@ -126,9 +131,18 @@ public final class LanternaEncounterView implements EncounterView {
 
   @Override
   public void escaped() {
-    // You got away: the ship goes on facing away while the other loses you and leaves.
-    content.turnAway();
-    content.opponentLeaves();
+    if(!content.exitedRight()) {
+      // Running away: the ship goes on facing away and the other loses us, leaving.
+      content.turnAway();
+      content.opponentLeaves();
+    }
+    // Dodging past it: we are already out; the scene just ends.
+  }
+
+  @Override
+  public void chaseGoesOn() {
+    // A failed escape: the scene loops, both ships coming back in.
+    content.wrapAround();
   }
 
   @Override
@@ -370,17 +384,9 @@ public final class LanternaEncounterView implements EncounterView {
    * whether the other one follows (it closes in) or loses us (it leaves the scene).
    */
   private void advanceAway() {
-    if(!content.facingAway()) {
-      content.move(-1, 0);
-      return;
-    }
-    if(model.actions().contains(EncounterAction.Flee)) {
-      execute(EncounterAction.Flee);
-    } else if(model.actions().contains(EncounterAction.Ignore)) {
-      // It has no interest in us: it loses us and leaves through its side.
-      content.opponentLeaves();
-      execute(EncounterAction.Ignore);
-    }
+    // The first press turns the ship where it stands; the next one sends it away
+    // (the stars sell the retreat). Leaving the scene asks the game for the escape.
+    content.move(-1, 0);
   }
 
   /** The manoeuvres: the arrows and the vim keys move the ship. */

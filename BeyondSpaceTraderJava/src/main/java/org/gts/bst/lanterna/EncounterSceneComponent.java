@@ -141,6 +141,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int opponentHitFrames;
   private int opponentLeaveFrames;
   private boolean opponentGone;
+  private boolean exitedRight;
   /** The geometry of the last paint: where the shots are born and where they land. */
   private int youLeft;
   private int youWidth;
@@ -167,8 +168,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
     if(before != null && model.commanderFleeing() && screenWidth > 0) {
       // Every round of the chase brings the other one closer, always behind us.
-      int behind = 4 + youLeft + youWidth - opponentLeft;
-      opponentColumn = Math.max(behind, opponentColumn - 3);
+      int toward = yourX() > opponentX() ? 1 : -1;
+      int gap = toward > 0 ? yourX() - (opponentX() + opponentWidth) : opponentX() - (yourX() + youWidth);
+      if(gap > 4) {
+        opponentColumn += toward * Math.min(3, gap - 4);
+      }
     }
     if(before == null) {
       // The encounter opens with the empty sky: both ships come in from the edges.
@@ -203,8 +207,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(model == null || screenWidth <= 0 || enterFrames > 0 || catwalk != Catwalk.NONE) {
       return;
     }
-    if(dx < 0 && columnTarget != Integer.MIN_VALUE) {
-      // Advancing forward and pressing back: first it stops, the next press turns it.
+    if(dx != 0 && columnTarget != Integer.MIN_VALUE
+        && Integer.signum(columnTarget - youColumn) == -Integer.signum(dx)) {
+      // A press against the advance brakes the ship; the next one turns it.
       columnTarget = Integer.MIN_VALUE;
       invalidate();
       return;
@@ -222,8 +227,13 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       rowTarget = Math.max(areaTop - restRow, areaBottom - youHeight - restRow);
     }
     if(dx < 0) {
-      // The half turn: the ship holds its place and the world moves the other way.
-      youTurned = true;
+      if(youTurned) {
+        // Advancing away: the ship glides off, still facing away.
+        columnTarget = -youLeft - youWidth - 1;
+      } else {
+        // The half turn: the ship holds its place and the world moves the other way.
+        youTurned = true;
+      }
     } else if(dx > 0) {
       if(youTurned) {
         // Facing the other one again.
@@ -238,6 +248,33 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** True while the ship is turned away (running from the other one). */
   public boolean facingAway() {
     return youTurned;
+  }
+
+  /** True when the ship left the scene through its right side (a dodge). */
+  public boolean exitedRight() {
+    return exitedRight;
+  }
+
+  /**
+   * The chase goes on after an escape attempt: the scene loops. The ship comes
+   * back in through the other edge, still running, and the other one behind it.
+   */
+  public void wrapAround() {
+    boolean runningRight = exitedRight;
+    exiting = false;
+    youTurned = !runningRight;
+    int behind;
+    if(runningRight) {
+      youColumn = -youLeft - youWidth - 1;
+      behind = yourX() - 4 - opponentWidth;
+    } else {
+      youColumn = screenWidth - youLeft + 1;
+      behind = yourX() + youWidth + 4;
+    }
+    columnTarget = 0;
+    opponentColumn = behind - opponentLeft;
+    opponentRow = youRow;
+    invalidate();
   }
 
   /** Tells the view when the ship has left the screen (it went past or fled). */
@@ -303,9 +340,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       return;
     }
     if(model.commanderFleeing()) {
-      // The chase: it follows, keeping a distance, until the game decides.
-      if(frame % 2 == 0 && opponentX() - (yourX() + youWidth) > 4 && canOpponentMove(-1, 0)) {
-        opponentColumn--;
+      // The chase: it follows us, keeping a distance, until the game decides.
+      int toward = yourX() > opponentX() ? 1 : -1;
+      int gap = toward > 0 ? yourX() - (opponentX() + opponentWidth) : opponentX() - (yourX() + youWidth);
+      if(frame % 2 == 0 && gap > 4 && canOpponentMove(toward, 0)) {
+        // It rushes to us when it is far, and closes in calmly when it is near.
+        opponentColumn += toward * Math.min(4, Math.max(1, gap / 10));
       }
       return;
     }
@@ -469,6 +509,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     boolean out = yourX() > screenWidth || yourX() + youWidth < 0;
     if(out && !exiting) {
       exiting = true;
+      exitedRight = yourX() > screenWidth;
       if(onExit != null) {
         onExit.run();
       }
@@ -745,6 +786,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     int half = (sceneWidth - 1) / 2;
     ShipPicture you = yourPicture();
     ShipPicture opponent = model.opponentPicture().cropped();
+    if(opponentX() < yourX()) {
+      // Behind us: it faces forward, chasing.
+      opponent = opponent.mirrored();
+    }
     screenWidth = sceneWidth;
     youLeft = shipLeft(0, half, you);
     youWidth = you.width();

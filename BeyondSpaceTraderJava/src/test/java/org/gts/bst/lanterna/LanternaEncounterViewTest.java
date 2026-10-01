@@ -193,21 +193,27 @@ class LanternaEncounterViewTest {
 
       assertEquals(before + 2, columnOf(screen, 'x'), "the drawing is mirrored in place");
 
-      // Advancing away holds the place: the world moves, not the ship.
+      // The next press away sends it off, still facing away (the stars sell it).
       content.move(-1, 0);
       content.tick();
       gui.updateScreen();
-      assertEquals(before + 2, columnOf(screen, 'x'), "advancing away the ship holds its place");
+      assertEquals(before - 4, columnOf(screen, 'x'), "advancing away it glides off, facing away");
+
+      // A press against the glide brakes it; the next one faces it forward again.
+      content.move(1, 0);
+      content.tick();
+      gui.updateScreen();
+      assertEquals(before - 4, columnOf(screen, 'x'), "the press against the glide only stops it");
 
       content.move(1, 0);
       gui.updateScreen();
-      assertEquals(before, columnOf(screen, 'x'), "and facing forward it is not moved either");
+      assertEquals(before - 6, columnOf(screen, 'x'), "and now it faces the other one again");
 
       // Advancing forward is a dash: six cells on the first frame.
       content.move(1, 0);
       content.tick();
       gui.updateScreen();
-      assertEquals(before + 6, columnOf(screen, 'x'), "the dash goes at double speed");
+      assertEquals(before, columnOf(screen, 'x'), "the dash goes forward");
 
       // A ship that flees with the other one behind also points away, even standing still.
       content.resetPosition();
@@ -490,6 +496,58 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void aFailedEscapeLoopsTheScene() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(chase(you, opponent, 0, true));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // Running away to the left: the ship leaves the scene...
+      content.move(-1, 0);
+      content.move(-1, 0);
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains("x"), "the ship has left the scene");
+      assertFalse(content.exitedRight(), "it went out through the left");
+
+      // ...and a failed escape loops it: both come back in from the right, the
+      // other ship behind ours.
+      content.wrapAround();
+      for(int i = 0; i < 30; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("x"), "the ship comes back in");
+      assertTrue(firstColumnOf(screen, 'y') > lastColumnOf(screen, 'x'),
+          "with the other behind it (to its right):\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theSkyFollowsTheShip() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
@@ -618,9 +676,13 @@ class LanternaEncounterViewTest {
       assertTrue(executed.isEmpty(), "the half turn asks nothing of the game");
       assertEquals(shipBefore + 4, columnOf(screen, 'x'), "the ship turns away where it stands");
 
-      // The next one is an escape attempt: the game decides (it may lose us).
+      // The next one sends it away: leaving the scene is an escape attempt.
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
-      assertEquals(List.of(EncounterAction.Flee), executed, "advancing away asks to flee");
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertEquals(List.of(EncounterAction.Flee), executed, "leaving the scene asks to flee");
     } finally {
       screen.stopScreen();
       screen.close();

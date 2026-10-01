@@ -39,6 +39,10 @@ public interface EncounterView {
   default void escaped() {
   }
 
+  /** A failed escape: the chase goes on (the ships come back into the scene). */
+  default void chaseGoesOn() {
+  }
+
   /** The police inspecting the ship: the scanner, and the catwalk if they take cargo. */
   default void inspection(boolean confiscated) {
   }
