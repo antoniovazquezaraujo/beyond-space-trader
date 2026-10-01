@@ -168,6 +168,14 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       // The chase starts (or the fight is taken up again) and the ship turns with it.
       youTurned = model.commanderFleeing();
     }
+    if(before != null && before.opponentIgnores() && !model.opponentIgnores()) {
+      // It was going its way; now it is done with ignoring us: it comes back.
+      opponentGone = false;
+      opponentLeaving = false;
+      opponentColumn = 0;
+      opponentRow = 0;
+      opponentRowTarget = Integer.MIN_VALUE;
+    }
     if(before != null && model.commanderFleeing() && screenWidth > 0) {
       // Every round of the chase brings the other one closer, always behind us.
       int toward = yourX() > opponentX() ? 1 : -1;
@@ -342,7 +350,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       return;
     }
     if(model.opponentIgnores()) {
-      // It wants nothing to do with us: it slips out of our way, like we do.
+      // It goes on with its own business, crossing the scene, and slips out of our
+      // way on the way: no interest in us at all, unless we attack it.
       glideOpponent();
       if(opponentRowTarget == Integer.MIN_VALUE && !clearOfUs()) {
         int restRow = centreRow(false);
@@ -350,6 +359,13 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         boolean toTop = yourMiddleY() > opponentMiddleY();
         opponentRowTarget = toTop ? areaTop - restRow
             : Math.max(areaTop - restRow, areaBottom - opponentHeight - restRow);
+      }
+      if(frame % 3 == 0 && canOpponentMove(-1, 0)) {
+        opponentColumn--;
+      }
+      if(opponentX() + opponentWidth < 0) {
+        // Its way takes it out of the scene: it is gone, minding its business.
+        opponentGone = true;
       }
       return;
     }

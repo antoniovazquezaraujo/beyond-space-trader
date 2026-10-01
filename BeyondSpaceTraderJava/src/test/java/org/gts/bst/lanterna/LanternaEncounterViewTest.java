@@ -834,58 +834,26 @@ class LanternaEncounterViewTest {
       gui.updateScreen();
       assertTrue(rowOf(screen, 'y') > enemyRow,
           "the one that ignores us dodges away from us (" + enemyRow + " -> " + rowOf(screen, 'y') + ")");
-    } finally {
-      screen.stopScreen();
-      screen.close();
-    }
-  }
 
-  @Test
-  void aShipThatIgnoresUsDoesNotTurn() throws IOException {
-    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
-    screen.startScreen();
-    try {
-      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-      gui.setTheme(LanternaTheme.create());
-      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
-      content.setPreferredSize(new TerminalSize(80, 24));
-      BasicWindow window = new BasicWindow();
-      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
-      window.setComponent(content);
-      gui.addWindow(window);
-      // Asymmetric drawings: the ink of each one shows where it points.
-      ShipPicture you = new ShipCatalog(List.of(),
-          ShipArtFile.parse(new StringReader("[uno]\nx....\n")), List.of())
-          .picture(ShipType.Flea, List.of(), 0);
-      ShipPicture opponent = new ShipCatalog(List.of(),
-          ShipArtFile.parse(new StringReader("[dos]\ny....\n")), List.of())
-          .picture(ShipType.Scorpion, List.of(), 0);
+      // And it goes on with its way, out of the scene, minding its own business.
+      for(int i = 0; i < 200; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains("y"), "it crosses the scene and leaves:\n" + screenText(screen));
+
+      // If we attack it, it is done with ignoring us: it comes back for us.
       content.model(new EncounterViewModel(
-          EnumSet.of(EncounterAction.Attack, EncounterAction.Ignore), false, 0, "Flea",
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee), false, 1, "Flea",
           new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Police",
-          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The police ignores.",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The police attacks.",
           "Choose an action.", ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
-          true, 5, false, 0, ""));
-      gui.updateScreen();
-      for(int i = 0; i < 14; i++) {
+          false, 5, false, 1, ""));
+      for(int i = 0; i < 4; i++) {
         content.tick();
       }
       gui.updateScreen();
-      int enemyLeft = columnOf(screen, 'y');
-
-      // We slip past it, up and forward, ending ahead of it.
-      content.move(0, -1);
-      for(int i = 0; i < 6; i++) {
-        content.tick();
-      }
-      content.move(1, 0);
-      for(int i = 0; i < 20; i++) {
-        content.tick();
-      }
-      gui.updateScreen();
-
-      assertEquals(enemyLeft, columnOf(screen, 'y'),
-          "the one that ignores us does not turn while we slip past it");
+      assertTrue(screenText(screen).contains("y"), "and it comes back when the fight starts");
     } finally {
       screen.stopScreen();
       screen.close();
