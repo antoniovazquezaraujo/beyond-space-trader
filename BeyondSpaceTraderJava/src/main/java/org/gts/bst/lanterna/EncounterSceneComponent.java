@@ -1345,20 +1345,36 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private void drawLog(TextGUIGraphics graphics, int width, int height, int logTop) {
     int row = logTop;
     for(String line : log) {
-      if(row >= height - 1) {
-        break;
-      }
-      UiPalette.draw(graphics, 1, row++, line, UiPalette.TEXT, width - 1);
+      row = drawLogLine(graphics, row, height, line, UiPalette.TEXT, width);
     }
     for(String alert : alerts) {
-      if(row >= height - 1) {
-        break;
-      }
-      UiPalette.draw(graphics, 1, row++, alert, UiPalette.ACCENT, width - 1);
+      row = drawLogLine(graphics, row, height, alert, UiPalette.ACCENT, width);
     }
     if(leaving) {
       UiPalette.draw(graphics, 1, height - 1, "[ENTER] continue", UiPalette.WARN, width - 1);
     }
+  }
+
+  /**
+   * Wraps a line of the log to the room left by the keys and paints it row by
+   * row. An alert of the game (a blackmail, an outcome) is a whole message and
+   * must read whole; the last row of the screen is never painted (it is kept
+   * for the action keys, or for the leave key while the scene waits). An empty
+   * line still takes its row, as the log always did.
+   */
+  private static int drawLogLine(TextGUIGraphics graphics, int row, int height, String text, TextColor color,
+      int width) {
+    java.util.List<String> lines = wrap(text, Math.max(1, width - 2));
+    if(lines.isEmpty()) {
+      return row < height - 1 ? row + 1 : row;
+    }
+    for(String wrapped : lines) {
+      if(row >= height - 1) {
+        break;
+      }
+      UiPalette.draw(graphics, 1, row++, wrapped, color, width - 1);
+    }
+    return row;
   }
 
   /**

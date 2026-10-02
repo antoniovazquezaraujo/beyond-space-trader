@@ -37,6 +37,7 @@ import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoBuyOp;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
+import org.gts.bst.view.Alerts;
 import org.gts.bst.view.DialogService;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
@@ -2995,6 +2996,112 @@ class LanternaEncounterViewTest {
       assertTrue(text.contains(loot), "the loot line stays in the log:\n" + text);
       assertEquals(screen.getTerminalSize().getRows() - 2, rowOfText(screen, loot),
           "and keeps its place at the bottom of the scene:\n" + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theBlackmailAlertWrapsWholeInTheLog() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      gui.addWindow(view.asWindow());
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+
+      // The pirates that find no cargo blackmail us: the alert of the game (the
+      // same one quietTo sends to the log of the encounter) is long. The tests
+      // run the English bundle; the tail the author saw cut off was
+      // "patrimonio actual: <amount>" (here, "current worth").
+      String amount = spacetrader.Functions.Multiples(22750, spacetrader.Strings.MoneyUnit);
+      String blackmail = spacetrader.Functions.StringVars(
+          Alerts.get(spacetrader.enums.AlertType.EncounterPiratesFindNoCargo).message(), amount);
+      view.log(blackmail);
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      int head = rowOfText(screen, "The pirates are very angry");
+      int tail = rowOfText(screen, "your current worth - " + amount + ".");
+      assertTrue(head >= 0, "the head of the blackmail is in the log:\n" + text);
+      assertTrue(tail >= 0, "and its tail is not cut off any more:\n" + text);
+      assertTrue(tail >= head + 2,
+          "the message falls in several rows (" + head + ".." + tail + "):\n" + text);
+      assertEquals(UiPalette.ACCENT, screen.getBackCharacter(1, head).getForegroundColor(),
+          "the alert keeps its colour:\n" + text);
+
+      // The last row of the screen belongs to the keys of the actions: the
+      // wrapped alert ends right over it.
+      assertEquals(screen.getTerminalSize().getRows() - 2, tail, "the tail ends over the key bar:\n" + text);
+      String bar = lastScreenRow(screen);
+      assertTrue(bar.contains("[A]"), "the action keys keep the last row:\n" + bar);
+      assertFalse(bar.contains("current worth"), "the alert never steps on the keys:\n" + bar);
+
+      // And when the scene waits for the player, the leave key keeps the last
+      // row while the whole message stays in the log.
+      view.looted(false);
+      gui.updateScreen();
+      text = screenText(screen);
+      assertEquals(screen.getTerminalSize().getRows() - 1, rowOfText(screen, "[ENTER] continue"),
+          "the leave key keeps the last row:\n" + text);
+      assertTrue(text.contains("your current worth - " + amount + "."),
+          "the whole blackmail stays in the log:\n" + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aLongLogLineWrapsWholeInTheLog() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(police(you, opponent, 0));
+
+      // A long line of the log of the encounter (the text of the round): it is
+      // wrapped over the rows, keeps the colour of the log and never steps on
+      // the keys of the last row.
+      String line = "The police requests to inspect and the pirate decides to run while the scanner sweeps the sky.";
+      content.log(List.of(line));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      int head = rowOfText(screen, "The police requests to inspect and");
+      int tail = rowOfText(screen, "the scanner sweeps the sky.");
+      assertTrue(head >= 0, "the head of the line is in the log:\n" + text);
+      assertTrue(tail > head, "the line falls in several rows (" + head + ".." + tail + "):\n" + text);
+      assertEquals(UiPalette.TEXT, screen.getBackCharacter(1, head).getForegroundColor(),
+          "the log keeps its colour:\n" + text);
+      assertTrue(tail < screen.getTerminalSize().getRows() - 1, "the line ends over the key bar:\n" + text);
+      String bar = lastScreenRow(screen);
+      assertTrue(bar.contains("[A]"), "the action keys keep the last row:\n" + bar);
+      assertFalse(bar.contains("scanner"), "the log never steps on the keys:\n" + bar);
     } finally {
       screen.stopScreen();
       screen.close();
