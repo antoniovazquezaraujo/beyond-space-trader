@@ -238,7 +238,17 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   /** The name of an element: the kind of piece and the key that paints it. */
   private String elementLabel(char letter) {
-    return capitalized(ShipSites.kindName(ShipSites.kindOfLetter(letter, pieces))) + " (" + letter + ")";
+    return elementName(letter) + " (" + letter + ")";
+  }
+
+  /** The name of an element alone: the panel lists the key in its own column. */
+  private String elementName(char letter) {
+    return capitalized(ShipSites.kindName(ShipSites.kindOfLetter(letter, pieces)));
+  }
+
+  /** The `have/max` of an element: `?` when the type declares no maximum. */
+  private static String countText(int there, int max) {
+    return max < 0 ? "?" : there + "/" + max;
   }
 
   /** Space: any letter in the cell is erased; if it is empty, the pen is painted; the cursor moves right. */
@@ -549,7 +559,9 @@ public final class ShipEditorView extends ArtEditorWindow {
   }
 
   private int panelWidth(TerminalSize size) {
-    return Math.min(26, Math.max(16, size.getColumns() / 4));
+    // The five columns and the hull-size warning need room, but an 80-column
+    // terminal still keeps at least 40 columns for the canvas.
+    return Math.min(34, Math.max(16, size.getColumns() - 40));
   }
 
   /** The pieces that fill a kind of site (only the ones with a key). */
@@ -577,13 +589,14 @@ public final class ShipEditorView extends ArtEditorWindow {
     if(designs.isEmpty()) {
       graphics.putString(0, row++, EditorText.cut("(no ships in ships.txt)", width));
     }
+    int nameColumn = shipNameColumn(width);
     int first = Math.max(0, designIndex - 5);
     for(int i = first; i < designs.size() && i < first + 6 && row < rows; i++, row++) {
       if(i == designIndex) {
         graphics.setForegroundColor(TextColor.ANSI.BLACK);
         graphics.setBackgroundColor(TextColor.ANSI.WHITE);
       }
-      graphics.putString(0, row, EditorText.cut(String.format("%-" + width + "s", shipLabel(designs.get(i))), width));
+      graphics.putString(0, row, shipRow(designs.get(i), nameColumn, width));
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     }
@@ -594,7 +607,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     if(row < rows && hull != null && budget != null && !hull.size().isEmpty()
         && !ShipSites.sizeFits(hull.size(), budget.size())) {
       graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-      graphics.putString(0, row++, EditorText.cut("⚠ size " + hull.size() + " vs " + budget.size(), width));
+      graphics.putString(0, row++, EditorText.cut(hullWarning(hull, budget), width));
     }
     List<Character> pens = pens();
     if(pens.isEmpty()) {
@@ -605,28 +618,76 @@ public final class ShipEditorView extends ArtEditorWindow {
       return;
     }
     Map<ShipSites.Kind, Integer> counts = ShipSites.countsByKind(currentGroups(), pieces);
+    int numberColumn = String.valueOf(pens.size()).length();
+    int elementColumn = elementNameColumn(pens);
+    int countColumn = elementCountColumn(pens, budget, counts);
     for(int i = 0; i < pens.size() && row < rows; i++, row++) {
       char letter = pens.get(i);
       ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
       int max = budget == null ? -1 : ShipSites.maxOfKind(budget, kind);
       int there = counts.getOrDefault(kind, 0);
+      String count = countText(there, max);
       String mark = max < 0 ? "?" : there < max ? "⚠" : there == max ? "✓" : "✗";
-      String text = (i + 1) + ". " + elementLabel(letter) + "  " + there + "/" + (max < 0 ? "?" : max) + " " + mark;
       if(letter == pen) {
         graphics.setForegroundColor(TextColor.ANSI.BLACK);
         graphics.setBackgroundColor(TextColor.ANSI.WHITE);
-      } else if(mark.equals("⚠") || mark.equals("✗")) {
-        graphics.setForegroundColor(TextColor.ANSI.YELLOW);
+      } else {
+        graphics.setForegroundColor(mark.equals("⚠") || mark.equals("✗") ? TextColor.ANSI.YELLOW
+            : TextColor.ANSI.WHITE);
       }
-      graphics.putString(0, row, EditorText.cut(String.format("%-" + width + "s", text), width));
+      String text = EditorText.padLeft(String.valueOf(i + 1), numberColumn) + "  " + letter + "  "
+          + EditorText.padRight(elementName(letter), elementColumn) + "  "
+          + EditorText.padLeft(count, countColumn) + "  " + mark;
+      graphics.putString(0, row, EditorText.padRight(EditorText.cut(text, width), width));
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     }
   }
 
-  /** A ship as the panel lists it: its name and its type in brackets. */
-  private static String shipLabel(ShipDesign design) {
-    return design.type().isEmpty() ? design.name() : design.name() + " [" + design.type() + "]";
+  /**
+   * The width of the name column of the ships: the longest name, always leaving
+   * room for the type bracket so the type column does not jump.
+   */
+  private int shipNameColumn(int width) {
+    int names = 0;
+    int types = 0;
+    for(ShipDesign other : designs) {
+      names = Math.max(names, EditorText.width(other.name()));
+      types = Math.max(types, other.type().isEmpty() ? 0 : EditorText.width(other.type()) + 3);
+    }
+    return Math.min(names, Math.max(1, width - types));
+  }
+
+  /** A ship as the panel lists it: the name and its type, each in its own column. */
+  private static String shipRow(ShipDesign design, int nameColumn, int width) {
+    String name = EditorText.cut(EditorText.padRight(design.name(), nameColumn), nameColumn);
+    String text = design.type().isEmpty() ? name : name + " [" + design.type() + "]";
+    return EditorText.padRight(EditorText.cut(text, width), width);
+  }
+
+  /** The width of the name column of the elements, fixed for every row. */
+  private int elementNameColumn(List<Character> pens) {
+    int column = 1;
+    for(char letter : pens) {
+      column = Math.max(column, elementName(letter).length());
+    }
+    return column;
+  }
+
+  /** The width of the `have/max` column of the elements, fixed for every row. */
+  private int elementCountColumn(List<Character> pens, ShipSites.Budget budget, Map<ShipSites.Kind, Integer> counts) {
+    int column = 1;
+    for(char letter : pens) {
+      ShipSites.Kind kind = ShipSites.kindOfLetter(letter, pieces);
+      int max = budget == null ? -1 : ShipSites.maxOfKind(budget, kind);
+      column = Math.max(column, countText(counts.getOrDefault(kind, 0), max).length());
+    }
+    return column;
+  }
+
+  /** The warning of a hull whose size does not match the size of the ship type. */
+  private static String hullWarning(ShipArtFile hull, ShipSites.Budget budget) {
+    return "⚠ hull size: " + hull.size() + " (type: " + budget.size().name().toLowerCase(java.util.Locale.ROOT) + ")";
   }
 
   /** Draws the open list of hulls or ship types. */

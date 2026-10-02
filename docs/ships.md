@@ -39,8 +39,9 @@ blink=true                   ← optional; only true or false (false by default)
   (`key=M`).
 - **In a chassis**, `size=` declares its size (`tiny`, `small`, `medium`, `large`,
   `huge` or `any`; empty means unknown). The ship editor warns when it does not
-  match the size of the ship type, so a rowing boat cannot pass for a cargo ship
-  without a warning; the hull editor sets it with `z`.
+  match the size of the ship type (`⚠ hull size: small (type: huge)`), so a
+  rowing boat cannot pass for a cargo ship without a warning; the hull editor
+  sets it with `z`.
 - **In a chassis**, `key=` with a style defines a **colour letter** (a free
   letter and the colour, background and blink it paints with:
   `key=X color=red bgcolor=blue blink=true`) and `zone=` paints a **colour
@@ -338,14 +339,14 @@ files, so the changes are there); Escape in the menu quits.
 Both editors have a vertical panel on the left, and the selected row of every
 list has a background of its own; each list opens with its title inside a line
 (`─ Ships ───`, `─ Elements ───`). The **ship editor** panel starts with the
-ships: every one shows its type in brackets (`mi nave [Bumblebee]`), `TAB` and
-`⇧TAB` move through the list, the open one is highlighted and `y` cycles its
-type. Then come the numbered elements: `n` and `p` move through them and the
-keys `1` to `9` pick one directly. Each element is a piece key the game may
-fill a site with (`1. Weapon (A)`), with how many the ship has against the
-maximum (and a mark: `✓` right, `⚠` missing, `✗` over, `?` without a type);
-then come the hull with its colours and the same ship with the real pieces
-painted over it.
+ships: the name and its type in brackets (`mi nave [Bumblebee]`) each line up in
+its own column, `TAB` and `⇧TAB` move through the list, the open one is
+highlighted and `y` cycles its type. Then come the numbered elements: `n` and
+`p` move through them and the keys `1` to `9` pick one directly. Each element
+is a piece key the game may fill a site with, one column per field (number, key,
+name, `have/max` and mark: `1  A  Weapon  1/2  ⚠`), where the mark is `✓`
+right, `⚠` missing, `✗` over and `?` without a type; then come the hull with
+its colours and the same ship with the real pieces painted over it.
 
 | Key | Action |
 | --- | --- |

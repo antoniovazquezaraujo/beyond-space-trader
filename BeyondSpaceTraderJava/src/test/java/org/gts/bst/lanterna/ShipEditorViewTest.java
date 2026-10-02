@@ -47,12 +47,13 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
       assertTrue(screenText(screen).contains("prueba"), screenText(screen));
-      assertTrue(screenText(screen).contains("1. Engine (M)"), "the panel of elements: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1  M  Engine  0/1  ⚠"),
+          "the panel of elements: " + screenText(screen));
 
       // the pen starts on the only element (M, the engine): space paints
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("1/1"), "the count: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1  M  Engine  1/1  ✓"), "the count: " + screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
@@ -71,7 +72,7 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke(KeyType.ArrowLeft));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("1. Engine (M)  0/1"), "the letter is gone: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1  M  Engine  0/1  ⚠"), "the letter is gone: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -140,7 +141,8 @@ class ShipEditorViewTest {
 
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("1. Weapon (A)"), "the Firefly admits one weapon: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1  A  Weapon  1/1  ✓"),
+          "the Firefly admits one weapon: " + screenText(screen));
 
       // another weapon, apart: it counts all the same and does not fit
       view.handleKey(new KeyStroke(KeyType.ArrowRight));
@@ -148,7 +150,7 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("takes 1"), "the warning: " + screenText(screen));
-      assertTrue(screenText(screen).contains("1. Weapon (A)  1/1"), "it is not written: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1  A  Weapon  1/1  ✓"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -174,6 +176,8 @@ class ShipEditorViewTest {
       noType.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("pick the ship type"), screenText(screen));
+      assertTrue(screenText(screen).contains("1  M  Engine  ?  ?"),
+          "without a type there is no maximum: " + screenText(screen));
       noType.handleKey(new KeyStroke(KeyType.Escape));
 
       // with type=Wasp (Huge) three engines fit and the fourth does not
@@ -185,15 +189,15 @@ class ShipEditorViewTest {
         wasp.handleKey(new KeyStroke(KeyType.ArrowRight));
       }
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("1. Engine (M)  3/3"), screenText(screen));
+      assertTrue(screenText(screen).contains("1  M  Engine  3/3  ✓"), screenText(screen));
 
-      assertTrue(screenText(screen).contains("size tiny vs Huge"),
+      assertTrue(screenText(screen).contains("⚠ hull size: tiny (type: huge)"),
           "the size of the chassis is checked: " + screenText(screen));
 
       wasp.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("takes 3"), screenText(screen));
-      assertTrue(screenText(screen).contains("1. Engine (M)  3/3"), "it is not written: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1  M  Engine  3/3  ✓"), "it is not written: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -333,7 +337,7 @@ class ShipEditorViewTest {
       // the pen starts on A (the weapon): space paints it
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("1. Weapon (A)  1/1"), screenText(screen));
+      assertTrue(screenText(screen).contains("1  A  Weapon  1/1  ✓"), screenText(screen));
 
       // n moves the pen to M (the engine); space over the A erases it anyway
       view.handleKey(new KeyStroke('n', false, false));
@@ -342,8 +346,8 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke(KeyType.ArrowLeft));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("1. Weapon (A)  0/1"), "the A is erased: " + screenText(screen));
-      assertTrue(screenText(screen).contains("2. Engine (M)  0/1"), "and no M was painted: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1  A  Weapon  0/1  ⚠"), "the A is erased: " + screenText(screen));
+      assertTrue(screenText(screen).contains("2  M  Engine  0/1  ⚠"), "and no M was painted: " + screenText(screen));
 
       // a number picks an element directly
       view.handleKey(new KeyStroke('1', false, false));
@@ -370,8 +374,8 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
 
-      int weapon = panelRowOf(screen, "1. Weapon (A)");
-      int engine = panelRowOf(screen, "2. Engine (M)");
+      int weapon = panelRowOf(screen, "1  A  Weapon");
+      int engine = panelRowOf(screen, "2  M  Engine");
       assertTrue(weapon >= 0 && engine >= 0, screenText(screen));
 
       // the first element is selected: its row has a background of its own
@@ -383,10 +387,112 @@ class ShipEditorViewTest {
       // n moves the highlight to the engine
       view.handleKey(new KeyStroke('n', false, false));
       gui.updateScreen();
-      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "2. Engine (M)")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "2  M  Engine")).getBackgroundColor(),
           "the engine is now selected: " + screenText(screen));
-      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowOf(screen, "1. Weapon (A)")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowOf(screen, "1  A  Weapon")).getBackgroundColor(),
           "and the weapon is not: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void linesUpTheElementColumnsAndLeavesTheKeyWithoutParentheses() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Energy Shield]\nkey=E\ncolor=cyan\nE\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      String[] lines = screenText(screen).split("\n", -1);
+      String weapon = lines[panelRowOf(screen, "1  A  Weapon")];
+      String shield = lines[panelRowOf(screen, "2  E  Shield")];
+      assertTrue(weapon.contains("1  A  Weapon  0/1  ⚠"), screenText(screen));
+      assertTrue(shield.contains("2  E  Shield  0/1  ⚠"), screenText(screen));
+      assertFalse(screenText(screen).contains("Weapon (A)") || screenText(screen).contains("Shield (E)"),
+          "the key is not in parentheses: " + screenText(screen));
+      assertEquals(weapon.indexOf("A"), shield.indexOf("E"), "the key column: " + screenText(screen));
+      assertEquals(weapon.indexOf("Weapon"), shield.indexOf("Shield"), "the name column: " + screenText(screen));
+      assertEquals(weapon.indexOf("0/1"), shield.indexOf("0/1"), "the have/max column: " + screenText(screen));
+      assertEquals(weapon.indexOf("⚠"), shield.indexOf("⚠"), "the mark column: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void linesUpTheShipsAndTheirTypes() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader(
+        "[uno]\ntype=Firefly\nchasis=h1\n[una nave larga]\ntype=Gnat\nchasis=h2\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[h1]\ncolor=cyan\nxxxxx\n[h2]\ncolor=red\nxxxxx\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, List.of());
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      String[] lines = screenText(screen).split("\n", -1);
+      int first = panelRowWith(screen, "[Firefly]");
+      int second = panelRowWith(screen, "[Gnat]");
+      assertTrue(first >= 0 && second >= 0, screenText(screen));
+      assertEquals(lines[first].indexOf("[Firefly]"), lines[second].indexOf("[Gnat]"),
+          "the type column: " + screenText(screen));
+
+      // the highlight of the open ship covers the whole panel row
+      int divider = lines[first].indexOf('│', 1);
+      assertTrue(divider > 1, screenText(screen));
+      for(int x = 1; x < divider; x++) {
+        assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(x, first).getBackgroundColor(),
+            "the open ship fills its row: " + screenText(screen));
+        assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(x, second).getBackgroundColor(),
+            "the closed ship does not: " + screenText(screen));
+      }
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void warnsOnlyWhenTheHullSizeDoesNotMatchTheType() throws IOException {
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+
+      // Firefly is Small: the size of the chassis fits, so there is no warning
+      ShipEditorView fits = new ShipEditorView(
+          ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n")), hulls, List.of());
+      gui.addWindow(fits);
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains("hull size"), screenText(screen));
+      fits.handleKey(new KeyStroke(KeyType.Escape));
+
+      // Wasp is Huge: the warning says which size each one has, inside the panel
+      ShipEditorView mismatched = new ShipEditorView(
+          ShipDesign.parse(new StringReader("[prueba]\ntype=Wasp\nchasis=uno\n")), hulls, List.of());
+      gui.addWindow(mismatched);
+      gui.updateScreen();
+      String warning = "⚠ hull size: small (type: huge)";
+      assertTrue(screenText(screen).contains(warning), screenText(screen));
+      int row = panelRowWith(screen, warning);
+      String[] lines = screenText(screen).split("\n", -1);
+      assertTrue(lines[row].indexOf(warning) + warning.length() < lines[row].indexOf('│', 1),
+          "the warning fits in the panel: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -435,6 +541,16 @@ class ShipEditorViewTest {
     String[] lines = screenText(screen).split("\n", -1);
     for(int row = 0; row < lines.length; row++) {
       if(lines[row].startsWith("│" + text)) {
+        return row;
+      }
+    }
+    return -1;
+  }
+
+  private static int panelRowWith(Screen screen, String text) {
+    String[] lines = screenText(screen).split("\n", -1);
+    for(int row = 0; row < lines.length; row++) {
+      if(lines[row].startsWith("│") && lines[row].contains(text)) {
         return row;
       }
     }

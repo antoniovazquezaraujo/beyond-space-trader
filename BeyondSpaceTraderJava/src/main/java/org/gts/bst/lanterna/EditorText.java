@@ -94,6 +94,29 @@ final class EditorText {
     return head + "─".repeat(cells - head.length());
   }
 
+  /** The width in cells of a text: a glyph the terminal paints wide takes two. */
+  static int width(String text) {
+    int width = 0;
+    for(int i = 0; i < text.length(); ) {
+      int codePoint = text.codePointAt(i);
+      i += Character.charCount(codePoint);
+      width += ShipArtFile.isWide(codePoint) ? 2 : 1;
+    }
+    return width;
+  }
+
+  /** Pads a text with spaces on the right, up to a number of cells. */
+  static String padRight(String text, int cells) {
+    int pad = cells - width(text);
+    return pad <= 0 ? text : text + " ".repeat(pad);
+  }
+
+  /** Pads a text with spaces on the left, up to a number of cells. */
+  static String padLeft(String text, int cells) {
+    int pad = cells - width(text);
+    return pad <= 0 ? text : " ".repeat(pad) + text;
+  }
+
   /** Trims a text to a number of cells, without breaking a glyph in half. */
   static String cut(String text, int cells) {
     StringBuilder cut = new StringBuilder();
