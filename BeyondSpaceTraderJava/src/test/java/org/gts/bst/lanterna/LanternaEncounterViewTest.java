@@ -618,6 +618,78 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theKeyThatFleesTurnsTheShipAway() throws Exception {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView[] view = new LanternaEncounterView[1];
+      // The game resolves the escape: we got away, and the encounter closes
+      // (the close waits for the animation of the departure).
+      view[0] = new LanternaEncounterView(gui, action -> {
+        if(action == EncounterAction.Flee) {
+          view[0].escaped();
+          view[0].close();
+        }
+      }, () -> { }, plunder -> { });
+      // An asymmetric ship, so the turn is seen: the ink lives at its left cell.
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nx..\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view[0].render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view[0].asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view[0].asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int facing = columnOf(screen, 'x');
+
+      // The key that flees: the game settles the escape and the ship turns
+      // away where it stands (the other one, ahead, is left behind).
+      view[0].asWindow().getFocusedInteractable().handleInput(new KeyStroke('f', false, false));
+      assertTrue(content.facingAway(), "the ship faces away with the flee key");
+      gui.updateScreen();
+      assertEquals(facing + 2, columnOf(screen, 'x'), "the drawing is mirrored in place");
+
+      // The one that lost us is the one that leaves, through our back (the
+      // right), while the camera keeps us in the scene, facing away.
+      int behind = firstColumnOf(screen, 'y');
+      for(int i = 0; i < 3; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertTrue(screenText(screen).contains("yyyyy"), "the other ship is on its way out");
+      assertTrue(firstColumnOf(screen, 'y') > behind,
+          "it leaves through the right (" + firstColumnOf(screen, 'y') + " > " + behind + ")");
+      int out = 0;
+      while(out < 40 && screenText(screen).contains("yyyyy")) {
+        content.tick();
+        gui.updateScreen();
+        out++;
+      }
+      assertFalse(screenText(screen).contains("yyyyy"), "and all the way out");
+      assertEquals(facing + 2, columnOf(screen, 'x'), "while we stay in the scene, facing away");
+
+      // The window closes when the departure has been played.
+      for(int i = 0; i < 60 && gui.getWindows().contains(view[0].asWindow()); i++) {
+        Thread.sleep(100);
+        gui.updateScreen();
+        gui.getGUIThread().processEventsAndUpdate();
+      }
+      assertFalse(gui.getWindows().contains(view[0].asWindow()), "the window closes after the animation");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theShipKeepsInsideTheSceneMovingUpAndDown() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
@@ -1376,10 +1448,14 @@ class LanternaEncounterViewTest {
       }
       gui.updateScreen();
       int enemyBefore = firstColumnOf(screen, 'y');
+      int facing = columnOf(screen, 'x');
 
-      // A failed escape (the game keeps the chase): the other one closes in.
+      // A failed escape (the game keeps the chase): the other one closes in and
+      // the ship faces away with it (the same half turn as running away).
       content.model(chase(you, opponent, 1, true));
       gui.updateScreen();
+      assertTrue(content.facingAway(), "the failed flee leaves the ship facing away");
+      assertEquals(facing + 4, columnOf(screen, 'x'), "and the drawing is mirrored in place");
       int closer = firstColumnOf(screen, 'y');
       assertTrue(closer < enemyBefore, "the other ship gains ground (" + closer + " < " + enemyBefore + ")");
 

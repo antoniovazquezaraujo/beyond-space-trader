@@ -797,6 +797,21 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     invalidate();
   }
 
+  /**
+   * Turns the ship to face away from the other one: away is the side opposite
+   * to where the other ship is, by their midpoints. The view calls it when the
+   * game settles an escape, so the ship that got away is seen heading out.
+   */
+  public void faceAway() {
+    if(screenWidth <= 0) {
+      return;
+    }
+    // With the other one ahead (to our right), away is behind us, and the other
+    // way round after slipping past it.
+    youTurned = opponentX() + opponentWidth / 2 > yourX() + youWidth / 2;
+    invalidate();
+  }
+
   /** The other ship loses us: it goes away through its side of the scene. */
   public void opponentLeaves() {
     opponentLeaves(true);

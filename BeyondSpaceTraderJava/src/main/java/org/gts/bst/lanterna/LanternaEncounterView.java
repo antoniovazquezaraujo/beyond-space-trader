@@ -164,7 +164,9 @@ public final class LanternaEncounterView implements EncounterView {
   @Override
   public void escaped() {
     // We got away: the camera follows us, so we stay in the scene; the other
-    // ship, the one behind us, is the one that leaves the scene.
+    // ship, the one behind us, is the one that leaves the scene. The ship turns
+    // away with the escape (also when the flee key asked for it, with no dash).
+    content.faceAway();
     content.opponentLeaves(!content.exitedRight());
   }
 

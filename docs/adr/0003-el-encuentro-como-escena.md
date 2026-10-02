@@ -73,7 +73,9 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    - `↑` / `↓` **esquivan**: subir o bajar, y la otra nave responde según el
      veredicto del juego.
    - `←` **huye** (te alejas; el juego decide si te sigue o te pierde de
-     vista); `→` **acerca** la nave a la otra.
+     vista); `→` **acerca** la nave a la otra. `f` huye igual, y huir gira la
+     nave: se la ve encarada hacia atrás, también cuando el juego da la huida
+     por buena.
    - La **barra de abajo** solo recuerda lo que se puede hacer: las acciones
      que el juego ofrece en ese momento y su tecla (`[A]`, `[F]`, `[S]`…, con
      `[X]` al final: es un control, el primero en caer si falta sitio), sin
