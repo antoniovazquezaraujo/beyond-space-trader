@@ -10,6 +10,7 @@ package org.gts.bst.view;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import spacetrader.Functions;
 import spacetrader.enums.AlertType;
 
@@ -21,18 +22,19 @@ import spacetrader.enums.AlertType;
  */
 public final class LanternaDialogService implements DialogService {
   private final AlertDialogHost host;
-  private java.util.function.Consumer<String> quiet;
+  private BiConsumer<AlertType, String> quiet;
 
   public LanternaDialogService(AlertDialogHost host) {
     this.host = host;
   }
 
   /**
-   * Sends the informative alerts (the ones with a single button) to a log instead of
-   * opening a window; the questions (two buttons) keep their dialog. A screen sets it
-   * while it is open and clears it (with null) when it closes.
+   * Sends the informative alerts (the ones with a single button) to a sink instead of
+   * opening a window; the questions (two buttons) keep their dialog. The sink gets the
+   * type and the resolved text, so the screen can tell which alerts it says aloud. A
+   * screen sets it while it is open and clears it (with null) when it closes.
    */
-  public void quietTo(java.util.function.Consumer<String> sink) {
+  public void quietTo(BiConsumer<AlertType, String> sink) {
     this.quiet = sink;
   }
 
@@ -49,7 +51,7 @@ public final class LanternaDialogService implements DialogService {
     if(quiet != null && definition.button2() == null) {
       // An outcome, not a question: one more line of the log, with no dialog.
       String text = Functions.StringVars(definition.message(), args);
-      quiet.accept(text == null || text.isBlank() ? Functions.StringVars(definition.title(), args) : text);
+      quiet.accept(type, text == null || text.isBlank() ? Functions.StringVars(definition.title(), args) : text);
       return DialogResult.OK;
     }
     List<AlertButton> buttons = new ArrayList<>(2);

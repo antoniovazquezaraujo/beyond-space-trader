@@ -97,6 +97,12 @@ public final class LanternaMainWindow
   private static final int DESIGNER_FIELDS = 12;
   private static final String AUTOSAVE_DEPARTURE = "autosave_departure.sav";
   private static final String AUTOSAVE_ARRIVAL = "autosave_arrival.sav";
+  /** The quiet alerts of the encounter that the rival says aloud, under its ship. */
+  private static final Set<AlertType> SPEECH_ALERTS = Set.of(
+      AlertType.EncounterPoliceFine,
+      AlertType.EncounterPoliceBribeCant,
+      AlertType.EncounterMarieCelesteNoBribe,
+      AlertType.EncounterSurrenderRefused);
 
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
@@ -167,12 +173,19 @@ public final class LanternaMainWindow
     content.invalidate();
   }
 
-  /** A quiet alert: to the log of the encounter while it is open, or to the main one. */
-  public void alertLog(String message) {
-    if(encounterView != null) {
-      encounterView.log(message);
-    } else {
+  /** True for the quiet alerts that speak under the rival instead of going to the log. */
+  static boolean speaksUnderTheRival(AlertType type) {
+    return SPEECH_ALERTS.contains(type);
+  }
+
+  /** A quiet alert: under the rival while the encounter is open, or to the main log. */
+  public void alertLog(AlertType type, String message) {
+    if(encounterView == null) {
       log(message);
+    } else if(speaksUnderTheRival(type)) {
+      encounterView.speech(message);
+    } else {
+      encounterView.log(message);
     }
   }
 

@@ -10,6 +10,7 @@ package org.gts.bst.presenter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
+import org.gts.bst.cargo.TradeItemType;
 import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
@@ -25,6 +27,7 @@ import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.GadgetType;
+import org.gts.bst.view.Alerts;
 import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
@@ -35,6 +38,7 @@ import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.Ship;
 import spacetrader.SpecialEvent;
+import spacetrader.StarSystem;
 import spacetrader.Strings;
 import spacetrader.TestDialogService;
 import spacetrader.enums.AlertType;
@@ -474,14 +478,152 @@ class EncounterPresenterTest {
     assertEquals(1, game.Commander().getShip().Cargo()[0]);
   }
 
-  private static Game newGame() {
-    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+  @Test
+  void submittingWithIllegalCargoConfiscatesAndFinesWithTheScanner() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.Commander().getShip().Cargo()[TradeItemType.Narcotics.CastToInt()] = 1;
+    game.encounter().setEncounterType(EncounterType.PoliceInspect);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.submit();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPoliceFine), dialogs.alerts().toString());
+    assertTrue(view.inspectionCalled, "the scanner runs");
+    assertTrue(view.inspectionConfiscated, "and the cargo was taken");
+    assertTrue(view.closed, "the scene waits for the player to read it");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void bribingWhereThePoliceTakeNoBribesIsMetWithARefusal() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    StarSystem noBribe = noBribeSystem(game);
+    assertNotNull(noBribe, "the galaxy must have a system where the police take no bribes");
+    game.SelectedSystemId(noBribe.Id());
+    game.encounter().setEncounterType(EncounterType.PoliceInspect);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.bribe();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPoliceBribeCant), dialogs.alerts().toString());
+    assertFalse(view.closed, "the encounter goes on: the refusal is only feedback");
+    assertEquals(EncounterResult.Continue, presenter.result());
+  }
+
+  @Test
+  void bribingTheMarieCelestePoliceIsMetWithARefusal() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.encounter().setEncounterType(EncounterType.MarieCelestePolice);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.bribe();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterMarieCelesteNoBribe), dialogs.alerts().toString());
+    assertFalse(view.closed, "the encounter goes on: the refusal is only feedback");
+    assertEquals(EncounterResult.Continue, presenter.result());
+  }
+
+  @Test
+  void theMantisWithoutTheArtifactRefusesTheSurrender() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.encounter().setOpponent(new Ship(ShipType.Mantis));
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterSurrenderRefused), dialogs.alerts().toString());
+    assertFalse(view.closed, "the encounter goes on: the refusal is only feedback");
+    assertEquals(EncounterResult.Continue, presenter.result());
+  }
+
+  @Test
+  void theArrestIsSaidUnderThePoliceShipBeforeTheSceneCloses() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.encounter().setEncounterType(EncounterType.PoliceAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertEquals(List.of(Alerts.get(AlertType.EncounterArrested).message()), view.speechAndWaits,
+        "the arrest reads under the police ship");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Arrested, presenter.result());
+  }
+
+  @Test
+  void yieldingWithIllegalSpecialCargoIsArrestedAndSaidUnderTheShip() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.setQuestStatusSculpture(SpecialEvent.StatusSculptureInTransit);
+    game.encounter().setEncounterType(EncounterType.MarieCelestePolice);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.yield();
+
+    assertEquals(List.of(Alerts.get(AlertType.EncounterArrested).message()), view.speechAndWaits,
+        "the arrest reads under the police ship");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Arrested, presenter.result());
+  }
+
+  @Test
+  void yieldingWithoutSpecialCargoCooperatesAndTheShipSaysThePardon() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.encounter().setEncounterType(EncounterType.MarieCelestePolice);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.yield();
+
+    assertEquals(List.of(Alerts.get(AlertType.EncounterPostMarie).message()), view.speechAndWaits,
+        "the confiscation is said under the police ship");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  private static Game gameWith(TestDialogService dialogs) {
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
     game.SelectedSystemId(StarSystemId.FromInt(0));
     return game;
   }
 
+  /** A system where the police take no bribes, or {@code null} if the galaxy has none. */
+  private static StarSystem noBribeSystem(Game game) {
+    for(StarSystem system : game.Universe()) {
+      if(system.PoliticalSystem().BribeLevel() <= 0) {
+        return system;
+      }
+    }
+    return null;
+  }
+
+  private static Game newGame() {
+    return gameWith(new TestDialogService());
+  }
+
   private static class FakeView implements EncounterView {
     private final List<String> logs = new ArrayList<>();
+    private final List<String> speechAndWaits = new ArrayList<>();
     private EncounterViewModel model;
     private boolean closed;
     private boolean loggedAfterClose;
@@ -491,6 +633,8 @@ class EncounterPresenterTest {
     private boolean lootedCalled;
     private boolean lootedCargo;
     private boolean plunderShown;
+    private boolean inspectionCalled;
+    private boolean inspectionConfiscated;
     private Integer cargoBuyAnswer;
     private Integer cargoSellAnswer;
 
@@ -523,6 +667,17 @@ class EncounterPresenterTest {
     @Override
     public void escaped() {
       escaped = true;
+    }
+
+    @Override
+    public void inspection(boolean confiscated) {
+      inspectionCalled = true;
+      inspectionConfiscated = confiscated;
+    }
+
+    @Override
+    public void speechAndWait(String line) {
+      speechAndWaits.add(line);
     }
 
     @Override

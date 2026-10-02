@@ -33,10 +33,13 @@ import java.util.List;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.SpecialEventType;
 import org.gts.bst.events.EncounterResult;
+import org.gts.bst.events.EncounterType;
 import org.gts.bst.presenter.MainPresenter;
+import org.gts.bst.view.Alerts;
 import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.DialogService;
 import org.gts.bst.view.GameWindow;
+import org.gts.bst.view.LanternaDialogService;
 import org.junit.jupiter.api.Test;
 import spacetrader.Consts;
 import spacetrader.Functions;
@@ -1638,6 +1641,144 @@ class LanternaMainWindowTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void onlyTheChosenQuietAlertsSpeakUnderTheRival() {
+    for(AlertType type : List.of(AlertType.EncounterPoliceFine, AlertType.EncounterPoliceBribeCant,
+        AlertType.EncounterMarieCelesteNoBribe, AlertType.EncounterSurrenderRefused)) {
+      assertTrue(LanternaMainWindow.speaksUnderTheRival(type), type + " speaks under the rival");
+    }
+    assertFalse(LanternaMainWindow.speaksUnderTheRival(AlertType.EncounterPoliceNothingFound),
+        "the other outcomes keep their log line");
+    assertFalse(LanternaMainWindow.speaksUnderTheRival(AlertType.EncounterEscaped));
+    assertFalse(LanternaMainWindow.speaksUnderTheRival(AlertType.JailConvicted));
+  }
+
+  @Test
+  void theQuietAlertsGoToTheMainLogWhenNoEncounterIsOpen() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.alertLog(AlertType.EncounterPoliceFine, "Caught. Fine 1,500 cr.");
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains("Caught. Fine 1,500 cr."),
+          "with no encounter the outcome falls to the main log:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theChosenAlertSpeaksUnderTheRivalWhileTheRestStayInTheEncounterLog() throws Exception {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      LanternaDialogService dialogs = new LanternaDialogService(new LanternaAlertDialogHost(gui));
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, dialogs);
+      dialogs.quietTo(window::alertLog);
+      StarSystem noBribe = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system.PoliticalSystem().BribeLevel() <= 0) {
+          noBribe = system;
+          break;
+        }
+      }
+      assertNotNull(noBribe, "the galaxy must have an unbribable system");
+      holder[0].SelectedSystemId(noBribe.Id());
+      holder[0].encounter().setEncounterType(EncounterType.PoliceInspect);
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      String demandHead = Strings.EncounterSaysPolice.substring(0, 12);
+      String bubbleHead = Alerts.get(AlertType.EncounterPoliceBribeCant).message().substring(0, 20);
+      String keptHead = Alerts.get(AlertType.EncounterPoliceNothingFound).message().substring(0, 20);
+      List<String> problems = new ArrayList<>();
+      int[] bubbleAt = {0, 0, -1};
+      int[] keptAt = {0, 0, -1};
+      TextColor[] bubbleColor = {null};
+      TextColor[] keptColor = {null};
+      Thread player = new Thread(() -> {
+        try {
+          Window encounter = waitForDialog(gui, window.asWindow());
+          if(!waitForText(screen, demandHead, 3000)) {
+            problems.add("the encounter did not open:\n" + screenText(screen));
+            return;
+          }
+          // The chosen alert: bribing where they take none speaks under the ship.
+          encounter.getFocusedInteractable().handleInput(new KeyStroke('b', false, false));
+          if(!waitForText(screen, bubbleHead, 3000)) {
+            problems.add("the bubble did not arrive:\n" + screenText(screen));
+            return;
+          }
+          int[] bubble = find(screen, bubbleHead);
+          bubbleAt[0] = bubble[0];
+          bubbleAt[1] = bubble[1];
+          bubbleAt[2] = 1;
+          bubbleColor[0] = foregroundAt(screen, bubble[0], bubble[1]);
+          // The intro key submits: the other quiet alert keeps its log line.
+          encounter.getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+          if(!waitForText(screen, keptHead, 3000)) {
+            problems.add("the log line did not arrive:\n" + screenText(screen));
+            return;
+          }
+          int[] kept = find(screen, keptHead);
+          keptAt[0] = kept[0];
+          keptAt[1] = kept[1];
+          keptAt[2] = 1;
+          keptColor[0] = foregroundAt(screen, kept[0], kept[1]);
+          // The waiting scene leaves.
+          encounter.getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+        } catch(Throwable t) {
+          problems.add(String.valueOf(t));
+        }
+      });
+      player.setDaemon(true);
+      player.start();
+
+      EncounterResult result = window.showEncounter();
+
+      player.join(5000);
+      assertTrue(problems.isEmpty(), problems.toString());
+      assertEquals(EncounterResult.Normal, result);
+      assertEquals(1, bubbleAt[2], "the bubble was found");
+      assertEquals(1, keptAt[2], "the log line was found");
+      assertEquals(TextColor.ANSI.YELLOW_BRIGHT, bubbleColor[0],
+          "the chosen alert is the speech under the rival");
+      assertEquals(UiPalette.ACCENT, keptColor[0], "the other quiet alert keeps its log line");
+      assertFalse(screenText(screen).contains(bubbleHead), "the bubble went with the encounter");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** Waits until a text is painted on the screen (the pumping thread repaints it). */
+  private static boolean waitForText(Screen screen, String needle, long millis) throws InterruptedException {
+    long deadline = System.currentTimeMillis() + millis;
+    while(System.currentTimeMillis() < deadline) {
+      if(screenText(screen).contains(needle)) {
+        return true;
+      }
+      Thread.sleep(20);
+    }
+    return screenText(screen).contains(needle);
   }
 
   private static StarSystem farthestSystem(Game game) {

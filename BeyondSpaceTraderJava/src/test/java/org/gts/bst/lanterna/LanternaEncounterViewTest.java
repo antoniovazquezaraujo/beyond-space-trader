@@ -47,6 +47,7 @@ import org.gts.bst.view.ShipPicture;
 import org.junit.jupiter.api.Test;
 import spacetrader.Game;
 import spacetrader.Ship;
+import spacetrader.enums.AlertType;
 
 
 class LanternaEncounterViewTest {
@@ -786,6 +787,37 @@ class LanternaEncounterViewTest {
       }
     }
     return -1;
+  }
+
+  /** The whole row of the screen as a string. */
+  private static String rowText(Screen screen, int row) {
+    StringBuilder line = new StringBuilder();
+    for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+      line.append(screen.getBackCharacter(column, row).getCharacterString());
+    }
+    return line.toString();
+  }
+
+  /** The column where a text starts on a row, or -1. */
+  private static int columnOfText(Screen screen, int row, String text) {
+    return rowText(screen, row).indexOf(text);
+  }
+
+  /** True when a text appears somewhere with a given colour. */
+  private static boolean hasTextWithColor(Screen screen, String text, TextColor color) {
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column + text.length() <= screen.getTerminalSize().getColumns(); column++) {
+        boolean match = true;
+        for(int i = 0; i < text.length() && match; i++) {
+          TextCharacter cell = screen.getBackCharacter(column + i, row);
+          match = cell.getCharacter() == text.charAt(i) && cell.getForegroundColor() == color;
+        }
+        if(match) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /** The row of the first cell with a glyph. */
@@ -4064,6 +4096,213 @@ class LanternaEncounterViewTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains("y"), "the ship is back for the fight");
       assertTrue(notices.isEmpty(), "the fight cancels the notice of the crossing");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theChosenAlertsOfActionsSpeakTheTextOfTheGameUnderTheRival() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(police(you, opponent, 0));
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // The four quiet alerts that the window sends with speech(): each one reads
+      // as a bubble under the rival and never as a line of the log.
+      for(AlertType type : List.of(AlertType.EncounterPoliceFine, AlertType.EncounterPoliceBribeCant,
+          AlertType.EncounterMarieCelesteNoBribe, AlertType.EncounterSurrenderRefused)) {
+        String bubble = Alerts.get(type).message();
+        view.speech(bubble);
+        gui.updateScreen();
+
+        String head = bubble.substring(0, 20);
+        int row = rowOfText(screen, head);
+        assertTrue(row >= 0, type + " reads under the ship:\n" + screenText(screen));
+        int column = columnOfText(screen, row, head);
+        assertEquals(TextColor.ANSI.YELLOW_BRIGHT, screen.getBackCharacter(column, row).getForegroundColor(),
+            type + " uses the colour of the speech");
+        assertFalse(hasTextWithColor(screen, head, UiPalette.ACCENT), type + " never reaches the log");
+      }
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aQuietAlertOfAnActionHangsUnderTheRivalAndNotInTheLog() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(police(you, opponent, 0));
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int shipRow = rowOf(screen, 'y');
+
+      String bubble = Alerts.get(AlertType.EncounterPoliceBribeCant).message();
+      view.speech(bubble);
+      gui.updateScreen();
+
+      // It hangs in the row right under the rival.
+      String head = bubble.substring(0, 20);
+      int row = rowOfText(screen, head);
+      assertTrue(row >= 0, "the bubble is in the scene:\n" + screenText(screen));
+      assertTrue(row > shipRow && row <= shipRow + 3,
+          "the bubble hangs under the rival (" + row + " vs " + shipRow + ")");
+      int column = columnOfText(screen, row, head);
+      assertEquals(TextColor.ANSI.YELLOW_BRIGHT, screen.getBackCharacter(column, row).getForegroundColor(),
+          "the bubble uses the colour of the speech");
+      assertFalse(hasTextWithColor(screen, head, UiPalette.ACCENT),
+          "the quiet alert does not fall to the log:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theBubbleOfAPastAlertGoesWithTheNextPart() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(police(you, opponent, 0));
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      String bubble = Alerts.get(AlertType.EncounterPoliceBribeCant).message();
+      String head = bubble.substring(0, 20);
+      view.speech(bubble);
+      gui.updateScreen();
+      assertTrue(rowOfText(screen, head) >= 0, "the bubble arrives:\n" + screenText(screen));
+
+      // The next part of the encounter takes it away.
+      view.render(police(you, opponent, 1));
+      gui.updateScreen();
+
+      assertTrue(rowOfText(screen, head) < 0, "the bubble goes with the next part:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theBubbleOfAPastAlertGoesWithTheNextAction() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(police(you, opponent, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      String bubble = Alerts.get(AlertType.EncounterMarieCelesteNoBribe).message();
+      String head = bubble.substring(0, 20);
+      view.speech(bubble);
+      gui.updateScreen();
+      assertTrue(rowOfText(screen, head) >= 0, "the bubble arrives:\n" + screenText(screen));
+
+      // The next action of the player takes it away.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('b', false, false));
+      gui.updateScreen();
+
+      assertEquals(List.of(EncounterAction.Bribe), executed);
+      assertTrue(rowOfText(screen, head) < 0, "the bubble goes with the next action:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theBubblesTheSceneWaitsToBeReadStayUntilThePlayerLeaves() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      for(AlertType type : List.of(AlertType.EncounterArrested, AlertType.EncounterPostMarie)) {
+        LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+        ShipPicture you = new ShipCatalog(List.of(),
+            ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+            .picture(ShipType.Flea, List.of(), 0);
+        ShipPicture opponent = new ShipCatalog(List.of(),
+            ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+            .picture(ShipType.Scorpion, List.of(), 0);
+        view.render(policeSurrendering(you, opponent, 0));
+        gui.addWindow(view.asWindow());
+        gui.updateScreen();
+
+        String bubble = Alerts.get(type).message();
+        String head = bubble.substring(0, 20);
+        view.speechAndWait(bubble);
+        gui.updateScreen();
+
+        String text = screenText(screen);
+        assertTrue(rowOfText(screen, head) >= 0, type + " reads under the ship:\n" + text);
+        assertEquals(screen.getTerminalSize().getRows() - 1, rowOfText(screen, "[ENTER] continue"),
+            "the scene waits for the player:\n" + text);
+
+        // The presenter closes the encounter after the speech: the scene keeps
+        // waiting with the bubble until the player is ready.
+        view.close();
+        gui.updateScreen();
+        assertTrue(gui.getWindows().contains(view.asWindow()), "the scene waits with the bubble");
+        assertTrue(rowOfText(screen, head) >= 0, type + " stays until the player leaves");
+
+        view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+        gui.updateScreen();
+        assertFalse(gui.getWindows().contains(view.asWindow()), "the player leaves with intro");
+      }
     } finally {
       screen.stopScreen();
       screen.close();

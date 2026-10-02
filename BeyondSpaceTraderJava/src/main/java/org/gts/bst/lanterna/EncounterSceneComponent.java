@@ -858,6 +858,16 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     invalidate();
   }
 
+  /**
+   * The bubble of a past alert goes away: the scene says what the model says again
+   * (nothing, or the demand of the police or the trader's hail).
+   */
+  public void clearSpeech() {
+    said = "";
+    dealt = false;
+    invalidate();
+  }
+
   /** The player takes part while the ships come in: the entry stops at once. */
   public void skipEntry() {
     if(enterFrames > 0) {

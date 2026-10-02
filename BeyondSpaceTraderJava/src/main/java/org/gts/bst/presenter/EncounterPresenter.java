@@ -19,6 +19,8 @@ import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
 import org.gts.bst.ship.ShipType;
+import org.gts.bst.view.AlertDefinition;
+import org.gts.bst.view.Alerts;
 import org.gts.bst.view.EncounterAction;
 import spacetrader.Strings;
 import org.gts.bst.view.EncounterDialogHost;
@@ -30,6 +32,7 @@ import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.Trade;
 import spacetrader.Ship;
+import spacetrader.enums.AlertType;
 
 
 /**
@@ -147,6 +150,11 @@ public class EncounterPresenter implements EncounterDialogHost {
     int[] cargoBefore = cmdrship.Cargo().clone();
     result = game.encounter().EncounterVerifySurrender();
     if(result != EncounterResult.Continue) {
+      if(result == EncounterResult.Arrested) {
+        // The police read the arrest under their ship, and the scene waits for the
+        // player to take it in before it closes (the jail follows on its own).
+        view.speechAndWait(alertMessage(AlertType.EncounterArrested));
+      }
       if(result == EncounterResult.Normal && game.encounter().getEncounterType() == EncounterType.PirateAttack
           && game.encounter().getOpponent().Type() != ShipType.Mantis) {
         // The pirates looted the ship: the scene shows the transfer only when
@@ -187,8 +195,21 @@ public class EncounterPresenter implements EncounterDialogHost {
   public void yield() {
     result = game.encounter().EncounterVerifyYield();
     if(result != EncounterResult.Continue) {
+      if(result == EncounterResult.Arrested) {
+        // Surrendering to the police ends in the arrest.
+        view.speechAndWait(alertMessage(AlertType.EncounterArrested));
+      } else if(result == EncounterResult.Normal) {
+        // The police took the illegal cargo and let us go for cooperating.
+        view.speechAndWait(alertMessage(AlertType.EncounterPostMarie));
+      }
       view.close();
     }
+  }
+
+  /** The message of a predefined alert, to say it under the rival before closing. */
+  private static String alertMessage(AlertType type) {
+    AlertDefinition definition = Alerts.get(type);
+    return definition == null ? "" : definition.message();
   }
 
   @Override

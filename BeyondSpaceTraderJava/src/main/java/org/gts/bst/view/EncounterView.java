@@ -40,6 +40,20 @@ public interface EncounterView {
   }
 
   /**
+   * A quiet alert of the game that the other ship says aloud, as a bubble under it.
+   * It is feedback of an action: the next part, round or action takes it away.
+   */
+  default void speech(String line) {
+  }
+
+  /**
+   * Like {@link #speech(String)}, but the scene stays waiting for the player to read
+   * it (the encounter closes when they leave). For the alerts that end the encounter.
+   */
+  default void speechAndWait(String line) {
+  }
+
+  /**
    * You got away while fleeing: the camera follows you, so you stay in the
    * scene and the other ship (behind you) is the one that leaves it.
    */

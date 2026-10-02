@@ -102,6 +102,8 @@ public final class LanternaEncounterView implements EncounterView {
   private boolean closing;
   private boolean closed;
   private boolean awaitingLeave;
+  /** The bubble now on screen came from a quiet alert: the next part takes it away. */
+  private boolean alertSpeech;
 
   public LanternaEncounterView(WindowBasedTextGUI gui, Commands commands, Runnable tick, CargoHost cargoHost) {
     this.gui = gui;
@@ -210,6 +212,33 @@ public final class LanternaEncounterView implements EncounterView {
     content.addAlert(line);
   }
 
+  /** A quiet alert that the other ship says: a bubble under it, gone with the next action, part or round. */
+  @Override
+  public void speech(String line) {
+    alertSpeech = true;
+    content.say(line);
+  }
+
+  /** The same bubble, but the scene stays waiting for the player to read it and leave. */
+  @Override
+  public void speechAndWait(String line) {
+    alertSpeech = false;
+    content.say(line);
+    awaitLeave();
+  }
+
+  /**
+   * The bubble of a past alert goes away with the next action (a round or part
+   * clears it too, in {@link #render}). The ones the scene waits to be read
+   * ({@link #speechAndWait}) stay until the player leaves.
+   */
+  private void clearAlertSpeech() {
+    if(alertSpeech) {
+      alertSpeech = false;
+      content.clearSpeech();
+    }
+  }
+
   /** Tells the window that the encounter is over (to stop sending it log lines). */
   public void onClose(Runnable close) {
     this.onClose = close;
@@ -217,6 +246,8 @@ public final class LanternaEncounterView implements EncounterView {
 
   @Override
   public void render(EncounterViewModel model) {
+    // A new part (a round, an update) leaves the bubble of a past alert behind.
+    clearAlertSpeech();
     this.model = model;
     List<String> lines = new ArrayList<>();
     addWrapped(lines, model.encounterText());
@@ -418,7 +449,7 @@ public final class LanternaEncounterView implements EncounterView {
     if(character == ' ') {
       // The other ship has to answer first: no two of our shots in one exchange.
       if(!content.responding()) {
-        commands.execute(EncounterAction.Attack);
+        execute(EncounterAction.Attack);
       }
       return true;
     }
@@ -507,6 +538,7 @@ public final class LanternaEncounterView implements EncounterView {
    * must not go when the presenter closes it after the deal.
    */
   private void execute(EncounterAction action) {
+    clearAlertSpeech();
     if(action == EncounterAction.Trade) {
       awaitingLeave = true;
     }

@@ -10,10 +10,12 @@ package org.gts.bst.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import spacetrader.Functions;
 import spacetrader.enums.AlertType;
 
 
@@ -48,19 +50,42 @@ class LanternaDialogServiceTest {
   void sendsTheOutcomesToTheLogWhenTheQuietSinkIsSet() {
     FakeHost host = new FakeHost();
     List<String> log = new ArrayList<>();
+    List<AlertType> types = new ArrayList<>();
     LanternaDialogService service = new LanternaDialogService(host);
-    service.quietTo(log::add);
+    service.quietTo((type, line) -> {
+      types.add(type);
+      log.add(line);
+    });
 
     // An outcome (one button): one more line of the log, with no dialog.
     assertEquals(DialogResult.OK, service.alert(AlertType.EncounterEscaped));
 
     assertEquals(1, log.size());
     assertEquals("You have managed to escape your opponent.", log.get(0));
+    assertEquals(List.of(AlertType.EncounterEscaped), types, "the sink knows which alert it is");
     assertNull(host.title, "an outcome opens no dialog");
 
     // A question (two buttons) keeps its dialog.
     service.alert(AlertType.WildWontStayAboardLaser, "Acamar");
     assertEquals(2, host.buttons.size());
+  }
+
+  @Test
+  void resolvesThePlaceholdersOfAnOutcomeBeforeTheSink() {
+    List<AlertType> types = new ArrayList<>();
+    List<String> texts = new ArrayList<>();
+    LanternaDialogService service = new LanternaDialogService(new FakeHost());
+    service.quietTo((type, line) -> {
+      types.add(type);
+      texts.add(line);
+    });
+
+    service.alert(AlertType.EncounterPoliceFine, "1,500 cr.");
+
+    assertEquals(List.of(AlertType.EncounterPoliceFine), types);
+    assertEquals(List.of(Functions.StringVars(Alerts.get(AlertType.EncounterPoliceFine).message(), "1,500 cr.")),
+        texts);
+    assertTrue(texts.get(0).contains("1,500 cr."), "the fine is in the bubble: " + texts);
   }
 
   @Test
