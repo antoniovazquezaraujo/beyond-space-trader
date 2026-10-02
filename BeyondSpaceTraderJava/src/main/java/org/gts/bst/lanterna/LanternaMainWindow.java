@@ -260,6 +260,7 @@ public final class LanternaMainWindow
     EncounterPresenter[] presenter = new EncounterPresenter[1];
     LanternaEncounterView view = new LanternaEncounterView(gui,
         action -> dispatch(presenter[0], action), () -> presenter[0].tick(), this::showCargoTransfer);
+    view.header(game::Commander);
     encounterView = view;
     view.onClose(() -> encounterView = null);
     presenter[0] = new EncounterPresenter(game, view);

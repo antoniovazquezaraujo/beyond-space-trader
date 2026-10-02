@@ -47,8 +47,6 @@ import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
-import spacetrader.PoliceRecord;
-import spacetrader.Ship;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
 import spacetrader.UniverseGenerator;
@@ -456,7 +454,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
     List<String> footerKeys = panel == MainPanel.Navigation ? footerKeys(width - 2) : new ArrayList<>();
-    contentTop = drawHeader(graphics, width, cmdr) + 1;
+    contentTop = HeaderBar.draw(graphics, width, cmdr) + 1;
     panelWidth = Math.max(20, Math.min(width - 24, panelWidthFor(panel, width)));
     int chartWidth = width - panelWidth - 2;
     // The footer keeps two menu rows (the usual case); a longer menu takes one more.
@@ -465,91 +463,6 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     drawPanel(graphics, width - panelWidth, chartWidth, height);
     drawFooter(graphics, width, height, footerKeys);
     drawMenu(graphics, width, height);
-  }
-
-  /**
-   * Draws the header and returns its height: one line when every field fits,
-   * the commander data and the ship data on one line each otherwise.
-   */
-  private int drawHeader(TextGUIGraphics graphics, int width, Commander cmdr) {
-    if(cmdr == null) {
-      UiPalette.line(graphics, 1, 0, Strings.MainNoGame, width - 2);
-      UiPalette.reset(graphics);
-      graphics.drawLine(0, 1, width - 1, 1, '─');
-      return 1;
-    }
-    Ship ship = cmdr.getShip();
-    int maxX = width - 2;
-    List<HeaderField> commanderFields = List.of(
-        new HeaderField(cmdr.Name(), UiPalette.TEXT),
-        new HeaderField(Functions.StringVars(Strings.MainDay, "" + cmdr.getDays()), UiPalette.ACCENT),
-        new HeaderField(Functions.FormatMoney(cmdr.getCash()), UiPalette.MONEY),
-        new HeaderField(Functions.StringVars(Strings.MainDebt, Functions.FormatMoney(cmdr.getDebt())),
-            cmdr.getDebt() > 0 ? UiPalette.BAD : UiPalette.TEXT));
-    List<HeaderField> shipFields = List.of(
-        new HeaderField(Functions.StringVars(Strings.MainFuel, "" + ship.getFuel(), "" + ship.FuelTanks()),
-            UiPalette.statusColor(ship.getFuel(), ship.FuelTanks())),
-        new HeaderField(Functions.StringVars(Strings.MainHull, "" + ship.getHull(), "" + ship.HullStrength()),
-            UiPalette.statusColor(ship.getHull(), ship.HullStrength())),
-        new HeaderField(Functions.StringVars(Strings.MainShields, "" + ship.ShieldCharge(),
-            "" + ship.ShieldStrength()), UiPalette.statusColor(ship.ShieldCharge(), ship.ShieldStrength())),
-        new HeaderField(Functions.StringVars(Strings.MainCargo, "" + ship.FilledCargoBays(),
-            "" + ship.CargoBays()), UiPalette.TEXT),
-        new HeaderField(Functions.StringVars(Strings.MainPolice,
-            PoliceRecord.GetPoliceRecordFromScore(cmdr.getPoliceRecordScore()).Name()),
-            policeColor(cmdr.getPoliceRecordScore())));
-    boolean oneLine = fieldsWidth(commanderFields) + 3 + fieldsWidth(shipFields) <= maxX;
-    int headerHeight = oneLine ? 1 : 2;
-    if(oneLine) {
-      List<HeaderField> fields = new ArrayList<>(commanderFields);
-      fields.addAll(shipFields);
-      drawFields(graphics, 1, 0, fields, maxX);
-    } else {
-      drawFields(graphics, 1, 0, commanderFields, maxX);
-      drawFields(graphics, 1, 1, shipFields, maxX);
-    }
-    UiPalette.reset(graphics);
-    graphics.drawLine(0, headerHeight, width - 1, headerHeight, '─');
-    return headerHeight;
-  }
-
-  private static int fieldsWidth(List<HeaderField> fields) {
-    int width = 0;
-    for(HeaderField field : fields) {
-      width += field.text().length() + 3;
-    }
-    return Math.max(0, width - 3);
-  }
-
-  private static void drawFields(TextGUIGraphics graphics, int x, int row, List<HeaderField> fields, int maxX) {
-    boolean first = true;
-    for(HeaderField field : fields) {
-      if(!first) {
-        x = UiPalette.draw(graphics, x, row, " · ", UiPalette.TEXT, maxX);
-      }
-      x = UiPalette.draw(graphics, x, row, field.text(), field.color(), maxX);
-      first = false;
-    }
-  }
-
-  /** One field of the header: its text and its colour. */
-  private record HeaderField(String text, TextColor color) {
-  }
-
-  private static TextColor policeColor(int score) {
-    switch(PoliceRecord.GetPoliceRecordFromScore(score).Type()) {
-      case Clean:
-      case Lawful:
-      case Trusted:
-      case Liked:
-      case Hero:
-        return UiPalette.GOOD;
-      case Crook:
-      case Dubious:
-        return UiPalette.WARN;
-      default:
-        return UiPalette.BAD;
-    }
   }
 
   private void drawChart(TextGUIGraphics graphics, int chartWidth, int chartHeight, Game game, Commander cmdr) {

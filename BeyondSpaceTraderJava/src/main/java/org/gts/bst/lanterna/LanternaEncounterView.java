@@ -21,11 +21,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.function.Supplier;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
+import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Strings;
@@ -160,6 +162,14 @@ public final class LanternaEncounterView implements EncounterView {
 
   public Window asWindow() {
     return window;
+  }
+
+  /**
+   * The commander of the game, for the header of the scene: its values are read
+   * on every paint, so the fight (hull, shields, ...) is always up to date.
+   */
+  public void header(Supplier<Commander> commander) {
+    content.commander(commander);
   }
 
   @Override

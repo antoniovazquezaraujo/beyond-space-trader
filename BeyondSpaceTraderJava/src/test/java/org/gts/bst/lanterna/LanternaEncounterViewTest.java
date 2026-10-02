@@ -34,13 +34,17 @@ import java.util.List;
 import java.util.Map;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoBuyOp;
+import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
+import org.gts.bst.view.DialogService;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipPicture;
 import org.junit.jupiter.api.Test;
+import spacetrader.Game;
+import spacetrader.Ship;
 
 
 class LanternaEncounterViewTest {
@@ -3656,6 +3660,121 @@ class LanternaEncounterViewTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void theGameHeaderStaysVisibleDuringTheEncounter() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, DialogService.NONE);
+      content.commander(game::Commander);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      content.log(List.of("First line.", "Second line.", "Third line.", "Fourth line."));
+      gui.updateScreen();
+      String text = screenText(screen);
+
+      // The header opens the scene with the values of the commander.
+      assertEquals(0, rowOfText(screen, "Antonio"), "the name opens the header:\n" + text);
+      String hull = spacetrader.Functions.StringVars(spacetrader.Strings.MainHull,
+          "" + game.Commander().getShip().getHull(), "" + game.Commander().getShip().HullStrength());
+      int hullRow = rowOfText(screen, hull);
+      assertTrue(hullRow > 0, "the live hull of the header is shown (" + hull + "):\n" + text);
+      int separator = headerSeparatorRow(screen);
+      assertTrue(separator > hullRow, "the separator closes the header:\n" + text);
+
+      // The bars, the legend and the log start under the header; the keys stay at the bottom.
+      assertEquals(separator + 1, rowOfText(screen, "casco ████████"),
+          "the bars start under the header:\n" + text);
+      assertTrue(rowOfText(screen, spacetrader.Strings.EncounterLegend) > separator,
+          "the legend starts under the header:\n" + text);
+      assertTrue(rowOfText(screen, "First line.") > separator, text);
+      assertEquals(screen.getTerminalSize().getRows() - 2, rowOfText(screen, "Fourth line."),
+          "the log ends right over the action bar:\n" + text);
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      text = screenText(screen);
+      assertTrue(rowOf(screen, 'x') > separator, "the ships start under the header:\n" + text);
+      String attack = "[A] " + spacetrader.Strings.EncounterActionAttack;
+      assertEquals(screen.getTerminalSize().getRows() - 1, rowOfText(screen, attack),
+          "the action bar is still on the last row:\n" + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theHeaderOfTheSceneShowsTheLiveHull() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, DialogService.NONE);
+      content.commander(game::Commander);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      Ship ship = game.Commander().getShip();
+      ship.setHull(ship.HullStrength());
+      gui.updateScreen();
+      String full = spacetrader.Functions.StringVars(spacetrader.Strings.MainHull,
+          "" + ship.getHull(), "" + ship.HullStrength());
+      assertTrue(screenText(screen).contains(full), screenText(screen));
+
+      // A hit in combat lowers the hull: the header of the scene shows it at once.
+      ship.setHull(1);
+      gui.updateScreen();
+      String damaged = spacetrader.Functions.StringVars(spacetrader.Strings.MainHull,
+          "1", "" + ship.HullStrength());
+      assertTrue(screenText(screen).contains(damaged),
+          "the header follows the live hull (" + damaged + "):\n" + screenText(screen));
+      assertFalse(screenText(screen).contains(full), "the old value is gone:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** The row of the header separator (a whole row of dashes), or -1. */
+  private static int headerSeparatorRow(Screen screen) {
+    for(int row = 0; row < 5; row++) {
+      StringBuilder line = new StringBuilder();
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        line.append(screen.getBackCharacter(column, row).getCharacter());
+      }
+      if(line.toString().chars().allMatch(character -> character == '─')) {
+        return row;
+      }
+    }
+    return -1;
   }
 
   /** The braille glyphs of the screen (the stars of the sky). */

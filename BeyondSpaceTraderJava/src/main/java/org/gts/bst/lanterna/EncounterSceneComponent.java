@@ -18,12 +18,14 @@ import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipPicture;
 import org.gts.bst.view.ShipSites;
+import spacetrader.Commander;
 import spacetrader.Strings;
 import org.gts.bst.view.Starfield;
 
@@ -32,6 +34,8 @@ import org.gts.bst.view.Starfield;
  * The encounter scene: both ships facing each other over a moving starfield,
  * with their hull and shield bars above, the log under them and the fight over
  * the drawing (projectiles, sparks, damage numbers, smoke and explosions).
+ * When a commander is given, the header of the game stays at the top with its
+ * live values (hull, shields, ...), and the scene starts under it.
  *
  * <p>The game is the referee: the presenter fills the model (one round at a
  * time) and this component only plays it. The shot of the player is born when
@@ -124,6 +128,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private final List<Flash> flashes = new ArrayList<>();
   private final List<Debris> debris = new ArrayList<>();
   private EncounterViewModel model;
+  private Supplier<Commander> commanderSupplier;
   private Starfield starfield;
   private int frame;
   private int youRow;
@@ -173,6 +178,16 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   public EncounterSceneComponent(KeyHandler keyHandler) {
     this.keyHandler = keyHandler;
+  }
+
+  /**
+   * The current commander for the header: its live values (hull, shields, ...)
+   * are read on every paint, so the fight is always up to date. With no supplier,
+   * or no commander, the scene draws no header and keeps every row for itself.
+   */
+  public void commander(Supplier<Commander> commanderSupplier) {
+    this.commanderSupplier = commanderSupplier;
+    invalidate();
   }
 
   /** The scene model: both ships, their pictures, their bars and the round. */
@@ -918,12 +933,20 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       graphics.putString(0, row, " ".repeat(width));
     }
     drawStars(graphics, width, height);
+    Commander cmdr = commanderSupplier == null ? null : commanderSupplier.get();
+    int barsTop = 0;
+    if(cmdr != null) {
+      // The header of the game over the sky, so the values of the fight (hull,
+      // shields, ...) stay visible; the scene starts under its separating line.
+      barsTop = HeaderBar.draw(graphics, width, cmdr) + 1;
+    }
     if(model == null) {
       return;
     }
     int sceneWidth = Math.max(40, width - LEGEND_COLUMNS);
-    drawBars(graphics, sceneWidth);
-    int logTop = Math.max(BARS_ROWS + 2, height - LOG_ROWS);
+    drawBars(graphics, sceneWidth, barsTop);
+    areaTop = barsTop + BARS_ROWS;
+    int logTop = Math.max(areaTop + 2, height - LOG_ROWS);
     int half = (sceneWidth - 1) / 2;
     ShipPicture you = yourPicture();
     ShipPicture opponent = model.opponentPicture().cropped();
@@ -940,8 +963,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     opponentLeft = shipLeft(half + 1, sceneWidth - half - 1, opponent);
     opponentWidth = opponent.width();
     opponentHeight = opponent.height();
-    areaTop = BARS_ROWS;
-    areaBottom = Math.max(BARS_ROWS + 1, logTop - 1);
+    areaBottom = Math.max(areaTop + 1, logTop - 1);
     boolean down = model.opponentHull().value() <= 0;
     if(youHitFrames > 0) {
       crackedPicture(graphics, yourX(), yourY(), height, you, blinkOn);
@@ -961,23 +983,23 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     drawFight(graphics);
     drawInspection(graphics);
     drawSpeech(graphics);
-    drawLegend(graphics, width, height);
+    drawLegend(graphics, width, height, barsTop);
     drawLog(graphics, sceneWidth, height, logTop);
     drawActionKeys(graphics, sceneWidth, height);
   }
 
   /** The column of the right: the pieces of both ships, each with its glyph. */
-  private void drawLegend(TextGUIGraphics graphics, int width, int height) {
+  private void drawLegend(TextGUIGraphics graphics, int width, int height, int top) {
     int column = Math.max(0, width - LEGEND_COLUMNS);
     graphics.setBackgroundColor(TextColor.ANSI.BLACK);
-    for(int row = BARS_ROWS; row < height; row++) {
+    for(int row = top; row < height; row++) {
       graphics.putString(column, row, " ".repeat(Math.max(0, width - column)));
     }
     graphics.setForegroundColor(UiPalette.TEXT);
-    for(int row = BARS_ROWS; row < height; row++) {
+    for(int row = top; row < height; row++) {
       graphics.setCharacter(column, row, VERTICAL);
     }
-    int row = BARS_ROWS + 1;
+    int row = top + 1;
     graphics.setForegroundColor(UiPalette.TITLE);
     graphics.putString(column + 2, row, Strings.EncounterLegend);
     row += 2;
@@ -1240,20 +1262,20 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   }
 
   /** The name and the two bars of each ship: yours on the left, the other on the right. */
-  private void drawBars(TextGUIGraphics graphics, int width) {
-    drawShipBars(graphics, 1, width / 2, model.youShip(), model.youHull(), model.youShield());
+  private void drawBars(TextGUIGraphics graphics, int width, int top) {
+    drawShipBars(graphics, 1, top, width / 2, model.youShip(), model.youHull(), model.youShield());
     int reserved = model.opponentShip().length() + 8 + BAR_CELLS + 9 + BAR_CELLS;
-    drawShipBars(graphics, Math.max(width / 2 + 1, width - reserved - 1), width - 1, model.opponentShip(),
+    drawShipBars(graphics, Math.max(width / 2 + 1, width - reserved - 1), top, width - 1, model.opponentShip(),
         model.opponentHull(), model.opponentShield());
   }
 
-  private void drawShipBars(TextGUIGraphics graphics, int x, int maxX, String name, EncounterViewModel.Bar hull,
+  private void drawShipBars(TextGUIGraphics graphics, int x, int row, int maxX, String name, EncounterViewModel.Bar hull,
       EncounterViewModel.Bar shield) {
-    int at = UiPalette.draw(graphics, x, 0, name, UiPalette.ACCENT, maxX);
-    at = UiPalette.draw(graphics, at, 0, "  casco ", UiPalette.TEXT, maxX);
-    at = UiPalette.draw(graphics, at, 0, bar(hull), UiPalette.statusColor(hull.value(), hull.max()), maxX);
-    at = UiPalette.draw(graphics, at, 0, "  escudo ", UiPalette.TEXT, maxX);
-    UiPalette.draw(graphics, at, 0, bar(shield), UiPalette.statusColor(shield.value(), shield.max()), maxX);
+    int at = UiPalette.draw(graphics, x, row, name, UiPalette.ACCENT, maxX);
+    at = UiPalette.draw(graphics, at, row, "  casco ", UiPalette.TEXT, maxX);
+    at = UiPalette.draw(graphics, at, row, bar(hull), UiPalette.statusColor(hull.value(), hull.max()), maxX);
+    at = UiPalette.draw(graphics, at, row, "  escudo ", UiPalette.TEXT, maxX);
+    UiPalette.draw(graphics, at, row, bar(shield), UiPalette.statusColor(shield.value(), shield.max()), maxX);
   }
 
   /** A bar of {@code BAR_CELLS} cells: the filled part stands for the value. */

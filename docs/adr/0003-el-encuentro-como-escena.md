@@ -37,6 +37,12 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    decide; cuando la escena espera (un resultado que leer), esa fila es para
    `[ENTER] continue`. Se juega con la nave.
 
+   La **cabecera del juego** (nombre, día, créditos, deuda, combustible, casco,
+   escudos, carga y registro policial) **queda visible arriba** durante el
+   encuentro, con los valores al día (el casco y los escudos cambian en
+   combate): la escena la dibuja sobre el cielo, con su línea separadora, y
+   arranca debajo, desplazando las barras, la leyenda, las naves y el registro.
+
    ```
    ╔════════════════════════════════════════════════════════════════════╗
    ║ Vapor   casco ██████░░  escudo ███░░░      Pirata  █████░░░  ██░░░░║
