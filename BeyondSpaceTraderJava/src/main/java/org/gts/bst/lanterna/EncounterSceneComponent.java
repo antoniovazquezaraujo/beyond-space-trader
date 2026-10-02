@@ -127,6 +127,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int rowTarget = Integer.MIN_VALUE;
   private int columnTarget = Integer.MIN_VALUE;
   private boolean exiting;
+  /** True while the ship is on a dash to an edge (the only one that can ask to flee). */
+  private boolean escapeDash;
   private Runnable onExit;
   private Runnable onOpponentGone;
   private int responseFrames;
@@ -227,6 +229,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         && Integer.signum(columnTarget - youColumn) == -Integer.signum(dx)) {
       // A press against the advance brakes the ship; the next one turns it.
       columnTarget = Integer.MIN_VALUE;
+      escapeDash = false;
       invalidate();
       return;
     }
@@ -245,8 +248,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(dx < 0) {
       if(youTurned) {
         // Advancing away: the camera follows us, so the ship only glides to the
-        // left edge and stays there, visible, still facing away.
+        // left edge and stays there, visible, still facing away. Only this dash
+        // (not a wide ship parked at the edge) can ask the game for the escape.
         columnTarget = -youLeft;
+        escapeDash = true;
+        exitedRight = false;
       } else {
         // The half turn: the ship holds its place and the world moves the other way.
         youTurned = true;
@@ -259,6 +265,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         // Advancing (to slip through the gap): the ship glides to the right edge
         // and stays there, visible; the camera follows it and never loses it.
         columnTarget = Math.max(youColumn, screenWidth - youWidth - youLeft);
+        escapeDash = true;
+        exitedRight = true;
       }
     }
     invalidate();
@@ -269,12 +277,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     return youTurned;
   }
 
-  /** True when the ship reached the right edge of the scene instead of the left one (a dodge). */
+  /** True when the last dash went to the right edge instead of the left one (a dodge). */
   public boolean exitedRight() {
     return exitedRight;
   }
 
-  /** Tells the view when the ship has reached the edge of the scene (it fled, or dodged). */
+  /** Tells the view when a dash of the ship reaches the edge of the scene (it fled, or dodged). */
   public void onExit(Runnable exit) {
     this.onExit = exit;
   }
@@ -296,6 +304,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     opponentRow = 0;
     youTurned = false;
     exiting = false;
+    escapeDash = false;
     rowTarget = Integer.MIN_VALUE;
     columnTarget = Integer.MIN_VALUE;
     invalidate();
@@ -579,6 +588,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       int step = columnTarget > youColumn ? 1 : -1;
       if(!canMove(step, 0)) {
         columnTarget = Integer.MIN_VALUE;
+        escapeDash = false;
         bump();
         break;
       }
@@ -587,15 +597,19 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(rowTarget != Integer.MIN_VALUE && youRow == rowTarget) {
       rowTarget = Integer.MIN_VALUE;
     }
-    // The camera follows us: reaching an edge asks the game for the escape (or
-    // the dodge). The notice fires once, and is re-armed only when the ship is
-    // back inside the scene, so a new dash can ask for another escape.
+    // The camera follows us: only the dash the player asked for can reach an
+    // edge, and when it gets there the game is asked for the escape (or the
+    // dodge). A ship parked at the edge (a wide one at the spawn) asks nothing.
+    // The notice fires once, and is re-armed only when the ship is back inside
+    // the scene, so a new dash can ask for another escape.
     boolean atEdge = screenWidth > 0 && (yourX() <= 0 || yourX() + youWidth >= screenWidth);
-    if(atEdge && !exiting) {
-      exiting = true;
-      exitedRight = yourX() + youWidth >= screenWidth;
-      if(onExit != null) {
-        onExit.run();
+    if(escapeDash && columnTarget != Integer.MIN_VALUE && youColumn == columnTarget) {
+      escapeDash = false;
+      if(!exiting) {
+        exiting = true;
+        if(onExit != null) {
+          onExit.run();
+        }
       }
     } else if(!atEdge && exiting) {
       exiting = false;

@@ -842,6 +842,55 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void aShipTooWideForItsHalfDoesNotAskToFleeFromTheSpawn() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      // A ship wider than half the scene (the real Flea at 80x24) sits at the
+      // left edge from the spawn: parked there it must not ask for anything.
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\n" + "x".repeat(44) + "\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      // The bug fired on the first tick after the entry: give it a few more.
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(executed.isEmpty(), "a wide ship parked at the edge does not ask to flee by itself");
+      assertTrue(screenText(screen).contains("x"), "and it is still in the scene");
+
+      // The half turn and then the dash (to the edge it is already on): now the
+      // escape is asked, and the camera keeps the ship in the scene.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      for(int i = 0; i < 3; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertEquals(List.of(EncounterAction.Flee), executed, "the dash to the edge asks to flee");
+      assertTrue(screenText(screen).contains("x"), "and the ship stays in the scene");
+      assertFalse(content.exitedRight(), "it is the left edge");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void aFailedEscapeBringsTheOtherShipCloser() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
