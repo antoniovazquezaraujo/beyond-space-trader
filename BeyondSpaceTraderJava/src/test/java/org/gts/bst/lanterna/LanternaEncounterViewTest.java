@@ -919,6 +919,118 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theShipThatIgnoresUsVeersDownWhenWeTakeItsLane() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(ignoring(you, opponent, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int rest = rowOf(screen, 'y');
+
+      // We drop first, so it picks the upper band; then we brake, climb to that
+      // same band and stay there: the mirror of the other test, it has to veer
+      // down and leave instead of stalling in front of us.
+      content.move(0, 1);
+      content.tick();
+      gui.updateScreen();
+      content.move(0, -1);
+      content.move(0, -1);
+      int frames = 0;
+      int lastRow = rest;
+      int lastColumn = firstColumnOf(screen, 'y');
+      int blocked = 0;
+      while(frames < 80 && screenText(screen).contains("y")) {
+        content.tick();
+        gui.updateScreen();
+        assertTheShipsNeverTouch(screen);
+        if(screenText(screen).contains("y")) {
+          lastRow = rowOf(screen, 'y');
+          int column = firstColumnOf(screen, 'y');
+          if(lastRow == rowOf(screen, 'x') && column >= lastColumn) {
+            blocked++;
+            assertTrue(blocked <= 3,
+                "it never stalls in our row with its way blocked (" + blocked + " frames):\n" + screenText(screen));
+          } else {
+            blocked = 0;
+          }
+          lastColumn = column;
+        }
+        frames++;
+      }
+      assertFalse(screenText(screen).contains("y"),
+          "it goes all the way out instead of stalling in front of us:\n" + screenText(screen));
+      assertTrue(frames <= 24, "and it does it quickly (" + frames + " frames)");
+      assertTrue(lastRow > rest, "veering to the band below (" + lastRow + " > " + rest + ")");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theShipThatIgnoresUsCrossesWhileWeStayStill() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(ignoring(you, opponent, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int ourColumn = columnOf(screen, 'x');
+
+      // We never move: it picks its band, crosses at speed and leaves.
+      int frames = 0;
+      while(frames < 40 && screenText(screen).contains("y")) {
+        content.tick();
+        gui.updateScreen();
+        assertTheShipsNeverTouch(screen);
+        assertEquals(ourColumn, columnOf(screen, 'x'), "we never move");
+        frames++;
+      }
+      assertFalse(screenText(screen).contains("y"),
+          "it crosses the scene and leaves:\n" + screenText(screen));
+      assertTrue(frames <= 20, "and it does it quickly (" + frames + " frames)");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void aShipThatIgnoresUsLeavesTheOtherWay() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
@@ -1075,6 +1187,41 @@ class LanternaEncounterViewTest {
       }
     }
     return -1;
+  }
+
+  /** The smallest box around a glyph on the screen: {left, top, right, bottom}, or null. */
+  private static int[] boxOf(Screen screen, char glyph) {
+    int left = Integer.MAX_VALUE;
+    int top = Integer.MAX_VALUE;
+    int right = -1;
+    int bottom = -1;
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+        if(screen.getBackCharacter(column, row).getCharacter() == glyph) {
+          left = Math.min(left, column);
+          top = Math.min(top, row);
+          right = Math.max(right, column);
+          bottom = Math.max(bottom, row);
+        }
+      }
+    }
+    return right < 0 ? null : new int[] {left, top, right, bottom};
+  }
+
+  /**
+   * The drawings never touch: on every frame some axis keeps the gap the scene
+   * promises (MIN_GAP = 2), so no cell of one ship lands over the other.
+   */
+  private static void assertTheShipsNeverTouch(Screen screen) {
+    int[] you = boxOf(screen, 'x');
+    int[] opponent = boxOf(screen, 'y');
+    if(you == null || opponent == null) {
+      return;
+    }
+    int gapX = Math.max(you[0] - (opponent[2] + 1), opponent[0] - (you[2] + 1));
+    int gapY = Math.max(you[1] - (opponent[3] + 1), opponent[1] - (you[3] + 1));
+    assertTrue(gapX >= 2 || gapY >= 2,
+        "the ships never touch (gapX " + gapX + ", gapY " + gapY + "):\n" + screenText(screen));
   }
 
   @Test
@@ -1251,6 +1398,16 @@ class LanternaEncounterViewTest {
         "The pirate attacks.", "Choose an action.",
         ShipType.Flea, ShipType.Scorpion, youHit, oppHit, youDamage, oppDamage, you, opponent, false, youAttacked,
         false, 5, false, round, "");
+  }
+
+  /** A round of a ship that ignores us (it crosses the scene). */
+  private static EncounterViewModel ignoring(ShipPicture you, ShipPicture opponent, int round) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Ignore), false, 0, "Flea",
+        new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Police",
+        new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The police ignores.",
+        "Choose an action.", ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+        true, 5, false, round, "");
   }
 
   /** How many times a glyph is on the screen. */
