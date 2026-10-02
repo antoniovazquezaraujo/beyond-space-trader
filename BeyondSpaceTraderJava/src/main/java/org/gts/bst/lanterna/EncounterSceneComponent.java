@@ -129,6 +129,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private boolean exiting;
   /** True while the ship is on a dash to an edge (the only one that can ask to flee). */
   private boolean escapeDash;
+  /** The side that dash was armed for: only its arrival settles the side of the escape. */
+  private boolean dashToTheRight;
   private Runnable onExit;
   private Runnable onOpponentGone;
   private int responseFrames;
@@ -252,7 +254,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         // (not a wide ship parked at the edge) can ask the game for the escape.
         columnTarget = -youLeft;
         escapeDash = true;
-        exitedRight = false;
+        dashToTheRight = false;
       } else {
         // The half turn: the ship holds its place and the world moves the other way.
         youTurned = true;
@@ -266,7 +268,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         // and stays there, visible; the camera follows it and never loses it.
         columnTarget = Math.max(youColumn, screenWidth - youWidth - youLeft);
         escapeDash = true;
-        exitedRight = true;
+        dashToTheRight = true;
       }
     }
     invalidate();
@@ -277,7 +279,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     return youTurned;
   }
 
-  /** True when the last dash went to the right edge instead of the left one (a dodge). */
+  /** True when the last dash that arrived at an edge went to the right one (a dodge). */
   public boolean exitedRight() {
     return exitedRight;
   }
@@ -605,6 +607,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     boolean atEdge = screenWidth > 0 && (yourX() <= 0 || yourX() + youWidth >= screenWidth);
     if(escapeDash && columnTarget != Integer.MIN_VALUE && youColumn == columnTarget) {
       escapeDash = false;
+      // The side of the escape is settled by the dash that arrives: a dash that
+      // was braked or blocked never changes it (the other ship is where it is).
+      exitedRight = dashToTheRight;
       if(!exiting) {
         exiting = true;
         if(onExit != null) {

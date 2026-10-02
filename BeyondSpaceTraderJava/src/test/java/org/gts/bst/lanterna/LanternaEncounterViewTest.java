@@ -935,6 +935,68 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void aBlockedDashDoesNotChangeTheSideOfTheEscape() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // Forward, into the other ship (parked in the middle): the dash bumps and
+      // stops before the right edge, so it must not settle the side of anything.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("yyyyy"), "the other ship blocks the way");
+      assertFalse(content.exitedRight(), "a blocked dash never reached the right edge");
+      int ourColumn = firstColumnOf(screen, 'x');
+
+      // The escape is resolved with no dash of its own (the key): the other
+      // ship is behind us, to the right, and that is the side it must leave.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('f', false, false));
+      assertEquals(List.of(EncounterAction.Flee), executed, "the key asks to flee");
+      view.escaped();
+      int behind = firstColumnOf(screen, 'y');
+      for(int i = 0; i < 3; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertTrue(screenText(screen).contains("yyyyy"), "the other ship is on its way out");
+      assertTrue(firstColumnOf(screen, 'y') > behind,
+          "it leaves through the right (" + firstColumnOf(screen, 'y') + " > " + behind + ")");
+      int out = 0;
+      while(out < 40 && screenText(screen).contains("yyyyy")) {
+        content.tick();
+        gui.updateScreen();
+        out++;
+      }
+      assertFalse(screenText(screen).contains("yyyyy"), "and all the way out");
+      assertEquals(ourColumn, firstColumnOf(screen, 'x'), "while we stay in the scene");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void aFailedEscapeBringsTheOtherShipCloser() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
