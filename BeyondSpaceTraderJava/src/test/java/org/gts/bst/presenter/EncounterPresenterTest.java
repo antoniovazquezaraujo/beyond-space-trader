@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Set;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
@@ -311,6 +312,22 @@ class EncounterPresenterTest {
     assertTrue(EncounterPresenter.opponentLeaves("PirateAttack", true), "it cannot see a cloaked ship");
     assertFalse(EncounterPresenter.opponentLeaves("PirateAttack", false), "while it attacks, it blocks");
     assertFalse(EncounterPresenter.opponentLeaves("TraderBuy", false));
+  }
+
+  @Test
+  void thePresentedModelOfASurrenderedShipDoesNotIgnoreUs() {
+    // The scene only knows the model: the surrender must arrive there as a ship
+    // that stays, not only as a flag of the helper above.
+    for(EncounterType type : List.of(EncounterType.PoliceSurrender, EncounterType.PirateSurrender,
+        EncounterType.TraderSurrender)) {
+      Game game = newGame();
+      FakeView view = new FakeView();
+      game.encounter().setEncounterType(type);
+
+      new EncounterPresenter(game, view).start();
+
+      assertFalse(view.model.opponentIgnores(), type + " stays waiting for our decision");
+    }
   }
 }
 

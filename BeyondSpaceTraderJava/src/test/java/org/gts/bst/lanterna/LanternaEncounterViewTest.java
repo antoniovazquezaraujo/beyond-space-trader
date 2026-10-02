@@ -2553,6 +2553,96 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theEdgeInASurrenderedPoliceAsksToFleeInsteadOfIgnoring() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(policeSurrendering(you, opponent, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // The demand is not an ignore: slipping away from it is an escape attempt
+      // (the flee of the game), not an automatic ignore of the encounter.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      assertEquals(List.of(EncounterAction.Flee), executed,
+          "reaching the edge of the demand asks to flee, not to ignore");
+      assertFalse(content.exitedRight(), "we reached the left edge");
+      assertTrue(screenText(screen).contains("x"), "and the camera keeps us in the scene");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aCloakedPlayerKeepsItsDecisionWhenTheOpponentCrossesAway() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      // Cloaked: the other ship does not see us and crosses away, but attack,
+      // flee and surrender stay on the table (there is no ignore to fall back on).
+      view.render(cloaked(you, opponent, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("y"), "the ship comes in and starts crossing");
+
+      int frames = 0;
+      while(frames < 40 && screenText(screen).contains("y")) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertFalse(screenText(screen).contains("y"),
+          "it crosses the scene and leaves:\n" + screenText(screen));
+      assertTrue(executed.isEmpty(), "the crossing did not ignore the encounter by itself");
+      assertTrue(gui.getWindows().contains(view.asWindow()), "the encounter waits for our decision");
+
+      // The decision is still ours: the attack key runs the attack.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('a', false, false));
+      assertEquals(List.of(EncounterAction.Attack), executed, "the attack is still on the table");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void attackingWhileItCrossesKeepsTheEncounterOpen() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
@@ -3147,6 +3237,20 @@ class LanternaEncounterViewTest {
         "The police demands your surrender.", "Choose an action.",
         ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
         false, 5, false, round, spacetrader.Strings.EncounterSaysPoliceArrest);
+  }
+
+  /**
+   * A round of a cloaked player: the other ship does not see us and crosses away,
+   * but the decision (attack, flee or surrender) stays open, with no ignore.
+   */
+  private static EncounterViewModel cloaked(ShipPicture you, ShipPicture opponent, int round) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
+        false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+        "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+        "The pirate attacks.", "Choose an action.",
+        ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+        true, 5, false, round, "");
   }
 
   /** A round of a police inspection: attack, flee, submit or bribe. */
