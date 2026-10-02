@@ -83,6 +83,7 @@ public final class LanternaEncounterView implements EncounterView {
   private Timer stars;
   private Runnable onClose;
   private boolean closing;
+  private boolean closed;
   private boolean awaitingLeave;
 
   public LanternaEncounterView(WindowBasedTextGUI gui, Commands commands, Runnable tick, CargoHost cargoHost) {
@@ -108,6 +109,15 @@ public final class LanternaEncounterView implements EncounterView {
       } else {
         execute(EncounterAction.Flee);
       }
+    });
+    content.onOpponentGone(() -> {
+      if(closed || closing) {
+        // The encounter is already going: a frame queued by the star timer
+        // must not ignore it twice or close it again.
+        return;
+      }
+      // It finished crossing and is gone: the encounter is over, as if ignored.
+      execute(EncounterAction.Ignore);
     });
     content.setPreferredSize(new TerminalSize(120, 30));
     window.setComponent(content);
@@ -203,6 +213,10 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   private void closeNow() {
+    if(closed) {
+      // A queued close (or frame) after the window went must not act again.
+      return;
+    }
     if(awaitingLeave) {
       // The scene is waiting for the player: no pending close takes it away.
       return;
@@ -219,6 +233,7 @@ public final class LanternaEncounterView implements EncounterView {
       }, CLOSE_MILLIS);
       return;
     }
+    closed = true;
     if(stars != null) {
       stars.cancel();
       stars = null;

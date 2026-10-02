@@ -861,6 +861,67 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theCallbackOfTheGoneOpponentFiresOnceAndOnlyForTheCrossing() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      List<String> notices = new ArrayList<>();
+      content.onOpponentGone(() -> notices.add("gone"));
+      content.model(ignoring(you, opponent, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("y"), "the ship comes in and starts crossing");
+      assertTrue(notices.isEmpty(), "nothing is announced while it is there");
+
+      int frames = 0;
+      while(frames < 40 && screenText(screen).contains("y")) {
+        content.tick();
+        gui.updateScreen();
+        if(screenText(screen).contains("y")) {
+          assertTrue(notices.isEmpty(), "still crossing at frame " + frames);
+        }
+        frames++;
+      }
+      assertFalse(screenText(screen).contains("y"), "it crosses the scene and leaves:\n" + screenText(screen));
+      assertEquals(1, notices.size(), "the scene is told once, when it is gone");
+
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      assertEquals(1, notices.size(), "and only once");
+
+      // A ship that loses us also leaves, but that is the close of the chase:
+      // the notice of the crossing must not fire for it.
+      content.model(fight(you, opponent, 1, false, false, false, 0, 0));
+      content.opponentLeaves();
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      assertEquals(1, notices.size(), "losing us is not the crossing of the one that ignores us");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theShipThatIgnoresUsChangesLaneInsteadOfStalling() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
@@ -1069,6 +1130,96 @@ class LanternaEncounterViewTest {
       }
       gui.updateScreen();
       assertFalse(screenText(screen).contains("yyyyy"), "all the way out");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theEncounterEndsWhenTheIgnoringShipIsGone() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView[] view = new LanternaEncounterView[1];
+      // The presenter closes the encounter as soon as the action is over.
+      view[0] = new LanternaEncounterView(gui, action -> {
+        executed.add(action);
+        view[0].close();
+      }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view[0].render(ignoring(you, opponent, 0));
+      gui.addWindow(view[0].asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view[0].asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(executed.isEmpty(), "the ship is still crossing");
+
+      int frames = 0;
+      while(frames < 40 && gui.getWindows().contains(view[0].asWindow())) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertEquals(List.of(EncounterAction.Ignore), executed,
+          "once it is gone, the encounter ignores it by itself");
+      assertFalse(gui.getWindows().contains(view[0].asWindow()), "and the window is closed");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void attackingWhileItCrossesKeepsTheEncounterOpen() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(ignoring(you, opponent, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("y"), "it is still crossing");
+
+      // We fire at it: the game resolves the round and it is done ignoring us.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      assertEquals(List.of(EncounterAction.Attack), executed, "space fires at the crossing ship");
+      view.render(fight(you, opponent, 1, false, false, false, 0, 0));
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("y"), "the ship comes back for the fight");
+      assertTrue(gui.getWindows().contains(view.asWindow()), "the encounter is still open");
+      assertEquals(List.of(EncounterAction.Attack), executed, "no automatic ignore after attacking");
     } finally {
       screen.stopScreen();
       screen.close();

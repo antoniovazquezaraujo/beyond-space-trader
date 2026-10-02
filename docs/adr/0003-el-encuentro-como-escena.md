@@ -85,7 +85,9 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    reacciona la otra nave.
    - **Nos ignora**: cruza la escena con rapidez, se aparta con antelación a
      una banda libre (arriba o abajo, la contraria a la nuestra) y sale por el
-     otro lado; podemos cruzar por el hueco que deje.
+     otro lado; podemos cruzar por el hueco que deje. Cuando termina de cruzar
+     y desaparece, el encuentro **se cierra solo** (equivale a ignorar); si la
+     atacamos mientras cruza, vuelve y el combate sigue.
    - **No nos ignora**: copia la maniobra, más despacio o más rápido según lo
      que diga el juego; despacio, se puede esquivar y colar.
    - **Huimos** (flecha hacia atrás): la otra nave puede seguirnos o no, y

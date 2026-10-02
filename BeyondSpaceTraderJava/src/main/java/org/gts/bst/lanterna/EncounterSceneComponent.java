@@ -128,6 +128,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int columnTarget = Integer.MIN_VALUE;
   private boolean exiting;
   private Runnable onExit;
+  private Runnable onOpponentGone;
   private int responseFrames;
   private boolean pendingOppHit;
   private int pendingOppDamage;
@@ -296,6 +297,16 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     this.onExit = exit;
   }
 
+  /**
+   * Tells the view when the ship that ignores us has finished crossing and is
+   * gone: the encounter is over (the same as ignoring it). It only fires for
+   * that crossing, once per crossing, and never for a ship that leaves because
+   * it lost us.
+   */
+  public void onOpponentGone(Runnable gone) {
+    this.onOpponentGone = gone;
+  }
+
   /** Puts both ships back in their places (a failed flee, or the start of the fight). */
   public void resetPosition() {
     youColumn = 0;
@@ -380,6 +391,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       if(opponentX() + opponentWidth < 0) {
         // Its way takes it out of the scene: it is gone, minding its business.
         opponentGone = true;
+        if(onOpponentGone != null) {
+          // The crossing is over: the encounter ends by itself.
+          onOpponentGone.run();
+        }
       }
       return;
     }
