@@ -500,6 +500,259 @@ class ShipEditorViewTest {
   }
 
   @Test
+  void alignsTheColumnsWhenTheNumberingGrowsAndTheWidthsTie() throws IOException {
+    // Arrange: ten elements, so the number column is two cells wide, with names
+    // and counts of the same width (a tie) and one kind without a known limit
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n"
+        + "[Energy Shield]\nkey=E\ncolor=cyan\nE\n"
+        + "[Extra Cargo Bays]\nkey=G\ncolor=green\nG\n"
+        + "[Cockpit]\nkey=C\ncolor=white\nC\n"
+        + "[Engine]\nkey=M\ncolor=red\nM\n"
+        + "[Fuel Tank]\nkey=F\ncolor=green\nD\n"
+        + "[Cargo Gauge]\nkey=B\ncolor=green\nB\n"
+        + "[Role Trader]\nkey=R\ncolor=white\nR\n"
+        + "[Escape Pod]\nkey=P\ncolor=white\nP\n"
+        + "[Rare Piece]\nkey=X\ncolor=white\nX\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+
+      // Act
+      gui.updateScreen();
+
+      // Assert: the rows of keys 1..9 keep the columns of the row 10
+      String[] lines = screenText(screen).split("\n", -1);
+      int ten = panelRowWith(screen, "X  Part");
+      int weapon = panelRowWith(screen, "A  Weapon");
+      int shield = panelRowWith(screen, "E  Shield");
+      int cargo = panelRowWith(screen, "B  Cargo");
+      assertTrue(ten >= 0 && weapon >= 0 && shield >= 0 && cargo >= 0, screenText(screen));
+      assertTrue(lines[ten].contains("10  X  Part       ?  ?"), screenText(screen));
+      for(char key : List.of('A', 'E', 'G', 'C', 'M', 'F', 'B', 'R', 'P')) {
+        int row = panelRowWith(screen, key + "  ");
+        assertTrue(row >= 0, "the row of " + key + ": " + screenText(screen));
+        assertEquals(lines[ten].indexOf('X'), lines[row].indexOf(key),
+            "the key column of " + key + ": " + screenText(screen));
+      }
+      assertEquals(lines[weapon].indexOf("0/1"), lines[shield].indexOf("0/1"),
+          "two counts of the same width: " + screenText(screen));
+      assertEquals(lines[weapon].indexOf("0/1"), lines[cargo].indexOf("0/4"),
+          "the have/max column: " + screenText(screen));
+      assertEquals(lines[weapon].indexOf("0/1") + 2, lines[ten].indexOf("?"),
+          "the `?` of a missing limit is padded like a count: " + screenText(screen));
+      assertEquals(lines[weapon].indexOf("⚠"), lines[shield].indexOf("⚠"),
+          "the mark column: " + screenText(screen));
+      assertEquals(lines[weapon].indexOf("⚠"), lines[ten].lastIndexOf("?"),
+          "the `?` of a missing limit sits in the mark column: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void cutsLongNamesWithoutMovingTheTypeColumn() throws IOException {
+    // Arrange: a name longer than the name column, with the ties of two equal names
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader(
+        "[una nave extremadamente larga]\ntype=Firefly\nchasis=h1\n"
+        + "[nave alfa]\ntype=Firefly\nchasis=h1\n"
+        + "[nave beta]\ntype=Gnat\nchasis=h2\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[h1]\ncolor=cyan\nxxxxx\n[h2]\ncolor=red\nxxxxx\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, List.of());
+      gui.addWindow(view);
+
+      // Act
+      gui.updateScreen();
+
+      // Assert
+      String[] lines = screenText(screen).split("\n", -1);
+      int first = panelRowWith(screen, "[Firefly]");
+      int second = panelRowWith(screen, "[Gnat]");
+      assertTrue(first >= 0 && second >= 0, screenText(screen));
+      assertEquals(lines[first].indexOf("[Firefly]"), lines[second].indexOf("[Gnat]"),
+          "the type column does not move: " + screenText(screen));
+      assertFalse(screenText(screen).contains("una nave extremadamente larga"),
+          "the long name is cut: " + screenText(screen));
+      assertTrue(screenText(screen).contains("una nave extremadament"),
+          "the head of the name is kept: " + screenText(screen));
+      int divider = lines[first].indexOf('│', 1);
+      assertTrue(lines[first].indexOf("[Firefly]") + "[Firefly]".length() <= divider,
+          "the type fits in the panel: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void marksAnOverQuotaRowInItsColumn() throws IOException {
+    // Arrange: a design with two shields where the Firefly takes one
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader(
+        "[prueba]\ntype=Firefly\nchasis=uno\ngroup=E x=2 y=2 n=2\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Energy Shield]\nkey=E\ncolor=cyan\nE\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+
+      // Act
+      gui.updateScreen();
+
+      // Assert: the first element (the weapon) is selected; the shield is not
+      String[] lines = screenText(screen).split("\n", -1);
+      int weapon = panelRowWith(screen, "A  Weapon");
+      int shield = panelRowWith(screen, "E  Shield");
+      assertTrue(weapon >= 0 && shield >= 0, screenText(screen));
+      assertTrue(lines[weapon].contains("1  A  Weapon  0/1  ⚠"), screenText(screen));
+      assertTrue(lines[shield].contains("2  E  Shield  2/1  ✗"), screenText(screen));
+      assertEquals(lines[weapon].indexOf("0/1"), lines[shield].indexOf("2/1"),
+          "the have/max column: " + screenText(screen));
+      assertEquals(lines[weapon].indexOf("⚠"), lines[shield].indexOf("✗"),
+          "the mark column: " + screenText(screen));
+      assertEquals(TextColor.ANSI.YELLOW,
+          screen.getFrontCharacter(lines[shield].indexOf('✗'), shield).getForegroundColor(),
+          "the over-quota mark warns: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void paintsTheWholeSelectedRowOfAnElement() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Engine]\nkey=M\ncolor=white\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+
+      // Act
+      gui.updateScreen();
+
+      // Assert
+      String[] lines = screenText(screen).split("\n", -1);
+      int weapon = panelRowOf(screen, "1  A  Weapon");
+      int engine = panelRowOf(screen, "2  M  Engine");
+      assertTrue(weapon >= 0 && engine >= 0, screenText(screen));
+      int divider = lines[weapon].indexOf('│', 1);
+      assertTrue(divider > 1, screenText(screen));
+      for(int x = 1; x < divider; x++) {
+        assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(x, weapon).getBackgroundColor(),
+            "the open element fills its whole row: " + screenText(screen));
+        assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(x, engine).getBackgroundColor(),
+            "the closed element does not: " + screenText(screen));
+      }
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void clearsTheYellowAfterTheHullSizeWarning() throws IOException {
+    // Arrange: Beetle is Medium and takes no weapon; the small hull warns and
+    // its yellow must not drip into the first element row, right below
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Energy Shield]\nkey=E\ncolor=cyan\nE\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(
+          ShipDesign.parse(new StringReader("[prueba]\ntype=Beetle\nchasis=uno\n")), hulls, pieces);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      // Act: pick the shield, so the weapon row (a check mark) stays unselected
+      view.handleKey(new KeyStroke('2', false, false));
+      gui.updateScreen();
+
+      // Assert
+      String warning = "⚠ hull size: small (type: medium)";
+      int warningRow = panelRowWith(screen, warning);
+      int weapon = panelRowWith(screen, "✓");
+      assertTrue(warningRow >= 0 && weapon >= 0, screenText(screen));
+      assertTrue(screenText(screen).contains("1  A  Weapon  0/0  ✓"), screenText(screen));
+      assertEquals(TextColor.ANSI.YELLOW, screen.getFrontCharacter(1, warningRow).getForegroundColor(),
+          "the warning is yellow: " + screenText(screen));
+      assertEquals(TextColor.ANSI.WHITE, screen.getFrontCharacter(1, weapon).getForegroundColor(),
+          "the row under the warning is not yellow: " + screenText(screen));
+      String[] lines = screenText(screen).split("\n", -1);
+      int mark = lines[weapon].indexOf('✓');
+      assertEquals(TextColor.ANSI.WHITE, screen.getFrontCharacter(mark, weapon).getForegroundColor(),
+          "the mark is not yellow either: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void keepsThePanelAndTheColumnsAtEightyAndHundredColumns() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Energy Shield]\nkey=E\ncolor=cyan\nE\n"));
+    for(int columns : List.of(80, 100)) {
+      Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(columns, 30)));
+      screen.startScreen();
+      try {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        gui.setTheme(LanternaTheme.create());
+        ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+        gui.addWindow(view);
+
+        // Act
+        gui.updateScreen();
+
+        // Assert: the panel keeps its 34 cells and the columns their places
+        String[] lines = screenText(screen).split("\n", -1);
+        int weapon = panelRowWith(screen, "A  Weapon");
+        int shield = panelRowWith(screen, "E  Shield");
+        assertTrue(weapon >= 0 && shield >= 0, screenText(screen));
+        assertEquals(35, lines[weapon].indexOf('│', 1),
+            "the panel of " + columns + " columns: " + screenText(screen));
+        assertEquals(columns == 80 ? 57 : 67, lines[weapon].indexOf('│', 36),
+            "the canvas of " + columns + " columns: " + screenText(screen));
+        assertEquals(lines[weapon].indexOf("A"), lines[shield].indexOf("E"),
+            "the key column at " + columns + ": " + screenText(screen));
+        assertEquals(lines[weapon].indexOf("0/1"), lines[shield].indexOf("0/1"),
+            "the have/max column at " + columns + ": " + screenText(screen));
+        assertEquals(lines[weapon].indexOf("⚠"), lines[shield].indexOf("⚠"),
+            "the mark column at " + columns + ": " + screenText(screen));
+      } finally {
+        screen.stopScreen();
+        screen.close();
+      }
+    }
+  }
+
+  @Test
   void paintsTheBackgroundsOfThePieces() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
