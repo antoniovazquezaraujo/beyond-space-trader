@@ -149,14 +149,15 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    encuentro que son del rival y hoy caían al registro pasan a **bocadillo bajo
    la nave** (`EncounterView.speech`/`speechAndWait`), reutilizando el texto de
    la alerta del juego (`Alerts.get`, una sola fuente). Los que son respuesta a
-   una acción y la partida sigue —la multa tras someterse al registro
-   (`EncounterPoliceFine`), el soborno rechazado (`EncounterPoliceBribeCant`),
-   el del Marie Celeste (`EncounterMarieCelesteNoBribe`) y la rendición
-   rechazada (`EncounterSurrenderRefused`)— se van con la siguiente acción o
-   ronda; los que cierran la escena —el arresto (`EncounterArrested`) y la
-   entrega de la carga al rendirse (`EncounterPostMarie`)— se dicen con
-   `speechAndWait` y la escena espera a que el jugador los lea (`[ENTER]
-   continue`). El resto de avisos informativos siguen en el registro.
+   una acción con la partida en marcha —el soborno rechazado
+   (`EncounterPoliceBribeCant`), el del Marie Celeste
+   (`EncounterMarieCelesteNoBribe`) y la rendición rechazada
+   (`EncounterSurrenderRefused`)— se van con la siguiente acción o ronda; los
+   que salen sobre una escena que espera o cierra —la multa tras someterse al
+   registro (`EncounterPoliceFine`), el arresto (`EncounterArrested`) y la
+   entrega de la carga al ceder (`EncounterPostMarie`)— permanecen hasta que
+   el jugador los lee (`[ENTER] continue`). El resto de avisos informativos
+   siguen en el registro.
 
 ## Consecuencias
 
