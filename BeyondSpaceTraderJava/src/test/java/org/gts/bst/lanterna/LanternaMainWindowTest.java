@@ -29,7 +29,9 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.SpecialEventType;
 import org.gts.bst.events.EncounterResult;
@@ -1645,14 +1647,24 @@ class LanternaMainWindowTest {
 
   @Test
   void onlyTheChosenQuietAlertsSpeakUnderTheRival() {
-    for(AlertType type : List.of(AlertType.EncounterPoliceFine, AlertType.EncounterPoliceBribeCant,
-        AlertType.EncounterMarieCelesteNoBribe, AlertType.EncounterSurrenderRefused)) {
+    List<AlertType> chosen = List.of(AlertType.EncounterPoliceFine, AlertType.EncounterPoliceBribeCant,
+        AlertType.EncounterMarieCelesteNoBribe, AlertType.EncounterSurrenderRefused);
+    for(AlertType type : chosen) {
       assertTrue(LanternaMainWindow.speaksUnderTheRival(type), type + " speaks under the rival");
     }
     assertFalse(LanternaMainWindow.speaksUnderTheRival(AlertType.EncounterPoliceNothingFound),
         "the other outcomes keep their log line");
     assertFalse(LanternaMainWindow.speaksUnderTheRival(AlertType.EncounterEscaped));
     assertFalse(LanternaMainWindow.speaksUnderTheRival(AlertType.JailConvicted));
+    // No fifth alert may sneak into the speech of the window: the arrest and the
+    // pardon are said by the presenter (speechAndWait), not routed here.
+    Set<AlertType> speaking = EnumSet.noneOf(AlertType.class);
+    for(AlertType type : AlertType.values()) {
+      if(LanternaMainWindow.speaksUnderTheRival(type)) {
+        speaking.add(type);
+      }
+    }
+    assertEquals(Set.copyOf(chosen), speaking, "only the four action outcomes speak through the window");
   }
 
   @Test

@@ -498,6 +498,26 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void submittingWithOnlySpecialCargoIsArrestedButNotFined() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.setQuestStatusSculpture(SpecialEvent.StatusSculptureInTransit);
+    game.encounter().setEncounterType(EncounterType.PoliceInspect);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.submit();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPoliceSubmit), dialogs.alerts().toString());
+    assertFalse(dialogs.alerts().contains(AlertType.EncounterPoliceFine),
+        "the fine only speaks when there were goods to confiscate: " + dialogs.alerts());
+    assertTrue(view.inspectionCalled, "the scanner runs");
+    assertFalse(view.inspectionConfiscated, "there was nothing to confiscate");
+    assertEquals(EncounterResult.Arrested, presenter.result());
+  }
+
+  @Test
   void bribingWhereThePoliceTakeNoBribesIsMetWithARefusal() {
     TestDialogService dialogs = new TestDialogService();
     dialogs.setResult(DialogResult.Yes);
@@ -539,6 +559,23 @@ class EncounterPresenterTest {
     Game game = gameWith(dialogs);
     game.encounter().setOpponent(new Ship(ShipType.Mantis));
     game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterSurrenderRefused), dialogs.alerts().toString());
+    assertFalse(view.closed, "the encounter goes on: the refusal is only feedback");
+    assertEquals(EncounterResult.Continue, presenter.result());
+  }
+
+  @Test
+  void thePsychopathPoliceRefusesTheSurrenderAsWellAsTheMantis() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.Commander().setPoliceRecordScore(Consts.PoliceRecordScorePsychopath);
+    game.encounter().setEncounterType(EncounterType.PoliceAttack);
     FakeView view = new FakeView();
     EncounterPresenter presenter = new EncounterPresenter(game, view);
 
