@@ -145,6 +145,18 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    quedarte atrapado, igual que en el original. Cualquier red de seguridad
    (fiar combustible, un préstamo de emergencia…) sería un ADR aparte, si el
    autor lo pide.
+9. **Los avisos del rival se dicen bajo su nave**: los avisos informativos del
+   encuentro que son del rival y hoy caían al registro pasan a **bocadillo bajo
+   la nave** (`EncounterView.speech`/`speechAndWait`), reutilizando el texto de
+   la alerta del juego (`Alerts.get`, una sola fuente). Los que son respuesta a
+   una acción y la partida sigue —la multa tras someterse al registro
+   (`EncounterPoliceFine`), el soborno rechazado (`EncounterPoliceBribeCant`),
+   el del Marie Celeste (`EncounterMarieCelesteNoBribe`) y la rendición
+   rechazada (`EncounterSurrenderRefused`)— se van con la siguiente acción o
+   ronda; los que cierran la escena —el arresto (`EncounterArrested`) y la
+   entrega de la carga al rendirse (`EncounterPostMarie`)— se dicen con
+   `speechAndWait` y la escena espera a que el jugador los lea (`[ENTER]
+   continue`). El resto de avisos informativos siguen en el registro.
 
 ## Consecuencias
 
