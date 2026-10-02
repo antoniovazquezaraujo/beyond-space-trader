@@ -3763,6 +3763,108 @@ class LanternaEncounterViewTest {
     }
   }
 
+  @Test
+  void theHeaderOfTheSceneClosesRightUnderItsFields() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, DialogService.NONE);
+      view.header(game::Commander);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      String text = screenText(screen);
+
+      // The commander fields close the first line and the ship ones take the
+      // second: the separator goes right under them.
+      spacetrader.Commander cmdr = game.Commander();
+      assertEquals(0, rowOfText(screen, cmdr.Name()), text);
+      assertEquals(0, rowOfText(screen, spacetrader.Functions.StringVars(spacetrader.Strings.MainDay,
+          "" + cmdr.getDays())), text);
+      assertEquals(0, rowOfText(screen, spacetrader.Functions.FormatMoney(cmdr.getCash())), text);
+      String fuel = spacetrader.Functions.StringVars(spacetrader.Strings.MainFuel,
+          "" + cmdr.getShip().getFuel(), "" + cmdr.getShip().FuelTanks());
+      assertEquals(1, rowOfText(screen, fuel), text);
+      int separator = headerSeparatorRow(screen);
+      assertEquals(2, separator, "the separator closes the header right under its fields:\n" + text);
+      assertEquals(separator + 1, rowOfText(screen, "casco"),
+          "the bars start under the separator:\n" + text);
+
+      // The legend starts under the header: it never steps on it.
+      int legendColumn = screen.getTerminalSize().getColumns() - 24;
+      for(int row = 0; row <= separator; row++) {
+        assertNotEquals('│', screen.getBackCharacter(legendColumn, row).getCharacter(),
+            "the legend never steps on the header (row " + row + "):\n" + text);
+      }
+      assertTrue(rowOfText(screen, spacetrader.Strings.EncounterLegend) > separator, text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theHeaderOfTheSceneTakesTwoLinesOnANarrowTerminal() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(60, 20));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, DialogService.NONE);
+      content.commander(game::Commander);
+      assertEquals(2, HeaderBar.height(60, game.Commander()),
+          "the commander and the ship fields need one line each at 60 columns");
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      content.log(List.of("First line.", "Second line.", "Third line.", "Fourth line."));
+      gui.updateScreen();
+      String text = screenText(screen);
+
+      // The two lines of the header and its separator push the scene down; the
+      // log and the action keys stay anchored at the bottom.
+      assertEquals(0, rowOfText(screen, "Antonio"), text);
+      String fuel = spacetrader.Functions.StringVars(spacetrader.Strings.MainFuel,
+          "" + game.Commander().getShip().getFuel(), "" + game.Commander().getShip().FuelTanks());
+      assertEquals(1, rowOfText(screen, fuel), text);
+      assertEquals(2, headerSeparatorRow(screen), "the separator closes the header:\n" + text);
+      assertEquals(3, rowOfText(screen, "casco"), "the bars start under the separator:\n" + text);
+      assertTrue(rowOfText(screen, spacetrader.Strings.EncounterLegend) > 2, text);
+      assertEquals(screen.getTerminalSize().getRows() - 2, rowOfText(screen, "Fourth line."), text);
+      assertEquals(screen.getTerminalSize().getRows() - 1,
+          rowOfText(screen, "[A] " + spacetrader.Strings.EncounterActionAttack), text);
+
+      // The legend column starts under the header, so it never steps on it.
+      int legendColumn = screen.getTerminalSize().getColumns() - 24;
+      for(int row = 0; row <= 2; row++) {
+        assertNotEquals('│', screen.getBackCharacter(legendColumn, row).getCharacter(),
+            "the legend never steps on the header (row " + row + "):\n" + text);
+      }
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   /** The row of the header separator (a whole row of dashes), or -1. */
   private static int headerSeparatorRow(Screen screen) {
     for(int row = 0; row < 5; row++) {
