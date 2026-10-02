@@ -1118,6 +1118,64 @@ class LanternaEncounterViewTest {
     return down != null ? down : boxOf(screen, '╝');
   }
 
+  @Test
+  void theBentCatwalkGrowsFromTheNoseAndShrinksFromTheFarEnd() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      ReadyScene scene = sceneWithTwoShips(screen);
+      scene.content().move(0, -1);
+      for(int i = 0; i < 3; i++) {
+        scene.content().tick();
+      }
+      scene.content().catwalk();
+      scene.content().tick();
+      scene.gui().updateScreen();
+      String text = screenText(screen);
+      assertTrue(text.contains("═"), "the run leaves our nose first:\n" + text);
+      assertFalse(text.contains("╗") || text.contains("╝") || text.contains("║"),
+          "the leg waits for the full run:\n" + text);
+
+      // The path only adds cells at its far end: the leg never grows without its
+      // corner over it, cell by cell.
+      for(int i = 0; i < 11; i++) {
+        scene.content().tick();
+        scene.gui().updateScreen();
+        text = screenText(screen);
+        int[] corner = cornerOf(screen);
+        if(text.contains("║")) {
+          assertNotNull(corner, "the leg grows from the corner:\n" + text);
+          int[] leg = rowsOf(screen, corner[0], '║');
+          assertNotNull(leg, "the leg keeps its column:\n" + text);
+          assertEquals(corner[1] + 1, leg[0], "and starts right under the corner:\n" + text);
+        }
+      }
+      assertTrue(scene.content().catwalkOut(), "the full path waits there");
+
+      // Coming back: the far end goes first; the corner never returns once gone.
+      scene.content().retract();
+      scene.content().tick();
+      scene.gui().updateScreen();
+      assertNotNull(cornerOf(screen), "the far end is still there on the way back");
+      boolean cornerGone = false;
+      for(int i = 0; i < 7; i++) {
+        scene.content().tick();
+        scene.gui().updateScreen();
+        text = screenText(screen);
+        boolean cornerThere = cornerOf(screen) != null;
+        if(cornerGone) {
+          assertFalse(cornerThere, "the corner never comes back:\n" + text);
+          assertFalse(text.contains("║"), "nor the leg:\n" + text);
+        }
+        cornerGone |= !cornerThere;
+      }
+      assertTrue(scene.content().catwalkGone(), "the path is gone");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   /** A scene with our ship and a rival coming in, ready for the catwalk. */
   private record ReadyScene(MultiWindowTextGUI gui, EncounterSceneComponent content) {
   }
