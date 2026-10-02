@@ -83,7 +83,9 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    bajar; girar hacia atrás es emprender la huida) y esas maniobras se ven, pero
    el desenlace lo sigue diciendo el juego: sus veredictos se traducen en cómo
    reacciona la otra nave.
-   - **Nos ignora**: no se mueve; podemos cruzar por el hueco que deje.
+   - **Nos ignora**: cruza la escena con rapidez, se aparta con antelación a
+     una banda libre (arriba o abajo, la contraria a la nuestra) y sale por el
+     otro lado; podemos cruzar por el hueco que deje.
    - **No nos ignora**: copia la maniobra, más despacio o más rápido según lo
      que diga el juego; despacio, se puede esquivar y colar.
    - **Huimos** (flecha hacia atrás): la otra nave puede seguirnos o no, y

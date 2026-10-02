@@ -85,6 +85,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final char BOX = '■';
   /** Cells the ship glides on every frame: the dashes go at double speed. */
   private static final int GLIDE_SPEED = 3;
+  /** Cells the ship that ignores us crosses on every frame: it just goes on. */
+  private static final int IGNORE_SPEED = 3;
   private static final int LEGEND_COLUMNS = 24;
 
   /** A beam: the shot of a ship, a line of light from its nose to where the game says. */
@@ -352,18 +354,28 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       return;
     }
     if(model.opponentIgnores()) {
-      // It goes on with its own business, crossing the scene, and slips out of our
-      // way on the way: no interest in us at all, unless we attack it.
+      // It goes on with its own business, crossing the scene at speed, and slips
+      // out of our way on the way: no interest in us at all, unless we attack it.
       glideOpponent();
       if(opponentRowTarget == Integer.MIN_VALUE && !clearOfUs()) {
-        int restRow = centreRow(false);
-        // Away from us: if we are below, it slips upwards, and the other way round.
-        boolean toTop = yourMiddleY() > opponentMiddleY();
-        opponentRowTarget = toTop ? areaTop - restRow
-            : Math.max(areaTop - restRow, areaBottom - opponentHeight - restRow);
+        // Away from us: if we are below, it slips upwards, and the other way
+        // round; a draw still picks a lane (the lower one), never a standstill.
+        opponentRowTarget = yourMiddleY() > opponentMiddleY() ? upperLane() : lowerLane();
       }
-      if(frame % 3 == 0 && canOpponentMove(-1, 0)) {
+      // Cell by cell, so a whole stride can never jump over us (see MIN_GAP).
+      for(int i = 0; i < IGNORE_SPEED && canOpponentMove(-1, 0); i++) {
         opponentColumn--;
+      }
+      if(!canOpponentMove(-1, 0)
+          && (opponentRowTarget == Integer.MIN_VALUE || opponentRowTarget == opponentRow)) {
+        // Our lane is taken: it veers to the other one at once instead of
+        // stalling in front of us. When the ships are so tall that there is no
+        // other lane (upperLane equals lowerLane), it keeps the no-touch rule
+        // and crosses as soon as the way opens.
+        int other = otherLane();
+        if(other != opponentRow) {
+          opponentRowTarget = other;
+        }
       }
       if(opponentX() + opponentWidth < 0) {
         // Its way takes it out of the scene: it is gone, minding its business.
@@ -520,6 +532,22 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** True when the other drawing is well away from ours, head on. */
   private boolean clearOfUs() {
     return opponentX() - (yourX() + youWidth) >= KEEPS_CLEAR || yourX() - (opponentX() + opponentWidth) >= KEEPS_CLEAR;
+  }
+
+  /** The upper lane of the scene, as a row relative to the resting row. */
+  private int upperLane() {
+    return areaTop - centreRow(false);
+  }
+
+  /** The lower lane of the scene, as a row relative to the resting row. */
+  private int lowerLane() {
+    return Math.max(upperLane(), areaBottom - opponentHeight - centreRow(false));
+  }
+
+  /** The lane on the other side of the one the other ship took (top <-> bottom). */
+  private int otherLane() {
+    int taken = opponentRowTarget == Integer.MIN_VALUE ? opponentRow : opponentRowTarget;
+    return taken - upperLane() <= lowerLane() - taken ? lowerLane() : upperLane();
   }
 
   /** The other ship glides to the side it dodged to, like our own manoeuvre. */

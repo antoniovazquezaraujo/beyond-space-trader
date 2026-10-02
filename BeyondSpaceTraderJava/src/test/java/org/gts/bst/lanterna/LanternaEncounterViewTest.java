@@ -822,27 +822,25 @@ class LanternaEncounterViewTest {
       gui.updateScreen();
       int enemyRow = rowOf(screen, 'y');
 
-      // We go above it and advance: it slips away, downwards, instead of waiting.
+      // We go above it and advance: it slips away downwards and crosses without
+      // stopping, while we slip past it without bumping.
       content.move(0, -1);
-      for(int i = 0; i < 6; i++) {
-        content.tick();
-      }
       content.move(1, 0);
-      for(int i = 0; i < 12; i++) {
+      int frames = 0;
+      boolean dodged = false;
+      while(frames < 40 && screenText(screen).contains("y")) {
         content.tick();
+        gui.updateScreen();
+        if(screenText(screen).contains("y")) {
+          dodged |= rowOf(screen, 'y') > enemyRow;
+        }
+        frames++;
       }
-      gui.updateScreen();
-      assertTrue(rowOf(screen, 'y') > enemyRow,
-          "the one that ignores us dodges away from us (" + enemyRow + " -> " + rowOf(screen, 'y') + ")");
-      assertFalse(screenText(screen).contains("x"),
-          "and we slip past it without bumping:\n" + screenText(screen));
-
-      // And it goes on with its way, out of the scene, minding its own business.
-      for(int i = 0; i < 200; i++) {
-        content.tick();
-      }
-      gui.updateScreen();
+      assertTrue(dodged, "the one that ignores us dodges away from us (" + enemyRow + ")");
       assertFalse(screenText(screen).contains("y"), "it crosses the scene and leaves:\n" + screenText(screen));
+      assertTrue(frames <= 20, "and it does it quickly (" + frames + " frames)");
+      assertFalse(screenText(screen).contains("x"),
+          "we slip past it without bumping:\n" + screenText(screen));
 
       // If we attack it, it is done with ignoring us: it comes back for us.
       content.model(new EncounterViewModel(
@@ -856,6 +854,64 @@ class LanternaEncounterViewTest {
       }
       gui.updateScreen();
       assertTrue(screenText(screen).contains("y"), "and it comes back when the fight starts");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theShipThatIgnoresUsChangesLaneInsteadOfStalling() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Ignore), false, 0, "Flea",
+          new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Police",
+          new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The police ignores.",
+          "Choose an action.", ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+          true, 5, false, 0, ""));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      int rest = rowOf(screen, 'y');
+
+      // We rest on the same band and it picks its lane; then we take that lane:
+      // instead of stalling in front of us, it veers to the opposite band, keeps
+      // its way and leaves the scene.
+      content.tick();
+      content.move(0, 1);
+      int frames = 0;
+      int lastRow = rest;
+      while(frames < 80 && screenText(screen).contains("y")) {
+        content.tick();
+        gui.updateScreen();
+        if(screenText(screen).contains("y")) {
+          lastRow = rowOf(screen, 'y');
+        }
+        frames++;
+      }
+      assertFalse(screenText(screen).contains("y"),
+          "it goes all the way out instead of stalling in front of us:\n" + screenText(screen));
+      assertTrue(frames <= 20, "and it does it quickly (" + frames + " frames)");
+      assertTrue(lastRow < rest,
+          "changing band on the way (" + lastRow + " < " + rest + ")");
     } finally {
       screen.stopScreen();
       screen.close();
