@@ -1227,6 +1227,199 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void queuedFramesAfterTheAutomaticCloseDoNotIgnoreAgain() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      int[] closes = {0};
+      LanternaEncounterView[] view = new LanternaEncounterView[1];
+      // The presenter closes the encounter as soon as the action is over.
+      view[0] = new LanternaEncounterView(gui, action -> {
+        executed.add(action);
+        view[0].close();
+      }, () -> { }, plunder -> { });
+      view[0].onClose(() -> closes[0]++);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view[0].render(ignoring(you, opponent, 0));
+      gui.addWindow(view[0].asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view[0].asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      int frames = 0;
+      while(frames < 40 && gui.getWindows().contains(view[0].asWindow())) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertEquals(List.of(EncounterAction.Ignore), executed, "the crossing ends the encounter");
+      assertEquals(1, closes[0], "and the window closes once");
+      assertFalse(gui.getWindows().contains(view[0].asWindow()));
+
+      // The star timer can leave frames queued, and the close can be asked
+      // again: neither may ignore the encounter twice nor close it again.
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      view[0].close();
+      view[0].close();
+      gui.updateScreen();
+      assertEquals(List.of(EncounterAction.Ignore), executed, "late frames must not ignore it twice");
+      assertEquals(1, closes[0], "nor close the window again");
+      assertFalse(gui.getWindows().contains(view[0].asWindow()));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void thePlayerLeavingOnItsOwnIgnoresOnlyOnce() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView[] view = new LanternaEncounterView[1];
+      // The presenter closes the encounter as soon as the action is over.
+      view[0] = new LanternaEncounterView(gui, action -> {
+        executed.add(action);
+        view[0].close();
+      }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view[0].render(ignoring(you, opponent, 0));
+      gui.addWindow(view[0].asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view[0].asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // The half turn and then the advance away: the ship leaves through its
+      // left side and the scene asks the game for the escape (an ignore).
+      view[0].asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      view[0].asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      int frames = 0;
+      while(frames < 30 && executed.isEmpty()) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertEquals(List.of(EncounterAction.Ignore), executed, "leaving past it ignores the encounter");
+
+      // The ship that ignores us goes on crossing while the scene closes: its
+      // departure must not ignore the encounter a second time.
+      for(int i = 0; i < 30; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertEquals(List.of(EncounterAction.Ignore), executed, "and it is not ignored twice");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theGoneNoticeDoesNotFireWhileTheShipComesIn() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      List<String> notices = new ArrayList<>();
+      content.onOpponentGone(() -> notices.add("gone"));
+      content.model(ignoring(you, opponent, 0));
+      gui.updateScreen();
+
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+        gui.updateScreen();
+        assertTrue(notices.isEmpty(), "the ship is still coming in at frame " + i);
+      }
+      assertTrue(notices.isEmpty(), "coming in is not crossing the scene");
+      assertTrue(screenText(screen).contains("yyyyy"), "it is there, facing the crossing");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void attackingBeforeItLeavesCancelsTheGoneNotice() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      List<String> notices = new ArrayList<>();
+      content.onOpponentGone(() -> notices.add("gone"));
+      content.model(ignoring(you, opponent, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("y"), "it is crossing");
+
+      // The player fires and the game calls it back: the crossing is over, so
+      // the notice must never arrive.
+      content.model(fight(you, opponent, 1, true, false, false, 0, 0));
+      for(int i = 0; i < 30; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("y"), "the ship is back for the fight");
+      assertTrue(notices.isEmpty(), "the fight cancels the notice of the crossing");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theSpeechLeavesWithTheShip() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

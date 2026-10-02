@@ -136,6 +136,25 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void ignoringTheEncounterAlsoStopsTheAutomaticRounds() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.TraderIgnore);
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+    presenter.start();
+    // The game had the automatic rounds running when the ship finished crossing.
+    game.encounter().setEncounterContinueAttacking(true);
+    game.encounter().setEncounterContinueFleeing(true);
+
+    presenter.ignore();
+
+    assertFalse(game.encounter().getEncounterContinueAttacking(), "the automatic attack stops");
+    assertFalse(game.encounter().getEncounterContinueFleeing(), "and the automatic flee too");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result(), "the encounter ends as ignored");
+  }
+
+  @Test
   void theJettisonScreenGoesThroughTheView() {
     Game game = newGame();
     FakeView view = new FakeView();
