@@ -710,6 +710,11 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     invalidate();
   }
 
+  /** The looting of a pirate: the rival closes in, the catwalk goes out and the boxes cross. */
+  public void loot() {
+    startCatwalk(true);
+  }
+
   /** The catwalk of a trade: it goes out between the ships and waits there. */
   public void catwalk() {
     startCatwalk(false);

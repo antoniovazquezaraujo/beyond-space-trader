@@ -108,6 +108,12 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
      **no se va**; se queda enfrente, en su mitad, copiando nuestras
      maniobras, y la escena espera nuestra decisión (atacarla, saquearla,
      rendirnos), que es lo que ofrecen sus acciones.
+   - **Nos rendimos ante un pirata**: la escena muestra el saqueo — la nave
+     pirata se arrima, sale la pasarela y cruzan las cajas **si de verdad se
+     llevan carga** (sin carga robada, ni pasarela) — y después la escena
+     espera al jugador, como tras comerciar o una inspección policial. La
+     rendición ante la Mantis (se entrega el artefacto) y la policial (el
+     arresto) no son un saqueo.
    - **Huimos** (flecha hacia atrás): la otra nave puede seguirnos o no, y
      podemos perderla de vista o no; lo decide el juego. La cámara nos sigue,
      así que nuestra nave **nunca sale de pantalla**: se queda pegada al borde

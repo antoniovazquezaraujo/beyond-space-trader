@@ -178,6 +178,16 @@ public final class LanternaEncounterView implements EncounterView {
     content.inspection(confiscated, confiscated ? null : Strings.EncounterSaysPoliceAllClear);
   }
 
+  @Override
+  public void looted(boolean cargo) {
+    // After the looting the ship stays until the player reads the outcome and
+    // leaves; the catwalk comes out only when the pirates take cargo.
+    awaitLeave();
+    if(cargo) {
+      content.loot();
+    }
+  }
+
   /** The scene is over: it waits for the player to leave (intro, escape or flying away). */
   private void awaitLeave() {
     awaitingLeave = true;

@@ -19,12 +19,16 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
+import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
 import org.junit.jupiter.api.Test;
 import spacetrader.Game;
+import spacetrader.Ship;
+import spacetrader.SpecialEvent;
 import spacetrader.Strings;
 import spacetrader.TestDialogService;
 import spacetrader.enums.AlertType;
@@ -156,6 +160,74 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void surrenderingToAPirateShowsTheLootingWhenCargoIsTaken() {
+    Game game = newGame();
+    game.Commander().getShip().Cargo()[0] = 1;
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertTrue(view.lootedCargo, "and that the cargo was taken");
+    assertTrue(view.closed, "and the encounter closes");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToAPirateWithNothingToTakeShowsNoCatwalk() {
+    Game game = newGame();
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertFalse(view.lootedCargo, "but the blackmail took no cargo");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToTheMantisWithTheArtifactIsNotALooting() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    game.setQuestStatusArtifact(SpecialEvent.StatusArtifactOnBoard);
+    game.encounter().setOpponent(new Ship(ShipType.Mantis));
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertFalse(view.lootedCalled, "handing over the artifact is not a cargo looting");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToThePoliceIsAnArrestAndNotALooting() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    game.encounter().setEncounterType(EncounterType.PoliceAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertFalse(view.lootedCalled, "the arrest is not a looting");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Arrested, presenter.result());
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPoliceSurrender), dialogs.alerts().toString());
+  }
+
+  @Test
   void theJettisonScreenGoesThroughTheView() {
     Game game = newGame();
     FakeView view = new FakeView();
@@ -249,6 +321,8 @@ class EncounterPresenterTest {
     private boolean timer;
     private boolean jettisonShown;
     private boolean escaped;
+    private boolean lootedCalled;
+    private boolean lootedCargo;
     private boolean plunderShown;
     private Integer cargoBuyAnswer;
     private Integer cargoSellAnswer;
@@ -276,6 +350,12 @@ class EncounterPresenterTest {
     @Override
     public void escaped() {
       escaped = true;
+    }
+
+    @Override
+    public void looted(boolean cargo) {
+      lootedCalled = true;
+      lootedCargo = cargo;
     }
 
     @Override

@@ -17,6 +17,8 @@ import org.gts.bst.cargo.CargoBuyOp;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.events.EncounterResult;
+import org.gts.bst.events.EncounterType;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.EncounterAction;
 import spacetrader.Strings;
 import org.gts.bst.view.EncounterDialogHost;
@@ -139,8 +141,15 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   public void surrender() {
     disableAuto();
+    int before = cmdrship.FilledCargoBays();
     result = game.encounter().EncounterVerifySurrender();
     if(result != EncounterResult.Continue) {
+      if(result == EncounterResult.Normal && game.encounter().getEncounterType() == EncounterType.PirateAttack
+          && game.encounter().getOpponent().Type() != ShipType.Mantis) {
+        // The pirates looted the ship: the scene shows the transfer only when
+        // they actually took cargo; the Mantis case gave up the artifact.
+        view.looted(cmdrship.FilledCargoBays() < before);
+      }
       view.close();
     }
   }

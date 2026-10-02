@@ -46,5 +46,9 @@ public interface EncounterView {
   default void inspection(boolean confiscated) {
   }
 
+  /** The pirates looting the ship: the catwalk and the boxes if they take cargo. */
+  default void looted(boolean cargo) {
+  }
+
 }
 

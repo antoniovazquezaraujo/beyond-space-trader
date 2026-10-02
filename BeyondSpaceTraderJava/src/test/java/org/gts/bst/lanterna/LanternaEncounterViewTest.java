@@ -2507,6 +2507,108 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void aPirateLootingShowsTheCatwalkAndThenWaitsForThePlayer() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // The pirates take cargo: the catwalk goes out with the boxes crossing,
+      // and then the scene waits for the player, even if the presenter closes it.
+      view.looted(true);
+      view.close();
+      gui.updateScreen();
+      assertTrue(gui.getWindows().contains(view.asWindow()),
+          "the scene waits for the player after the looting");
+      assertTrue(screenText(screen).contains("[ENTER] continue"),
+          "the leave key is shown:\n" + screenText(screen));
+
+      boolean catwalk = false;
+      boolean boxes = false;
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+        gui.updateScreen();
+        catwalk |= screenText(screen).contains("═");
+        boxes |= screenText(screen).contains("■");
+      }
+      assertTrue(catwalk, "the catwalk goes out for the looting:\n" + screenText(screen));
+      assertTrue(boxes, "and the boxes cross it:\n" + screenText(screen));
+      assertTrue(content.catwalkGone(), "the looting is played out");
+
+      // The player leaves with enter (escape and flying away do the same).
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertFalse(gui.getWindows().contains(view.asWindow()), "the player leaves the scene");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aPirateLootingWithNoCargoWaitsWithoutTheCatwalk() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // The pirates took nothing (the blackmail): the scene waits for the
+      // player, but no catwalk goes out and no box crosses.
+      view.looted(false);
+      view.close();
+      gui.updateScreen();
+      assertTrue(gui.getWindows().contains(view.asWindow()), "the scene waits for the player");
+      assertTrue(screenText(screen).contains("[ENTER] continue"),
+          "the leave key is shown:\n" + screenText(screen));
+
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertFalse(screenText(screen).contains("═"), "no catwalk without cargo:\n" + screenText(screen));
+      assertFalse(screenText(screen).contains("■"), "and no boxes cross it");
+
+      // Escape leaves the scene too.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      assertFalse(gui.getWindows().contains(view.asWindow()), "the player leaves the scene");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void thePoliceDemandingSurrenderStaysInFrontWaiting() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
