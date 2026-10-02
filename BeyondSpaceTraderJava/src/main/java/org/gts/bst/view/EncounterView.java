@@ -35,6 +35,10 @@ public interface EncounterView {
 
   Integer askCargoSellQuantity(CargoSellOffer offer);
 
+  /** One more line of the log of the scene, to read while the scene waits. */
+  default void log(String line) {
+  }
+
   /**
    * You got away while fleeing: the camera follows you, so you stay in the
    * scene and the other ship (behind you) is the one that leaves it.

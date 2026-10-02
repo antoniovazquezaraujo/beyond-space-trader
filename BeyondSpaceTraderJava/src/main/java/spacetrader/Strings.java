@@ -76,6 +76,7 @@ public final class Strings {
   public static final String EncounterPiratesDestroyed = text("EncounterPiratesDestroyed");
   public static final String EncounterPiratesDisabled = text("EncounterPiratesDisabled");
   public static final String EncounterPiratesLocation = text("EncounterPiratesLocation");
+  public static final String EncounterPiratesTake = text("EncounterPiratesTake");
   public static final String EncounterPoliceSubmitArrested = text("EncounterPoliceSubmitArrested");
   public static final String EncounterPoliceSubmitGoods = text("EncounterPoliceSubmitGoods");
   public static final String EncounterPoliceSubmitReactor = text("EncounterPoliceSubmitReactor");

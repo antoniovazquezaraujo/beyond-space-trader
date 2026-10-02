@@ -87,6 +87,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final char VERTICAL = '│';
   private static final char JOINT = '┼';
   private static final char BRIDGE = '═';
+  private static final char BRIDGE_VERTICAL = '║';
+  /** The corner where the bridge bends down (left + down) or up (left + up). */
+  private static final char BRIDGE_DOWN = '╗';
+  private static final char BRIDGE_UP = '╝';
   private static final char BOX = '■';
   /** Cells the ship glides on every frame: the dashes go at double speed. */
   private static final int GLIDE_SPEED = 3;
@@ -345,6 +349,53 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** The phases of the catwalk of a trade (or of a police seizure). */
   private enum Catwalk {
     NONE, EXTEND, HOLD, HAUL, RETRACT
+  }
+
+  /**
+   * The path of the catwalk from our nose to the rival, as a list of cells: a
+   * horizontal run at our height and, when the other ship is at another one, a
+   * vertical leg by its hull (an L). With both ships at the same height it is a
+   * straight line, as before.
+   */
+  private record CatwalkPath(int start, int row, int horizontal, int vertical, int step) {
+    /**
+     * The path between our nose and the middle of the rival, or {@code null}
+     * when the corner falls beside or beyond our nose (nothing sane to draw).
+     */
+    static CatwalkPath between(int start, int row, int corner, int targetRow) {
+      int horizontal = corner - start + 1;
+      if(horizontal <= 1) {
+        return null;
+      }
+      int lift = targetRow - row;
+      return new CatwalkPath(start, row, horizontal, Math.abs(lift), Integer.signum(lift));
+    }
+
+    /** The cells of the path, horizontal run plus vertical leg. */
+    int length() {
+      return horizontal + vertical;
+    }
+
+    /** The glyph of the path at {@code at} cells from our nose. */
+    char glyphAt(int at) {
+      if(at < horizontal) {
+        if(at == horizontal - 1 && step != 0) {
+          return step > 0 ? BRIDGE_DOWN : BRIDGE_UP;
+        }
+        return BRIDGE;
+      }
+      return BRIDGE_VERTICAL;
+    }
+
+    /** The column of the path at {@code at} cells from our nose. */
+    int xAt(int at) {
+      return at < horizontal ? start + at : start + horizontal - 1;
+    }
+
+    /** The row of the path at {@code at} cells from our nose. */
+    int yAt(int at) {
+      return at < horizontal ? row : row + step * (at - horizontal + 1);
+    }
   }
 
   /** True when the player ship, moving by (dx, dy), keeps a distance from the other one. */
@@ -1126,25 +1177,31 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       graphics.setCharacter(column, row, JOINT);
     }
     if(catwalk != Catwalk.NONE) {
-      int start = yourX() + youWidth;
-      int span = Math.max(0, opponentX() - start);
-      int shown = span;
-      if(catwalk == Catwalk.EXTEND) {
-        shown = span * (EXTEND_FRAMES - catwalkFrames) / EXTEND_FRAMES;
-      } else if(catwalk == Catwalk.RETRACT) {
-        shown = span * catwalkFrames / RETRACT_FRAMES;
-      }
-      int row = yourMiddleY();
-      graphics.setForegroundColor(TextColor.ANSI.WHITE);
-      for(int x = 0; x < shown; x++) {
-        graphics.setCharacter(start + x, row, BRIDGE);
-      }
-      if(catwalk == Catwalk.HAUL) {
-        // The boxes cross the catwalk, one each way.
-        int walked = (HAUL_FRAMES - catwalkFrames) * Math.max(1, span) / HAUL_FRAMES;
-        graphics.setForegroundColor(TextColor.ANSI.YELLOW_BRIGHT);
-        graphics.setCharacter(start + Math.min(walked, Math.max(0, span - 1)), row, BOX);
-        graphics.setCharacter(Math.max(start, opponentX() - Math.min(walked, Math.max(0, span - 1)) - 1), row, BOX);
+      // From our nose to just before the hull of the rival (their middle when
+      // they fly at another height: the catwalk bends into an L).
+      CatwalkPath path = CatwalkPath.between(yourX() + youWidth, yourMiddleY(),
+          opponentX() - 1, opponentMiddleY());
+      if(path != null) {
+        int total = path.length();
+        int shown = total;
+        if(catwalk == Catwalk.EXTEND) {
+          shown = total * (EXTEND_FRAMES - catwalkFrames) / EXTEND_FRAMES;
+        } else if(catwalk == Catwalk.RETRACT) {
+          shown = total * catwalkFrames / RETRACT_FRAMES;
+        }
+        graphics.setForegroundColor(TextColor.ANSI.WHITE);
+        for(int at = 0; at < shown; at++) {
+          graphics.setCharacter(path.xAt(at), path.yAt(at), path.glyphAt(at));
+        }
+        if(catwalk == Catwalk.HAUL) {
+          // The boxes cross the whole path, one each way (horizontal and vertical).
+          int walked = (HAUL_FRAMES - catwalkFrames) * Math.max(1, total) / HAUL_FRAMES;
+          int forward = Math.min(walked, Math.max(0, total - 1));
+          graphics.setForegroundColor(TextColor.ANSI.YELLOW_BRIGHT);
+          graphics.setCharacter(path.xAt(forward), path.yAt(forward), BOX);
+          int backward = Math.max(0, total - 1 - forward);
+          graphics.setCharacter(path.xAt(backward), path.yAt(backward), BOX);
+        }
       }
     }
     UiPalette.reset(graphics);

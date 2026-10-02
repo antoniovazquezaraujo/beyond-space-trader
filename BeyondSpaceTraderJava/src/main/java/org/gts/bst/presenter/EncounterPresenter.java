@@ -25,6 +25,8 @@ import org.gts.bst.view.EncounterDialogHost;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipCatalog;
+import spacetrader.Consts;
+import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.Trade;
 import spacetrader.Ship;
@@ -142,6 +144,7 @@ public class EncounterPresenter implements EncounterDialogHost {
   public void surrender() {
     disableAuto();
     int before = cmdrship.FilledCargoBays();
+    int[] cargoBefore = cmdrship.Cargo().clone();
     result = game.encounter().EncounterVerifySurrender();
     if(result != EncounterResult.Continue) {
       if(result == EncounterResult.Normal && game.encounter().getEncounterType() == EncounterType.PirateAttack
@@ -150,8 +153,29 @@ public class EncounterPresenter implements EncounterDialogHost {
         // they actually took cargo; the Mantis case gave up the artifact.
         view.looted(cmdrship.FilledCargoBays() < before);
       }
+      String taken = takenCargo(cargoBefore);
+      if(!taken.isEmpty()) {
+        // What the holds lost is kept in the log of the scene, under the ships.
+        view.log(Functions.StringVars(Strings.EncounterPiratesTake, taken));
+      }
       view.close();
     }
+  }
+
+  /** What the holds lost, as "2 Water, 1 Furs"; empty when nothing was taken. */
+  private String takenCargo(int[] before) {
+    StringBuilder taken = new StringBuilder();
+    for(int i = 0; i < before.length && i < cmdrship.Cargo().length && i < Consts.TradeItems.size(); i++) {
+      int lost = before[i] - cmdrship.Cargo()[i];
+      if(lost <= 0) {
+        continue;
+      }
+      if(taken.length() > 0) {
+        taken.append(", ");
+      }
+      taken.append(lost).append(' ').append(Consts.TradeItems.get(i).Name());
+    }
+    return taken.toString();
   }
 
   public void trade() {

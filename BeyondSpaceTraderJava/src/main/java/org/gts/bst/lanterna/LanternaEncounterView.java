@@ -205,6 +205,7 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   /** A quiet alert of the game: one more line of the log of the scene. */
+  @Override
   public void log(String line) {
     content.addAlert(line);
   }

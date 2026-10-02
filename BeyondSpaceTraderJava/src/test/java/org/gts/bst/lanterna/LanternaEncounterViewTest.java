@@ -11,6 +11,7 @@ package org.gts.bst.lanterna;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -810,6 +811,19 @@ class LanternaEncounterViewTest {
     return -1;
   }
 
+  /** The top and bottom rows of a glyph in a column: {top, bottom}, or null. */
+  private static int[] rowsOf(Screen screen, int column, char glyph) {
+    int top = Integer.MAX_VALUE;
+    int bottom = -1;
+    for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
+      if(screen.getBackCharacter(column, row).getCharacter() == glyph) {
+        top = Math.min(top, row);
+        bottom = Math.max(bottom, row);
+      }
+    }
+    return bottom < 0 ? null : new int[] {top, bottom};
+  }
+
   @Test
   void theInspectionScansAndThenTheCatwalkGoesOut() {
     EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
@@ -858,6 +872,146 @@ class LanternaEncounterViewTest {
       content.tick();
     }
     assertFalse(content.animating(), "the scene of the trade is over");
+  }
+
+  @Test
+  void theCatwalkBendsDownWhenTheRivalFliesLower() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      ReadyScene scene = sceneWithTwoShips(screen);
+      // We climb before the catwalk (the rival does not get to mirror us): the
+      // bridge has to bend down to the middle of the other ship.
+      scene.content().move(0, -1);
+      for(int i = 0; i < 3; i++) {
+        scene.content().tick();
+      }
+      scene.content().catwalk();
+      for(int i = 0; i < 12; i++) {
+        scene.content().tick();
+      }
+      scene.gui().updateScreen();
+
+      String text = screenText(screen);
+      int yourRow = rowOfText(screen, "xxxxx");
+      int opponentRow = rowOfText(screen, "yyyyy");
+      int cornerColumn = firstColumnOf(screen, 'y') - 1;
+      assertTrue(yourRow < opponentRow, "we fly above the rival:\n" + text);
+      assertTrue(text.contains("═"), "the horizontal run leaves our nose:\n" + text);
+      int[] corner = boxOf(screen, '╗');
+      assertNotNull(corner, "the corner where the bridge bends down:\n" + text);
+      assertEquals(cornerColumn, corner[0], "the corner sits just before the hull of the rival");
+      assertEquals(yourRow, corner[1], "and on our line");
+      int[] leg = rowsOf(screen, cornerColumn, '║');
+      assertNotNull(leg, "the vertical leg goes down to the rival:\n" + text);
+      assertEquals(yourRow + 1, leg[0], "it starts under our line");
+      assertEquals(opponentRow, leg[1], "and reaches the middle of the rival");
+
+      // The boxes cross the whole path: some frame catches one on the leg.
+      scene.content().haul();
+      boolean onTheLeg = false;
+      for(int i = 0; i < 12; i++) {
+        scene.content().tick();
+        scene.gui().updateScreen();
+        for(int row = leg[0]; row <= leg[1]; row++) {
+          onTheLeg |= screen.getBackCharacter(cornerColumn, row).getCharacter() == '■';
+        }
+      }
+      assertTrue(onTheLeg, "a box crosses the vertical leg:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theCatwalkBendsUpWhenTheRivalFliesHigher() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      ReadyScene scene = sceneWithTwoShips(screen);
+      // We dive: now the rival is above and the bridge has to climb to it.
+      scene.content().move(0, 1);
+      for(int i = 0; i < 3; i++) {
+        scene.content().tick();
+      }
+      scene.content().catwalk();
+      for(int i = 0; i < 12; i++) {
+        scene.content().tick();
+      }
+      scene.gui().updateScreen();
+
+      String text = screenText(screen);
+      int yourRow = rowOfText(screen, "xxxxx");
+      int opponentRow = rowOfText(screen, "yyyyy");
+      int cornerColumn = firstColumnOf(screen, 'y') - 1;
+      assertTrue(yourRow > opponentRow, "we fly below the rival:\n" + text);
+      int[] corner = boxOf(screen, '╝');
+      assertNotNull(corner, "the corner where the bridge bends up:\n" + text);
+      assertEquals(cornerColumn, corner[0], "the corner sits just before the hull of the rival");
+      assertEquals(yourRow, corner[1], "and on our line");
+      int[] leg = rowsOf(screen, cornerColumn, '║');
+      assertNotNull(leg, "the vertical leg climbs to the rival:\n" + text);
+      assertEquals(opponentRow, leg[0], "it starts at the middle of the rival");
+      assertEquals(yourRow - 1, leg[1], "and reaches our line");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theCatwalkStaysStraightWhenBothShipsShareTheHeight() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      ReadyScene scene = sceneWithTwoShips(screen);
+      scene.content().catwalk();
+      for(int i = 0; i < 12; i++) {
+        scene.content().tick();
+      }
+      scene.gui().updateScreen();
+
+      String text = screenText(screen);
+      int yourRow = rowOfText(screen, "xxxxx");
+      assertTrue(text.contains("═"), "the straight bridge goes out:\n" + text);
+      assertEquals(yourRow, rowOfText(screen, "═"), "at our middle");
+      assertFalse(text.contains("╗") || text.contains("╝") || text.contains("║"),
+          "with no bend when both fly level:\n" + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** A scene with our ship and a rival coming in, ready for the catwalk. */
+  private record ReadyScene(MultiWindowTextGUI gui, EncounterSceneComponent content) {
+  }
+
+  private static ReadyScene sceneWithTwoShips(Screen screen) throws IOException {
+    MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+    gui.setTheme(LanternaTheme.create());
+    EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+    content.setPreferredSize(new TerminalSize(80, 24));
+    BasicWindow window = new BasicWindow();
+    window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+    window.setComponent(content);
+    gui.addWindow(window);
+    ShipPicture you = new ShipCatalog(List.of(),
+        ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+        .picture(ShipType.Flea, List.of(), 0);
+    ShipPicture opponent = new ShipCatalog(List.of(),
+        ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+        .picture(ShipType.Scorpion, List.of(), 0);
+    content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+    // The first paint sets the width of the scene: only then do the ships come
+    // in on the ticks.
+    gui.updateScreen();
+    for(int i = 0; i < 14; i++) {
+      content.tick();
+    }
+    gui.updateScreen();
+    return new ReadyScene(gui, content);
   }
 
   @Test
@@ -2558,6 +2712,51 @@ class LanternaEncounterViewTest {
       // The player leaves with enter (escape and flying away do the same).
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       assertFalse(gui.getWindows().contains(view.asWindow()), "the player leaves the scene");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theLootLineIsLoggedUnderTheShips() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // While the scene waits after the looting, the loot is listed in the log.
+      String loot = spacetrader.Functions.StringVars(spacetrader.Strings.EncounterPiratesTake,
+          "2 " + spacetrader.Consts.TradeItems.get(0).Name());
+      view.looted(true);
+      view.log(loot);
+      view.close();
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(gui.getWindows().contains(view.asWindow()), "the scene waits for the player");
+      assertTrue(text.contains(loot), "the loot is in the log:\n" + text);
+      int lootRow = rowOfText(screen, loot);
+      int shipRow = rowOfText(screen, "yyyyy");
+      assertTrue(lootRow > shipRow, "under the ships (" + lootRow + " > " + shipRow + "):\n" + text);
+      assertEquals(screen.getTerminalSize().getRows() - 2, lootRow,
+          "and at the bottom of the scene:\n" + text);
     } finally {
       screen.stopScreen();
       screen.close();

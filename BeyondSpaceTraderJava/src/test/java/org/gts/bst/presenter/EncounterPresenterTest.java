@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.gts.bst.cargo.CargoBuyOffer;
@@ -29,6 +30,8 @@ import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
 import org.junit.jupiter.api.Test;
+import spacetrader.Consts;
+import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.Ship;
 import spacetrader.SpecialEvent;
@@ -181,6 +184,26 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void surrenderingToAPirateLogsWhatTheyTook() {
+    Game game = newGame();
+    Ship ship = game.Commander().getShip();
+    ship.Cargo()[0] = 2;
+    ship.Cargo()[2] = 1;
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    String taken = "2 " + Consts.TradeItems.get(0).Name() + ", 1 " + Consts.TradeItems.get(2).Name();
+    assertEquals(List.of(Functions.StringVars(Strings.EncounterPiratesTake, taken)), view.logs,
+        "the log lists the cargo they took");
+    assertFalse(view.loggedAfterClose, "the line is logged while the scene waits, not after it closes");
+    assertTrue(view.closed, "and then the encounter closes");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
   void surrenderingToAPirateWithNothingToTakeShowsNoCatwalk() {
     Game game = newGame();
     game.encounter().setEncounterType(EncounterType.PirateAttack);
@@ -191,6 +214,7 @@ class EncounterPresenterTest {
 
     assertTrue(view.lootedCalled, "the scene is told about the looting");
     assertFalse(view.lootedCargo, "but the blackmail took no cargo");
+    assertTrue(view.logs.isEmpty(), "the blackmail leaves no loot line: " + view.logs);
     assertTrue(view.closed);
     assertEquals(EncounterResult.Normal, presenter.result());
   }
@@ -210,6 +234,7 @@ class EncounterPresenterTest {
     presenter.surrender();
 
     assertFalse(view.lootedCalled, "handing over the artifact is not a cargo looting");
+    assertTrue(view.logs.isEmpty(), "the artifact is not cargo: no loot line: " + view.logs);
     assertTrue(view.closed);
     assertEquals(EncounterResult.Normal, presenter.result());
   }
@@ -269,6 +294,7 @@ class EncounterPresenterTest {
     assertTrue(ship.HasGadget(GadgetType.HiddenCargoBays), "the ship carries secret holds");
     assertTrue(view.lootedCalled, "the scene is told about the looting");
     assertFalse(view.lootedCargo, "the pirate finds nothing in the secret holds");
+    assertTrue(view.logs.isEmpty(), "the hidden holds keep their cargo out of the log: " + view.logs);
     assertEquals(5, ship.Cargo()[0], "the cargo stays hidden on board");
     assertTrue(view.closed);
     assertEquals(EncounterResult.Normal, presenter.result());
@@ -429,8 +455,10 @@ class EncounterPresenterTest {
   }
 
   private static class FakeView implements EncounterView {
+    private final List<String> logs = new ArrayList<>();
     private EncounterViewModel model;
     private boolean closed;
+    private boolean loggedAfterClose;
     private boolean timer;
     private boolean jettisonShown;
     private boolean escaped;
@@ -443,6 +471,12 @@ class EncounterPresenterTest {
     @Override
     public void render(EncounterViewModel model) {
       this.model = model;
+    }
+
+    @Override
+    public void log(String line) {
+      logs.add(line);
+      loggedAfterClose |= closed;
     }
 
     @Override
