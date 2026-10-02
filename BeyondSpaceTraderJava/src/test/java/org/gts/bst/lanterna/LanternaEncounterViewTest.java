@@ -3403,6 +3403,191 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void anAlertLongerThanTheWholeLogKeepsItsTail() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      // Arrange: one alert of 283 cells, six rows at the 54 of the log: two
+      // more than the four rows there are, so the head must scroll out.
+      content.model(police(you, opponent, 0));
+      content.addAlert("The pirates demand " + "plunder ".repeat(30) + "or your hull goes first.");
+
+      // Act: the scene is painted.
+      gui.updateScreen();
+
+      // Assert: the oldest rows are the ones dropped, so the tail of the alert
+      // (the part the player must read) ends whole over the keys and every
+      // visible row keeps the colour of the alerts.
+      String text = screenText(screen);
+      assertTrue(rowOfText(screen, "The pirates demand") < 0, "the head scrolled out:\n" + text);
+      assertEquals(screen.getTerminalSize().getRows() - 2,
+          rowOfText(screen, "or your hull goes first."), "the tail reads over the key bar:\n" + text);
+      for(int row = 19; row <= 22; row++) {
+        assertEquals(UiPalette.ACCENT, screen.getBackCharacter(1, row).getForegroundColor(),
+            "the row " + row + " keeps the colour of the alerts:\n" + text);
+      }
+      String bar = lastScreenRow(screen);
+      assertTrue(bar.contains("[A]"), "the action keys keep the last row:\n" + bar);
+      assertFalse(bar.contains("hull"), "the alert never steps on the keys:\n" + bar);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void manyShortAlertsShowOnlyTheNewestOnes() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      // Arrange: six quiet alerts of one row each, more than the four rows of
+      // the log.
+      content.model(police(you, opponent, 0));
+      for(int i = 1; i <= 6; i++) {
+        content.addAlert("Notice " + i + ".");
+      }
+
+      // Act: the scene is painted.
+      gui.updateScreen();
+
+      // Assert: only the newest four stay, in order, over the keys.
+      String text = screenText(screen);
+      assertTrue(rowOfText(screen, "Notice 1.") < 0, "the oldest alert scrolled out:\n" + text);
+      assertTrue(rowOfText(screen, "Notice 2.") < 0, "and the second one too:\n" + text);
+      assertEquals(19, rowOfText(screen, "Notice 3."), "the third opens the log:\n" + text);
+      assertEquals(20, rowOfText(screen, "Notice 4."), "the fourth follows:\n" + text);
+      assertEquals(21, rowOfText(screen, "Notice 5."), "the fifth follows:\n" + text);
+      assertEquals(22, rowOfText(screen, "Notice 6."), "the newest ends over the key bar:\n" + text);
+      assertEquals(UiPalette.ACCENT, screen.getBackCharacter(1, 19).getForegroundColor(),
+          "the alerts keep their colour:\n" + text);
+      String bar = lastScreenRow(screen);
+      assertTrue(bar.contains("[A]"), "the action keys keep the last row:\n" + bar);
+      assertFalse(bar.contains("Notice"), "no alert steps on the keys:\n" + bar);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theNewestRowKeepsTheOnlyRowOfATinyScene() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 6)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 6));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      // Arrange: a scene of six rows leaves one single row for the log (row
+      // four, over the key bar): the newest line must be the one that stays.
+      content.model(police(you, opponent, 0));
+      content.log(List.of("First line.", "", "Third line."));
+
+      // Act: the scene is painted.
+      gui.updateScreen();
+
+      // Assert: the last line takes the only row, the oldest is dropped.
+      String text = screenText(screen);
+      assertEquals(4, rowOfText(screen, "Third line."), "the newest line keeps the row:\n" + text);
+      assertTrue(rowOfText(screen, "First line.") < 0, "and the oldest is dropped:\n" + text);
+      String bar = lastScreenRow(screen);
+      assertTrue(bar.contains("[A]"), "the action keys keep the last row:\n" + bar);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theRoundLogKeepsTheTopWhenEverythingFits() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      // Arrange: the three rows of the round and one alert of a single row:
+      // four rows, exactly the room of the log, so nothing scrolls.
+      content.model(police(you, opponent, 0));
+      content.log(List.of("The pirate attacks.", "", "Choose an action."));
+      content.addAlert("The cargo is ours.");
+
+      // Act: the scene is painted.
+      gui.updateScreen();
+
+      // Assert: the layout does not change when everything fits: the round
+      // keeps the top (in the colour of the log) and the alert closes the log
+      // (in the colour of the alerts), over the keys.
+      String text = screenText(screen);
+      assertEquals(19, rowOfText(screen, "The pirate attacks."), "the round opens the log:\n" + text);
+      assertEquals(21, rowOfText(screen, "Choose an action."), "and keeps its empty row:\n" + text);
+      assertEquals(22, rowOfText(screen, "The cargo is ours."), "the alert closes the log:\n" + text);
+      assertEquals(UiPalette.TEXT, screen.getBackCharacter(1, 19).getForegroundColor(),
+          "the round keeps the colour of the log:\n" + text);
+      assertEquals(UiPalette.ACCENT, screen.getBackCharacter(1, 22).getForegroundColor(),
+          "the alert keeps its colour:\n" + text);
+      String bar = lastScreenRow(screen);
+      assertTrue(bar.contains("[A]"), "the action keys keep the last row:\n" + bar);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void aPirateLootingWithNoCargoWaitsWithoutTheCatwalk() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
