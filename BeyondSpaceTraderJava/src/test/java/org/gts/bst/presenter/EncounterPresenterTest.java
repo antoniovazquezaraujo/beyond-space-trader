@@ -275,6 +275,31 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void surrenderingToAPirateWithMoreHiddenBaysThanCargoEndsWell() {
+    TestDialogService dialogs = new TestDialogService();
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    Ship ship = game.Commander().getShip();
+    ship.AddEquipment(new Gadget(GadgetType.HiddenCargoBays, SkillType.NA, 60000, TechLevel.t8, 0));
+    // The secret holds hide five units, but only two are on board: the old
+    // unbounded range blew up here and the surrender died.
+    ship.Cargo()[0] = 2;
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertFalse(view.lootedCargo, "with nothing in reach, no box crossed");
+    assertEquals(2, ship.Cargo()[0], "the cargo stays hidden on board");
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPiratesFindNoCargo),
+        "the pirates find nothing and blackmail instead: " + dialogs.alerts());
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result(), "the game goes on");
+  }
+
+  @Test
   void surrenderingToAPirateWithHiddenBaysLootsOnlyWhatItCanFind() {
     Game game = newGame();
     Ship ship = game.Commander().getShip();

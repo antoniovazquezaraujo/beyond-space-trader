@@ -11,11 +11,13 @@ package spacetrader;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.GadgetType;
 import org.junit.jupiter.api.Test;
 import spacetrader.enums.SkillType;
+import spacetrader.enums.StarSystemId;
 import spacetrader.enums.TechLevel;
 
 
@@ -65,6 +67,37 @@ class ShipStealableCargoTest {
     assertEquals(List.of(3, 0, 0), stealable, "most valuable first, nothing hidden");
   }
 
+  @Test
+  void emptyHoldsWithHiddenBaysHaveNothingToSteal() {
+    Ship ship = shipWithHiddenBay();
+
+    List<Integer> stealable = ship.StealableCargo();
+
+    assertEquals(List.of(), stealable, "no cargo, no loot (and no blow up)");
+  }
+
+  @Test
+  void aHiddenBayHidesOneUnitLessWithThePrincessOnBoard() {
+    Ship ship = shipWithHiddenBayAndPrincess();
+    // The princess occupies one of the five hidden units, so four are hidden.
+    ship.Cargo()[0] = 5;
+
+    List<Integer> stealable = ship.StealableCargo();
+
+    assertEquals(List.of(0), stealable, "one unit stays in the open");
+  }
+
+  @Test
+  void thePrincessWithoutHiddenBaysLeavesAllTheCargoInTheOpen() {
+    Ship ship = new QuestlessShip(ShipType.Beetle);
+    ship.Crew()[1] = princess();
+    ship.Cargo()[0] = 2;
+
+    List<Integer> stealable = ship.StealableCargo();
+
+    assertEquals(List.of(0, 0), stealable, "a negative hidden count hides nothing");
+  }
+
   private static Ship shipWithHiddenBay() {
     Ship ship = new QuestlessShip();
     // A hidden cargo bay hides 5 units.
@@ -72,11 +105,26 @@ class ShipStealableCargoTest {
     return ship;
   }
 
+  private static Ship shipWithHiddenBayAndPrincess() {
+    Ship ship = new QuestlessShip(ShipType.Beetle); // quarters for the princess
+    ship.AddEquipment(new Gadget(GadgetType.HiddenCargoBays, SkillType.NA, 60000, TechLevel.t8, 0));
+    ship.Crew()[1] = princess();
+    return ship;
+  }
+
+  private static CrewMember princess() {
+    return new CrewMember(CrewMemberId.Princess, 4, 3, 8, 9, StarSystemId.NA);
+  }
+
   // StealableCargo is pure ship logic, but SculptureOnBoard asks the current
   // game; silencing that environment query keeps the scenario free of a Game.
   private static class QuestlessShip extends Ship {
     private QuestlessShip() {
-      super(ShipType.Gnat);
+      this(ShipType.Gnat);
+    }
+
+    private QuestlessShip(ShipType type) {
+      super(type);
     }
 
     @Override
