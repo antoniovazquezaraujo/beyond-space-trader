@@ -1541,6 +1541,80 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theEscapePastTheOtherShipDoesNotTurnTheShip() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      // An asymmetric ship, so a turn would be seen: the ink lives at its left cell.
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nx....\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // Up, to slip past the other one, and then advancing: the ship reaches
+      // the right edge with the other one now behind it.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      int frames = 0;
+      while(frames < 40 && !content.exitedRight()) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertTrue(content.exitedRight(), "we reached the right edge");
+      assertEquals(List.of(EncounterAction.Flee), executed, "the edge asks to flee");
+      assertFalse(content.facingAway(), "the ship already faced the way it runs");
+      int atTheEdge = columnOf(screen, 'x');
+
+      // The flee key settles the escape (the game gives it for good): the ship
+      // goes on facing the way it runs. It must not turn: the other one is
+      // behind, and turning would show it heading back into the chase.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('f', false, false));
+      view.escaped();
+      gui.updateScreen();
+      assertFalse(content.facingAway(), "the escape past the other one must not turn the ship");
+      assertEquals(atTheEdge, columnOf(screen, 'x'), "the drawing is not mirrored in place");
+
+      // The one that lost us leaves through our back (the left).
+      int behind = firstColumnOf(screen, 'y');
+      for(int i = 0; i < 3; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertTrue(firstColumnOf(screen, 'y') < behind,
+          "it leaves through the left (" + firstColumnOf(screen, 'y') + " < " + behind + ")");
+      int out = 0;
+      while(out < 40 && screenText(screen).contains("yyyyy")) {
+        content.tick();
+        gui.updateScreen();
+        out++;
+      }
+      assertFalse(screenText(screen).contains("yyyyy"), "and all the way out");
+      assertEquals(atTheEdge, columnOf(screen, 'x'), "while we stay in the scene, facing forward");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void aFailedEscapePastTheOtherShipKeepsEveryoneInTheScene() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
