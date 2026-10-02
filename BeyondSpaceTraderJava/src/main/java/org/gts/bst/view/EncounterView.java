@@ -35,12 +35,11 @@ public interface EncounterView {
 
   Integer askCargoSellQuantity(CargoSellOffer offer);
 
-  /** You got away while fleeing: the other ship loses you and leaves the scene. */
+  /**
+   * You got away while fleeing: the camera follows you, so you stay in the
+   * scene and the other ship (behind you) is the one that leaves it.
+   */
   default void escaped() {
-  }
-
-  /** A failed escape: the chase goes on (the ships come back into the scene). */
-  default void chaseGoesOn() {
   }
 
   /** The police inspecting the ship: the scanner, and the catwalk if they take cargo. */

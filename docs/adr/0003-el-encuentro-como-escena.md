@@ -93,7 +93,10 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    - **No nos ignora**: copia la maniobra, más despacio o más rápido según lo
      que diga el juego; despacio, se puede esquivar y colar.
    - **Huimos** (flecha hacia atrás): la otra nave puede seguirnos o no, y
-     podemos perderla de vista o no; lo decide el juego.
+     podemos perderla de vista o no; lo decide el juego. La cámara nos sigue,
+     así que nuestra nave **nunca sale de pantalla**: se queda pegada al borde
+     mientras huimos, y es el rival quien sale de cámara cuando lo
+     despistamos. Si sigue pegándonos, se acerca un poco en cada ronda.
 6. **Encaje**: si las naves no caben en el ancho de su mitad (miden hasta 60
    celdas), primero se recortan los márgenes vacíos del dibujo y, si aún no
    caben, se dibuja una celda de cada dos.

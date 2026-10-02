@@ -206,10 +206,6 @@ public class EncounterPresenter implements EncounterDialogHost {
     if(result == EncounterResult.Continue) {
       round++;
       update();
-      if(game.encounter().getEncounterCmdrFleeing()) {
-        // The chase goes on: the scene loops with the other ship behind us.
-        view.chaseGoesOn();
-      }
       if(game.encounter().getEncounterContinueFleeing() || game.encounter().getEncounterContinueAttacking()) {
         view.startTimer();
       }

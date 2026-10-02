@@ -214,9 +214,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /**
    * One press does one thing. Sideways: the ship turns away (the sky sells the
-   * retreat) or faces the other one again, and advancing forward glides it on,
-   * stopping at a distance; the ship never leaves the scene on its own. Vertically
-   * it glides to the top or to the bottom, and a press against the glide brakes it.
+   * retreat) or faces the other one again, and advancing glides it on, stopping
+   * at a distance from the other ship or at the edge; the camera follows us, so
+   * the ship never leaves the scene. Vertically it glides to the top or to the
+   * bottom, and a press against the glide brakes it.
    */
   public void move(int dx, int dy) {
     if(model == null || screenWidth <= 0 || enterFrames > 0 || catwalk != Catwalk.NONE) {
@@ -243,8 +244,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
     if(dx < 0) {
       if(youTurned) {
-        // Advancing away: the ship glides off, still facing away.
-        columnTarget = -youLeft - youWidth - 1;
+        // Advancing away: the camera follows us, so the ship only glides to the
+        // left edge and stays there, visible, still facing away.
+        columnTarget = -youLeft;
       } else {
         // The half turn: the ship holds its place and the world moves the other way.
         youTurned = true;
@@ -254,7 +256,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         // Facing the other one again.
         youTurned = false;
       } else {
-        columnTarget = screenWidth - youLeft + 1;
+        // Advancing (to slip through the gap): the ship glides to the right edge
+        // and stays there, visible; the camera follows it and never loses it.
+        columnTarget = Math.max(youColumn, screenWidth - youWidth - youLeft);
       }
     }
     invalidate();
@@ -265,34 +269,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     return youTurned;
   }
 
-  /** True when the ship left the scene through its right side (a dodge). */
+  /** True when the ship reached the right edge of the scene instead of the left one (a dodge). */
   public boolean exitedRight() {
     return exitedRight;
   }
 
-  /**
-   * The chase goes on after an escape attempt: the scene loops. The ship comes
-   * back in through the other edge, still running, and the other one behind it.
-   */
-  public void wrapAround() {
-    boolean runningRight = exitedRight;
-    exiting = false;
-    youTurned = !runningRight;
-    int behind;
-    if(runningRight) {
-      youColumn = -youLeft - youWidth - 1;
-      behind = yourX() - 4 - opponentWidth;
-    } else {
-      youColumn = screenWidth - youLeft + 1;
-      behind = yourX() + youWidth + 4;
-    }
-    columnTarget = 0;
-    opponentColumn = behind - opponentLeft;
-    opponentRow = youRow;
-    invalidate();
-  }
-
-  /** Tells the view when the ship has left the screen (it went past or fled). */
+  /** Tells the view when the ship has reached the edge of the scene (it fled, or dodged). */
   public void onExit(Runnable exit) {
     this.onExit = exit;
   }
@@ -605,13 +587,18 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(rowTarget != Integer.MIN_VALUE && youRow == rowTarget) {
       rowTarget = Integer.MIN_VALUE;
     }
-    boolean out = yourX() > screenWidth || yourX() + youWidth < 0;
-    if(out && !exiting) {
+    // The camera follows us: reaching an edge asks the game for the escape (or
+    // the dodge). The notice fires once, and is re-armed only when the ship is
+    // back inside the scene, so a new dash can ask for another escape.
+    boolean atEdge = screenWidth > 0 && (yourX() <= 0 || yourX() + youWidth >= screenWidth);
+    if(atEdge && !exiting) {
       exiting = true;
-      exitedRight = yourX() > screenWidth;
+      exitedRight = yourX() + youWidth >= screenWidth;
       if(onExit != null) {
         onExit.run();
       }
+    } else if(!atEdge && exiting) {
+      exiting = false;
     }
   }
 

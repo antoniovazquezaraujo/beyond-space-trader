@@ -100,8 +100,9 @@ public final class LanternaEncounterView implements EncounterView {
         closeNow();
         return;
       }
-      // Leaving the scene: if it has no interest in us, it loses us and goes;
-      // if it chases us, the game decides (a failed attempt loops the scene).
+      // Reaching the edge is the escape: if it has no interest in us, it loses
+      // us and goes; if it chases us, the game decides whether we get away or
+      // it closes in.
       if(model.opponentIgnores()) {
         // It was not interested in us: it goes away through the other side.
         content.opponentLeaves(!content.exitedRight());
@@ -147,18 +148,9 @@ public final class LanternaEncounterView implements EncounterView {
 
   @Override
   public void escaped() {
-    if(!content.exitedRight()) {
-      // Running away: the ship goes on facing away and the other loses us, leaving.
-      content.turnAway();
-      content.opponentLeaves(true);
-    }
-    // Dodging past it: we are already out; the scene just ends.
-  }
-
-  @Override
-  public void chaseGoesOn() {
-    // A failed escape: the scene loops, both ships coming back in.
-    content.wrapAround();
+    // We got away: the camera follows us, so we stay in the scene; the other
+    // ship, the one behind us, is the one that leaves the scene.
+    content.opponentLeaves(!content.exitedRight());
   }
 
   @Override
@@ -402,11 +394,13 @@ public final class LanternaEncounterView implements EncounterView {
   /**
    * The half turn, and the advance away: the ship holds its place while the sky
    * moves the other way. Advancing away is an escape attempt: the game decides
-   * whether the other one follows (it closes in) or loses us (it leaves the scene).
+   * whether the other one follows (it closes in) or loses us (it leaves the
+   * scene). The camera follows us, so the ship only goes as far as the edge.
    */
   private void advanceAway() {
-    // The first press turns the ship where it stands; the next one sends it away
-    // (the stars sell the retreat). Leaving the scene asks the game for the escape.
+    // The first press turns the ship where it stands; the next one sends it
+    // away (the stars sell the retreat). Reaching the edge asks the game for
+    // the escape.
     content.move(-1, 0);
   }
 
