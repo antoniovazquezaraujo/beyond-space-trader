@@ -98,11 +98,16 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
      una banda libre (arriba o abajo, la contraria a la nuestra) y sale por el
      otro lado; podemos cruzar por el hueco que deje. Cuando termina de cruzar
      y desaparece, el encuentro **se cierra solo** (equivale a ignorar); si la
-     atacamos mientras cruza, vuelve y el combate sigue. **Salvo que quede una
-     decisión pendiente** (una rendición, que todavía se puede atacar o
-     saquear): entonces la escena espera al jugador aunque la nave se largue.
+     atacamos mientras cruza, vuelve y el combate sigue. **Salvo que la nave
+     no nos vea** (vamos ocultos) y quede una decisión pendiente (atacar,
+     huir o rendirse): entonces la escena espera al jugador aunque la nave se
+     largue.
    - **No nos ignora**: copia la maniobra, más despacio o más rápido según lo
      que diga el juego; despacio, se puede esquivar y colar.
+   - **Se rinde** (una nave rendida, o la policía conminándonos a rendirnos):
+     **no se va**; se queda enfrente, en su mitad, copiando nuestras
+     maniobras, y la escena espera nuestra decisión (atacarla, saquearla,
+     rendirnos), que es lo que ofrecen sus acciones.
    - **Huimos** (flecha hacia atrás): la otra nave puede seguirnos o no, y
      podemos perderla de vista o no; lo decide el juego. La cámara nos sigue,
      así que nuestra nave **nunca sale de pantalla**: se queda pegada al borde

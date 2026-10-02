@@ -2448,7 +2448,7 @@ class LanternaEncounterViewTest {
   }
 
   @Test
-  void aSurrenderingShipThatLeavesKeepsTheDecisionOpen() throws IOException {
+  void aSurrenderingShipStaysAndKeepsTheDecisionOpen() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
     try {
@@ -2475,19 +2475,77 @@ class LanternaEncounterViewTest {
         content.tick();
       }
       gui.updateScreen();
+      assertTrue(screenText(screen).contains("y"), "the surrendered ship is in front of us");
+      int waiting = firstColumnOf(screen, 'y');
 
-      // It crosses and leaves the scene the same way as the one that ignores
-      // us, but the surrender leaves attack/plunder on the table.
-      int frames = 0;
-      while(frames < 40 && screenText(screen).contains("y")) {
+      // It stays in its half instead of crossing away: the surrender leaves
+      // attack/plunder on the table and the scene waits for the player.
+      for(int i = 0; i < 80; i++) {
         content.tick();
         gui.updateScreen();
-        frames++;
       }
-      assertFalse(screenText(screen).contains("y"), "the surrendered ship crosses and leaves");
+      assertTrue(screenText(screen).contains("y"),
+          "the surrendered ship stays in the scene:\n" + screenText(screen));
+      assertEquals(waiting, firstColumnOf(screen, 'y'), "it keeps its place, it does not cross");
       assertTrue(executed.isEmpty(), "a surrender is not ignored by itself");
       assertTrue(gui.getWindows().contains(view[0].asWindow()),
           "the player can still attack or plunder it");
+
+      // The mirror: it copies our manoeuvres at its own pace.
+      int atRest = rowOf(screenText(screen), "yyyyy");
+      content.move(0, -1);
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertTrue(rowOf(screenText(screen), "yyyyy") < atRest,
+          "the surrendered ship copies our climb:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void thePoliceDemandingSurrenderStaysInFrontWaiting() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(policeSurrendering(you, opponent, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("y"), "the police is in front of us:\n" + screenText(screen));
+      assertTrue(
+          screenText(screen).contains(spacetrader.Strings.EncounterSaysPoliceArrest.substring(0, 20)),
+          "the police demands our surrender:\n" + screenText(screen));
+      int waiting = firstColumnOf(screen, 'y');
+
+      // The demand is not an ignore: the police waits in front for our answer
+      // (attack, flee or surrender) instead of crossing away.
+      for(int i = 0; i < 80; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertTrue(screenText(screen).contains("y"),
+          "the police stays in the scene:\n" + screenText(screen));
+      assertEquals(waiting, firstColumnOf(screen, 'y'), "it keeps its place, it does not cross");
+      assertTrue(executed.isEmpty(), "the demand is not ignored by itself");
+      assertTrue(gui.getWindows().contains(view.asWindow()), "the encounter waits for our decision");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -3068,8 +3126,8 @@ class LanternaEncounterViewTest {
   }
 
   /**
-   * A round of a ship that surrenders while it crosses the scene: it leaves in
-   * the same way, but the decision (attack or plunder it) stays open.
+   * A round of a ship that surrenders: it stays in front, waiting, and the
+   * decision (attack or plunder it) stays open.
    */
   private static EncounterViewModel surrendering(ShipPicture you, ShipPicture opponent, int round) {
     return new EncounterViewModel(
@@ -3077,7 +3135,18 @@ class LanternaEncounterViewTest {
         new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
         new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate surrenders.",
         "Choose an action.", ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
-        true, 5, false, round, "");
+        false, 5, false, round, "");
+  }
+
+  /** A round of the police demanding our surrender: it stays in front, waiting. */
+  private static EncounterViewModel policeSurrendering(ShipPicture you, ShipPicture opponent, int round) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender), false, 0, "Flea",
+        new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Police",
+        new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+        "The police demands your surrender.", "Choose an action.",
+        ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+        false, 5, false, round, spacetrader.Strings.EncounterSaysPoliceArrest);
   }
 
   /** A round of a police inspection: attack, flee, submit or bribe. */

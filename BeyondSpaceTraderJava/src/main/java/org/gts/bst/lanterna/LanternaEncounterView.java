@@ -133,8 +133,9 @@ public final class LanternaEncounterView implements EncounterView {
         return;
       }
       if(model == null || !model.actions().contains(EncounterAction.Ignore)) {
-        // A surrender crosses and leaves in the same way, but it keeps a
-        // decision open (attack or plunder it): the scene waits for the player.
+        // The other ship did not see us (we are cloaked) and crosses and leaves,
+        // but it can still keep a decision open (attack, flee or surrender): the
+        // scene waits for the player.
         return;
       }
       // It finished crossing and is gone: the encounter is over, as if ignored.

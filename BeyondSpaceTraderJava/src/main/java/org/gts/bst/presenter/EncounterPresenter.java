@@ -292,12 +292,13 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   /**
-   * True when the other ship is out of the fight (it ignores us, flees or
-   * surrenders), so it stops blocking the way; a cloaked ship is not seen either.
+   * True when the other ship is out of the fight (it ignores us or flees), so it
+   * stops blocking the way; a cloaked ship is not seen either. A ship that
+   * surrenders does not leave: it stays in front waiting for our decision
+   * (attack or plunder it), and so does the police demanding our surrender.
    */
   static boolean opponentLeaves(String encounterType, boolean cloaked) {
-    return encounterType.endsWith("Ignore") || encounterType.endsWith("Flee")
-        || encounterType.endsWith("Surrender") || cloaked;
+    return encounterType.endsWith("Ignore") || encounterType.endsWith("Flee") || cloaked;
   }
 
   private static EncounterViewModel.Bar bar(int value, int max) {
