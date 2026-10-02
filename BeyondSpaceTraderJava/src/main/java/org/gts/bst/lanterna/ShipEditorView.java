@@ -560,7 +560,7 @@ public final class ShipEditorView extends ArtEditorWindow {
 
   private int panelWidth(TerminalSize size) {
     // The five columns and the hull-size warning need room, but an 80-column
-    // terminal still keeps at least 40 columns for the canvas.
+    // terminal still keeps at least 39 columns for the canvas.
     return Math.min(34, Math.max(16, size.getColumns() - 40));
   }
 
