@@ -119,14 +119,14 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
      pirata se arrima, sale la pasarela y cruzan las cajas **si de verdad se
      llevan carga** (sin carga robada, ni pasarela) — y después la escena
      espera al jugador, como tras comerciar o una inspección policial. En el
-     registro queda **lo requisado** (`Se llevan: 2 Agua, 1 Fuego`), que de
+     registro queda **lo requisado** (`Se llevan: 2 Agua, 1 Pieles`), que de
      otro modo se perdería con los avisos modales. La rendición ante la Mantis
      (se entrega el artefacto) y la policial (el arresto) no son un saqueo.
    - **La pasarela se adapta**: con las naves a distinta altura no sale recta:
      va horizontal desde nuestro morro y, justo antes del casco rival, quiebra
-     en **L** (codo `╗` si baja, `╝` si sube; tramo vertical `║`) hasta la
-     altura del rival; a la misma altura sigue recta. El avance de la pasarela
-     y el cruce de las cajas recorren el camino completo (horizontal +
+     en **L** (codo `╗` si baja, `╝` si sube; tramo vertical `║`) hasta el
+     centro del casco rival; a la misma altura sigue recta. El avance de la
+     pasarela y el cruce de las cajas recorren el camino completo (horizontal +
      vertical). Vale para comerciar, la confiscación policial y el saqueo.
    - **Huimos** (flecha hacia atrás): la otra nave puede seguirnos o no, y
      podemos perderla de vista o no; lo decide el juego. La cámara nos sigue,
