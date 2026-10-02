@@ -204,6 +204,32 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void surrenderingToAPirateLogsOnlyWhatTheHoldsLost() {
+    Game game = newGame();
+    Ship ship = game.Commander().getShip();
+    ship.Cargo()[0] = 3;
+    ship.Cargo()[2] = 2;
+    // The pirate can carry two units and takes the most expensive first: only
+    // the two food units leave, and only those are listed.
+    Ship pirate = new Ship(ShipType.Scorpion);
+    pirate.Cargo()[0] = pirate.FreeCargoBays() - 2;
+    game.encounter().setOpponent(pirate);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    String taken = "2 " + Consts.TradeItems.get(2).Name();
+    assertEquals(List.of(Functions.StringVars(Strings.EncounterPiratesTake, taken)), view.logs,
+        "only the goods that left the hold are listed");
+    assertEquals(3, ship.Cargo()[0], "the water the pirate could not carry stays on board");
+    assertEquals(0, ship.Cargo()[2], "and the food leaves");
+    assertTrue(view.lootedCargo, "the scene shows the transfer");
+    assertTrue(view.closed);
+  }
+
+  @Test
   void surrenderingToAPirateWithNothingToTakeShowsNoCatwalk() {
     Game game = newGame();
     game.encounter().setEncounterType(EncounterType.PirateAttack);

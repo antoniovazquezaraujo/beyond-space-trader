@@ -984,6 +984,140 @@ class LanternaEncounterViewTest {
     }
   }
 
+  @Test
+  void theCatwalkBendsASingleStepWhenTheRivalIsOneRowAway() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 11)));
+    screen.startScreen();
+    try {
+      ReadyScene scene = sceneWithTwoShips(screen);
+      // The rival rests one row above our lane and the bridge is asked for
+      // before it can mirror us (the catwalk freezes it): the L is a single
+      // step, and the corner has to be exact.
+      scene.content().move(0, 1);
+      scene.content().catwalk();
+      for(int i = 0; i < 12; i++) {
+        scene.content().tick();
+      }
+      scene.gui().updateScreen();
+
+      String text = screenText(screen);
+      int yourRow = rowOfText(screen, "xxxxx");
+      int opponentRow = rowOfText(screen, "yyyyy");
+      assertEquals(1, yourRow - opponentRow, "the ships are one row apart:\n" + text);
+      int cornerColumn = firstColumnOf(screen, 'y') - 1;
+      int[] corner = boxOf(screen, '╝');
+      assertNotNull(corner, "the corner of the single step:\n" + text);
+      assertEquals(cornerColumn, corner[0], "the corner sits just before the hull of the rival");
+      assertEquals(yourRow, corner[1], "and on our line");
+      int[] leg = rowsOf(screen, cornerColumn, '║');
+      assertNotNull(leg, "the leg of a single cell:\n" + text);
+      assertEquals(opponentRow, leg[0], "it starts at the middle of the rival");
+      assertEquals(opponentRow, leg[1], "and it is a single cell high");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void thePoliceConfiscationBendsTheCatwalkToTheRival() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      ReadyScene scene = sceneWithTwoShips(screen);
+      // We climb before the inspection: the scanner runs while the rival
+      // mirrors us, but it cannot reach our lane before the catwalk freezes it.
+      scene.content().move(0, -1);
+      for(int i = 0; i < 3; i++) {
+        scene.content().tick();
+      }
+      scene.content().inspection(true);
+
+      boolean bent = false;
+      boolean onTheLeg = false;
+      // The scanner runs first and the automatic catwalk takes 32 frames more:
+      // the fixed loop covers it all (the catwalk starts after the scan, so
+      // "gone" is not a valid stop for the first frames).
+      for(int i = 0; i < 80; i++) {
+        scene.content().tick();
+        scene.gui().updateScreen();
+        int[] corner = cornerOf(screen);
+        if(corner == null) {
+          continue;
+        }
+        bent = true;
+        // The leg runs from our line to the rival's; a box over any of its
+        // cells proves the automatic haul crosses it.
+        int opponentRow = rowOfText(screen, "yyyyy");
+        for(int row = Math.min(corner[1], opponentRow); row <= Math.max(corner[1], opponentRow); row++) {
+          if(row != corner[1] && screen.getBackCharacter(corner[0], row).getCharacter() == '■') {
+            onTheLeg = true;
+          }
+        }
+      }
+      assertTrue(bent, "the confiscation bends the catwalk when the rival flies at another height");
+      assertTrue(onTheLeg, "a box crosses the vertical leg of the confiscation");
+      assertTrue(scene.content().catwalkGone(), "the automatic catwalk goes back in");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void thePirateLootingBendsTheCatwalkOnItsOwn() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      ReadyScene scene = sceneWithTwoShips(screen);
+      scene.content().move(0, -1);
+      for(int i = 0; i < 3; i++) {
+        scene.content().tick();
+      }
+      scene.content().loot();
+      for(int i = 0; i < 12; i++) {
+        scene.content().tick();
+      }
+      scene.gui().updateScreen();
+
+      String text = screenText(screen);
+      int yourRow = rowOfText(screen, "xxxxx");
+      int opponentRow = rowOfText(screen, "yyyyy");
+      int cornerColumn = firstColumnOf(screen, 'y') - 1;
+      assertTrue(yourRow < opponentRow, "we fly above the rival:\n" + text);
+      int[] corner = boxOf(screen, '╗');
+      assertNotNull(corner, "the looting bends down:\n" + text);
+      assertEquals(cornerColumn, corner[0], "the corner sits just before the hull");
+      assertEquals(yourRow, corner[1], "and on our line");
+      int[] leg = rowsOf(screen, cornerColumn, '║');
+      assertNotNull(leg, "the vertical leg goes down to the rival:\n" + text);
+      assertEquals(yourRow + 1, leg[0], "it starts under our line");
+      assertEquals(opponentRow - 1, leg[1], "the far end is already the box of the haul");
+      assertEquals('■', screen.getBackCharacter(cornerColumn, opponentRow).getCharacter(),
+          "the box reaches the middle of the rival:\n" + text);
+
+      // The boxes cross the whole path (horizontal and vertical) by themselves.
+      boolean onTheLeg = false;
+      for(int i = 0; i < 12; i++) {
+        scene.content().tick();
+        scene.gui().updateScreen();
+        for(int row = yourRow + 1; row <= opponentRow; row++) {
+          onTheLeg |= screen.getBackCharacter(cornerColumn, row).getCharacter() == '■';
+        }
+      }
+      assertTrue(onTheLeg, "a box crosses the vertical leg:\n" + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** The smallest box around one of the corners of the L, or null. */
+  private static int[] cornerOf(Screen screen) {
+    int[] down = boxOf(screen, '╗');
+    return down != null ? down : boxOf(screen, '╝');
+  }
+
   /** A scene with our ship and a rival coming in, ready for the catwalk. */
   private record ReadyScene(MultiWindowTextGUI gui, EncounterSceneComponent content) {
   }
@@ -992,7 +1126,7 @@ class LanternaEncounterViewTest {
     MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
     gui.setTheme(LanternaTheme.create());
     EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
-    content.setPreferredSize(new TerminalSize(80, 24));
+    content.setPreferredSize(screen.getTerminalSize());
     BasicWindow window = new BasicWindow();
     window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
     window.setComponent(content);
@@ -2757,6 +2891,52 @@ class LanternaEncounterViewTest {
       assertTrue(lootRow > shipRow, "under the ships (" + lootRow + " > " + shipRow + "):\n" + text);
       assertEquals(screen.getTerminalSize().getRows() - 2, lootRow,
           "and at the bottom of the scene:\n" + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theLootLineStaysInTheLogWhileTheSceneWaits() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      String loot = spacetrader.Functions.StringVars(spacetrader.Strings.EncounterPiratesTake,
+          "2 " + spacetrader.Consts.TradeItems.get(0).Name());
+      view.looted(true);
+      view.log(loot);
+      view.close();
+      // The catwalk of the looting comes out and back while the scene waits for
+      // the player: the line has to survive the whole animation.
+      for(int i = 0; i < 40; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+
+      String text = screenText(screen);
+      assertTrue(gui.getWindows().contains(view.asWindow()), "the scene still waits for the player");
+      assertTrue(text.contains(loot), "the loot line stays in the log:\n" + text);
+      assertEquals(screen.getTerminalSize().getRows() - 2, rowOfText(screen, loot),
+          "and keeps its place at the bottom of the scene:\n" + text);
     } finally {
       screen.stopScreen();
       screen.close();
