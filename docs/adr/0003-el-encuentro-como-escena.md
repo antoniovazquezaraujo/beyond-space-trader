@@ -139,8 +139,8 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
   reaprovechan como registro.
 - El modelo de escena (posiciones, proyectiles, humo y partes) es **lógica
   pura**: se prueba sin GUI, como el resto de `view/`.
-- `Encounter`, `EncounterPresenter` y sus tests **no se tocan**: las reglas no
-  cambian.
+- `Encounter` y sus reglas no se tocan; `EncounterPresenter` solo **traduce el
+  resultado del juego a la escena** (y sus tests cubren esa traducción).
 - **Pendiente**: los hitos y el repaso del autor — **M1** la escena (estrellas,
   naves, barras y registro; **sin botones**), **M2** los mandos y las rondas
   animadas (espacio dispara; las flechas mueven y esquivan; el disparo, el
