@@ -125,6 +125,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
   }
 
+  /** A row of the log of the encounter, already wrapped, with its colour. */
+  private record LogRow(String text, TextColor color) {
+  }
+
   private final KeyHandler keyHandler;
   private final List<String> log = new ArrayList<>();
   private final List<String> alerts = new ArrayList<>();
@@ -1341,40 +1345,51 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     return String.valueOf(BAR_FULL).repeat(filled) + String.valueOf(BAR_EMPTY).repeat(BAR_CELLS - filled);
   }
 
-  /** The log of the encounter, over the stars. */
+  /** The log of the encounter: the newest rows take the room that is left. */
   private void drawLog(TextGUIGraphics graphics, int width, int height, int logTop) {
-    int row = logTop;
-    for(String line : log) {
-      row = drawLogLine(graphics, row, height, line, UiPalette.TEXT, width);
-    }
-    for(String alert : alerts) {
-      row = drawLogLine(graphics, row, height, alert, UiPalette.ACCENT, width);
+    List<LogRow> rows = logRows(width);
+    // The area of the log never paints the last row of the screen: it is kept
+    // for the action keys, or for the leave key while the scene waits. When the
+    // whole log does not fit, the oldest rows are the ones scrolled out, so the
+    // newest line (an alert of the game) keeps the rows over the keys.
+    int capacity = Math.max(0, height - 1 - logTop);
+    int from = Math.max(0, rows.size() - capacity);
+    for(int i = 0; i < capacity && from + i < rows.size(); i++) {
+      LogRow row = rows.get(from + i);
+      if(!row.text().isEmpty()) {
+        UiPalette.draw(graphics, 1, logTop + i, row.text(), row.color(), width - 1);
+      }
     }
     if(leaving) {
       UiPalette.draw(graphics, 1, height - 1, "[ENTER] continue", UiPalette.WARN, width - 1);
     }
   }
 
+  /** The lines of the log and the alerts, wrapped to the width of the scene. */
+  private List<LogRow> logRows(int width) {
+    List<LogRow> rows = new ArrayList<>();
+    for(String line : log) {
+      addLogRows(rows, line, UiPalette.TEXT, width);
+    }
+    for(String alert : alerts) {
+      addLogRows(rows, alert, UiPalette.ACCENT, width);
+    }
+    return rows;
+  }
+
   /**
-   * Wraps a line of the log to the room left by the keys and paints it row by
-   * row. An alert of the game (a blackmail, an outcome) is a whole message and
-   * must read whole; the last row of the screen is never painted (it is kept
-   * for the action keys, or for the leave key while the scene waits). An empty
-   * line still takes its row, as the log always did.
+   * Wraps a line of the log (or a quiet alert) to the room left by the keys and
+   * appends its rows. An empty line still takes its row, as the log always did.
    */
-  private static int drawLogLine(TextGUIGraphics graphics, int row, int height, String text, TextColor color,
-      int width) {
-    java.util.List<String> lines = wrap(text, Math.max(1, width - 2));
-    if(lines.isEmpty()) {
-      return row < height - 1 ? row + 1 : row;
+  private static void addLogRows(List<LogRow> rows, String text, TextColor color, int width) {
+    List<String> wrapped = wrap(text, Math.max(1, width - 2));
+    if(wrapped.isEmpty()) {
+      rows.add(new LogRow("", color));
+      return;
     }
-    for(String wrapped : lines) {
-      if(row >= height - 1) {
-        break;
-      }
-      UiPalette.draw(graphics, 1, row++, wrapped, color, width - 1);
+    for(String line : wrapped) {
+      rows.add(new LogRow(line, color));
     }
-    return row;
   }
 
   /**

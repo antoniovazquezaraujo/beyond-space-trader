@@ -3160,7 +3160,7 @@ class LanternaEncounterViewTest {
   }
 
   @Test
-  void theOldestAlertsKeepTheirRowsAndTheNewestFallOut() throws IOException {
+  void theNewestAlertsKeepTheirRowsAndTheOldestFallOut() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
     try {
@@ -3194,14 +3194,15 @@ class LanternaEncounterViewTest {
       // Act: the scene is painted.
       gui.updateScreen();
 
-      // Assert: the rows go to the oldest alerts; the newest are dropped, never
-      // half drawn over the keys of the last row.
+      // Assert: the rows go to the newest alerts (the oldest scroll out whole),
+      // and none is half drawn over the keys of the last row.
       String text = screenText(screen);
-      assertEquals(19, rowOfText(screen, "A".repeat(54)), "the first alert takes the first row:\n" + text);
-      assertEquals(21, rowOfText(screen, tailOne), "and ends whole over the key bar:\n" + text);
-      assertEquals(22, rowOfText(screen, "B".repeat(54)), "the second alert keeps one row:\n" + text);
-      assertTrue(rowOfText(screen, tailTwo) < 0, "but its tail falls out (bounded log):\n" + text);
-      assertTrue(rowOfText(screen, tailThree) < 0, "and the third alert is dropped whole:\n" + text);
+      assertTrue(rowOfText(screen, "A".repeat(54)) < 0, "the oldest alert scrolls out:\n" + text);
+      assertTrue(rowOfText(screen, tailOne) < 0, "with its tail too:\n" + text);
+      assertEquals(19, rowOfText(screen, "B".repeat(54)), "the second alert opens the log:\n" + text);
+      assertEquals(20, rowOfText(screen, tailTwo), "and ends whole on the next row:\n" + text);
+      assertEquals(21, rowOfText(screen, "C".repeat(54)), "the newest alert follows:\n" + text);
+      assertEquals(22, rowOfText(screen, tailThree), "and ends whole over the key bar:\n" + text);
       String bar = lastScreenRow(screen);
       assertTrue(bar.contains("[A]"), "the action keys keep the last row:\n" + bar);
       assertFalse(bar.contains(tailTwo) || bar.contains(tailThree), "no alert steps on the keys:\n" + bar);
@@ -3261,7 +3262,7 @@ class LanternaEncounterViewTest {
   }
 
   @Test
-  void theSurrenderBlackmailOnlyFitsItsHeadUnderTheRoundLog() throws IOException {
+  void theSurrenderBlackmailReadsWholeOverTheRoundLog() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
     try {
@@ -3290,21 +3291,71 @@ class LanternaEncounterViewTest {
       view.log(blackmail);
       gui.updateScreen();
 
-      // Assert: the three rows of the round leave one row free, so the alert
-      // only fits its head; the tail with the amount still falls out. KNOWN
-      // LIMITATION of d2b8ad0 (characterisation): the wrap is right, but the
-      // scene must still give the newest alert its rows (scroll or priority)
-      // for the whole message to read. When that is done, flip this test to
-      // assert the tail, as theBlackmailAlertWrapsWholeInTheLog does with an
-      // empty log.
+      // Assert: the newest rows win the room: the log of the round scrolls out
+      // and the whole blackmail reads, its tail with the amount included, over
+      // the keys.
       String text = screenText(screen);
-      assertEquals(screen.getTerminalSize().getRows() - 2, rowOfText(screen, "The pirates are very angry"),
-          "the head of the blackmail reaches the last paintable row:\n" + text);
-      assertTrue(rowOfText(screen, "your current worth") < 0,
-          "KNOWN LIMITATION: the tail with the amount does not fit yet:\n" + text);
+      int head = rowOfText(screen, "The pirates are very angry");
+      int tail = rowOfText(screen, "your current worth - " + amount + ".");
+      assertTrue(head >= 0, "the head of the blackmail is in the log:\n" + text);
+      assertTrue(tail >= 0, "and its tail with the amount is not cut off any more:\n" + text);
+      assertTrue(tail >= head + 2, "the message falls in several rows (" + head + ".." + tail + "):\n" + text);
+      assertEquals(UiPalette.ACCENT, screen.getBackCharacter(1, head).getForegroundColor(),
+          "the alert keeps its colour:\n" + text);
+      assertEquals(screen.getTerminalSize().getRows() - 2, tail, "the tail ends over the key bar:\n" + text);
+      assertTrue(rowOfText(screen, "The pirate attacks.") < 0, "the round log scrolls out:\n" + text);
       String bar = lastScreenRow(screen);
       assertTrue(bar.contains("[A]"), "the action keys keep the last row:\n" + bar);
       assertFalse(bar.contains("pirates"), "the blackmail never steps on the keys:\n" + bar);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theSurrenderBlackmailShowsItsAmountOnANarrowTerminal() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      gui.addWindow(view.asWindow());
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      String amount = spacetrader.Functions.Multiples(22750, spacetrader.Strings.MoneyUnit);
+      String blackmail = spacetrader.Functions.StringVars(
+          Alerts.get(spacetrader.enums.AlertType.EncounterPiratesFindNoCargo).message(), amount);
+      view.log(blackmail);
+
+      // Act: the scene is painted on the narrow terminal.
+      gui.updateScreen();
+
+      // Assert: the scene is 40 wide there, so the blackmail needs six rows of
+      // 38 and only its newest four fit; the head has to scroll out, but the
+      // tail the player has to read (the amount) keeps the last rows, whole
+      // over the keys.
+      String text = screenText(screen);
+      String worth = "your current worth - " + amount.split(" ")[0];
+      String unit = amount.split(" ")[1] + ".";
+      assertTrue(rowOfText(screen, "The pirates are very angry") < 0,
+          "the head of the blackmail has to scroll out here:\n" + text);
+      assertEquals(screen.getTerminalSize().getRows() - 3, rowOfText(screen, worth),
+          "the worth of the tail reads over the key bar:\n" + text);
+      assertEquals(screen.getTerminalSize().getRows() - 2, rowOfText(screen, unit),
+          "and the amount is not cut:\n" + text);
+      assertEquals(UiPalette.ACCENT, screen.getBackCharacter(1, screen.getTerminalSize().getRows() - 3)
+          .getForegroundColor(), "the alert keeps its colour:\n" + text);
+      String bar = lastScreenRow(screen);
+      assertTrue(bar.contains("[A]"), "the action keys keep the last row:\n" + bar);
+      assertFalse(bar.contains(unit), "the alert never steps on the keys:\n" + bar);
     } finally {
       screen.stopScreen();
       screen.close();
