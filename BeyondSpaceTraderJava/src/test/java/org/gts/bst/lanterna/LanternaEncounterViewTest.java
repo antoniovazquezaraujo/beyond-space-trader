@@ -1701,9 +1701,33 @@ class LanternaEncounterViewTest {
 
   @Test
   void theRealWideShipsDoNotAskToFleeFromTheSpawn() throws IOException {
-    // The original repro: real art at 80x24, where the cropped Flea (44) and
-    // Wasp (54) are wider than their half (27) and spawn parked on the left edge.
-    for(ShipType type : List.of(ShipType.Flea, ShipType.Wasp)) {
+    // The scene at 80x24 keeps 24 columns for the legend (EncounterSceneComponent),
+    // so its half is 27 and a wider ship spawns parked on the left edge. The probe
+    // picks whichever real ships are that wide today, so editing the art does not
+    // break the test; the synthetic 44-cell hull sits beside them, so the check
+    // never goes vacuous even if the author shrinks every real ship. The failure
+    // messages name the probed ships and their widths.
+    int half = (80 - 24 - 1) / 2;
+    List<ShipPicture> wide = new ArrayList<>();
+    List<String> probed = new ArrayList<>();
+    for(ShipType type : ShipType.values()) {
+      ShipPicture picture = ShipCatalog.shared().picture(type, List.of(), 0);
+      if(picture.cropped().width() > half) {
+        wide.add(picture);
+        probed.add(type + "(" + picture.cropped().width() + ")");
+      }
+    }
+    ShipPicture synthetic = new ShipCatalog(List.of(),
+        ShipArtFile.parse(new StringReader("[uno]\n" + "x".repeat(44) + "\n")), List.of())
+        .picture(ShipType.Flea, List.of(), 0);
+    assertEquals(44, synthetic.cropped().width(), "the synthetic hull is the wide one");
+    wide.add(synthetic);
+    probed.add("synthetic(" + synthetic.cropped().width() + ")");
+    String probedShips = String.join(", ", probed);
+
+    for(int index = 0; index < wide.size(); index++) {
+      ShipPicture you = wide.get(index);
+      String label = probed.get(index);
       Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
       screen.startScreen();
       try {
@@ -1711,11 +1735,9 @@ class LanternaEncounterViewTest {
         gui.setTheme(LanternaTheme.create());
         List<EncounterAction> executed = new ArrayList<>();
         LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
-        ShipPicture you = ShipCatalog.shared().picture(type, List.of(), 0);
         ShipPicture opponent = new ShipCatalog(List.of(),
             ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
             .picture(ShipType.Scorpion, List.of(), 0);
-        assertTrue(you.cropped().width() > 27, type + " is wider than its half at 80x24");
         view.render(fight(you, opponent, 0, false, false, false, 0, 0));
         gui.addWindow(view.asWindow());
         gui.updateScreen();
@@ -1724,18 +1746,23 @@ class LanternaEncounterViewTest {
           content.tick();
         }
         gui.updateScreen();
-        assertTrue(executed.isEmpty(),
-            type + " parked at the edge does not ask to flee by itself: " + executed);
+        assertTrue(executed.isEmpty(), label + " parked at the edge does not ask to flee by itself (probed: "
+            + probedShips + "): " + executed);
+        assertTrue(pictureAtTheLeftEdge(screen, you), label + " is painted at the edge (probed: " + probedShips + ")");
 
-        // The real dash (the half turn and away) does ask, at the edge it is on.
+        // The real dash (the half turn and away) does ask, at the edge it is on,
+        // and the camera keeps the ship in the scene.
         view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
         view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
         for(int i = 0; i < 3; i++) {
           content.tick();
         }
         gui.updateScreen();
-        assertEquals(List.of(EncounterAction.Flee), executed, type + " asks to flee on the real dash");
-        assertFalse(content.exitedRight(), type + " dashes to its left edge");
+        assertEquals(List.of(EncounterAction.Flee), executed,
+            label + " asks to flee on the real dash (probed: " + probedShips + ")");
+        assertFalse(content.exitedRight(), label + " dashes to its left edge (probed: " + probedShips + ")");
+        assertTrue(pictureAtTheLeftEdge(screen, you.mirrored()),
+            label + " stays in the scene after the dash (probed: " + probedShips + ")");
       } finally {
         screen.stopScreen();
         screen.close();
@@ -4704,6 +4731,45 @@ class LanternaEncounterViewTest {
       }
     }
     return count;
+  }
+
+  /**
+   * True when a ship is painted at the left edge of the scene, cell by cell
+   * (glyph and colour): the camera keeps a wide one there after its dash. The
+   * blinking cells are ignored, so the blink phase does not matter, and enough
+   * of the drawing must match, so a stray glyph never reads as the ship.
+   */
+  private static boolean pictureAtTheLeftEdge(Screen screen, ShipPicture picture) {
+    ShipPicture ink = picture.cropped();
+    int inkCells = 0;
+    for(int y = 0; y < ink.height(); y++) {
+      for(int x = 0; x < ink.width(); x++) {
+        ShipPicture.Cell cell = ink.at(x, y);
+        if(cell != null && !cell.continuation() && !cell.blink()) {
+          inkCells++;
+        }
+      }
+    }
+    for(int row = 0; row + ink.height() <= screen.getTerminalSize().getRows(); row++) {
+      int matches = 0;
+      for(int y = 0; y < ink.height(); y++) {
+        for(int x = 0; x < ink.width(); x++) {
+          ShipPicture.Cell cell = ink.at(x, y);
+          if(cell == null || cell.continuation() || cell.blink()) {
+            continue;
+          }
+          TextCharacter character = screen.getBackCharacter(x, row + y);
+          if(character.getCharacter() == cell.codePoint()
+              && character.getForegroundColor().equals(org.gts.bst.view.ShipColors.color(cell.color()))) {
+            matches++;
+          }
+        }
+      }
+      if(inkCells > 0 && matches * 2 >= inkCells) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** True when a colour is on the screen. */
