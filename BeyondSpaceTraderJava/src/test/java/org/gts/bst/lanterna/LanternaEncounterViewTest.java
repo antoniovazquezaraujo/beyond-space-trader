@@ -883,6 +883,459 @@ class LanternaEncounterViewTest {
     }
   }
 
+  @Test
+  void aSuccessfulEscapePastTheOtherShipSeesItOffToTheLeft() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      LanternaEncounterView[] view = new LanternaEncounterView[1];
+      // The game resolves the escape: we got away (the close is proved elsewhere).
+      view[0] = new LanternaEncounterView(gui, action -> {
+        if(action == EncounterAction.Flee) {
+          view[0].escaped();
+        }
+      }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view[0].render(chase(you, opponent, 0, true));
+      gui.addWindow(view[0].asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view[0].asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // Up, to slip past the other one, and then advancing: the ship reaches
+      // the right edge and the game resolves the escape.
+      view[0].asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      view[0].asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      int frames = 0;
+      while(frames < 40 && !content.exitedRight()) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertTrue(content.exitedRight(), "we reached the right edge");
+      assertTrue(screenText(screen).contains("x"), "and we stay in the scene");
+      assertTrue(screenText(screen).contains("yyyyy"), "with the other ship still behind us");
+
+      // It is the other ship that leaves now, through our back (the left).
+      int behind = firstColumnOf(screen, 'y');
+      for(int i = 0; i < 3; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertTrue(screenText(screen).contains("yyyyy"), "it is on its way out");
+      int leaving = firstColumnOf(screen, 'y');
+      assertTrue(leaving < behind,
+          "it goes away through the left (" + leaving + " < " + behind + ")");
+      int out = 0;
+      while(out < 40 && screenText(screen).contains("yyyyy")) {
+        content.tick();
+        gui.updateScreen();
+        out++;
+      }
+      assertFalse(screenText(screen).contains("yyyyy"), "and all the way out");
+      assertTrue(screenText(screen).contains("x"), "while we never leave the scene");
+      assertTrue(firstColumnOf(screen, 'x') > 40,
+          "waiting at the right edge (" + firstColumnOf(screen, 'x') + ")");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aFailedEscapePastTheOtherShipKeepsEveryoneInTheScene() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(chase(you, opponent, 0, true));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // Up, to slip past the other one, and then advancing to the right edge.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      int frames = 0;
+      while(frames < 40 && executed.isEmpty()) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertEquals(List.of(EncounterAction.Flee), executed, "reaching the right edge asks to flee");
+      assertTrue(content.exitedRight(), "we are at the right edge");
+      assertTrue(screenText(screen).contains("x"), "and we stay in the scene");
+      assertTrue(screenText(screen).contains("yyyyy"), "with the other ship behind us");
+
+      // A failed escape (the game keeps the chase): the scene does not loop and
+      // the other one closes in for the next round.
+      int enemyBefore = firstColumnOf(screen, 'y');
+      content.model(chase(you, opponent, 1, true));
+      gui.updateScreen();
+      assertTrue(firstColumnOf(screen, 'y') > enemyBefore,
+          "the other ship gains ground behind us (" + firstColumnOf(screen, 'y') + " > " + enemyBefore + ")");
+      assertTrue(screenText(screen).contains("x"), "we stay in the scene, at the edge");
+      assertTrue(screenText(screen).contains("yyyyy"), "and so does the other one");
+
+      int edge = firstColumnOf(screen, 'x');
+      for(int i = 0; i < 30; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertTrue(screenText(screen).contains("x"), "we keep waiting at the edge, visible");
+      assertTrue(screenText(screen).contains("yyyyy"), "with the other one closing in");
+      assertEquals(edge, firstColumnOf(screen, 'x'), "and we never come back in from the other side");
+      assertEquals(List.of(EncounterAction.Flee), executed, "the edge asks once, not every frame");
+      assertTheShipsNeverTouch(screen);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void pressingForwardAtTheRightEdgeDoesNotMoveTheShip() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      List<String> exits = new ArrayList<>();
+      content.onExit(() -> exits.add("edge"));
+      content.model(ignoring(you, opponent, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // Up, and then forward to the right edge while the other one crosses.
+      content.move(0, -1);
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      int frames = 0;
+      while(frames < 60 && exits.isEmpty()) {
+        content.move(1, 0);
+        for(int i = 0; i < 10 && exits.isEmpty(); i++) {
+          content.tick();
+          frames++;
+        }
+        gui.updateScreen();
+      }
+      assertEquals(1, exits.size(), "reaching the right edge asks for the escape");
+      assertTrue(content.exitedRight(), "we are at the right edge");
+      assertTrue(screenText(screen).contains("x"), "and we stay in the scene");
+      int edge = lastColumnOf(screen, 'x');
+      assertTrue(edge > 40, "the ship is at the right edge (" + edge + ")");
+
+      // Pressing forward again, glued to the edge, neither moves us nor asks again.
+      content.move(1, 0);
+      for(int i = 0; i < 3; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertEquals(edge, lastColumnOf(screen, 'x'), "pressing forward at the edge does not move the ship");
+      assertEquals(1, exits.size(), "and does not ask for the escape again");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void reachingTheRightEdgeAsksForTheEscapeAgainAfterGoingBackInside() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      List<String> exits = new ArrayList<>();
+      content.onExit(() -> exits.add("edge"));
+      content.model(ignoring(you, opponent, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // Up, and then forward to the right edge while the other one crosses.
+      content.move(0, -1);
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      int frames = 0;
+      while(frames < 60 && exits.isEmpty()) {
+        content.move(1, 0);
+        for(int i = 0; i < 10 && exits.isEmpty(); i++) {
+          content.tick();
+          frames++;
+        }
+        gui.updateScreen();
+      }
+      assertEquals(1, exits.size(), "reaching the right edge asks for the escape");
+      int edge = lastColumnOf(screen, 'x');
+
+      // Turn away and glide back inside: the notice is re-armed there.
+      content.move(-1, 0);
+      content.move(-1, 0);
+      int inside = 0;
+      while(inside < 20 && lastColumnOf(screen, 'x') >= edge) {
+        content.tick();
+        gui.updateScreen();
+        inside++;
+      }
+      assertTrue(lastColumnOf(screen, 'x') < edge, "we are back inside the scene");
+
+      // Brake, face forward and dash to the right edge again.
+      content.move(1, 0);
+      content.move(1, 0);
+      content.move(1, 0);
+      int again = 0;
+      while(again < 60 && exits.size() < 2) {
+        content.move(1, 0);
+        for(int i = 0; i < 10 && exits.size() < 2; i++) {
+          content.tick();
+          again++;
+        }
+        gui.updateScreen();
+      }
+      assertEquals(2, exits.size(), "back inside, the right edge asks for another escape");
+      assertTrue(content.exitedRight(), "we are at the right edge again");
+      assertTrue(screenText(screen).contains("x"), "and still in the scene");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void fleeingPastTheShipThatIgnoresUsIgnoresItAndSeesItOff() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(160, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(ignoring(you, opponent, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("y"), "the other ship is crossing");
+
+      // Up, and then forward until the right edge, while the other one crosses.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      for(int i = 0; i < 6; i++) {
+        content.tick();
+      }
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      int frames = 0;
+      while(frames < 80 && executed.isEmpty()) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertEquals(List.of(EncounterAction.Ignore), executed, "reaching the edge ignores the encounter");
+      assertTrue(content.exitedRight(), "we reached the right edge");
+      assertTrue(screenText(screen).contains("x"), "and we stay in the scene");
+      assertTrue(screenText(screen).contains("y"), "while the other ship was still crossing");
+
+      // It is the other ship that leaves, and the crossing must not ignore the
+      // encounter a second time when it finishes.
+      int out = 0;
+      while(out < 80 && screenText(screen).contains("y")) {
+        content.tick();
+        gui.updateScreen();
+        out++;
+      }
+      assertFalse(screenText(screen).contains("y"), "the other ship leaves the scene");
+      assertTrue(screenText(screen).contains("x"), "and we stay visible");
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertEquals(List.of(EncounterAction.Ignore), executed, "the crossing does not ignore it twice");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void pressingBackAtTheLeftEdgeDoesNotMoveTheShip() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      List<String> exits = new ArrayList<>();
+      content.onExit(() -> exits.add("edge"));
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // The half turn and the advance away: the ship reaches the left edge.
+      content.move(-1, 0);
+      content.move(-1, 0);
+      int frames = 0;
+      while(frames < 30 && exits.isEmpty()) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertEquals(1, exits.size(), "reaching the left edge asks for the escape");
+      assertFalse(content.exitedRight(), "we are at the left edge");
+      assertTrue(screenText(screen).contains("x"), "and we stay in the scene");
+      int edge = firstColumnOf(screen, 'x');
+
+      // Pressing back again, glued to the edge, neither moves us nor asks again.
+      content.move(-1, 0);
+      for(int i = 0; i < 3; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertEquals(edge, firstColumnOf(screen, 'x'), "pressing back at the edge does not move the ship");
+      assertEquals(1, exits.size(), "and does not ask for the escape again");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theSceneWaitingForThePlayerNeverLosesTheShip() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      List<String> exits = new ArrayList<>();
+      content.onExit(() -> exits.add("edge"));
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // The scene shows a result and waits for the player; the manoeuvres keep
+      // working. Withdrawing to the edge must not send the ship off the screen.
+      content.awaitLeave();
+      content.move(-1, 0);
+      content.move(-1, 0);
+      int frames = 0;
+      while(frames < 30 && exits.isEmpty()) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertEquals(1, exits.size(), "reaching the left edge asks for the escape");
+      assertFalse(content.exitedRight(), "we are at the left edge");
+      assertTrue(screenText(screen).contains("x"), "the ship waits at the edge, visible");
+      int edge = firstColumnOf(screen, 'x');
+      for(int i = 0; i < 10; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertEquals(edge, firstColumnOf(screen, 'x'), "and it never slides off the screen");
+      assertEquals(1, exits.size(), "nor asks for the escape again");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   /** A round of a chase (or of the fight) over the ships of the test. */
   private static EncounterViewModel chase(ShipPicture you, ShipPicture opponent, int round, boolean fleeing) {
     return new EncounterViewModel(
