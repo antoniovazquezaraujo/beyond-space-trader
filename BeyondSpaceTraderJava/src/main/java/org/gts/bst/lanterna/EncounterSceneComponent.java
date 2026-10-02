@@ -983,7 +983,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     drawFight(graphics);
     drawInspection(graphics);
     drawSpeech(graphics);
-    drawLegend(graphics, width, height, barsTop);
+    drawLegend(graphics, width, height, barsTop + BARS_ROWS);
     drawLog(graphics, sceneWidth, height, logTop);
     drawActionKeys(graphics, sceneWidth, height);
   }

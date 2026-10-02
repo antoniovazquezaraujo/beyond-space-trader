@@ -3865,6 +3865,64 @@ class LanternaEncounterViewTest {
     }
   }
 
+  @Test
+  void theLegendOfANarrowSceneStartsUnderTheBarsAndKeepsTheRivalBarWhole() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(60, 20));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+
+      // At 60 columns the scene (40) and the legend column (36) overlap: the
+      // legend opens two rows under the bars, so it must not erase the right
+      // end of the rival bar, which reaches its column.
+      gui.updateScreen();
+      String text = screenText(screen);
+      int legendColumn = screen.getTerminalSize().getColumns() - 24;
+      assertEquals(0, rowOfText(screen, "casco"), text);
+      assertRivalBarWhole(screen, legendColumn, 0, text);
+      assertEquals('│', screen.getBackCharacter(legendColumn, 2).getCharacter(),
+          "the legend starts under the bars:\n" + text);
+      assertTrue(rowOfText(screen, spacetrader.Strings.EncounterLegend) > 2, text);
+
+      // With the header the rule is the same: two rows under the bars.
+      Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, DialogService.NONE);
+      content.commander(game::Commander);
+      gui.updateScreen();
+      text = screenText(screen);
+      assertEquals(3, rowOfText(screen, "casco"), text);
+      assertRivalBarWhole(screen, legendColumn, 3, text);
+      assertEquals('│', screen.getBackCharacter(legendColumn, 5).getCharacter(),
+          "the legend starts under the bars and their gap:\n" + text);
+      assertTrue(rowOfText(screen, spacetrader.Strings.EncounterLegend) > 3, text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** The rival bar reaches the legend column with its cells painted. */
+  private static void assertRivalBarWhole(Screen screen, int legendColumn, int row, String text) {
+    for(int column = legendColumn - 1; column <= legendColumn + 2; column++) {
+      assertEquals('█', screen.getBackCharacter(column, row).getCharacter(),
+          "the legend must not erase the rival bar (column " + column + "):\n" + text);
+    }
+    assertNotEquals('│', screen.getBackCharacter(legendColumn, row).getCharacter(), text);
+  }
+
   /** The row of the header separator (a whole row of dashes), or -1. */
   private static int headerSeparatorRow(Screen screen) {
     for(int row = 0; row < 5; row++) {

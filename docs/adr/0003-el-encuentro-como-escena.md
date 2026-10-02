@@ -41,7 +41,8 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    escudos, carga y registro policial) **queda visible arriba** durante el
    encuentro, con los valores al día (el casco y los escudos cambian en
    combate): la escena la dibuja sobre el cielo, con su línea separadora, y
-   arranca debajo, desplazando las barras, la leyenda, las naves y el registro.
+   arranca debajo, bajando con ella las barras, la leyenda y las naves; el
+   registro sigue anclado abajo y solo cede si la cabecera no deja sitio.
 
    ```
    ╔════════════════════════════════════════════════════════════════════╗
