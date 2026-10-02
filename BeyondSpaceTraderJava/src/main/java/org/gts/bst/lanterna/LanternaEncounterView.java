@@ -116,6 +116,11 @@ public final class LanternaEncounterView implements EncounterView {
         // must not ignore it twice or close it again.
         return;
       }
+      if(model == null || !model.actions().contains(EncounterAction.Ignore)) {
+        // A surrender crosses and leaves in the same way, but it keeps a
+        // decision open (attack or plunder it): the scene waits for the player.
+        return;
+      }
       // It finished crossing and is gone: the encounter is over, as if ignored.
       execute(EncounterAction.Ignore);
     });

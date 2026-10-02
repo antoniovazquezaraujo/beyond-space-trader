@@ -1182,6 +1182,53 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void aSurrenderingShipThatLeavesKeepsTheDecisionOpen() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView[] view = new LanternaEncounterView[1];
+      // The presenter closes the encounter as soon as the action is over.
+      view[0] = new LanternaEncounterView(gui, action -> {
+        executed.add(action);
+        view[0].close();
+      }, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view[0].render(surrendering(you, opponent, 0));
+      gui.addWindow(view[0].asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view[0].asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // It crosses and leaves the scene the same way as the one that ignores
+      // us, but the surrender leaves attack/plunder on the table.
+      int frames = 0;
+      while(frames < 40 && screenText(screen).contains("y")) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertFalse(screenText(screen).contains("y"), "the surrendered ship crosses and leaves");
+      assertTrue(executed.isEmpty(), "a surrender is not ignored by itself");
+      assertTrue(gui.getWindows().contains(view[0].asWindow()),
+          "the player can still attack or plunder it");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void attackingWhileItCrossesKeepsTheEncounterOpen() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
@@ -1750,6 +1797,19 @@ class LanternaEncounterViewTest {
         EnumSet.of(EncounterAction.Attack, EncounterAction.Ignore), false, 0, "Flea",
         new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Police",
         new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The police ignores.",
+        "Choose an action.", ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+        true, 5, false, round, "");
+  }
+
+  /**
+   * A round of a ship that surrenders while it crosses the scene: it leaves in
+   * the same way, but the decision (attack or plunder it) stays open.
+   */
+  private static EncounterViewModel surrendering(ShipPicture you, ShipPicture opponent, int round) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Plunder), false, 0, "Flea",
+        new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Pirate",
+        new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100), "The pirate surrenders.",
         "Choose an action.", ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
         true, 5, false, round, "");
   }

@@ -87,7 +87,9 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
      una banda libre (arriba o abajo, la contraria a la nuestra) y sale por el
      otro lado; podemos cruzar por el hueco que deje. Cuando termina de cruzar
      y desaparece, el encuentro **se cierra solo** (equivale a ignorar); si la
-     atacamos mientras cruza, vuelve y el combate sigue.
+     atacamos mientras cruza, vuelve y el combate sigue. **Salvo que quede una
+     decisión pendiente** (una rendición, que todavía se puede atacar o
+     saquear): entonces la escena espera al jugador aunque la nave se largue.
    - **No nos ignora**: copia la maniobra, más despacio o más rápido según lo
      que diga el juego; despacio, se puede esquivar y colar.
    - **Huimos** (flecha hacia atrás): la otra nave puede seguirnos o no, y
