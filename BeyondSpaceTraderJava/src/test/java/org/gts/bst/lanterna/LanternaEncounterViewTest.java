@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.List;
+import java.util.Map;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoBuyOp;
 import org.gts.bst.ship.ShipType;
@@ -245,6 +246,197 @@ class LanternaEncounterViewTest {
       assertFalse(text.contains("[A] " + spacetrader.Strings.EncounterActionAttack),
           "the bar is gone while the scene waits:\n" + text);
       assertFalse(text.contains("[S]"), "and so are its keys:\n" + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void everyActionOfTheEncounterHasItsClassicKey() {
+    // Arrange: the keys of the classic text UI, the ones the player knows.
+    Map<EncounterAction, Character> classic = Map.ofEntries(
+        Map.entry(EncounterAction.Attack, 'a'),
+        Map.entry(EncounterAction.Board, 'o'),
+        Map.entry(EncounterAction.Bribe, 'b'),
+        Map.entry(EncounterAction.Drink, 'd'),
+        Map.entry(EncounterAction.Flee, 'f'),
+        Map.entry(EncounterAction.Ignore, 'i'),
+        Map.entry(EncounterAction.Interrupt, 'x'),
+        Map.entry(EncounterAction.Meet, 'm'),
+        Map.entry(EncounterAction.Plunder, 'p'),
+        Map.entry(EncounterAction.Submit, 'u'),
+        Map.entry(EncounterAction.Surrender, 's'),
+        Map.entry(EncounterAction.Trade, 't'),
+        Map.entry(EncounterAction.Yield, 'y'));
+
+    // Act & Assert: the single table of the view covers the whole enum, so the
+    // scene can always print the key of an action and the key always works.
+    for(EncounterAction action : EncounterAction.values()) {
+      assertEquals(classic.get(action), LanternaEncounterView.keyOf(action),
+          action + " keeps its classic key");
+    }
+  }
+
+  @Test
+  void thePoliceKeysAreShownWholeAndInTheOrderOfTheEnum() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      // Arrange: the inspection offers attack, flee, submit and bribe.
+      content.model(police(you, opponent, 0));
+
+      // Act: the last row of the scene is painted.
+      gui.updateScreen();
+      String row = lastScreenRow(screen);
+
+      // Assert: one whole entry per action, in the order of the enum (bribe is
+      // the second action of the encounter, so it goes before flee and submit).
+      String attack = "[A] " + spacetrader.Strings.EncounterActionAttack;
+      String bribe = "[B] " + spacetrader.Strings.EncounterActionBribe;
+      String flee = "[F] " + spacetrader.Strings.EncounterActionFlee;
+      String submit = "[U] " + spacetrader.Strings.EncounterActionSubmit;
+      assertTrue(row.contains(attack), "the attack key:\n" + row);
+      assertTrue(row.contains(bribe), "the bribe key:\n" + row);
+      assertTrue(row.contains(flee), "the flee key:\n" + row);
+      assertTrue(row.contains(submit), "the submit key:\n" + row);
+      assertTrue(row.indexOf(attack) < row.indexOf(bribe), "attack before bribe:\n" + row);
+      assertTrue(row.indexOf(bribe) < row.indexOf(flee), "bribe before flee:\n" + row);
+      assertTrue(row.indexOf(flee) < row.indexOf(submit), "flee before submit:\n" + row);
+      assertEquals(4, row.chars().filter(character -> character == '[').count(),
+          "one entry per available action:\n" + row);
+      assertFalse(row.contains("[T]"), "an action that is not offered is not shown:\n" + row);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theKeyPrintedOnTheBarRunsItsAction() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      // Arrange: the inspection offers attack, flee, submit and bribe.
+      view.render(police(you, opponent, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+
+      // Act & Assert: pressing the key the bar prints runs that action. The key
+      // is read from the scene, so the test does not repeat the mapping.
+      assertPrintedKeyRuns(view, screen, executed, spacetrader.Strings.EncounterActionFlee,
+          EncounterAction.Flee);
+      assertPrintedKeyRuns(view, screen, executed, spacetrader.Strings.EncounterActionSubmit,
+          EncounterAction.Submit);
+      assertPrintedKeyRuns(view, screen, executed, spacetrader.Strings.EncounterActionBribe,
+          EncounterAction.Bribe);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theInterruptKeyIsShownAndRunsWhenTheAutomaticFightIsOn() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(120, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      // Arrange: the automatic fight adds the interrupt (the way out).
+      view.render(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Ignore,
+              EncounterAction.Interrupt, EncounterAction.Trade),
+          true, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The pirate attacks.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+          false, 5, false, 0, ""));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+
+      // Act & Assert: the bar prints the interrupt and its key stops the automatic.
+      assertPrintedKeyRuns(view, screen, executed, spacetrader.Strings.EncounterActionInterrupt,
+          EncounterAction.Interrupt);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aNarrowTerminalDropsWholeEntriesAndKeepsThemOffTheLog() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(64, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(64, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      // Arrange: four actions for the space of three, and a full log.
+      content.model(police(you, opponent, 0));
+      content.log(List.of("First line.", "Second line.", "Third line.", "Fourth line."));
+
+      // Act: the scene is painted.
+      gui.updateScreen();
+      String row = lastScreenRow(screen);
+
+      // Assert: the entry that does not fit whole is left out (no half entry),
+      // the log keeps its own rows and nothing steps on the legend. With four
+      // actions for the space of three, submit is the one left out whole.
+      String bar = "[A] " + spacetrader.Strings.EncounterActionAttack + "  [B] "
+          + spacetrader.Strings.EncounterActionBribe + "  [F] " + spacetrader.Strings.EncounterActionFlee;
+      assertEquals(bar, row.substring(0, 40).strip(),
+          "only the whole entries that fit are offered:\n" + row);
+      assertFalse(row.substring(0, 40).contains("[U]"), "the submit entry is not begun:\n" + row);
+      assertFalse(row.substring(40).contains("["), "the bar never steps on the legend:\n" + row);
+      assertEquals(22, rowOfText(screen, "Fourth line."), "the log keeps its own rows:\n" + row);
     } finally {
       screen.stopScreen();
       screen.close();
@@ -2678,6 +2870,17 @@ class LanternaEncounterViewTest {
         true, 5, false, round, "");
   }
 
+  /** A round of a police inspection: attack, flee, submit or bribe. */
+  private static EncounterViewModel police(ShipPicture you, ShipPicture opponent, int round) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Submit, EncounterAction.Bribe),
+        false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100), "Police",
+        new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+        "The police requests to inspect.", "Choose an action.",
+        ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+        false, 5, false, round, "");
+  }
+
   /** How many times a glyph is on the screen. */
   private static int countGlyph(Screen screen, char glyph) {
     int count = 0;
@@ -2932,5 +3135,34 @@ class LanternaEncounterViewTest {
       text.append('\n');
     }
     return text.toString();
+  }
+
+  /** The last row of the screen (where the keys of the actions live). */
+  private static String lastScreenRow(Screen screen) {
+    int row = screen.getTerminalSize().getRows() - 1;
+    StringBuilder line = new StringBuilder();
+    for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {
+      line.append(screen.getBackCharacter(column, row).getCharacterString());
+    }
+    return line.toString();
+  }
+
+  /** The key the bar prints for an action, looked up by the name of the action. */
+  private static char keyShownFor(Screen screen, String name) {
+    String row = lastScreenRow(screen);
+    int at = row.indexOf("] " + name);
+    assertTrue(at > 0, "the bar prints " + name + ":\n" + row);
+    assertEquals('[', row.charAt(at - 2), "the key of " + name + " goes in brackets:\n" + row);
+    return row.charAt(at - 1);
+  }
+
+  /** Presses the key the bar prints for a name and checks it runs that action. */
+  private static void assertPrintedKeyRuns(LanternaEncounterView view, Screen screen,
+      List<EncounterAction> executed, String name, EncounterAction action) {
+    char key = keyShownFor(screen, name);
+    executed.clear();
+    view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(key, false, false));
+    assertEquals(List.of(action), executed,
+        "the printed key [" + Character.toUpperCase(key) + "] runs " + name);
   }
 }
