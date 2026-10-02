@@ -15,6 +15,7 @@ import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -71,6 +72,20 @@ public final class LanternaEncounterView implements EncounterView {
       Map.entry('s', EncounterAction.Surrender),
       Map.entry('t', EncounterAction.Trade),
       Map.entry('y', EncounterAction.Yield));
+
+  /** The reverse of the table above: the key of each action, for the scene to show it. */
+  private static final Map<EncounterAction, Character> ACTION_KEYS = invertKeys(KEYS);
+
+  private static Map<EncounterAction, Character> invertKeys(Map<Character, EncounterAction> keys) {
+    Map<EncounterAction, Character> inverted = new EnumMap<>(EncounterAction.class);
+    keys.forEach((key, action) -> inverted.put(action, key));
+    return Map.copyOf(inverted);
+  }
+
+  /** The key that runs an action, or {@code null} when the action has none. */
+  static Character keyOf(EncounterAction action) {
+    return ACTION_KEYS.get(action);
+  }
 
   private final WindowBasedTextGUI gui;
   private final Commands commands;

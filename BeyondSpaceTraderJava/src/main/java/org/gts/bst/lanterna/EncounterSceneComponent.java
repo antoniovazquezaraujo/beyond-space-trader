@@ -18,6 +18,7 @@ import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import java.util.ArrayList;
 import java.util.List;
+import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipCatalog;
@@ -936,6 +937,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     drawSpeech(graphics);
     drawLegend(graphics, width, height);
     drawLog(graphics, sceneWidth, height, logTop);
+    drawActionKeys(graphics, sceneWidth, height);
   }
 
   /** The column of the right: the pieces of both ships, each with its glyph. */
@@ -1252,6 +1254,58 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(leaving) {
       UiPalette.draw(graphics, 1, height - 1, "[ENTER] continue", UiPalette.WARN, width - 1);
     }
+  }
+
+  /**
+   * The keys of the actions available, at the bottom of the scene: one whole entry
+   * per action ({@code [X] Name}), in the order of {@link EncounterAction}, and none
+   * half-drawn. While the scene waits for the player that row keeps its leave key.
+   */
+  private void drawActionKeys(TextGUIGraphics graphics, int width, int height) {
+    if(leaving || model.actions().isEmpty()) {
+      return;
+    }
+    int available = width - 1;
+    StringBuilder bar = new StringBuilder();
+    for(EncounterAction action : EncounterAction.values()) {
+      if(!model.actions().contains(action)) {
+        continue;
+      }
+      Character key = LanternaEncounterView.keyOf(action);
+      if(key == null) {
+        // Every action of the encounter has a key: one without it is not shown.
+        continue;
+      }
+      String entry = (bar.length() == 0 ? "" : "  ") + "[" + Character.toUpperCase(key) + "] "
+          + actionName(action);
+      if(bar.length() + entry.length() > available) {
+        // The entry that does not fit is not offered half-way.
+        break;
+      }
+      bar.append(entry);
+    }
+    if(bar.length() > 0) {
+      UiPalette.keys(graphics, 1, height - 1, bar.toString(), available);
+    }
+  }
+
+  /** The name of an action, as the classic text UI wrote it. */
+  private static String actionName(EncounterAction action) {
+    return switch(action) {
+      case Attack -> Strings.EncounterActionAttack;
+      case Board -> Strings.EncounterActionBoard;
+      case Bribe -> Strings.EncounterActionBribe;
+      case Drink -> Strings.EncounterActionDrink;
+      case Flee -> Strings.EncounterActionFlee;
+      case Ignore -> Strings.EncounterActionIgnore;
+      case Interrupt -> Strings.EncounterActionInterrupt;
+      case Meet -> Strings.EncounterActionMeet;
+      case Plunder -> Strings.EncounterActionPlunder;
+      case Submit -> Strings.EncounterActionSubmit;
+      case Surrender -> Strings.EncounterActionSurrender;
+      case Trade -> Strings.EncounterActionTrade;
+      case Yield -> Strings.EncounterActionYield;
+    };
   }
 
   /** The left of a ship picture centred in a column. */

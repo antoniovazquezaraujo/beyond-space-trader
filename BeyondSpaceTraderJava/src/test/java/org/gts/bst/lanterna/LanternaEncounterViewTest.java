@@ -150,6 +150,108 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theSceneShowsTheKeysOfTheAvailableActions() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      String text = screenText(screen);
+      String attack = "[A] " + spacetrader.Strings.EncounterActionAttack;
+      assertTrue(text.contains(attack), "the attack key is shown:\n" + text);
+      assertTrue(text.contains("[F] " + spacetrader.Strings.EncounterActionFlee), text);
+      assertTrue(text.contains("[S] " + spacetrader.Strings.EncounterActionSurrender), text);
+      assertEquals(screen.getTerminalSize().getRows() - 1, rowOfText(screen, attack),
+          "the keys sit on the last row of the scene:\n" + text);
+      assertFalse(text.contains("[T]"), "the trader key is not offered in a fight:\n" + text);
+      assertFalse(text.contains("[I]"), "nor the ignore key:\n" + text);
+      assertFalse(text.contains("[ENTER] continue"), "the scene is not waiting:\n" + text);
+
+      // A new model with other actions refreshes the bar.
+      content.model(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Ignore, EncounterAction.Trade),
+          false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Trader", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The trader offers to deal.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+          false, 5, false, 1, ""));
+      gui.updateScreen();
+      text = screenText(screen);
+      assertTrue(text.contains("[T] " + spacetrader.Strings.EncounterActionTrade),
+          "the trader key replaces the old ones:\n" + text);
+      assertFalse(text.contains("[F]"), "the fight keys are gone:\n" + text);
+      assertFalse(text.contains("[S]"), "and no surrender with a trader:\n" + text);
+
+      // With no actions at all there is no bar.
+      content.model(new EncounterViewModel(
+          EnumSet.noneOf(EncounterAction.class),
+          false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Trader", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The trader is gone.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+          false, 5, false, 2, ""));
+      gui.updateScreen();
+      text = screenText(screen);
+      assertFalse(text.contains("["), "an empty set of actions draws no bar:\n" + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theWaitingSceneKeepsTheContinueKeyInsteadOfTheActionKeys() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+
+      content.awaitLeave();
+      gui.updateScreen();
+      String text = screenText(screen);
+      assertTrue(text.contains("[ENTER] continue"), "the leave key is shown:\n" + text);
+      assertEquals(screen.getTerminalSize().getRows() - 1, rowOfText(screen, "[ENTER] continue"),
+          "on the last row:\n" + text);
+      assertFalse(text.contains("[A] " + spacetrader.Strings.EncounterActionAttack),
+          "the bar is gone while the scene waits:\n" + text);
+      assertFalse(text.contains("[S]"), "and so are its keys:\n" + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theReactionOfTheOtherShipGoesWithItsPilot() {
     assertEquals(5, EncounterSceneComponent.reactionFrames(1), "a poor pilot is slow to react");
     assertEquals(3, EncounterSceneComponent.reactionFrames(5));

@@ -29,8 +29,11 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    estrellado detrás**, y **se elimina el formulario** (no se esconde debajo).
    Las dos naves enfrentadas, la tuya a la izquierda y la suya a la derecha
    (espejada), cada una con su casco y su escudo encima, el registro de texto
-   abajo (los textos de siempre). **Sin botones ni barra de acciones**: se
-   juega con la nave.
+   abajo (los textos de siempre). **Sin botones**: no hay formulario ni lista
+   que pulsar, pero la última fila de la escena muestra las acciones
+   disponibles con su tecla (`[A] Atacar`, `[F] Huir`, ...), en el orden del
+   enum, mientras se decide; cuando la escena espera (un resultado que leer),
+   esa fila es para `[ENTER] continue`. Se juega con la nave.
 
    ```
    ╔════════════════════════════════════════════════════════════════════╗
@@ -42,7 +45,7 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    ║                ·──→        ←──·                                    ║
    ║                                                                    ║
    ║ El pirata abre fuego y tu escudo aguanta.                          ║
-   ║                                                                    ║
+   ║ [A] Atacar  [F] Huir  [S] Rendirse                                 ║
    ╚════════════════════════════════════════════════════════════════════╝
    ```
 
@@ -61,14 +64,17 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    - **Destruido**: explosión y la nave queda a la deriva.
    - **Huida**: persecución animada; se gana cuando el juego lo dice (la
      distancia crece hasta perderse de vista).
-3. **Los mandos: se juega con la nave, sin botones.** No hay barra de acciones
-   ni formularios que contestar:
+3. **Los mandos: se juega con la nave, sin botones.** No hay formularios que
+   contestar (la última fila recuerda las acciones ofrecidas y su tecla):
    - `espacio` **dispara** (una ronda por disparo; repetir es el ataque
      continuo del clásico).
    - `↑` / `↓` **esquivan**: subir o bajar, y la otra nave responde según el
      veredicto del juego.
    - `←` **huye** (te alejas; el juego decide si te sigue o te pierde de
      vista); `→` **acerca** la nave a la otra.
+   - La **barra de abajo** solo recuerda lo que se puede hacer: las acciones
+     que el juego ofrece en ese momento y su tecla (`[A]`, `[F]`, `[S]`…), sin
+     añadir botones ni cambiar los mandos.
    - Las decisiones del clásico se toman **volando**: acercarse es aceptar (el
      **registro policial**, con su escáner; la oferta del comerciante, con su
      **pasarela**; el encuentro con un capitán; el **abordaje** de una nave
