@@ -2,10 +2,10 @@
 type=Termite
 chasis=hauler
 group=R x=7 y=1 n=1
-group=C x=23 y=4 n=1
-group=A x=31 y=3 n=1
-group=A x=32 y=4 n=1
 group=P x=12 y=3 n=1
+group=A x=31 y=3 n=1
+group=C x=23 y=4 n=1
+group=A x=32 y=4 n=1
 group=D x=12 y=5 n=1
 group=M x=13 y=5 n=2
 group=B x=20 y=5 n=7
@@ -15,10 +15,10 @@ group=E x=27 y=6 n=1
 type=Bumblebee
 chasis=corvette
 group=R x=6 y=1 n=1
-group=C x=19 y=4 n=1
-group=A x=25 y=3 n=1
-group=A x=26 y=4 n=1
 group=P x=10 y=3 n=1
+group=A x=25 y=3 n=1
+group=C x=19 y=4 n=1
+group=A x=26 y=4 n=1
 group=D x=10 y=5 n=1
 group=M x=11 y=5 n=2
 group=B x=16 y=5 n=6
@@ -80,21 +80,25 @@ group=G x=14 y=2 n=1
 group=E x=21 y=2 n=1
 group=M x=12 y=3 n=2
 group=A x=21 y=3 n=1
-;; provisional: these six only carry the type and a chassis; paint their sites in the editor
 [flea]
-type=Flea
+type=Bumblebee
 chasis=drone
-group=R x=20 y=0 n=2
-group=C x=28 y=0 n=2
-group=P x=4 y=2 n=2
-group=B x=14 y=2 n=10
-group=E x=40 y=2 n=2
-group=D x=22 y=4 n=2
-group=G x=24 y=4 n=2
-group=G x=28 y=4 n=2
-group=E x=42 y=4 n=2
-group=M x=24 y=5 n=4
-group=A x=42 y=5 n=2
+group=R x=16 y=0 n=1
+group=C x=33 y=2 n=1
+group=G x=4 y=3 n=1
+group=G x=6 y=3 n=1
+group=B x=8 y=4 n=1
+group=B x=10 y=4 n=1
+group=B x=12 y=4 n=1
+group=D x=22 y=4 n=1
+group=P x=2 y=5 n=1
+group=B x=9 y=5 n=1
+group=B x=11 y=5 n=1
+group=M x=24 y=5 n=1
+group=M x=26 y=5 n=1
+group=A x=42 y=5 n=1
+group=E x=29 y=6 n=1
+group=E x=32 y=6 n=1
 [gnat]
 type=Gnat
 chasis=shuttle
@@ -127,10 +131,9 @@ group=A x=19 y=4 n=1
 type=Beetle
 chasis=gunship
 group=R x=4 y=1 n=1
-group=C x=12 y=2 n=1
-group=A x=16 y=2 n=1
-group=A x=17 y=2 n=1
 group=P x=6 y=2 n=1
+group=C x=12 y=2 n=1
+group=A x=16 y=2 n=2
 group=D x=6 y=3 n=1
 group=M x=7 y=3 n=1
 group=B x=10 y=3 n=4
@@ -140,14 +143,15 @@ group=E x=14 y=4 n=1
 type=Hornet
 chasis=carrier
 group=R x=6 y=1 n=1
-group=C x=20 y=3 n=1
-group=A x=27 y=2 n=1
-group=A x=28 y=3 n=1
 group=P x=11 y=2 n=1
+group=A x=27 y=2 n=1
+group=C x=20 y=3 n=1
+group=A x=28 y=3 n=1
 group=D x=11 y=4 n=1
 group=M x=12 y=4 n=2
-group=B x=17 y=4 n=6
+group=B x=17 y=4 n=2
 group=G x=19 y=4 n=1
+group=B x=20 y=4 n=3
 group=E x=23 y=4 n=1
 [wasp]
 type=Wasp
@@ -159,20 +163,19 @@ group=A x=29 y=3 n=1
 group=A x=29 y=4 n=1
 group=D x=13 y=5 n=2
 group=M x=22 y=5 n=3
-
-;; the special ships: provisional chassis and sites, to be drawn in the editor
 [dragonfly]
 type=Dragonfly
 chasis=clipper
 group=R x=6 y=1 n=1
-group=C x=20 y=3 n=1
-group=A x=27 y=2 n=1
-group=A x=28 y=3 n=1
 group=P x=11 y=2 n=1
+group=A x=27 y=2 n=1
+group=C x=20 y=3 n=1
+group=A x=28 y=3 n=1
 group=D x=11 y=4 n=1
 group=M x=12 y=4 n=2
-group=B x=17 y=4 n=6
+group=B x=17 y=4 n=2
 group=G x=19 y=4 n=1
+group=B x=20 y=4 n=3
 group=E x=23 y=4 n=1
 [bottle]
 type=Bottle
@@ -192,10 +195,9 @@ group=A x=21 y=3 n=1
 type=Mantis
 chasis=frigate
 group=R x=5 y=1 n=1
-group=C x=15 y=2 n=1
-group=A x=19 y=2 n=1
-group=A x=20 y=2 n=1
 group=P x=8 y=2 n=1
+group=C x=15 y=2 n=1
+group=A x=19 y=2 n=2
 group=D x=8 y=3 n=1
 group=M x=9 y=3 n=2
 group=B x=12 y=3 n=5
@@ -207,8 +209,6 @@ chasis=freighter
 group=R x=5 y=1 n=1
 group=P x=8 y=3 n=1
 group=C x=15 y=3 n=1
-group=D x=8 y=4 n=1
-group=D x=8 y=4 n=1
 group=M x=8 y=4 n=2
 group=B x=12 y=4 n=5
 group=A x=34 y=4 n=1
@@ -247,19 +247,17 @@ group=D x=32 y=9 n=2
 group=E x=46 y=9 n=1
 group=E x=43 y=10 n=1
 group=E x=37 y=11 n=1
-[custom]
-type=Custom
-chasis=dreadnought
-group=R x=23 y=1 n=1
-group=C x=35 y=5 n=1
-group=A x=44 y=6 n=1
-group=M x=30 y=7 n=3
-group=G x=38 y=7 n=1
-group=G x=40 y=7 n=1
-group=B x=13 y=8 n=5
-group=P x=5 y=9 n=1
-group=B x=13 y=9 n=3
-group=D x=32 y=9 n=2
-group=E x=46 y=9 n=1
-group=E x=43 y=10 n=1
-group=E x=37 y=11 n=1
+[Ferro]
+type=Scorpion
+chasis=drone
+group=R x=5 y=0 n=1
+group=A x=35 y=2 n=1
+group=M x=4 y=3 n=3
+group=D x=12 y=3 n=2
+group=C x=34 y=3 n=1
+group=B x=9 y=4 n=2
+group=A x=40 y=4 n=1
+group=B x=9 y=5 n=3
+group=G x=29 y=5 n=2
+group=E x=14 y=6 n=1
+group=E x=30 y=6 n=1
