@@ -89,6 +89,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** Cells the ship that ignores us crosses on every frame: it just goes on. */
   private static final int IGNORE_SPEED = 3;
   private static final int LEGEND_COLUMNS = 24;
+  /**
+   * The order of the key bar: the actions of the enum, but the interrupt at the
+   * end. The interrupt is a control of the automatic fight, not a decision of the
+   * encounter, so it is the first entry to fall when the bar runs out of room.
+   */
+  private static final EncounterAction[] BAR_ORDER = barOrder();
 
   /** A beam: the shot of a ship, a line of light from its nose to where the game says. */
   private record Beam(int x1, int y1, int x2, int y2, TextColor color, int frames) {
@@ -1258,8 +1264,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /**
    * The keys of the actions available, at the bottom of the scene: one whole entry
-   * per action ({@code [X] Name}), in the order of {@link EncounterAction}, and none
-   * half-drawn. While the scene waits for the player that row keeps its leave key.
+   * per action ({@code [X] Name}), in the order of the enum except the interrupt,
+   * which goes last (it is a control, not a decision: the first to fall when the
+   * bar runs out of room, see {@link #BAR_ORDER}), and none half-drawn. While the
+   * scene waits for the player that row keeps its leave key.
    */
   private void drawActionKeys(TextGUIGraphics graphics, int width, int height) {
     if(leaving || model.actions().isEmpty()) {
@@ -1267,7 +1275,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     }
     int available = width - 1;
     StringBuilder bar = new StringBuilder();
-    for(EncounterAction action : EncounterAction.values()) {
+    for(EncounterAction action : BAR_ORDER) {
       if(!model.actions().contains(action)) {
         continue;
       }
@@ -1287,6 +1295,22 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(bar.length() > 0) {
       UiPalette.keys(graphics, 1, height - 1, bar.toString(), available);
     }
+  }
+
+  /**
+   * Builds {@link #BAR_ORDER}: the actions of the enum in their order, with the
+   * interrupt moved to the end.
+   */
+  private static EncounterAction[] barOrder() {
+    EncounterAction[] order = new EncounterAction[EncounterAction.values().length];
+    int at = 0;
+    for(EncounterAction action : EncounterAction.values()) {
+      if(action != EncounterAction.Interrupt) {
+        order[at++] = action;
+      }
+    }
+    order[at] = EncounterAction.Interrupt;
+    return order;
   }
 
   /** The name of an action, as the classic text UI wrote it. */

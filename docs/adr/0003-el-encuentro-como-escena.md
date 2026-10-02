@@ -32,8 +32,10 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    abajo (los textos de siempre). **Sin botones**: no hay formulario ni lista
    que pulsar, pero la última fila de la escena muestra las acciones
    disponibles con su tecla (`[A] Atacar`, `[F] Huir`, ...), en el orden del
-   enum, mientras se decide; cuando la escena espera (un resultado que leer),
-   esa fila es para `[ENTER] continue`. Se juega con la nave.
+   enum salvo `[X] Interrumpir`, que va al final por ser un control (no una
+   decisión) y es el primero que cae si el sitio no da para todo, mientras se
+   decide; cuando la escena espera (un resultado que leer), esa fila es para
+   `[ENTER] continue`. Se juega con la nave.
 
    ```
    ╔════════════════════════════════════════════════════════════════════╗
@@ -73,7 +75,8 @@ cambian las reglas: se juega lo mismo que el clásico, con otra interfaz.
    - `←` **huye** (te alejas; el juego decide si te sigue o te pierde de
      vista); `→` **acerca** la nave a la otra.
    - La **barra de abajo** solo recuerda lo que se puede hacer: las acciones
-     que el juego ofrece en ese momento y su tecla (`[A]`, `[F]`, `[S]`…), sin
+     que el juego ofrece en ese momento y su tecla (`[A]`, `[F]`, `[S]`…, con
+     `[X]` al final: es un control, el primero en caer si falta sitio), sin
      añadir botones ni cambiar los mandos.
    - Las decisiones del clásico se toman **volando**: acercarse es aceptar (el
      **registro policial**, con su escáner; la oferta del comerciante, con su

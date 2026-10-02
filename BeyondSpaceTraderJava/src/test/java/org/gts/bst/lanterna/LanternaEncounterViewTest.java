@@ -444,6 +444,66 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theDecisionsAreOfferedBeforeTheInterruptWhenTheBarRunsOutOfRoom() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(70, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false);
+      content.setPreferredSize(new TerminalSize(70, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+
+      // Arrange: the automatic fight adds the interrupt to the decisions of a
+      // police inspection, in a bar where the five entries do not fit (terminal
+      // 70x24: scene width 46, 45 cells for the bar).
+      content.model(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Bribe, EncounterAction.Flee,
+              EncounterAction.Interrupt, EncounterAction.Submit),
+          true, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Police", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The police requests to inspect.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+          false, 5, false, 0, ""));
+
+      // Act: the last row of the scene is painted.
+      gui.updateScreen();
+      String row = lastScreenRow(screen);
+
+      // Assert: the decisions keep the order of the enum and are all offered; the
+      // interrupt waits at the end and, with no room left, it is the entry that
+      // falls (never a decision).
+      String attack = "[A] " + spacetrader.Strings.EncounterActionAttack;
+      String bribe = "[B] " + spacetrader.Strings.EncounterActionBribe;
+      String flee = "[F] " + spacetrader.Strings.EncounterActionFlee;
+      String submit = "[U] " + spacetrader.Strings.EncounterActionSubmit;
+      assertTrue(row.contains(attack), "the attack key:\n" + row);
+      assertTrue(row.contains(bribe), "the bribe key:\n" + row);
+      assertTrue(row.contains(flee), "the flee key:\n" + row);
+      assertTrue(row.contains(submit), "the decision is not the one left out:\n" + row);
+      assertTrue(row.indexOf(attack) < row.indexOf(bribe), "attack before bribe:\n" + row);
+      assertTrue(row.indexOf(bribe) < row.indexOf(flee), "bribe before flee:\n" + row);
+      assertTrue(row.indexOf(flee) < row.indexOf(submit), "flee before submit:\n" + row);
+      assertFalse(row.substring(0, 46).contains("[X]"), "the interrupt falls first:\n" + row);
+      assertEquals(4, row.substring(0, 46).chars().filter(character -> character == '[').count(),
+          "one whole entry per decision, with none half-drawn:\n" + row);
+      assertFalse(row.substring(46).contains("["), "the bar never steps on the legend:\n" + row);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theReactionOfTheOtherShipGoesWithItsPilot() {
     assertEquals(5, EncounterSceneComponent.reactionFrames(1), "a poor pilot is slow to react");
     assertEquals(3, EncounterSceneComponent.reactionFrames(5));
