@@ -891,6 +891,50 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void theRealWideShipsDoNotAskToFleeFromTheSpawn() throws IOException {
+    // The original repro: real art at 80x24, where the cropped Flea (44) and
+    // Wasp (54) are wider than their half (27) and spawn parked on the left edge.
+    for(ShipType type : List.of(ShipType.Flea, ShipType.Wasp)) {
+      Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+      screen.startScreen();
+      try {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        gui.setTheme(LanternaTheme.create());
+        List<EncounterAction> executed = new ArrayList<>();
+        LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+        ShipPicture you = ShipCatalog.shared().picture(type, List.of(), 0);
+        ShipPicture opponent = new ShipCatalog(List.of(),
+            ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+            .picture(ShipType.Scorpion, List.of(), 0);
+        assertTrue(you.cropped().width() > 27, type + " is wider than its half at 80x24");
+        view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+        gui.addWindow(view.asWindow());
+        gui.updateScreen();
+        EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+        for(int i = 0; i < 14 + 5; i++) {
+          content.tick();
+        }
+        gui.updateScreen();
+        assertTrue(executed.isEmpty(),
+            type + " parked at the edge does not ask to flee by itself: " + executed);
+
+        // The real dash (the half turn and away) does ask, at the edge it is on.
+        view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+        view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+        for(int i = 0; i < 3; i++) {
+          content.tick();
+        }
+        gui.updateScreen();
+        assertEquals(List.of(EncounterAction.Flee), executed, type + " asks to flee on the real dash");
+        assertFalse(content.exitedRight(), type + " dashes to its left edge");
+      } finally {
+        screen.stopScreen();
+        screen.close();
+      }
+    }
+  }
+
+  @Test
   void aFailedEscapeBringsTheOtherShipCloser() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
