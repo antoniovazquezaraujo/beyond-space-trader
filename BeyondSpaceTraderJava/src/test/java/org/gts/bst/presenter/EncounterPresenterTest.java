@@ -16,11 +16,14 @@ import java.util.List;
 import java.util.Set;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
+import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
+import org.gts.bst.ship.equip.Gadget;
+import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
@@ -32,7 +35,9 @@ import spacetrader.SpecialEvent;
 import spacetrader.Strings;
 import spacetrader.TestDialogService;
 import spacetrader.enums.AlertType;
+import spacetrader.enums.SkillType;
 import spacetrader.enums.StarSystemId;
+import spacetrader.enums.TechLevel;
 
 
 class EncounterPresenterTest {
@@ -225,6 +230,89 @@ class EncounterPresenterTest {
     assertTrue(view.closed);
     assertEquals(EncounterResult.Arrested, presenter.result());
     assertTrue(dialogs.alerts().contains(AlertType.EncounterPoliceSurrender), dialogs.alerts().toString());
+  }
+
+  @Test
+  void surrenderingToAPirateWithNoFreeBaysTakesNothing() {
+    Game game = newGame();
+    game.Commander().getShip().Cargo()[0] = 2;
+    // The pirate sails with its holds full: it has no room for the loot.
+    Ship pirate = new Ship(ShipType.Scorpion);
+    pirate.Cargo()[0] = pirate.FreeCargoBays();
+    game.encounter().setOpponent(pirate);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertEquals(0, pirate.FreeCargoBays(), "the pirate has no room for the loot");
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertFalse(view.lootedCargo, "with no room, no box crossed");
+    assertEquals(2, game.Commander().getShip().Cargo()[0], "the cargo stays on board");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToAPirateWithTheCargoInSecretBaysIsNotALooting() {
+    Game game = newGame();
+    Ship ship = game.Commander().getShip();
+    ship.AddEquipment(new Gadget(GadgetType.HiddenCargoBays, SkillType.NA, 60000, TechLevel.t8, 0));
+    ship.Cargo()[0] = ship.HiddenCargoBays();
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(ship.HasGadget(GadgetType.HiddenCargoBays), "the ship carries secret holds");
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertFalse(view.lootedCargo, "the pirate finds nothing in the secret holds");
+    assertEquals(5, ship.Cargo()[0], "the cargo stays hidden on board");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToAPirateWithHiddenBaysLootsOnlyWhatItCanFind() {
+    Game game = newGame();
+    Ship ship = game.Commander().getShip();
+    ship.AddEquipment(new Gadget(GadgetType.HiddenCargoBays, SkillType.NA, 60000, TechLevel.t8, 0));
+    // One bay in the open, the rest in the secret holds.
+    ship.Cargo()[0] = ship.HiddenCargoBays() + 1;
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertTrue(view.lootedCargo, "the open bay is looted");
+    assertEquals(5, ship.Cargo()[0], "the secret holds keep their cargo");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void aPirateRefusesTheSurrenderOfThePrincessWithoutSecretBays() {
+    TestDialogService dialogs = new TestDialogService();
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    // The princess needs quarters of her own, and the ship no secret holds.
+    Ship ship = new Ship(ShipType.Beetle);
+    ship.Crew()[1] = game.Mercenaries()[CrewMemberId.Princess.CastToInt()];
+    game.Commander().setShip(ship);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertFalse(view.lootedCalled, "a refused surrender is not a looting");
+    assertFalse(view.closed, "the encounter stays open for another decision");
+    assertEquals(EncounterResult.Continue, presenter.result());
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPiratesSurrenderPrincess), dialogs.alerts().toString());
   }
 
   @Test

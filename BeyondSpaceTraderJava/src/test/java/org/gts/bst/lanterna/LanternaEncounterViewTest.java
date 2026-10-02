@@ -2592,16 +2592,77 @@ class LanternaEncounterViewTest {
       assertTrue(screenText(screen).contains("[ENTER] continue"),
           "the leave key is shown:\n" + screenText(screen));
 
+      // No catwalk goes out during the whole wait (checking every frame: a
+      // catwalk that comes out and goes back in is still a catwalk).
+      boolean catwalk = false;
+      boolean boxes = false;
       for(int i = 0; i < 40; i++) {
         content.tick();
         gui.updateScreen();
+        catwalk |= screenText(screen).contains("═");
+        boxes |= screenText(screen).contains("■");
       }
-      assertFalse(screenText(screen).contains("═"), "no catwalk without cargo:\n" + screenText(screen));
-      assertFalse(screenText(screen).contains("■"), "and no boxes cross it");
+      assertFalse(catwalk, "no catwalk without cargo:\n" + screenText(screen));
+      assertFalse(boxes, "and no boxes cross it");
 
       // Escape leaves the scene too.
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       assertFalse(gui.getWindows().contains(view.asWindow()), "the player leaves the scene");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aPirateLootingWaitsAndFlyingAwayLeavesTheScene() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // The scene waits after the looting: the keys of decision no longer fight.
+      view.looted(true);
+      view.close();
+      gui.updateScreen();
+      for(int i = 0; i < 60 && !content.catwalkGone(); i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertTrue(content.catwalkGone(), "the looting is played out");
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('a', false, false));
+      gui.updateScreen();
+      assertTrue(gui.getWindows().contains(view.asWindow()), "the scene is still waiting");
+      assertTrue(executed.isEmpty(), "the wait does not fight: " + executed);
+
+      // Flying away (dashing to the edge) is the third way out: it leaves
+      // without asking the game for another action.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowLeft));
+      for(int i = 0; i < 60 && gui.getWindows().contains(view.asWindow()); i++) {
+        content.tick();
+        gui.updateScreen();
+      }
+      assertFalse(gui.getWindows().contains(view.asWindow()), "flying away leaves the scene");
+      assertTrue(executed.isEmpty(), "and does not fire an action: " + executed);
     } finally {
       screen.stopScreen();
       screen.close();
