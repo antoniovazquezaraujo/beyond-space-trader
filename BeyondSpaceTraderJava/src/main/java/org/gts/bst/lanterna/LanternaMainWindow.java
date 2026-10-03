@@ -1468,7 +1468,7 @@ public final class LanternaMainWindow
   StarSystem warpTarget(Game game) {
     StarSystem current = game.Commander().CurrentSystem();
     StarSystem target = game.WarpSystem();
-    if(target == null || target == current) {
+    if(current != null && (target == null || target == current)) {
       StarSystem pair = Functions.WormholeTarget(current.Id().CastToInt());
       if(pair != null) {
         game.SelectedSystemId(current.Id());
