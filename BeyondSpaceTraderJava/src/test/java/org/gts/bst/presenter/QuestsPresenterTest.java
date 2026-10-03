@@ -47,6 +47,28 @@ class QuestsPresenterTest {
   }
 
   @Test
+  void theHiddenBaysQuestFollowsTheSculpture() {
+    Game game = newGame();
+    game.setQuestStatusSculpture(SpecialEvent.StatusSculptureDelivered);
+    RecordingView view = new RecordingView();
+
+    new QuestsPresenter(game, view).update();
+
+    assertEquals(Strings.QuestSculptureHiddenBays, view.model.text());
+  }
+
+  @Test
+  void aDeliveredReactorDoesNotShowTheHiddenBaysQuest() {
+    Game game = newGame();
+    game.setQuestStatusReactor(SpecialEvent.StatusReactorDelivered);
+    RecordingView view = new RecordingView();
+
+    new QuestsPresenter(game, view).update();
+
+    assertEquals(Strings.QuestReactorLaser, view.model.text());
+  }
+
+  @Test
   void listsTribblesAsAQuest() {
     Game game = newGame();
     game.Commander().getShip().setTribbles(3);

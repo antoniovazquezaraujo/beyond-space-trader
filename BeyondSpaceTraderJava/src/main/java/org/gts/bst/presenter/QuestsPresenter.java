@@ -136,7 +136,7 @@ public class QuestsPresenter {
     }
     if(game.Commander().getShip().SculptureOnBoard()) {
       quests.add(Strings.QuestSculpture);
-    } else if(game.getQuestStatusReactor() == SpecialEvent.StatusReactorDelivered) {
+    } else if(game.getQuestStatusSculpture() == SpecialEvent.StatusSculptureDelivered) {
       quests.add(Strings.QuestSculptureHiddenBays);
     }
     if(game.getQuestStatusArtifact() == SpecialEvent.StatusArtifactOnBoard) {
