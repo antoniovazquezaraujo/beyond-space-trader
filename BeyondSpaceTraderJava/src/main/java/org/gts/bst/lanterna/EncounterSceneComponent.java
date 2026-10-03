@@ -1312,7 +1312,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     UiPalette.reset(graphics);
   }
 
-  /** The parallax starfield of the title screen, as the backdrop of the fight. */
+  /** The parallax starfield of the fight, in braille with grey shades. */
   private void drawStars(TextGUIGraphics graphics, int width, int height) {
     int columns = Math.max(1, width - 1);
     int rows = Math.max(1, height - 1);

@@ -148,7 +148,7 @@ public final class LanternaEncounterView implements EncounterView {
     content.setPreferredSize(new TerminalSize(120, 30));
     window.setComponent(content);
     window.setFocusedInteractable(content);
-    // The sky moves like the one of the title screen, with its own clock.
+    // The sky of the fight moves with its own clock, from the encounter timer.
     stars = new Timer("encounter-stars", true);
     stars.scheduleAtFixedRate(new TimerTask() {
       @Override
