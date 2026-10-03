@@ -251,6 +251,20 @@ public final class ShipEditorView extends ArtEditorWindow {
     return max < 0 ? "?" : there + "/" + max;
   }
 
+  /** The colour of a mark: yellow when missing, the red of the palette when over, lime when just right. */
+  private static TextColor markColor(String mark) {
+    switch(mark) {
+      case "⚠":
+        return TextColor.ANSI.YELLOW;
+      case "✗":
+        return UiPalette.BAD;
+      case "✓":
+        return TextColor.ANSI.GREEN_BRIGHT;
+      default:
+        return TextColor.ANSI.WHITE;
+    }
+  }
+
   /** Space: any letter in the cell is erased; if it is empty, the pen is painted; the cursor moves right. */
   private void toggleCell() {
     char current = grid.at(cursorX, cursorY);
@@ -632,8 +646,7 @@ public final class ShipEditorView extends ArtEditorWindow {
         graphics.setForegroundColor(TextColor.ANSI.BLACK);
         graphics.setBackgroundColor(TextColor.ANSI.WHITE);
       } else {
-        graphics.setForegroundColor(mark.equals("⚠") || mark.equals("✗") ? TextColor.ANSI.YELLOW
-            : TextColor.ANSI.WHITE);
+        graphics.setForegroundColor(markColor(mark));
       }
       String text = EditorText.padLeft(String.valueOf(i + 1), numberColumn) + "  " + letter + "  "
           + EditorText.padRight(elementName(letter), elementColumn) + "  "

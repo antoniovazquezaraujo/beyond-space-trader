@@ -345,8 +345,11 @@ highlighted and `y` cycles its type. Then come the numbered elements: `n` and
 `p` move through them and the keys `1` to `9` pick one directly. Each element
 is a piece key the game may fill a site with, one column per field (number, key,
 name, `have/max` and mark: `1  A  Weapon  1/2  ⚠`), where the mark is `✓`
-right, `⚠` missing, `✗` over and `?` without a type; then come the hull with
-its colours and the same ship with the real pieces painted over it.
+right, `⚠` missing, `✗` over and `?` without a type. The sign colours the
+**whole row**: yellow when missing, red when over and lime when just right,
+while `?` (the type fixes no maximum) stays plain; the selected row keeps its
+inverted highlight over that colour. Then come the hull with its colours and
+the same ship with the real pieces painted over it.
 
 | Key | Action |
 | --- | --- |

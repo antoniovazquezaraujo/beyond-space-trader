@@ -626,9 +626,66 @@ class ShipEditorViewTest {
           "the have/max column: " + screenText(screen));
       assertEquals(lines[weapon].indexOf("⚠"), lines[shield].indexOf("✗"),
           "the mark column: " + screenText(screen));
-      assertEquals(TextColor.ANSI.YELLOW,
+      assertEquals(TextColor.ANSI.RED,
           screen.getFrontCharacter(lines[shield].indexOf('✗'), shield).getForegroundColor(),
-          "the over-quota mark warns: " + screenText(screen));
+          "the over-quota mark warns in red: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void coloursTheWholeElementRowByTheSignOfItsCount() throws IOException {
+    // Arrange: one element of each sign: a weapon missing, two shields over the
+    // quota, the engine just right and a piece whose kind fixes no limit
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader(
+        "[prueba]\ntype=Firefly\nchasis=uno\n"
+        + "group=E x=2 y=2 n=2\ngroup=M x=4 y=2\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n"
+        + "[Energy Shield]\nkey=E\ncolor=cyan\nE\n"
+        + "[Engine]\nkey=M\ncolor=white\nM\n"
+        + "[Rare Piece]\nkey=X\ncolor=white\nX\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+
+      // Act: the pen starts on the weapon, which is thus selected
+      gui.updateScreen();
+
+      // Assert: the three other rows take the colour of their mark
+      String[] lines = screenText(screen).split("\n", -1);
+      int weapon = panelRowWith(screen, "1  A  Weapon  0/1  ⚠");
+      int shield = panelRowWith(screen, "2  E  Shield  2/1  ✗");
+      int engine = panelRowWith(screen, "3  M  Engine  1/1  ✓");
+      int part = panelRowWith(screen, "4  X  Part");
+      assertTrue(weapon >= 0 && shield >= 0 && engine >= 0 && part >= 0, screenText(screen));
+      assertTrue(lines[part].contains("4  X  Part      ?  ?"), "the piece without a limit: " + screenText(screen));
+      assertRowColour(screen, lines, weapon, TextColor.ANSI.BLACK, "the selected weapon");
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, weapon).getBackgroundColor(),
+          "the selected weapon stays inverted: " + screenText(screen));
+      assertRowColour(screen, lines, shield, TextColor.ANSI.RED, "the over-quota shield");
+      assertRowColour(screen, lines, engine, TextColor.ANSI.GREEN_BRIGHT, "the engine just right");
+      assertRowColour(screen, lines, part, TextColor.ANSI.WHITE, "the piece without a limit");
+
+      // Act: pick the shield; the weapon row now shows its own warning colour
+      view.handleKey(new KeyStroke('2', false, false));
+      gui.updateScreen();
+
+      // Assert: the yellow fills the weapon row; the selected shield stays inverted
+      lines = screenText(screen).split("\n", -1);
+      weapon = panelRowWith(screen, "1  A  Weapon  0/1  ⚠");
+      shield = panelRowWith(screen, "2  E  Shield  2/1  ✗");
+      assertRowColour(screen, lines, weapon, TextColor.ANSI.YELLOW, "the missing weapon");
+      assertRowColour(screen, lines, shield, TextColor.ANSI.BLACK, "the selected shield");
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, shield).getBackgroundColor(),
+          "the selected shield stays inverted: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -700,11 +757,11 @@ class ShipEditorViewTest {
       assertTrue(screenText(screen).contains("1  A  Weapon  0/0  ✓"), screenText(screen));
       assertEquals(TextColor.ANSI.YELLOW, screen.getFrontCharacter(1, warningRow).getForegroundColor(),
           "the warning is yellow: " + screenText(screen));
-      assertEquals(TextColor.ANSI.WHITE, screen.getFrontCharacter(1, weapon).getForegroundColor(),
-          "the row under the warning is not yellow: " + screenText(screen));
+      assertEquals(TextColor.ANSI.GREEN_BRIGHT, screen.getFrontCharacter(1, weapon).getForegroundColor(),
+          "the row under the warning takes the colour of its own mark: " + screenText(screen));
       String[] lines = screenText(screen).split("\n", -1);
       int mark = lines[weapon].indexOf('✓');
-      assertEquals(TextColor.ANSI.WHITE, screen.getFrontCharacter(mark, weapon).getForegroundColor(),
+      assertEquals(TextColor.ANSI.GREEN_BRIGHT, screen.getFrontCharacter(mark, weapon).getForegroundColor(),
           "the mark is not yellow either: " + screenText(screen));
     } finally {
       screen.stopScreen();
@@ -788,6 +845,16 @@ class ShipEditorViewTest {
       }
     }
     return false;
+  }
+
+  /** Checks that every cell of a panel row, from the left border to the divider, keeps a colour. */
+  private static void assertRowColour(Screen screen, String[] lines, int row, TextColor color, String what) {
+    int divider = lines[row].indexOf('│', 1);
+    assertTrue(divider > 1, screenText(screen));
+    for(int x = 1; x < divider; x++) {
+      assertEquals(color, screen.getFrontCharacter(x, row).getForegroundColor(),
+          what + " at x=" + x + ": " + screenText(screen));
+    }
   }
 
   private static int panelRowOf(Screen screen, String text) {
