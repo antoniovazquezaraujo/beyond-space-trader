@@ -63,7 +63,7 @@ public final class LanternaApp {
           () -> newGame(gui, window, dialogs, game),
           () -> saveGame(gui, dialogs, game[0], window),
           () -> loadGame(gui, window, dialogs, game));
-      // The game starts on the title screen: the logo, the starfield and the menu.
+      // The game starts on the title screen: the splash and the menu.
       // "New game (F2)" or "Load (F9)" bring a game in.
       MainPresenter presenter = new MainPresenter(() -> game[0], window);
       dialogs.quietTo(window::alertLog);

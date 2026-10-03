@@ -96,8 +96,8 @@ class LanternaMainWindowTest {
   }
 
   @Test
-  void theTitleLogoKeepsItsShape() throws IOException {
-    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+  void theTitleLogoKeepsItsShapeWhenTheSplashDoesNotFit() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 15)));
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -109,14 +109,17 @@ class LanternaMainWindowTest {
       gui.addWindow(window.asWindow());
       gui.updateScreen();
 
+      // The splash is taller than the screen: the banner is the fallback.
+      TitleSplash splash = TitleSplash.shared();
+      assertTrue(splash == null || splash.height() > 15, "the splash does not fit on this screen");
       String[] lines = Strings.MainBanner.split("\n", -1);
       int block = 0;
       for(String line : lines) {
         block = Math.max(block, line.length());
       }
-      int left = 1 + (100 - block) / 2;
+      int left = 1 + (60 - block) / 2;
       int top = -1;
-      for(int y = 0; y < 30; y++) {
+      for(int y = 0; y < 15; y++) {
         if(row(screen, y).contains(lines[0])) {
           top = y;
           break;
@@ -124,7 +127,7 @@ class LanternaMainWindowTest {
       }
       assertTrue(top >= 0, "the logo is on the title screen:\n" + screenText(screen));
       // The block is centred as a whole: every line starts on the same column,
-      // so the ASCII art keeps its shape under the stars.
+      // so the ASCII art keeps its shape.
       for(int i = 0; i < lines.length; i++) {
         assertEquals(lines[i], row(screen, top + i).substring(left, left + lines[i].length()),
             "the logo keeps its shape, line " + i + ":\n" + screenText(screen));
@@ -169,7 +172,7 @@ class LanternaMainWindowTest {
   }
 
   @Test
-  void showsTheBannerOnTheEmptyScreen() throws IOException {
+  void showsTheSplashOnTheTitleScreen() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
@@ -182,10 +185,32 @@ class LanternaMainWindowTest {
       gui.addWindow(window.asWindow());
       gui.updateScreen();
 
+      TitleSplash splash = TitleSplash.shared();
+      assertNotNull(splash, "the splash resource is packaged");
       assertTrue(screenText(screen).contains("Beyond"), screenText(screen));
       assertTrue(screenText(screen).contains("Space Trader"), screenText(screen));
-      assertTrue(screenText(screen).chars().anyMatch(c -> c >= 0x2800 && c <= 0x28FF),
-          "the starfield is drawn in braille");
+
+      int left = (100 - splash.width()) / 2;
+      int top = (30 - splash.height()) / 2;
+      int[] planet = inkOf(splash, TextColor.ANSI.GREEN);
+      int[] moon = inkOf(splash, TextColor.ANSI.YELLOW);
+      assertNotNull(planet, "the splash draws the planet in green");
+      assertNotNull(moon, "the splash draws the moon in yellow");
+      assertEquals(TextColor.ANSI.GREEN, foregroundAt(screen, left + planet[0], top + planet[1]),
+          "the planet cell is green");
+      assertEquals(TextColor.ANSI.BLACK,
+          screen.getBackCharacter(left + planet[0], top + planet[1]).getBackgroundColor(),
+          "the sky behind the splash stays black");
+      assertEquals(TextColor.ANSI.YELLOW, foregroundAt(screen, left + moon[0], top + moon[1]),
+          "the moon cell is yellow");
+
+      // The block is centred: the logo line lands where the splash puts it.
+      int logoRow = rowOf(splash, "Beyond");
+      int[] beyond = find(screen, "Beyond");
+      assertNotNull(beyond, screenText(screen));
+      assertEquals(left + splash.lines().get(logoRow).indexOf("Beyond"), beyond[0],
+          "the splash is centred as a block");
+      assertEquals(top + logoRow, beyond[1], "the splash is centred as a block");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -1086,6 +1111,28 @@ class LanternaMainWindowTest {
 
   private static TextColor foregroundAt(Screen screen, int x, int y) {
     return screen.getBackCharacter(x, y).getForegroundColor();
+  }
+
+  /** The first cell of the splash that paints a glyph in a colour, or null. */
+  private static int[] inkOf(TitleSplash splash, TextColor color) {
+    for(int y = 0; y < splash.height(); y++) {
+      for(int x = 0; x < splash.width(); x++) {
+        if(color.equals(splash.colorAt(x, y))) {
+          return new int[] {x, y};
+        }
+      }
+    }
+    return null;
+  }
+
+  /** The first drawing row of the splash that contains a text, or -1. */
+  private static int rowOf(TitleSplash splash, String text) {
+    for(int y = 0; y < splash.height(); y++) {
+      if(splash.lines().get(y).contains(text)) {
+        return y;
+      }
+    }
+    return -1;
   }
 
   private static int[] find(Screen screen, String needle) {

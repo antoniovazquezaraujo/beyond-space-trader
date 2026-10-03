@@ -278,6 +278,27 @@ and in the encounter screen, with the two ships facing each other. The drawings 
 monochrome for now (colour roles come later) and the file can be edited freely: the
 game loads it at startup, and a ship without art falls back to a generic sprite.
 
+## Title splash
+
+The title screen paints the splash of `BeyondSpaceTraderJava/src/main/resources/org/gts/bst/lanterna/splash.txt`
+centred as a block, one glyph per cell, with the black screen left as the sky. The file
+is a plain drawing with a few commands:
+
+- Lines starting with `;;` are comments.
+- `color=<name>` sets the default colour of the drawing (cyan when the line is missing).
+- `zone=<name> x= y= w= h=` paints a rectangle of colour over the cells of the drawing
+  (coordinates in drawing cells, `0,0` at the top left; the last zone that catches a cell
+  wins, so a later zone can repaint part of an earlier one).
+- Every other line is part of the drawing: one character per cell, spaces left empty
+  (the black sky shows through) and a glyph the terminal paints wide taking two cells.
+
+The colour names are the ones of the ship art (`green`, `yellow`, `lime`, `cyan`...,
+see `ShipColors`). The resource is packaged inside the jar, so a change needs a
+recompile (`mvn package`) to be seen, unlike the ship art files read from `ships/`.
+When the splash is missing (or does not fit the terminal), the title falls back to
+`Strings.MainBanner` centred as a block. The animated starfield (`Starfield`) is only
+the backdrop of the encounters now.
+
 ## What happens to the current forms
 
 | Swing form | Where it goes |

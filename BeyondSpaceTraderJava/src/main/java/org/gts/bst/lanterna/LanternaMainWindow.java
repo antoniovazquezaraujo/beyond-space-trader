@@ -118,7 +118,6 @@ public final class LanternaMainWindow
   private LanternaEncounterView encounterView;
   private boolean gameOver;
   private final List<Runnable> menuActions = new ArrayList<>();
-  private java.util.Timer starTimer;
   private Runnable newGameAction;
   private Runnable saveGameAction;
   private Runnable loadGameAction;
@@ -138,7 +137,6 @@ public final class LanternaMainWindow
 
   public void setPresenter(MainPresenter presenter) {
     this.presenter = presenter;
-    startStarTimer();
   }
 
   /**
@@ -376,11 +374,6 @@ public final class LanternaMainWindow
       // Any key enters the program from the title screen, and the menu keys do their
       // job at once: F2 there starts a game instead of being swallowed.
       content.titleScreen(false);
-      if(starTimer != null) {
-        // The sky is never seen again: stop ticking it.
-        starTimer.cancel();
-        starTimer = null;
-      }
       switch(key.getKeyType()) {
         case F2:
         case F3:
@@ -1169,28 +1162,7 @@ public final class LanternaMainWindow
     }
   }
 
-  /** Moves the starfield of the empty screen, only while it is shown. */
-  private void startStarTimer() {
-    if(starTimer != null) {
-      return;
-    }
-    starTimer = new java.util.Timer("empty-stars", true);
-    starTimer.scheduleAtFixedRate(new java.util.TimerTask() {
-      @Override
-      public void run() {
-        // The tick checks on the GUI thread whether the title is still up; this
-        // timer only asks it. invokeLater throws before the GUI thread is running
-        // (it starts a moment after us), so a slow start does not kill the timer.
-        try {
-          gui.getGUIThread().invokeLater(() -> content.tickStarfield());
-        } catch(IllegalStateException e) {
-          return;
-        }
-      }
-    }, 110, 110);
-  }
-
-  /** Shows the title screen (only the logo and the stars) until a key is pressed. */
+  /** Shows the title screen (the splash, or the banner when it does not fit) until a key is pressed. */
   public void showTitleScreen() {
     content.titleScreen(true);
   }

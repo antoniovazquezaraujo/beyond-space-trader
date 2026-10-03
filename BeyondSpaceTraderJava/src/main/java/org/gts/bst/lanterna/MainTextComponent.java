@@ -10,6 +10,7 @@ package org.gts.bst.lanterna;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.AbstractInteractableComponent;
 import com.googlecode.lanterna.gui2.Interactable;
@@ -19,7 +20,6 @@ import com.googlecode.lanterna.input.KeyStroke;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import org.gts.bst.view.Starfield;
 import org.gts.bst.view.BankViewModel;
 import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
@@ -115,7 +115,6 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private int viewX = -1;
   private int viewY = -1;
   private int viewSystemId = -1;
-  private Starfield starfield;
   private boolean titleScreen;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
@@ -423,7 +422,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     };
   }
 
-  /** True while the title screen is shown (only the logo and the stars). */
+  /** True while the title screen is shown (only the splash, or the banner when it does not fit). */
   public boolean titleScreen() {
     return titleScreen;
   }
@@ -447,8 +446,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       graphics.putString(0, row, blank);
     }
     if(titleScreen) {
-      drawStarfield(graphics, width, height);
-      drawBanner(graphics, width, height);
+      if(!drawSplash(graphics, width, height)) {
+        drawBanner(graphics, width, height);
+      }
       return;
     }
     Game game = gameSupplier.get();
@@ -482,35 +482,37 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     chart.render(chartModel(game, cmdr, chartWidth, chartHeight));
   }
 
-  /** Moves the stars of the title screen (runs on the GUI thread, from the window timer). */
-  public void tickStarfield() {
-    if(titleScreen && starfield != null) {
-      starfield.advance();
-      invalidate();
+  /**
+   * The splash of the title screen, centred as a block over the black screen. A
+   * missing resource (or one that does not fit) leaves the banner to draw itself;
+   * spaces and the continuation cells of wide glyphs are skipped.
+   */
+  private boolean drawSplash(TextGUIGraphics graphics, int screenWidth, int screenHeight) {
+    TitleSplash splash = TitleSplash.shared();
+    if(splash == null || splash.width() <= 0 || splash.height() <= 0
+        || splash.width() > screenWidth || splash.height() > screenHeight) {
+      return false;
     }
-  }
-
-  /** The parallax starfield behind the logo, in braille with grey shades. */
-  private void drawStarfield(TextGUIGraphics graphics, int chartWidth, int chartHeight) {
-    int columns = Math.max(1, chartWidth - 1);
-    int rows = Math.max(1, chartHeight - 1);
-    if(starfield == null || starfield.dotWidth() != columns * 2 || starfield.dotHeight() != rows * 4) {
-      starfield = new Starfield(columns, rows, 0.12, 42);
-    }
-    Starfield.Frame frame = starfield.frame(columns, rows);
-    for(int row = 0; row < rows; row++) {
-      for(int column = 0; column < columns; column++) {
-        int shade = frame.shades()[row][column];
-        if(shade >= 0) {
-          graphics.setForegroundColor(new TextColor.Indexed(shade));
-          graphics.setCharacter(1 + column, contentTop + 1 + row, frame.lines().get(row).charAt(column));
+    int left = (screenWidth - splash.width()) / 2;
+    int top = (screenHeight - splash.height()) / 2;
+    for(int y = 0; y < splash.height(); y++) {
+      for(int x = 0; x < splash.width(); x++) {
+        int codePoint = splash.codePointAt(x, y);
+        if(codePoint == ' ' || codePoint == TitleSplash.CONTINUATION) {
+          continue;
         }
+        TextColor color = splash.colorAt(x, y);
+        graphics.setForegroundColor(color);
+        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+        graphics.setCharacter(left + x, top + y,
+            TextCharacter.fromString(new String(Character.toChars(codePoint)), color, TextColor.ANSI.BLACK)[0]);
       }
     }
     UiPalette.reset(graphics);
+    return true;
   }
 
-  /** The project logo, centred as a block, on the empty screen. */
+  /** The project logo, centred as a block, when the splash is missing or does not fit. */
   private void drawBanner(TextGUIGraphics graphics, int chartWidth, int chartHeight) {
     List<String> lines = new ArrayList<>();
     wrap(lines, Strings.MainBanner, Math.max(10, chartWidth - 4));
