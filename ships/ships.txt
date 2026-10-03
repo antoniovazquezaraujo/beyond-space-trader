@@ -1,87 +1,5 @@
-[nave-1]
-type=Termite
-chasis=hauler
-group=R x=7 y=1 n=1
-group=P x=12 y=3 n=1
-group=A x=31 y=3 n=1
-group=C x=23 y=4 n=1
-group=A x=32 y=4 n=1
-group=D x=12 y=5 n=1
-group=M x=13 y=5 n=2
-group=B x=20 y=5 n=7
-group=G x=22 y=6 n=1
-group=E x=27 y=6 n=1
-[nave-2]
-type=Bumblebee
-chasis=corvette
-group=R x=6 y=1 n=1
-group=P x=10 y=3 n=1
-group=A x=25 y=3 n=1
-group=C x=19 y=4 n=1
-group=A x=26 y=4 n=1
-group=D x=10 y=5 n=1
-group=M x=11 y=5 n=2
-group=B x=16 y=5 n=6
-group=G x=18 y=6 n=1
-group=E x=22 y=6 n=1
-[La pinta]
-type=Termite
-chasis=dreadnought
-group=R x=23 y=1 n=1
-group=C x=35 y=5 n=1
-group=A x=44 y=6 n=1
-group=M x=30 y=7 n=3
-group=G x=38 y=7 n=1
-group=G x=40 y=7 n=1
-group=B x=13 y=8 n=5
-group=P x=5 y=9 n=1
-group=B x=13 y=9 n=3
-group=D x=32 y=9 n=2
-group=E x=46 y=9 n=1
-group=E x=43 y=10 n=1
-group=E x=37 y=11 n=1
-[La niña]
-type=Firefly
-chasis=scout
-group=R x=4 y=1 n=1
-group=C x=10 y=2 n=1
-group=A x=17 y=3 n=1
-group=P x=1 y=4 n=1
-group=D x=4 y=4 n=1
-group=B x=6 y=4 n=4
-group=M x=13 y=4 n=1
-group=G x=14 y=4 n=1
-group=E x=16 y=5 n=1
-[La Santamaría]
-type=Grasshopper
-chasis=cruiser
-group=R x=6 y=1 n=1
-group=P x=10 y=3 n=1
-group=C x=20 y=3 n=1
-group=D x=10 y=4 n=1
-group=D x=10 y=5 n=1
-group=M x=11 y=5 n=2
-group=B x=16 y=5 n=6
-group=A x=45 y=5 n=1
-group=G x=26 y=6 n=3
-group=A x=47 y=6 n=1
-group=E x=42 y=7 n=2
-[The faster]
-type=Bumblebee
-chasis=shuttle
-group=R x=10 y=0 n=1
-group=C x=14 y=0 n=1
-group=P x=2 y=1 n=1
-group=B x=7 y=1 n=5
-group=E x=20 y=1 n=1
-group=D x=11 y=2 n=1
-group=G x=12 y=2 n=1
-group=G x=14 y=2 n=1
-group=E x=21 y=2 n=1
-group=M x=12 y=3 n=2
-group=A x=21 y=3 n=1
 [flea]
-type=Bumblebee
+type=Flea
 chasis=drone
 group=R x=16 y=0 n=1
 group=C x=33 y=2 n=1
@@ -100,7 +18,7 @@ group=A x=42 y=5 n=1
 group=E x=29 y=6 n=1
 group=E x=32 y=6 n=1
 [gnat]
-type=Bumblebee
+type=Gnat
 chasis=shuttle
 group=R x=10 y=0 n=1
 group=C x=14 y=0 n=1
@@ -113,8 +31,20 @@ group=G x=14 y=2 n=1
 group=E x=21 y=2 n=1
 group=M x=12 y=3 n=2
 group=A x=21 y=3 n=1
+[La niña]
+type=Firefly
+chasis=scout
+group=R x=4 y=1 n=1
+group=C x=10 y=2 n=1
+group=A x=17 y=3 n=1
+group=P x=1 y=4 n=1
+group=D x=4 y=4 n=1
+group=B x=6 y=4 n=4
+group=M x=13 y=4 n=1
+group=G x=14 y=4 n=1
+group=E x=16 y=5 n=1
 [mosquito]
-type=Scorpion
+type=Mosquito
 chasis=courier
 group=R x=9 y=0 n=1
 group=C x=13 y=0 n=1
@@ -128,6 +58,19 @@ group=D x=10 y=3 n=1
 group=M x=11 y=4 n=3
 group=A x=19 y=4 n=1
 group=A x=20 y=5 n=1
+[nave-2]
+type=Bumblebee
+chasis=corvette
+group=R x=6 y=1 n=1
+group=P x=10 y=3 n=1
+group=A x=25 y=3 n=1
+group=C x=19 y=4 n=1
+group=A x=26 y=4 n=1
+group=D x=10 y=5 n=1
+group=M x=11 y=5 n=2
+group=B x=16 y=5 n=6
+group=G x=18 y=6 n=1
+group=E x=22 y=6 n=1
 [beetle]
 type=Beetle
 chasis=gunship
@@ -154,6 +97,33 @@ group=B x=17 y=4 n=2
 group=G x=19 y=4 n=1
 group=B x=20 y=4 n=3
 group=E x=23 y=4 n=1
+[La Santamaría]
+type=Grasshopper
+chasis=cruiser
+group=R x=6 y=1 n=1
+group=P x=10 y=3 n=1
+group=C x=20 y=3 n=1
+group=D x=10 y=4 n=1
+group=D x=10 y=5 n=1
+group=M x=11 y=5 n=2
+group=B x=16 y=5 n=6
+group=A x=45 y=5 n=1
+group=G x=26 y=6 n=3
+group=A x=47 y=6 n=1
+group=E x=42 y=7 n=2
+[nave-1]
+type=Termite
+chasis=hauler
+group=R x=7 y=1 n=1
+group=P x=12 y=3 n=1
+group=A x=31 y=3 n=1
+group=C x=23 y=4 n=1
+group=A x=32 y=4 n=1
+group=D x=12 y=5 n=1
+group=M x=13 y=5 n=2
+group=B x=20 y=5 n=7
+group=G x=22 y=6 n=1
+group=E x=27 y=6 n=1
 [wasp]
 type=Wasp
 chasis=dreadnought
@@ -164,63 +134,6 @@ group=A x=29 y=3 n=1
 group=A x=29 y=4 n=1
 group=D x=13 y=5 n=2
 group=M x=22 y=5 n=3
-[dragonfly]
-type=Dragonfly
-chasis=clipper
-group=R x=6 y=1 n=1
-group=P x=11 y=2 n=1
-group=A x=27 y=2 n=1
-group=C x=20 y=3 n=1
-group=A x=28 y=3 n=1
-group=D x=11 y=4 n=1
-group=M x=12 y=4 n=2
-group=B x=17 y=4 n=2
-group=G x=19 y=4 n=1
-group=B x=20 y=4 n=3
-group=E x=23 y=4 n=1
-[bottle]
-type=Beetle
-chasis=shuttle
-group=R x=10 y=0 n=1
-group=C x=14 y=0 n=1
-group=P x=2 y=1 n=1
-group=B x=2 y=2 n=2
-group=B x=7 y=2 n=4
-group=D x=11 y=2 n=1
-group=G x=12 y=2 n=1
-group=E x=21 y=2 n=1
-group=B x=11 y=3 n=1
-group=M x=12 y=3 n=2
-[mantis]
-type=Mantis
-chasis=frigate
-group=R x=5 y=1 n=1
-group=C x=15 y=2 n=1
-group=A x=19 y=2 n=1
-group=D x=8 y=3 n=1
-group=M x=9 y=3 n=2
-group=B x=12 y=3 n=2
-group=A x=21 y=3 n=1
-group=G x=9 y=4 n=1
-group=G x=11 y=4 n=1
-group=G x=14 y=4 n=1
-group=E x=17 y=4 n=1
-group=A x=24 y=4 n=1
-[scarab]
-type=Grasshopper
-chasis=freighter
-group=R x=21 y=1 n=1
-group=A x=31 y=2 n=1
-group=P x=8 y=3 n=1
-group=C x=33 y=3 n=1
-group=M x=8 y=4 n=2
-group=G x=19 y=5 n=3
-group=A x=34 y=5 n=1
-group=B x=19 y=6 n=2
-group=B x=22 y=6 n=2
-group=B x=25 y=6 n=2
-group=E x=32 y=6 n=2
-group=D x=17 y=7 n=2
 [monster]
 type=SpaceMonster
 chasis=dreadnought
@@ -237,6 +150,66 @@ group=D x=32 y=9 n=2
 group=E x=46 y=9 n=1
 group=E x=43 y=10 n=1
 group=E x=37 y=11 n=1
+[dragonfly]
+type=Dragonfly
+chasis=clipper
+group=R x=6 y=1 n=1
+group=P x=11 y=2 n=1
+group=A x=27 y=2 n=1
+group=C x=20 y=3 n=1
+group=A x=28 y=3 n=1
+group=D x=11 y=4 n=1
+group=M x=12 y=4 n=2
+group=B x=17 y=4 n=2
+group=G x=19 y=4 n=1
+group=B x=20 y=4 n=3
+group=E x=23 y=4 n=1
+[mantis]
+type=Mantis
+chasis=frigate
+group=R x=5 y=1 n=1
+group=C x=15 y=2 n=1
+group=A x=19 y=2 n=1
+group=D x=8 y=3 n=1
+group=M x=9 y=3 n=2
+group=B x=12 y=3 n=2
+group=A x=21 y=3 n=1
+group=G x=9 y=4 n=1
+group=G x=11 y=4 n=1
+group=G x=14 y=4 n=1
+group=E x=17 y=4 n=1
+group=A x=24 y=4 n=1
+[scarab]
+type=Scarab
+chasis=freighter
+group=R x=21 y=1 n=1
+group=A x=31 y=2 n=1
+group=P x=8 y=3 n=1
+group=C x=33 y=3 n=1
+group=M x=8 y=4 n=2
+group=G x=19 y=5 n=3
+group=A x=34 y=5 n=1
+group=B x=19 y=6 n=2
+group=B x=22 y=6 n=2
+group=B x=25 y=6 n=2
+group=E x=32 y=6 n=2
+group=D x=17 y=7 n=2
+[bottle]
+type=Bottle
+chasis=shuttle
+group=R x=10 y=0 n=1
+group=C x=14 y=0 n=1
+group=P x=2 y=1 n=1
+group=B x=2 y=2 n=2
+group=B x=7 y=2 n=4
+group=D x=11 y=2 n=1
+group=G x=12 y=2 n=1
+group=E x=21 y=2 n=1
+group=B x=11 y=3 n=1
+group=M x=12 y=3 n=2
+[Custom]
+type=Custom
+chasis=dreadnought
 [scorpion]
 type=Scorpion
 chasis=dreadnought
@@ -253,17 +226,3 @@ group=D x=32 y=9 n=2
 group=E x=46 y=9 n=1
 group=E x=43 y=10 n=1
 group=E x=37 y=11 n=1
-[Ferro]
-type=Scorpion
-chasis=drone
-group=R x=5 y=0 n=1
-group=A x=35 y=2 n=1
-group=M x=4 y=3 n=3
-group=D x=12 y=3 n=2
-group=C x=34 y=3 n=1
-group=B x=9 y=4 n=2
-group=A x=40 y=4 n=1
-group=B x=9 y=5 n=3
-group=G x=29 y=5 n=2
-group=E x=14 y=6 n=1
-group=E x=30 y=6 n=1

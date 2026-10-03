@@ -226,7 +226,7 @@ color=green
      `∙═--_______+─°
 
 [gunship]
-size=small
+size=medium
 key=A color=orange
 key=B color=brown
 key=C color=gold
@@ -279,7 +279,7 @@ color=gray
      \═══════  ▀\──
 
 [frigate]
-size=small
+size=medium
 key=A color=olive
 key=B color=gold
 key=C color=white bgcolor=orange
@@ -313,7 +313,7 @@ color=green
        \═══════  ▀\────
 
 [carrier]
-size=medium
+size=large
 key=A color=darkgrey
 key=B color=orange
 key=C color=brightgreen
@@ -352,7 +352,7 @@ color=yellow
     └──────═══╘════╛──────────┘-'
 
 [drone]
-size=medium
+size=tiny
 key=A color=lime
 key=B color=teal
 key=C color=brightwhite
@@ -421,7 +421,7 @@ color=maroon
  \-────=╚══\≡▐▄▄\═══╝≡-───▄▄▄▄▄▄▄▄▌=────-_-≥
 
 [freighter]
-size=huge
+size=large
 key=A color=brightmagenta
 key=B color=brightyellow
 zone=A x=23 y=1 w=3 h=1
@@ -484,7 +484,7 @@ color=blue
                  └─┘══╝
 
 [clipper]
-size=huge
+size=small
 key=A color=darkgrey
 key=B color=lightgrey
 key=C color=gold
