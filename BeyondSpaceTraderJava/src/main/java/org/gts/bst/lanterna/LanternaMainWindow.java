@@ -73,6 +73,7 @@ import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.GameEndException;
+import spacetrader.SpecialEvent;
 import spacetrader.StarSystem;
 import spacetrader.enums.StarSystemId;
 import org.gts.bst.ship.ShipType;
@@ -97,6 +98,12 @@ public final class LanternaMainWindow
   private static final int DESIGNER_FIELDS = 12;
   private static final String AUTOSAVE_DEPARTURE = "autosave_departure.sav";
   private static final String AUTOSAVE_ARRIVAL = "autosave_arrival.sav";
+  /** The quiet alerts of the encounter that the rival says aloud, under its ship. */
+  private static final Set<AlertType> SPEECH_ALERTS = Set.of(
+      AlertType.EncounterPoliceFine,
+      AlertType.EncounterPoliceBribeCant,
+      AlertType.EncounterMarieCelesteNoBribe,
+      AlertType.EncounterSurrenderRefused);
 
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
@@ -109,9 +116,9 @@ public final class LanternaMainWindow
   private ShipListPresenter shipListPresenter;
   private EquipmentPresenter equipmentPresenter;
   private ShipyardPresenter shipyardPresenter;
+  private LanternaEncounterView encounterView;
   private boolean gameOver;
   private final List<Runnable> menuActions = new ArrayList<>();
-  private java.util.Timer starTimer;
   private Runnable newGameAction;
   private Runnable saveGameAction;
   private Runnable loadGameAction;
@@ -131,7 +138,6 @@ public final class LanternaMainWindow
 
   public void setPresenter(MainPresenter presenter) {
     this.presenter = presenter;
-    startStarTimer();
   }
 
   /**
@@ -164,6 +170,22 @@ public final class LanternaMainWindow
   public void log(String message) {
     content.log(message);
     content.invalidate();
+  }
+
+  /** True for the quiet alerts that speak under the rival instead of going to the log. */
+  static boolean speaksUnderTheRival(AlertType type) {
+    return SPEECH_ALERTS.contains(type);
+  }
+
+  /** A quiet alert: under the rival while the encounter is open, or to the main log. */
+  public void alertLog(AlertType type, String message) {
+    if(encounterView == null) {
+      log(message);
+    } else if(speaksUnderTheRival(type)) {
+      encounterView.speech(message);
+    } else {
+      encounterView.log(message);
+    }
   }
 
   @Override
@@ -250,6 +272,9 @@ public final class LanternaMainWindow
     EncounterPresenter[] presenter = new EncounterPresenter[1];
     LanternaEncounterView view = new LanternaEncounterView(gui,
         action -> dispatch(presenter[0], action), () -> presenter[0].tick(), this::showCargoTransfer);
+    view.header(game::Commander);
+    encounterView = view;
+    view.onClose(() -> encounterView = null);
     presenter[0] = new EncounterPresenter(game, view);
     gui.addWindow(view.asWindow());
     try {
@@ -331,7 +356,7 @@ public final class LanternaMainWindow
     refresh();
   }
 
-  /** The panels that only show information: they close with space (or escape). */
+  /** The panels that close with space (escape always closes any panel). */
   private static boolean isReadOnlyPanel(MainPanel panel) {
     switch(panel) {
       case Quests:
@@ -347,9 +372,19 @@ public final class LanternaMainWindow
 
   private boolean handleKey(KeyStroke key) {
     if(content.titleScreen()) {
-      // Any key enters the program from the title screen.
+      // Any key enters the program from the title screen, and the menu keys do their
+      // job at once: F2 there starts a game instead of being swallowed.
       content.titleScreen(false);
-      return true;
+      switch(key.getKeyType()) {
+        case F2:
+        case F3:
+        case F8:
+        case F9:
+        case F10:
+          return handleTitleKey(key);
+        default:
+          return true;
+      }
     }
     Game game = gameSupplier.get();
     if(game == null) {
@@ -384,7 +419,7 @@ public final class LanternaMainWindow
         content.closePanel();
         return true;
       }
-      window.close();
+      quit();
       return true;
     }
     if(key.getKeyType() == KeyType.Character && key.getCharacter() == ' ' && isReadOnlyPanel(content.panel())) {
@@ -398,7 +433,7 @@ public final class LanternaMainWindow
       return handleBankKey(key);
     }
     if(content.panel() == MainPanel.Quests) {
-      return false;
+      return handleQuestsKey(key);
     }
     if(content.panel() == MainPanel.Personnel) {
       return handlePersonnelKey(key);
@@ -1128,23 +1163,7 @@ public final class LanternaMainWindow
     }
   }
 
-  /** Moves the starfield of the empty screen, only while it is shown. */
-  private void startStarTimer() {
-    if(starTimer != null) {
-      return;
-    }
-    starTimer = new java.util.Timer("empty-stars", true);
-    starTimer.scheduleAtFixedRate(new java.util.TimerTask() {
-      @Override
-      public void run() {
-        if(content.titleScreen()) {
-          gui.getGUIThread().invokeLater(() -> content.tickStarfield());
-        }
-      }
-    }, 110, 110);
-  }
-
-  /** Shows the title screen (only the logo and the stars) until a key is pressed. */
+  /** Shows the title screen (the splash, or the banner when it does not fit) until a key is pressed. */
   public void showTitleScreen() {
     content.titleScreen(true);
   }
@@ -1242,7 +1261,7 @@ public final class LanternaMainWindow
       case 'g':
         jump();
         return true;
-      case 'w':
+      case ' ':
         warp();
         return true;
       case 'r':
@@ -1300,7 +1319,9 @@ public final class LanternaMainWindow
 
   /**
    * Accepts the special event of the current system (the quests, the moon, the
-   * deliveries...), like the Special button of the Swing front-end.
+   * deliveries...), like the Special button of the Swing front-end. The offer is
+   * read first: the message-only events need an OK and the rest a Yes before
+   * anything is applied.
    */
   private void acceptSpecialEvent() {
     Game game = gameSupplier.get();
@@ -1313,8 +1334,17 @@ public final class LanternaMainWindow
       content.invalidate();
       return;
     }
-    if(game.Commander().CashToSpend() < system.SpecialEvent().Price()) {
+    SpecialEvent event = system.SpecialEvent();
+    if(game.Commander().CashToSpend() < event.Price()) {
       game.Dialogs().alert(AlertType.SpecialIF);
+      return;
+    }
+    String text = offer(event);
+    DialogResult answer = event.MessageOnly()
+        ? game.Dialogs().message(event.Title(), text)
+        : game.Dialogs().confirm(event.Title(), text);
+    if(answer != DialogResult.OK && answer != DialogResult.Yes) {
+      // No answer or a No: the offer stays in the system.
       return;
     }
     try {
@@ -1324,6 +1354,30 @@ public final class LanternaMainWindow
       return;
     }
     refresh();
+  }
+
+  /** The offer text plus its cost or reward line, when the event has a price. */
+  private static String offer(SpecialEvent event) {
+    StringBuilder text = new StringBuilder();
+    String story = event.String();
+    if(story != null && !story.isBlank()) {
+      text.append(story);
+    }
+    if(event.Price() > 0) {
+      addLine(text, Functions.StringVars(Strings.SpecialEventCost,
+          Functions.Multiples(event.Price(), Strings.MoneyUnit)));
+    } else if(event.Price() < 0) {
+      addLine(text, Functions.StringVars(Strings.SpecialEventReward,
+          Functions.Multiples(-event.Price(), Strings.MoneyUnit)));
+    }
+    return text.toString();
+  }
+
+  private static void addLine(StringBuilder text, String line) {
+    if(text.length() > 0) {
+      text.append('\n');
+    }
+    text.append(line);
   }
 
   /** Selects a system as the target and refreshes what depends on it. */
@@ -1442,13 +1496,33 @@ public final class LanternaMainWindow
   }
 
   /**
-   * The normal trip: warps to the selected target system, spending the fuel of the
+   * The destination of the SPACE key: the selected system, or the far end of the
+   * current system's wormhole when the cursor rests on the current system (or nothing
+   * is selected). Without a wormhole it returns the plain target, so {@link #warp()}
+   * keeps its usual messages.
+   */
+  StarSystem warpTarget(Game game) {
+    StarSystem current = game.Commander().CurrentSystem();
+    StarSystem target = game.WarpSystem();
+    if(current != null && (target == null || target == current)) {
+      StarSystem pair = Functions.WormholeTarget(current.Id().CastToInt());
+      if(pair != null) {
+        game.SelectedSystemId(current.Id());
+        game.TargetWormhole(true);
+        return game.WarpSystem();
+      }
+    }
+    return target;
+  }
+
+  /**
+   * The normal trip: warps to the target system, spending the fuel of the
    * distance (unless a wormhole connects both systems) and advancing a day. The
    * Portable Singularity Jump is a separate action ({@link #jump()}).
    */
   private void warp() {
     Game game = gameSupplier.get();
-    StarSystem target = game.WarpSystem();
+    StarSystem target = warpTarget(game);
     if(target == null) {
       content.log(Strings.MainWarpNoTarget);
       content.invalidate();
@@ -1498,6 +1572,27 @@ public final class LanternaMainWindow
     }
   }
 
+  /**
+   * Leaves the program, asking first when a game is loaded: the progress lives only
+   * in memory until the player saves it (F5) or the departure/arrival autosaves run.
+   * The question is the abandon confirmation of New Game and Load, so a player who
+   * quits by mistake is told the same thing in every way out.
+   */
+  private void quit() {
+    if(confirmQuit()) {
+      window.close();
+    }
+  }
+
+  /** True when quitting is confirmed (or there is nothing to lose: no game loaded). */
+  private boolean confirmQuit() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return true;
+    }
+    return game.Dialogs().alert(AlertType.GameAbandonConfirm) == DialogResult.Yes;
+  }
+
   private void toggleMenu() {
     if(content.menuVisible()) {
       content.hideMenu();
@@ -1512,7 +1607,7 @@ public final class LanternaMainWindow
     addMenuItem(items, Strings.MenuLoad, () -> runAction(loadGameAction, Strings.MainLoadUnavailable));
     addMenuItem(items, Strings.MenuNewGame, () -> runAction(newGameAction, Strings.MainNewGameUnavailable));
     addMenuItem(items, Strings.MenuAbout, this::openAbout);
-    addMenuItem(items, Strings.MenuQuit, window::close);
+    addMenuItem(items, Strings.MenuQuit, this::quit);
     content.showMenu(items);
   }
 
@@ -1574,6 +1669,46 @@ public final class LanternaMainWindow
       }
     }
     return false;
+  }
+
+  /**
+   * The quests panel: the arrows move the selection and ENTER sets the destination of
+   * the selected entry as the map target and closes the panel. Space and escape keep
+   * closing it.
+   */
+  private boolean handleQuestsKey(KeyStroke key) {
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        content.moveQuestSelection(-1);
+        return true;
+      case ArrowDown:
+        content.moveQuestSelection(1);
+        return true;
+      case Enter:
+        selectQuestTarget();
+        content.closePanel();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /** Points the map at the destination of the selected quest entry, when it has one. */
+  private void selectQuestTarget() {
+    Game game = gameSupplier.get();
+    String name = content.selectedQuestSystem();
+    if(game == null || name == null) {
+      return;
+    }
+    if(questsPresenter != null) {
+      questsPresenter.selectSystem(name);
+    } else {
+      game.setSelectedSystemByName(name);
+    }
+    StarSystem system = game.SelectedSystem();
+    if(system != null && system.Name().equalsIgnoreCase(name)) {
+      selectedSystem(game, system);
+    }
   }
 
   private boolean handleNewsKey(KeyStroke key) {

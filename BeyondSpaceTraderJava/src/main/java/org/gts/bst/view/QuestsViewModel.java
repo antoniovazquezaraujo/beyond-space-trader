@@ -8,11 +8,33 @@
  */
 package org.gts.bst.view;
 
+import java.util.List;
+
 
 /**
- * Text of the quests screen, already formatted. {@code hasQuests} tells the front-end
- * whether the text describes open quests (and can therefore contain system links).
+ * The quests screen: one {@link Entry} per open quest, in the order the presenter
+ * lists them. Every entry carries its text (already formatted) and the name of the
+ * destination system the quest points at ({@code null} when it has no destination).
+ * The front-end selects an entry and sets its destination as the map target.
  */
-public record QuestsViewModel(String text, boolean hasQuests) {
-}
+public record QuestsViewModel(List<Entry> quests) {
+  /**
+   * A quest line and the system it points at, when it has one. {@code text} never
+   * contains the system link markers of the old front-ends.
+   */
+  public record Entry(String text, String systemName) {
+    public boolean hasSystem() {
+      return systemName != null && !systemName.isEmpty();
+    }
+  }
 
+  /** Whether any entry points at a system, so the front-end shows a selection. */
+  public boolean hasDestinations() {
+    for(Entry entry : quests) {
+      if(entry.hasSystem()) {
+        return true;
+      }
+    }
+    return false;
+  }
+}

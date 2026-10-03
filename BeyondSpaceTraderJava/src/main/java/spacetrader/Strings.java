@@ -76,6 +76,7 @@ public final class Strings {
   public static final String EncounterPiratesDestroyed = text("EncounterPiratesDestroyed");
   public static final String EncounterPiratesDisabled = text("EncounterPiratesDisabled");
   public static final String EncounterPiratesLocation = text("EncounterPiratesLocation");
+  public static final String EncounterPiratesTake = text("EncounterPiratesTake");
   public static final String EncounterPoliceSubmitArrested = text("EncounterPoliceSubmitArrested");
   public static final String EncounterPoliceSubmitGoods = text("EncounterPoliceSubmitGoods");
   public static final String EncounterPoliceSubmitReactor = text("EncounterPoliceSubmitReactor");
@@ -296,6 +297,8 @@ public final class Strings {
   public static final String MainChartGalactic = text("MainChartGalactic");
   public static final String MainChartShortRange = text("MainChartShortRange");
   public static final String AlertButtonOk = text("AlertButtonOk");
+  public static final String AlertButtonYes = text("AlertButtonYes");
+  public static final String AlertButtonNo = text("AlertButtonNo");
   public static final String MainDay = text("MainDay");
   public static final String MainDebt = text("MainDebt");
   public static final String MainFuel = text("MainFuel");
@@ -313,6 +316,8 @@ public final class Strings {
   public static final String MainWormhole = text("MainWormhole");
   public static final String MainSpecial = text("MainSpecial");
   public static final String MainSpecialNone = text("MainSpecialNone");
+  public static final String SpecialEventCost = text("SpecialEventCost");
+  public static final String SpecialEventReward = text("SpecialEventReward");
   public static final String MainTech = text("MainTech");
   public static final String MainTracking = text("MainTracking");
   public static final String MainUntracking = text("MainUntracking");
@@ -386,6 +391,10 @@ public final class Strings {
   public static final String PersonnelForHire = text("PersonnelForHire");
   public static final String PersonnelKeys = text("PersonnelKeys");
   public static final String PersonnelTitle = text("PersonnelTitle");
+  public static final String ShipCargoBoughtAt = text("ShipCargoBoughtAt");
+  public static final String ShipCargoCostUnknown = text("ShipCargoCostUnknown");
+  public static final String ShipCargoLabel = text("ShipCargoLabel");
+  public static final String ShipCargoNone = text("ShipCargoNone");
   public static final String ShipKeys = text("ShipKeys");
   public static final String ShipSpecialCargo = text("ShipSpecialCargo");
   public static final String ShipTitle = text("ShipTitle");
@@ -429,6 +438,17 @@ public final class Strings {
   public static final String MainLoadUnavailable = text("MainLoadUnavailable");
   public static final String MainNewGame = text("MainNewGame");
   public static final String MainNewGameUnavailable = text("MainNewGameUnavailable");
+  public static final String MainNewGameCancelled = text("MainNewGameCancelled");
+  public static final String EncounterSaysOffer = text("EncounterSaysOffer");
+  public static final String EncounterSaysWanted = text("EncounterSaysWanted");
+  public static final String EncounterSaysPolice = text("EncounterSaysPolice");
+  public static final String EncounterSaysPoliceArrest = text("EncounterSaysPoliceArrest");
+  public static final String EncounterSaysPoliceAllClear = text("EncounterSaysPoliceAllClear");
+  public static final String EncounterSaysTradeThanks = text("EncounterSaysTradeThanks");
+  public static final String EncounterLegend = text("EncounterLegend");
+  public static final String EncounterLegendCargo = text("EncounterLegendCargo");
+  public static final String EncounterSaysTraderSells = text("EncounterSaysTraderSells");
+  public static final String EncounterSaysTraderBuys = text("EncounterSaysTraderBuys");
   public static final String MainSaveUnavailable = text("MainSaveUnavailable");
   public static final String SkillEngineer = text("SkillEngineer");
   public static final String SkillFighter = text("SkillFighter");

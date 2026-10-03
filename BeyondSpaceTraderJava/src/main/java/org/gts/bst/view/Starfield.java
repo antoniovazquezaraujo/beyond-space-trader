@@ -57,11 +57,22 @@ public final class Starfield {
 
   /** Moves every star to the left; the ones leaving come back from the right. */
   public void advance() {
+    advance(false);
+  }
+
+  /**
+   * Moves the sky: to the left when flying on, to the right when the ship goes
+   * backwards (turning away or being chased), so the stars sell the retreat.
+   */
+  public void advance(boolean backwards) {
     for(int i = 0; i < stars.size(); i++) {
       Star star = stars.get(i);
-      double x = star.x() - star.speed();
+      double x = star.x() + (backwards ? star.speed() : -star.speed());
       if(x < -1) {
         x += dotWidth + nextDouble() * dotWidth * 0.1;
+        stars.set(i, new Star(x, nextInt(dotHeight), star.depth(), star.speed()));
+      } else if(x > dotWidth + 1) {
+        x -= dotWidth + nextDouble() * dotWidth * 0.1;
         stars.set(i, new Star(x, nextInt(dotHeight), star.depth(), star.speed()));
       } else {
         stars.set(i, new Star(x, star.y(), star.depth(), star.speed()));

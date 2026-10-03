@@ -991,7 +991,7 @@ public class Ship extends ShipSpec {
       hidden--;
     }
     if(hidden > 0) {
-      tradeItems.subList(0, hidden).clear();
+      tradeItems.subList(0, Math.min(hidden, tradeItems.size())).clear();
     }
     return tradeItems;
   }

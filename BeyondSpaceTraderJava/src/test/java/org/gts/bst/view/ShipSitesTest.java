@@ -18,6 +18,7 @@ import java.io.StringReader;
 import java.util.List;
 import java.util.Map;
 import org.gts.bst.ship.ShipSize;
+import org.gts.bst.ship.ShipType;
 import org.junit.jupiter.api.Test;
 
 
@@ -40,6 +41,11 @@ class ShipSitesTest {
     assertEquals(0, ShipSites.budgetOf("Flea").weapons(), "the Flea carries no weapons");
     assertEquals(0, ShipSites.budgetOf("Bottle").pod(), "the Bottle is not for sale");
     assertNull(ShipSites.budgetOf("scout"), "a chassis that is not a ship type");
+
+    assertEquals(ShipType.Firefly, ShipSites.typeOf("firefly"), "the name ignores case");
+    assertEquals(ShipType.SpaceMonster, ShipSites.typeOf(" SpaceMonster "), "the name is stripped");
+    assertNull(ShipSites.typeOf("scout"), "a chassis that is not a ship type");
+    assertNull(ShipSites.typeOf(null), "no name, no type");
   }
 
   @Test

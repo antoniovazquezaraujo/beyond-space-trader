@@ -22,6 +22,20 @@ public final class LanternaDialogs {
    * Asks for an amount between 0 and {@code maxAmount}; returns {@code null} when the
    * player cancels or types something invalid.
    */
+  /** The same question, asked in a dialog at the bottom of the screen (the fight). */
+  public static Integer askAmountAtBottom(WindowBasedTextGUI gui, String title, String prompt, int maxAmount) {
+    String input = InputDialog.showAtBottom(gui, title, prompt, "0");
+    if(input == null) {
+      return null;
+    }
+    try {
+      int value = Integer.parseInt(input.trim());
+      return value >= 0 && value <= maxAmount ? value : null;
+    } catch(NumberFormatException e) {
+      return null;
+    }
+  }
+
   public static Integer askAmount(WindowBasedTextGUI gui, String title, String prompt, int maxAmount) {
     String input = InputDialog.show(gui, title, prompt, "0");
     if(input == null) {

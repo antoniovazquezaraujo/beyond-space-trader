@@ -10,6 +10,7 @@ package org.gts.bst.lanterna;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.AbstractInteractableComponent;
 import com.googlecode.lanterna.gui2.Interactable;
@@ -19,7 +20,6 @@ import com.googlecode.lanterna.input.KeyStroke;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import org.gts.bst.view.Starfield;
 import org.gts.bst.view.BankViewModel;
 import org.gts.bst.view.CargoRowViewModel;
 import org.gts.bst.view.CargoViewModel;
@@ -47,8 +47,6 @@ import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
-import spacetrader.PoliceRecord;
-import spacetrader.Ship;
 import spacetrader.StarSystem;
 import spacetrader.Strings;
 import spacetrader.UniverseGenerator;
@@ -106,6 +104,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private final List<String> newsLines = new ArrayList<>();
   private String newsHead = "";
   private int newsScroll;
+  private int questIndex;
+  private int questScroll;
   private String directKeys = "";
   private final List<String> menuItems = new ArrayList<>();
   private boolean menuVisible;
@@ -117,7 +117,6 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private int viewX = -1;
   private int viewY = -1;
   private int viewSystemId = -1;
-  private Starfield starfield;
   private boolean titleScreen;
 
   public MainTextComponent(Supplier<Game> gameSupplier, KeyHandler keyHandler) {
@@ -147,6 +146,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public void quests(QuestsViewModel quests) {
     this.quests = quests;
+    questIndex = 0;
+    questScroll = 0;
+    invalidate();
   }
 
   public void personnel(PersonnelViewModel personnel) {
@@ -274,6 +276,39 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     invalidate();
   }
 
+  public int questCount() {
+    return quests == null ? 0 : quests.quests().size();
+  }
+
+  public int questIndex() {
+    return questIndex;
+  }
+
+  public void questIndex(int index) {
+    if(questCount() > 0) {
+      questIndex = Math.floorMod(index, questCount());
+    }
+    invalidate();
+  }
+
+  /** Moves the quests cursor; the panel scrolls to keep the selected entry visible. */
+  public void moveQuestSelection(int delta) {
+    if(questCount() == 0) {
+      return;
+    }
+    questIndex = Math.floorMod(questIndex + delta, questCount());
+    invalidate();
+  }
+
+  /** The destination of the selected quest entry, or {@code null} when it has none. */
+  public String selectedQuestSystem() {
+    if(quests == null || questIndex < 0 || questIndex >= quests.quests().size()) {
+      return null;
+    }
+    QuestsViewModel.Entry entry = quests.quests().get(questIndex);
+    return entry.hasSystem() ? entry.systemName() : null;
+  }
+
   public int equipmentEntryCount() {
     if(equipment == null) {
       return 0;
@@ -322,6 +357,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   public void openQuests() {
+    questIndex = 0;
+    questScroll = 0;
     panel = MainPanel.Quests;
     invalidate();
   }
@@ -425,7 +462,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     };
   }
 
-  /** True while the title screen is shown (only the logo and the stars). */
+  /** True while the title screen is shown (only the splash, or the banner when it does not fit). */
   public boolean titleScreen() {
     return titleScreen;
   }
@@ -449,14 +486,15 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       graphics.putString(0, row, blank);
     }
     if(titleScreen) {
-      drawStarfield(graphics, width, height);
-      drawBanner(graphics, width, height);
+      if(!drawSplash(graphics, width, height)) {
+        drawBanner(graphics, width, height);
+      }
       return;
     }
     Game game = gameSupplier.get();
     Commander cmdr = game == null ? null : game.Commander();
     List<String> footerKeys = panel == MainPanel.Navigation ? footerKeys(width - 2) : new ArrayList<>();
-    contentTop = drawHeader(graphics, width, cmdr) + 1;
+    contentTop = HeaderBar.draw(graphics, width, cmdr) + 1;
     panelWidth = Math.max(20, Math.min(width - 24, panelWidthFor(panel, width)));
     int chartWidth = width - panelWidth - 2;
     // The footer keeps two menu rows (the usual case); a longer menu takes one more.
@@ -467,95 +505,15 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     drawMenu(graphics, width, height);
   }
 
-  /**
-   * Draws the header and returns its height: one line when every field fits,
-   * the commander data and the ship data on one line each otherwise.
-   */
-  private int drawHeader(TextGUIGraphics graphics, int width, Commander cmdr) {
-    if(cmdr == null) {
-      UiPalette.line(graphics, 1, 0, Strings.MainNoGame, width - 2);
-      UiPalette.reset(graphics);
-      graphics.drawLine(0, 1, width - 1, 1, '─');
-      return 1;
-    }
-    Ship ship = cmdr.getShip();
-    int maxX = width - 2;
-    List<HeaderField> commanderFields = List.of(
-        new HeaderField(cmdr.Name(), UiPalette.TEXT),
-        new HeaderField(Functions.StringVars(Strings.MainDay, "" + cmdr.getDays()), UiPalette.ACCENT),
-        new HeaderField(Functions.FormatMoney(cmdr.getCash()), UiPalette.MONEY),
-        new HeaderField(Functions.StringVars(Strings.MainDebt, Functions.FormatMoney(cmdr.getDebt())),
-            cmdr.getDebt() > 0 ? UiPalette.BAD : UiPalette.TEXT));
-    List<HeaderField> shipFields = List.of(
-        new HeaderField(Functions.StringVars(Strings.MainFuel, "" + ship.getFuel(), "" + ship.FuelTanks()),
-            UiPalette.statusColor(ship.getFuel(), ship.FuelTanks())),
-        new HeaderField(Functions.StringVars(Strings.MainHull, "" + ship.getHull(), "" + ship.HullStrength()),
-            UiPalette.statusColor(ship.getHull(), ship.HullStrength())),
-        new HeaderField(Functions.StringVars(Strings.MainShields, "" + ship.ShieldCharge(),
-            "" + ship.ShieldStrength()), UiPalette.statusColor(ship.ShieldCharge(), ship.ShieldStrength())),
-        new HeaderField(Functions.StringVars(Strings.MainCargo, "" + ship.FilledCargoBays(),
-            "" + ship.CargoBays()), UiPalette.TEXT),
-        new HeaderField(Functions.StringVars(Strings.MainPolice,
-            PoliceRecord.GetPoliceRecordFromScore(cmdr.getPoliceRecordScore()).Name()),
-            policeColor(cmdr.getPoliceRecordScore())));
-    boolean oneLine = fieldsWidth(commanderFields) + 3 + fieldsWidth(shipFields) <= maxX;
-    int headerHeight = oneLine ? 1 : 2;
-    if(oneLine) {
-      List<HeaderField> fields = new ArrayList<>(commanderFields);
-      fields.addAll(shipFields);
-      drawFields(graphics, 1, 0, fields, maxX);
-    } else {
-      drawFields(graphics, 1, 0, commanderFields, maxX);
-      drawFields(graphics, 1, 1, shipFields, maxX);
-    }
-    UiPalette.reset(graphics);
-    graphics.drawLine(0, headerHeight, width - 1, headerHeight, '─');
-    return headerHeight;
-  }
-
-  private static int fieldsWidth(List<HeaderField> fields) {
-    int width = 0;
-    for(HeaderField field : fields) {
-      width += field.text().length() + 3;
-    }
-    return Math.max(0, width - 3);
-  }
-
-  private static void drawFields(TextGUIGraphics graphics, int x, int row, List<HeaderField> fields, int maxX) {
-    boolean first = true;
-    for(HeaderField field : fields) {
-      if(!first) {
-        x = UiPalette.draw(graphics, x, row, " · ", UiPalette.TEXT, maxX);
-      }
-      x = UiPalette.draw(graphics, x, row, field.text(), field.color(), maxX);
-      first = false;
-    }
-  }
-
-  /** One field of the header: its text and its colour. */
-  private record HeaderField(String text, TextColor color) {
-  }
-
-  private static TextColor policeColor(int score) {
-    switch(PoliceRecord.GetPoliceRecordFromScore(score).Type()) {
-      case Clean:
-      case Lawful:
-      case Trusted:
-      case Liked:
-      case Hero:
-        return UiPalette.GOOD;
-      case Crook:
-      case Dubious:
-        return UiPalette.WARN;
-      default:
-        return UiPalette.BAD;
-    }
-  }
-
   private void drawChart(TextGUIGraphics graphics, int chartWidth, int chartHeight, Game game, Commander cmdr) {
     String title = chartType == ChartType.GALACTIC ? Strings.MainChartGalactic : Strings.MainChartShortRange;
     UiPalette.title(graphics, 1, contentTop, title, chartWidth);
     if(game == null || cmdr == null) {
+      // No game yet: point at the menu instead of leaving the chart blank.
+      String hint = Strings.MenuNewGame + " · " + Strings.MenuLoad;
+      graphics.putString(1 + Math.max(0, (chartWidth - hint.length()) / 2),
+          contentTop + 1 + Math.max(0, chartHeight / 2), hint);
+      UiPalette.reset(graphics);
       return;
     }
     TerminalSize size = new TerminalSize(chartWidth, chartHeight);
@@ -564,41 +522,50 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     chart.render(chartModel(game, cmdr, chartWidth, chartHeight));
   }
 
-  /** Moves the stars of the empty screen (called by the window timer). */
-  public void tickStarfield() {
-    if(starfield != null) {
-      starfield.advance();
-      invalidate();
+  /**
+   * The splash of the title screen, centred as a block over the black screen. A
+   * missing resource (or one that does not fit) leaves the banner to draw itself;
+   * spaces and the continuation cells of wide glyphs are skipped.
+   */
+  private boolean drawSplash(TextGUIGraphics graphics, int screenWidth, int screenHeight) {
+    TitleSplash splash = TitleSplash.shared();
+    if(splash == null || splash.width() <= 0 || splash.height() <= 0
+        || splash.width() > screenWidth || splash.height() > screenHeight) {
+      return false;
     }
-  }
-
-  /** The parallax starfield behind the logo, in braille with grey shades. */
-  private void drawStarfield(TextGUIGraphics graphics, int chartWidth, int chartHeight) {
-    int columns = Math.max(1, chartWidth - 1);
-    int rows = Math.max(1, chartHeight - 1);
-    if(starfield == null || starfield.dotWidth() != columns * 2 || starfield.dotHeight() != rows * 4) {
-      starfield = new Starfield(columns, rows, 0.12, 42);
-    }
-    Starfield.Frame frame = starfield.frame(columns, rows);
-    for(int row = 0; row < rows; row++) {
-      for(int column = 0; column < columns; column++) {
-        int shade = frame.shades()[row][column];
-        if(shade >= 0) {
-          graphics.setForegroundColor(new TextColor.Indexed(shade));
-          graphics.setCharacter(1 + column, contentTop + 1 + row, frame.lines().get(row).charAt(column));
+    int left = (screenWidth - splash.width()) / 2;
+    int top = (screenHeight - splash.height()) / 2;
+    for(int y = 0; y < splash.height(); y++) {
+      for(int x = 0; x < splash.width(); x++) {
+        int codePoint = splash.codePointAt(x, y);
+        if(codePoint == ' ' || codePoint == TitleSplash.CONTINUATION) {
+          continue;
         }
+        TextColor color = splash.colorAt(x, y);
+        graphics.setForegroundColor(color);
+        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+        graphics.setCharacter(left + x, top + y,
+            TextCharacter.fromString(new String(Character.toChars(codePoint)), color, TextColor.ANSI.BLACK)[0]);
       }
     }
     UiPalette.reset(graphics);
+    return true;
   }
 
-  /** The project logo, centred, on the empty screen. */
+  /** The project logo, centred as a block, when the splash is missing or does not fit. */
   private void drawBanner(TextGUIGraphics graphics, int chartWidth, int chartHeight) {
     List<String> lines = new ArrayList<>();
     wrap(lines, Strings.MainBanner, Math.max(10, chartWidth - 4));
+    // The logo is ASCII art: its lines are centred together, or the figure
+    // breaks (each line would land on a different column). Wide glyphs count
+    // as the two cells they take.
+    int block = 0;
+    for(String line : lines) {
+      block = Math.max(block, EditorText.width(line));
+    }
+    int left = 1 + Math.max(0, (chartWidth - block) / 2);
     int top = contentTop + 1 + Math.max(0, (chartHeight - lines.size()) / 2);
     for(String line : lines) {
-      int left = 1 + Math.max(0, (chartWidth - line.length()) / 2);
       UiPalette.draw(graphics, left, top++, line, UiPalette.TITLE, 1 + chartWidth);
     }
   }
@@ -851,11 +818,16 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     int row = contentTop + 1;
     UiPalette.draw(graphics, x, row++, Functions.StringVars(Strings.ShipType, ship.type()), UiPalette.ACCENT, x + panelWidth);
-    for(String artLine : ShipSprites.of(ship.typeId())) {
-      if(row >= height - 5) {
-        break;
+    if(ship.picture().width() > 0) {
+      row += EditorText.picture(graphics, x, row, panelWidth, height - 5, ship.picture());
+    } else {
+      // No art files: the old sprites, as a fallback.
+      for(String artLine : ShipSprites.of(ship.typeId())) {
+        if(row >= height - 5) {
+          break;
+        }
+        graphics.putString(x, row++, cut(artLine, panelWidth));
       }
-      graphics.putString(x, row++, cut(artLine, panelWidth));
     }
     row++;
     String[] labels = ship.equipmentLabels().split("\n", -1);
@@ -872,6 +844,21 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         }
         UiPalette.draw(graphics, x, row++, line, UiPalette.WARN, x + panelWidth);
       }
+    }
+    if(row < height - 5) {
+      UiPalette.title(graphics, x, row++, Strings.ShipCargoLabel, panelWidth);
+    }
+    if(ship.cargo().isEmpty()) {
+      if(row < height - 5) {
+        graphics.putString(x, row, cut(Strings.ShipCargoNone, panelWidth));
+      }
+      return;
+    }
+    for(String cargoLine : ship.cargo()) {
+      if(row >= height - 5) {
+        break;
+      }
+      graphics.putString(x, row++, cut(cargoLine, panelWidth));
     }
   }
 
@@ -899,11 +886,15 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     if(row < limit) {
       UiPalette.draw(graphics, x, row++, shipInfo.name() + "  " + shipInfo.size(), UiPalette.ACCENT, x + panelWidth);
     }
-    for(String artLine : ShipSprites.of(shipInfo.type())) {
-      if(row >= limit) {
-        break;
+    if(shipInfo.picture().width() > 0) {
+      row += EditorText.picture(graphics, x, row, panelWidth, limit, shipInfo.picture());
+    } else {
+      for(String artLine : ShipSprites.of(shipInfo.type())) {
+        if(row >= limit) {
+          break;
+        }
+        graphics.putString(x, row++, cut(artLine, panelWidth));
       }
-      graphics.putString(x, row++, cut(artLine, panelWidth));
     }
     row++;
     if(row < limit) {
@@ -1184,17 +1175,86 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         "" + (newsLines.isEmpty() ? 0 : newsScroll + 1), "" + newsLines.size()), panelWidth));
   }
 
+  /**
+   * Draws the quests as paragraphs separated by a blank line. The selected entry is
+   * highlighted and the panel scrolls to keep it visible; entries with a destination
+   * show it under the text, so ENTER knows where to point the map.
+   */
   private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
     UiPalette.title(graphics, x, contentTop, Strings.QuestsTitle, panelWidth);
-    int row = contentTop + 1;
+    int first = contentTop + 1;
+    int limit = height - 5;
     if(quests == null) {
       return;
     }
-    List<String> lines = new ArrayList<>();
-    wrap(lines, quests.text(), panelWidth);
-    for(int i = 0; i < lines.size() && row < height - 5; i++) {
-      graphics.putString(x, row++, cut(lines.get(i), panelWidth));
+    if(quests.quests().isEmpty()) {
+      if(first < limit) {
+        UiPalette.line(graphics, x, first, cut(Strings.QuestNone, panelWidth), panelWidth);
+      }
+      return;
     }
+    List<QuestLine> lines = questLines();
+    scrollQuestsToSelection(lines, Math.max(1, limit - first));
+    int row = first;
+    for(int i = questScroll; i < lines.size() && row < limit; i++) {
+      QuestLine line = lines.get(i);
+      if(line.entry() < 0) {
+        row++;
+      } else if(quests.hasDestinations() && line.entry() == questIndex) {
+        UiPalette.selected(graphics, x, row++, line.text(), panelWidth);
+      } else if(line.marker()) {
+        UiPalette.draw(graphics, x, row++, line.text(), UiPalette.ACCENT, x + panelWidth);
+      } else {
+        graphics.putString(x, row++, cut(line.text(), panelWidth));
+      }
+    }
+  }
+
+  /** One drawn row of the quests panel: a paragraph line, its destination note or a blank. */
+  private record QuestLine(int entry, String text, boolean marker) {
+  }
+
+  /** Every quest as a wrapped paragraph, its destination note and a separating blank line. */
+  private List<QuestLine> questLines() {
+    List<QuestLine> lines = new ArrayList<>();
+    for(int i = 0; i < quests.quests().size(); i++) {
+      if(i > 0) {
+        lines.add(new QuestLine(-1, "", false));
+      }
+      QuestsViewModel.Entry entry = quests.quests().get(i);
+      List<String> wrapped = new ArrayList<>();
+      wrap(wrapped, entry.text(), panelWidth - 2);
+      for(String text : wrapped) {
+        lines.add(new QuestLine(i, "  " + text, false));
+      }
+      if(entry.hasSystem()) {
+        lines.add(new QuestLine(i, "  → " + entry.systemName(), true));
+      }
+    }
+    return lines;
+  }
+
+  /** Scrolls the quests just enough to keep the selected entry visible. */
+  private void scrollQuestsToSelection(List<QuestLine> lines, int visible) {
+    int selectedTop = -1;
+    int selectedBottom = -1;
+    for(int i = 0; i < lines.size(); i++) {
+      if(lines.get(i).entry() == questIndex) {
+        if(selectedTop < 0) {
+          selectedTop = i;
+        }
+        selectedBottom = i;
+      }
+    }
+    if(selectedTop < 0) {
+      return;
+    }
+    if(selectedTop < questScroll) {
+      questScroll = selectedTop;
+    } else if(selectedBottom >= questScroll + visible) {
+      questScroll = Math.max(selectedTop, selectedBottom - visible + 1);
+    }
+    questScroll = Math.max(0, Math.min(questScroll, Math.max(0, lines.size() - visible)));
   }
 
   private void drawTradePanel(TextGUIGraphics graphics, int x, int height) {

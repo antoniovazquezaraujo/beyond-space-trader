@@ -9,6 +9,7 @@
 package org.gts.bst.presenter;
 
 import org.gts.bst.ship.equip.GadgetType;
+import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipView;
 import org.gts.bst.view.ShipViewModel;
 import spacetrader.Consts;
@@ -18,6 +19,7 @@ import spacetrader.Ship;
 import spacetrader.SpecialEvent;
 import spacetrader.Strings;
 import java.util.ArrayList;
+import java.util.List;
 import spacetrader.util.Util;
 
 
@@ -37,7 +39,7 @@ public class ShipPresenter {
     Ship ship = game.Commander().getShip();
     EquipmentText equipment = equipmentText(ship);
     view.render(new ShipViewModel(ship.Name(), equipment.labels(), equipment.values(), specialCargo(ship),
-        ship.Type()));
+        cargoLines(ship), ship.Type(), ShipCatalog.shared().picture(ship.Type(), ShipArtItems.of(ship), ship.CargoBays())));
   }
 
   private EquipmentText equipmentText(Ship ship) {
@@ -158,6 +160,25 @@ public class ShipPresenter {
     return specialCargo.size() == 0
         ? Strings.SpecialCargoNone
         : Util.StringsJoin(Strings.newline + Strings.newline, Functions.ArrayListtoStringArray(specialCargo));
+  }
+
+  /**
+   * One line per product in the hold (name, units and the average price paid for
+   * them). A hold plundered by pirates may keep units without a recorded cost.
+   */
+  private List<String> cargoLines(Ship ship) {
+    List<String> lines = new ArrayList<>(Consts.TradeItems.size());
+    int[] priceCargo = game.Commander().PriceCargo();
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      int units = ship.Cargo()[i];
+      if(units > 0) {
+        String price = priceCargo[i] > 0
+            ? Functions.StringVars(Strings.ShipCargoBoughtAt, Functions.FormatMoney(priceCargo[i] / units))
+            : Strings.ShipCargoCostUnknown;
+        lines.add(String.format("%-10s %2d   %s", Consts.TradeItems.get(i).Name(), units, price));
+      }
+    }
+    return lines;
   }
 
   private record EquipmentText(String labels, String values) {

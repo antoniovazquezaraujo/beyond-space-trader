@@ -8,20 +8,31 @@
  */
 package org.gts.bst.presenter;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoBuyOp;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.events.EncounterResult;
+import org.gts.bst.events.EncounterType;
+import org.gts.bst.ship.ShipType;
+import org.gts.bst.view.AlertDefinition;
+import org.gts.bst.view.Alerts;
 import org.gts.bst.view.EncounterAction;
+import spacetrader.Strings;
 import org.gts.bst.view.EncounterDialogHost;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
+import org.gts.bst.view.ShipCatalog;
+import spacetrader.Consts;
+import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.Trade;
 import spacetrader.Ship;
+import spacetrader.enums.AlertType;
 
 
 /**
@@ -34,6 +45,8 @@ public class EncounterPresenter implements EncounterDialogHost {
   private final Ship cmdrship;
   private final EncounterView view;
   private EncounterResult result = EncounterResult.Continue;
+  /** The number of the round: every one is a new part for the scene. */
+  private int round;
   private boolean running;
 
   public EncounterPresenter(Game game, EncounterView view) {
@@ -84,6 +97,10 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   public void flee() {
     disableAuto();
+    if(result != EncounterResult.Continue) {
+      // The encounter is over: there is nothing to flee from.
+      return;
+    }
     if(game.encounter().EncounterVerifyFlee()) {
       executeAction();
     }
@@ -111,20 +128,66 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void submit() {
+    int before = cargoItems();
     if(game.encounter().EncounterVerifySubmit()) {
+      // The scanner goes over the ship; if they took cargo, the catwalk follows.
+      view.inspection(cargoItems() < before);
       exit(cmdrship.IllegalSpecialCargo() ? EncounterResult.Arrested : EncounterResult.Normal);
     }
   }
 
+  private int cargoItems() {
+    int total = 0;
+    for(int bays : cmdrship.Cargo()) {
+      total += bays;
+    }
+    return total;
+  }
+
   public void surrender() {
     disableAuto();
+    int before = cmdrship.FilledCargoBays();
+    int[] cargoBefore = cmdrship.Cargo().clone();
     result = game.encounter().EncounterVerifySurrender();
     if(result != EncounterResult.Continue) {
+      if(result == EncounterResult.Arrested) {
+        // The police read the arrest under their ship, and the scene waits for the
+        // player to take it in before it closes (the jail follows on its own).
+        view.speechAndWait(alertMessage(AlertType.EncounterArrested));
+      }
+      if(result == EncounterResult.Normal && game.encounter().getEncounterType() == EncounterType.PirateAttack
+          && game.encounter().getOpponent().Type() != ShipType.Mantis) {
+        // The pirates looted the ship: the scene shows the transfer only when
+        // they actually took cargo; the Mantis case gave up the artifact.
+        view.looted(cmdrship.FilledCargoBays() < before);
+      }
+      String taken = takenCargo(cargoBefore);
+      if(!taken.isEmpty()) {
+        // What the holds lost is kept in the log of the scene, under the ships.
+        view.log(Functions.StringVars(Strings.EncounterPiratesTake, taken));
+      }
       view.close();
     }
   }
 
+  /** What the holds lost, as "2 Water, 1 Furs"; empty when nothing was taken. */
+  private String takenCargo(int[] before) {
+    StringBuilder taken = new StringBuilder();
+    for(int i = 0; i < before.length && i < cmdrship.Cargo().length && i < Consts.TradeItems.size(); i++) {
+      int lost = before[i] - cmdrship.Cargo()[i];
+      if(lost <= 0) {
+        continue;
+      }
+      if(taken.length() > 0) {
+        taken.append(", ");
+      }
+      taken.append(lost).append(' ').append(Consts.TradeItems.get(i).Name());
+    }
+    return taken.toString();
+  }
+
   public void trade() {
+    // The catwalk and the question run inside the offer (the scene of the trade).
     game.encounter().EncounterTrade(this);
     exit(EncounterResult.Normal);
   }
@@ -132,8 +195,21 @@ public class EncounterPresenter implements EncounterDialogHost {
   public void yield() {
     result = game.encounter().EncounterVerifyYield();
     if(result != EncounterResult.Continue) {
+      if(result == EncounterResult.Arrested) {
+        // Surrendering to the police ends in the arrest.
+        view.speechAndWait(alertMessage(AlertType.EncounterArrested));
+      } else if(result == EncounterResult.Normal) {
+        // The police took the illegal cargo and let us go for cooperating.
+        view.speechAndWait(alertMessage(AlertType.EncounterPostMarie));
+      }
       view.close();
     }
+  }
+
+  /** The message of a predefined alert, to say it under the rival before closing. */
+  private static String alertMessage(AlertType type) {
+    AlertDefinition definition = Alerts.get(type);
+    return definition == null ? "" : definition.message();
   }
 
   @Override
@@ -182,11 +258,16 @@ public class EncounterPresenter implements EncounterDialogHost {
       running = false;
     }
     if(result == EncounterResult.Continue) {
+      round++;
       update();
       if(game.encounter().getEncounterContinueFleeing() || game.encounter().getEncounterContinueAttacking()) {
         view.startTimer();
       }
     } else {
+      // A chase that ends with us getting away: the other ship loses us.
+      if(result == EncounterResult.Normal && game.encounter().getEncounterCmdrFleeing()) {
+        view.escaped();
+      }
       view.close();
     }
   }
@@ -207,15 +288,75 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   private EncounterViewModel model(String encounterText, String actionText) {
+    List<String> opponentItems = new ArrayList<>(ShipArtItems.of(game.encounter().getOpponent()));
+    String role = ShipArtItems.role(game.encounter().getEncounterType());
+    if(role != null) {
+      opponentItems.add(role);
+    }
+    ShipCatalog catalog = ShipCatalog.shared();
     return new EncounterViewModel(actions(),
         game.encounter().getEncounterContinueAttacking() || game.encounter().getEncounterContinueFleeing(),
         game.encounter().EncounterImageIndex(),
-        cmdrship.Name(), cmdrship.HullText(), cmdrship.ShieldText(),
-        game.encounter().getOpponent().Name(), game.encounter().getOpponent().HullText(), game.encounter().getOpponent().ShieldText(),
+        cmdrship.Name(), bar(cmdrship.getHull(), cmdrship.HullStrength()),
+        bar(cmdrship.ShieldCharge(), cmdrship.ShieldStrength()),
+        game.encounter().getOpponent().Name(),
+        bar(game.encounter().getOpponent().getHull(), game.encounter().getOpponent().HullStrength()),
+        bar(game.encounter().getOpponent().ShieldCharge(), game.encounter().getOpponent().ShieldStrength()),
         encounterText, actionText,
         cmdrship.Type(), game.encounter().getOpponent().Type(),
         game.encounter().getEncounterOppHit(), game.encounter().getEncounterCmdrHit(),
-        game.encounter().getEncounterOppDamage(), game.encounter().getEncounterCmdrDamage());
+        game.encounter().getEncounterOppDamage(), game.encounter().getEncounterCmdrDamage(),
+        catalog.picture(cmdrship.Type(), ShipArtItems.of(cmdrship), cmdrship.CargoBays()),
+        catalog.picture(game.encounter().getOpponent().Type(), opponentItems,
+            game.encounter().getOpponent().CargoBays()).mirrored(),
+        game.encounter().getOpponentDisabled(),
+        !game.encounter().getEncounterCmdrFleeing(),
+        opponentIgnores(),
+        game.encounter().getOpponent().Pilot(),
+        game.encounter().getEncounterCmdrFleeing(),
+        round,
+        speech(),
+        ShipArtItems.of(cmdrship),
+        opponentItems,
+        cmdrship.CargoBays(),
+        game.encounter().getOpponent().CargoBays());
+  }
+
+  /** What the other ship says: the police demand, the trader hail; nothing for the rest. */
+  private String speech() {
+    String type = game.encounter().getEncounterType().name();
+    if(type.equals("PoliceInspect")) {
+      return Strings.EncounterSaysPolice;
+    }
+    if(type.equals("PoliceSurrender")) {
+      return Strings.EncounterSaysPoliceArrest;
+    }
+    if(type.equals("TraderSell")) {
+      return Strings.EncounterSaysTraderSells;
+    }
+    if(type.equals("TraderBuy")) {
+      return Strings.EncounterSaysTraderBuys;
+    }
+    return "";
+  }
+
+  /** True when the other ship ignores us: it does not react to our manoeuvres. */
+  private boolean opponentIgnores() {
+    return opponentLeaves(game.encounter().getEncounterType().name(), cmdrship.Cloaked());
+  }
+
+  /**
+   * True when the other ship is out of the fight (it ignores us or flees), so it
+   * stops blocking the way; a cloaked ship is not seen either. A ship that
+   * surrenders does not leave: it stays in front waiting for our decision
+   * (attack or plunder it), and so does the police demanding our surrender.
+   */
+  static boolean opponentLeaves(String encounterType, boolean cloaked) {
+    return encounterType.endsWith("Ignore") || encounterType.endsWith("Flee") || cloaked;
+  }
+
+  private static EncounterViewModel.Bar bar(int value, int max) {
+    return new EncounterViewModel.Bar(value, max);
   }
 
   private Set<EncounterAction> actions() {

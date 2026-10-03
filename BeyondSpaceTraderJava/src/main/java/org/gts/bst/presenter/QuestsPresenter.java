@@ -16,9 +16,11 @@ import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.SpecialEvent;
+import spacetrader.StarSystem;
 import spacetrader.Strings;
+import spacetrader.enums.StarSystemId;
 import java.util.ArrayList;
-import spacetrader.util.Util;
+import java.util.List;
 
 
 /**
@@ -34,135 +36,157 @@ public class QuestsPresenter {
   }
 
   public void update() {
-    String[] quests = questStrings();
-    view.render(new QuestsViewModel(
-        quests.length == 0 ? Strings.QuestNone : Util.StringsJoin(Strings.newline + Strings.newline, quests),
-        quests.length > 0));
+    view.render(new QuestsViewModel(questEntries()));
   }
 
   public void selectSystem(String systemName) {
     game.setSelectedSystemByName(systemName);
   }
 
-  private String[] questStrings() {
-    ArrayList<String> quests = new ArrayList<>(12);
+  private List<QuestsViewModel.Entry> questEntries() {
+    List<QuestsViewModel.Entry> quests = new ArrayList<>(12);
     if(game.getQuestStatusGemulon() > SpecialEvent.StatusGemulonNotStarted && game.getQuestStatusGemulon() < SpecialEvent.StatusGemulonDate) {
       if(game.getQuestStatusGemulon() == SpecialEvent.StatusGemulonDate - 1) {
-        quests.add(Strings.QuestGemulonInformTomorrow);
+        quests.add(quest(Strings.QuestGemulonInformTomorrow, StarSystemId.Gemulon));
       } else {
-        quests.add(Functions.StringVars(Strings.QuestGemulonInformDays, Functions.Multiples(SpecialEvent.StatusGemulonDate - game.getQuestStatusGemulon(), Strings.TimeUnit)));
+        quests.add(quest(Functions.StringVars(Strings.QuestGemulonInformDays,
+            Functions.Multiples(SpecialEvent.StatusGemulonDate - game.getQuestStatusGemulon(), Strings.TimeUnit)),
+            StarSystemId.Gemulon));
       }
     } else if(game.getQuestStatusGemulon() == SpecialEvent.StatusGemulonFuel) {
-      quests.add(Strings.QuestGemulonFuel);
+      quests.add(quest(Strings.QuestGemulonFuel, StarSystemId.Gemulon));
     }
     if(game.getQuestStatusExperiment() > SpecialEvent.StatusExperimentNotStarted && game.getQuestStatusExperiment() < SpecialEvent.StatusExperimentDate) {
       if(game.getQuestStatusExperiment() == SpecialEvent.StatusExperimentDate - 1) {
-        quests.add(Strings.QuestExperimentInformTomorrow);
+        quests.add(quest(Strings.QuestExperimentInformTomorrow, StarSystemId.Daled));
       } else {
-        quests.add(Functions.StringVars(Strings.QuestExperimentInformDays, Functions.Multiples(SpecialEvent.StatusExperimentDate - game.getQuestStatusExperiment(), Strings.TimeUnit)));
+        quests.add(quest(Functions.StringVars(Strings.QuestExperimentInformDays,
+            Functions.Multiples(SpecialEvent.StatusExperimentDate - game.getQuestStatusExperiment(), Strings.TimeUnit)),
+            StarSystemId.Daled));
       }
     }
     if(game.Commander().getShip().ReactorOnBoard()) {
       if(game.getQuestStatusReactor() == SpecialEvent.StatusReactorFuelOk) {
-        quests.add(Strings.QuestReactor);
+        quests.add(quest(Strings.QuestReactor, StarSystemId.Nix));
       } else {
-        quests.add(Strings.QuestReactorFuel);
+        quests.add(quest(Strings.QuestReactorFuel, StarSystemId.Nix));
       }
     } else if(game.getQuestStatusReactor() == SpecialEvent.StatusReactorDelivered) {
-      quests.add(Strings.QuestReactorLaser);
+      quests.add(quest(Strings.QuestReactorLaser, StarSystemId.Nix));
     }
     if(game.getQuestStatusSpaceMonster() == SpecialEvent.StatusSpaceMonsterAtAcamar) {
-      quests.add(Strings.QuestSpaceMonsterKill);
+      quests.add(quest(Strings.QuestSpaceMonsterKill, StarSystemId.Acamar));
     }
     if(game.getQuestStatusJapori() == SpecialEvent.StatusJaporiInTransit) {
-      quests.add(Strings.QuestJaporiDeliver);
+      quests.add(quest(Strings.QuestJaporiDeliver, StarSystemId.Japori));
     }
     switch(game.getQuestStatusDragonfly()) {
       case SpecialEvent.StatusDragonflyFlyBaratas:
-        quests.add(Strings.QuestDragonflyBaratas);
+        quests.add(quest(Strings.QuestDragonflyBaratas, StarSystemId.Baratas));
         break;
       case SpecialEvent.StatusDragonflyFlyMelina:
-        quests.add(Strings.QuestDragonflyMelina);
+        quests.add(quest(Strings.QuestDragonflyMelina, StarSystemId.Melina));
         break;
       case SpecialEvent.StatusDragonflyFlyRegulas:
-        quests.add(Strings.QuestDragonflyRegulas);
+        quests.add(quest(Strings.QuestDragonflyRegulas, StarSystemId.Regulas));
         break;
       case SpecialEvent.StatusDragonflyFlyZalkon:
-        quests.add(Strings.QuestDragonflyZalkon);
+        quests.add(quest(Strings.QuestDragonflyZalkon, StarSystemId.Zalkon));
         break;
       case SpecialEvent.StatusDragonflyDestroyed:
-        quests.add(Strings.QuestDragonflyShield);
+        quests.add(quest(Strings.QuestDragonflyShield, StarSystemId.Zalkon));
         break;
       default:
         break;
     }
     switch(game.getQuestStatusPrincess()) {
       case SpecialEvent.StatusPrincessFlyCentauri:
-        quests.add(Strings.QuestPrincessCentauri);
+        quests.add(quest(Strings.QuestPrincessCentauri, StarSystemId.Centauri));
         break;
       case SpecialEvent.StatusPrincessFlyInthara:
-        quests.add(Strings.QuestPrincessInthara);
+        quests.add(quest(Strings.QuestPrincessInthara, StarSystemId.Inthara));
         break;
       case SpecialEvent.StatusPrincessFlyQonos:
-        quests.add(Strings.QuestPrincessQonos);
+        quests.add(quest(Strings.QuestPrincessQonos, StarSystemId.Qonos));
         break;
       case SpecialEvent.StatusPrincessRescued:
         if(game.Commander().getShip().PrincessOnBoard()) {
           if(game.getQuestStatusPrincess() == SpecialEvent.StatusPrincessImpatient) {
-            quests.add(Functions.StringVars(Strings.QuestPrincessReturningImpatient, game.Mercenaries()[CrewMemberId.Princess.CastToInt()].Name()));
+            quests.add(quest(Functions.StringVars(Strings.QuestPrincessReturningImpatient,
+                game.Mercenaries()[CrewMemberId.Princess.CastToInt()].Name()), StarSystemId.Galvon));
           } else {
-            quests.add(Functions.StringVars(Strings.QuestPrincessReturning, game.Mercenaries()[CrewMemberId.Princess.CastToInt()].Name()));
+            quests.add(quest(Functions.StringVars(Strings.QuestPrincessReturning,
+                game.Mercenaries()[CrewMemberId.Princess.CastToInt()].Name()), StarSystemId.Galvon));
           }
         } else {
-          quests.add(Functions.StringVars(Strings.QuestPrincessReturn, game.Mercenaries()[CrewMemberId.Princess.CastToInt()].Name()));
+          quests.add(quest(Functions.StringVars(Strings.QuestPrincessReturn,
+              game.Mercenaries()[CrewMemberId.Princess.CastToInt()].Name()), StarSystemId.Galvon));
         }
         break;
       case SpecialEvent.StatusPrincessReturned:
-        quests.add(Strings.QuestPrincessQuantum);
+        quests.add(quest(Strings.QuestPrincessQuantum, StarSystemId.Galvon));
         break;
       default:
         break;
     }
     if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabHunting) {
-      quests.add(Strings.QuestScarabFind);
+      quests.add(questAt(Strings.QuestScarabFind, scarabLocation()));
     } else if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDestroyed) {
-      if(Consts.SpecialEvents.get(SpecialEventType.ScarabUpgradeHull.CastToInt()).Location(game.Universe()) == null) {
-        quests.add(Functions.StringVars(Strings.QuestScarabNotify,
-            Consts.SpecialEvents.get(SpecialEventType.ScarabDestroyed.CastToInt()).Location(game.Universe()).Name()));
+      StarSystem upgrade = location(SpecialEventType.ScarabUpgradeHull);
+      if(upgrade == null) {
+        StarSystem destroyed = scarabLocation();
+        quests.add(questAt(Functions.StringVars(Strings.QuestScarabNotify, destroyed.Name()), destroyed));
       } else {
-        quests.add(Functions.StringVars(Strings.QuestScarabHull,
-            Consts.SpecialEvents.get(SpecialEventType.ScarabUpgradeHull.CastToInt()).Location(game.Universe()).Name()));
+        quests.add(questAt(Functions.StringVars(Strings.QuestScarabHull, upgrade.Name()), upgrade));
       }
     }
     if(game.Commander().getShip().SculptureOnBoard()) {
-      quests.add(Strings.QuestSculpture);
-    } else if(game.getQuestStatusReactor() == SpecialEvent.StatusReactorDelivered) {
-      quests.add(Strings.QuestSculptureHiddenBays);
+      quests.add(quest(Strings.QuestSculpture, StarSystemId.Endor));
+    } else if(game.getQuestStatusSculpture() == SpecialEvent.StatusSculptureDelivered) {
+      quests.add(quest(Strings.QuestSculptureHiddenBays, StarSystemId.Endor));
     }
     if(game.getQuestStatusArtifact() == SpecialEvent.StatusArtifactOnBoard) {
-      quests.add(Strings.QuestArtifact);
+      quests.add(questAt(Strings.QuestArtifact, location(SpecialEventType.ArtifactDelivery)));
     }
     if(game.Commander().getShip().JarekOnBoard()) {
       if(game.getQuestStatusJarek() == SpecialEvent.StatusJarekImpatient) {
-        quests.add(Strings.QuestJarekImpatient);
+        quests.add(quest(Strings.QuestJarekImpatient, StarSystemId.Devidia));
       } else {
-        quests.add(Strings.QuestJarek);
+        quests.add(quest(Strings.QuestJarek, StarSystemId.Devidia));
       }
     }
     if(game.Commander().getShip().WildOnBoard()) {
       if(game.getQuestStatusWild() == SpecialEvent.StatusWildImpatient) {
-        quests.add(Strings.QuestWildImpatient);
+        quests.add(quest(Strings.QuestWildImpatient, StarSystemId.Kravat));
       } else {
-        quests.add(Strings.QuestWild);
+        quests.add(quest(Strings.QuestWild, StarSystemId.Kravat));
       }
     }
     if(game.Commander().getShip().getTribbles() > 0) {
-      quests.add(Strings.QuestTribbles);
+      quests.add(questAt(Strings.QuestTribbles, null));
     }
     if(game.getQuestStatusMoon() == SpecialEvent.StatusMoonBought) {
-      quests.add(Strings.QuestMoon);
+      quests.add(quest(Strings.QuestMoon, StarSystemId.Utopia));
     }
-    return Functions.ArrayListtoStringArray(quests);
+    return quests;
+  }
+
+  /** The destination of the fixed quests: the name of that system in this universe. */
+  private QuestsViewModel.Entry quest(String text, StarSystemId id) {
+    return new QuestsViewModel.Entry(text, game.Universe()[id.CastToInt()].Name());
+  }
+
+  /** The destination of the dynamic quests: the system of a placed event, or none. */
+  private static QuestsViewModel.Entry questAt(String text, StarSystem location) {
+    return new QuestsViewModel.Entry(text, location == null ? null : location.Name());
+  }
+
+  /** The wormhole system where the Scarab hides and can be destroyed. */
+  private StarSystem scarabLocation() {
+    return location(SpecialEventType.ScarabDestroyed);
+  }
+
+  private StarSystem location(SpecialEventType type) {
+    return Consts.SpecialEvents.get(type.CastToInt()).Location(game.Universe());
   }
 }
-

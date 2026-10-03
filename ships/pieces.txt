@@ -105,7 +105,7 @@ color=lightgrey
 ;; role markers: the game shows the one of the encounter
 [Role Trader]
 key=R
-color=gold
+color=green
 $
 [Role Pirate]
 key=R
@@ -113,7 +113,7 @@ color=white
 ☠
 [Role Police]
 key=R
-color=red
-bgcolor=blue
+color=maroon
+bgcolor=navy
 blink=true
-✶
+*

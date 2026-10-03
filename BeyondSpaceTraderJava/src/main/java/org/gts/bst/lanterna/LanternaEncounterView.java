@@ -15,17 +15,19 @@ import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.function.Supplier;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
-import org.gts.bst.view.ShipSprites;
+import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Strings;
@@ -55,8 +57,9 @@ public final class LanternaEncounterView implements EncounterView {
   }
 
   private static final int TICK_MILLIS = 1000;
-  private static final int TEXT_WIDTH = 78;
-  private static final int SHIP_COLUMN = 38;
+  private static final int FRAME_MILLIS = 110;
+  private static final int CLOSE_MILLIS = 2200;
+  private static final int TEXT_WIDTH = 110;
   private static final Map<Character, EncounterAction> KEYS = Map.ofEntries(
       Map.entry('a', EncounterAction.Attack),
       Map.entry('o', EncounterAction.Board),
@@ -72,48 +75,239 @@ public final class LanternaEncounterView implements EncounterView {
       Map.entry('t', EncounterAction.Trade),
       Map.entry('y', EncounterAction.Yield));
 
+  /** The reverse of the table above: the key of each action, for the scene to show it. */
+  private static final Map<EncounterAction, Character> ACTION_KEYS = invertKeys(KEYS);
+
+  private static Map<EncounterAction, Character> invertKeys(Map<Character, EncounterAction> keys) {
+    Map<EncounterAction, Character> inverted = new EnumMap<>(EncounterAction.class);
+    keys.forEach((key, action) -> inverted.put(action, key));
+    return Map.copyOf(inverted);
+  }
+
+  /** The key that runs an action, or {@code null} when the action has none. */
+  static Character keyOf(EncounterAction action) {
+    return ACTION_KEYS.get(action);
+  }
+
   private final WindowBasedTextGUI gui;
   private final Commands commands;
   private final Runnable tick;
   private final CargoHost cargoHost;
   private final BasicWindow window = new BasicWindow(Strings.EncounterTitle);
-  private final TextScreenComponent content;
+  private final EncounterSceneComponent content;
   private EncounterViewModel model;
   private Timer timer;
+  private Timer stars;
+  private Runnable onClose;
+  private boolean closing;
+  private boolean closed;
+  private boolean awaitingLeave;
+  /** The bubble now on screen came from a quiet alert: the next part takes it away. */
+  private boolean alertSpeech;
 
   public LanternaEncounterView(WindowBasedTextGUI gui, Commands commands, Runnable tick, CargoHost cargoHost) {
     this.gui = gui;
     this.commands = commands;
     this.tick = tick;
     this.cargoHost = cargoHost;
-    this.content = new TextScreenComponent(this::handleKey);
-    window.setHints(Set.of(Window.Hint.MODAL, Window.Hint.CENTERED, Window.Hint.FIT_TERMINAL_WINDOW));
-    content.setPreferredSize(new TerminalSize(78, 20));
+    this.content = new EncounterSceneComponent(this::handleKey);
+    window.setHints(Set.of(Window.Hint.MODAL, Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+    content.onExit(() -> {
+      if(awaitingLeave) {
+        // The scene is over: the ship leaves for real.
+        awaitingLeave = false;
+        closeNow();
+        return;
+      }
+      // Reaching the edge is the escape: if it has no interest in us, it loses
+      // us and goes; if it chases us, the game decides whether we get away or
+      // it closes in.
+      if(model.opponentIgnores()) {
+        // It was not interested in us: it goes away through the other side.
+        content.opponentLeaves(!content.exitedRight());
+        execute(EncounterAction.Ignore);
+      } else {
+        execute(EncounterAction.Flee);
+      }
+    });
+    content.onOpponentGone(() -> {
+      if(closed || closing) {
+        // The encounter is already going: a frame queued by the star timer
+        // must not ignore it twice or close it again.
+        return;
+      }
+      if(model == null || !model.actions().contains(EncounterAction.Ignore)) {
+        // The other ship did not see us (we are cloaked) and crosses and leaves,
+        // but it can still keep a decision open (attack, flee or surrender): the
+        // scene waits for the player.
+        return;
+      }
+      // It finished crossing and is gone: the encounter is over, as if ignored.
+      execute(EncounterAction.Ignore);
+    });
+    content.setPreferredSize(new TerminalSize(120, 30));
     window.setComponent(content);
     window.setFocusedInteractable(content);
+    // The sky of the fight moves with its own clock, from the encounter timer.
+    stars = new Timer("encounter-stars", true);
+    stars.scheduleAtFixedRate(new TimerTask() {
+      @Override
+      public void run() {
+        try {
+          gui.getGUIThread().invokeLater(content::tick);
+        } catch(IllegalStateException e) {
+          return;
+        }
+      }
+    }, FRAME_MILLIS, FRAME_MILLIS);
   }
 
   public Window asWindow() {
     return window;
   }
 
+  /**
+   * The commander of the game, for the header of the scene: its values are read
+   * on every paint, so the fight (hull, shields, ...) is always up to date.
+   */
+  public void header(Supplier<Commander> commander) {
+    content.commander(commander);
+  }
+
+  @Override
+  public void escaped() {
+    // We got away: the camera follows us, so we stay in the scene; the other
+    // ship, the one behind us, is the one that leaves the scene. The ship turns
+    // away with the escape (also when the flee key asked for it, with no dash).
+    content.faceAway();
+    content.opponentLeaves(!content.exitedRight());
+  }
+
+  @Override
+  public void inspection(boolean confiscated) {
+    // After the scan the ship stays until the player reads the outcome and leaves.
+    awaitLeave();
+    content.inspection(confiscated, confiscated ? null : Strings.EncounterSaysPoliceAllClear);
+  }
+
+  @Override
+  public void looted(boolean cargo) {
+    // After the looting the ship stays until the player reads the outcome and
+    // leaves; the catwalk comes out only when the pirates take cargo.
+    awaitLeave();
+    if(cargo) {
+      content.loot();
+    }
+  }
+
+  /** The scene is over: it waits for the player to leave (intro, escape or flying away). */
+  private void awaitLeave() {
+    awaitingLeave = true;
+    content.awaitLeave();
+  }
+
+  /** A quiet alert of the game: one more line of the log of the scene. */
+  @Override
+  public void log(String line) {
+    content.addAlert(line);
+  }
+
+  /** A quiet alert that the other ship says: a bubble under it, gone with the next action, part or round. */
+  @Override
+  public void speech(String line) {
+    alertSpeech = true;
+    content.say(line);
+  }
+
+  /** The same bubble, but the scene stays waiting for the player to read it and leave. */
+  @Override
+  public void speechAndWait(String line) {
+    alertSpeech = false;
+    content.say(line);
+    awaitLeave();
+  }
+
+  /**
+   * The bubble of a past alert goes away with the next action (a round or part
+   * clears it too, in {@link #render}). The ones the scene waits to be read
+   * ({@link #speechAndWait}) stay until the player leaves.
+   */
+  private void clearAlertSpeech() {
+    if(alertSpeech) {
+      alertSpeech = false;
+      content.clearSpeech();
+    }
+  }
+
+  /** Tells the window that the encounter is over (to stop sending it log lines). */
+  public void onClose(Runnable close) {
+    this.onClose = close;
+  }
+
   @Override
   public void render(EncounterViewModel model) {
+    // A new part (a round, an update) leaves the bubble of a past alert behind.
+    clearAlertSpeech();
     this.model = model;
     List<String> lines = new ArrayList<>();
-    addShips(lines, model);
-    lines.add("");
     addWrapped(lines, model.encounterText());
     lines.add("");
     addWrapped(lines, model.actionText());
-    lines.add("");
-    lines.add(actionsLine(model.actions()));
-    content.lines(lines);
+    content.model(model);
+    content.log(lines);
   }
 
   @Override
   public void close() {
     stopTimer();
+    if(awaitingLeave) {
+      // The scene waits for the player: the presenter has already set the result.
+      return;
+    }
+    if(content.animating() && !closing) {
+      // Let the scene finish (the scanner, the catwalk) before the window goes.
+      closing = true;
+      java.util.Timer timer = new java.util.Timer("encounter-close", true);
+      timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+          gui.getGUIThread().invokeLater(LanternaEncounterView.this::closeNow);
+        }
+      }, CLOSE_MILLIS);
+      return;
+    }
+    closeNow();
+  }
+
+  private void closeNow() {
+    if(closed) {
+      // A queued close (or frame) after the window went must not act again.
+      return;
+    }
+    if(awaitingLeave) {
+      // The scene is waiting for the player: no pending close takes it away.
+      return;
+    }
+    // Never close under a dialog of the encounter (a trade, a question): closing the
+    // owner leaves the main screen with no way in. Wait for the dialog to go first.
+    if(gui.getActiveWindow() != null && gui.getActiveWindow() != window) {
+      java.util.Timer timer = new java.util.Timer("encounter-close", true);
+      timer.schedule(new java.util.TimerTask() {
+        @Override
+        public void run() {
+          gui.getGUIThread().invokeLater(LanternaEncounterView.this::closeNow);
+        }
+      }, CLOSE_MILLIS);
+      return;
+    }
+    closed = true;
+    if(stars != null) {
+      stars.cancel();
+      stars = null;
+    }
+    if(onClose != null) {
+      onClose.run();
+    }
     window.close();
   }
 
@@ -149,100 +343,206 @@ public final class LanternaEncounterView implements EncounterView {
     cargoHost.show(true);
   }
 
+  /** The item name, in lowercase, to fit in the sentence the other ship says. */
+  private static String inSpeech(String item) {
+    return item == null || item.isEmpty() ? item
+        : Character.toLowerCase(item.charAt(0)) + item.substring(1);
+  }
+
+  /**
+   * The trade as a cutscene: the other ship says the offer, comes closer with the
+   * catwalk out, the question is asked at the bottom, the boxes cross if there is a
+   * deal and then the catwalk comes back in. The scene waits for the player after it.
+   */
   @Override
   public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
-    return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoBuyTitle, item),
+    content.say(Functions.StringVars(Strings.EncounterSaysOffer, inSpeech(item), Functions.FormatMoney(offer.unitPrice())));
+    content.catwalk();
+    playUntil(content::catwalkOut);
+    String title = Functions.StringVars(Strings.DialogCargoBuyTitle, item) + "  "
+        + Functions.FormatMoney(offer.unitPrice());
+    Integer qty = LanternaDialogs.askAmountAtBottom(gui, title,
         Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount());
+    if(qty != null && qty > 0) {
+      content.haul();
+      playUntil(content::catwalkOut);
+    }
+    content.deal();
+    if(qty != null && qty > 0) {
+      // The deal is done: the trader thanks, on its ship.
+      content.say(Strings.EncounterSaysTradeThanks);
+    }
+    content.retract();
+    playUntil(content::catwalkGone);
+    awaitLeave();
+    return qty;
   }
 
   @Override
   public Integer askCargoSellQuantity(CargoSellOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
-    return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoSellTitle, item),
+    content.say(Functions.StringVars(Strings.EncounterSaysWanted, inSpeech(item), Functions.FormatMoney(offer.price())));
+    content.catwalk();
+    playUntil(content::catwalkOut);
+    String title = Functions.StringVars(Strings.DialogCargoSellTitle, item) + "  "
+        + Functions.FormatMoney(offer.price());
+    Integer qty = LanternaDialogs.askAmountAtBottom(gui, title,
         Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount());
+    if(qty != null && qty > 0) {
+      content.haul();
+      playUntil(content::catwalkOut);
+    }
+    content.deal();
+    if(qty != null && qty > 0) {
+      // The deal is done: the trader thanks, on its ship.
+      content.say(Strings.EncounterSaysTradeThanks);
+    }
+    content.retract();
+    playUntil(content::catwalkGone);
+    awaitLeave();
+    return qty;
+  }
+
+  /** Runs the scene by hand while a cutscene of the trade lasts. */
+  private void playUntil(java.util.function.BooleanSupplier done) {
+    for(int frames = 0; frames < 300 && !done.getAsBoolean(); frames++) {
+      content.tick();
+      try {
+        gui.updateScreen();
+        Thread.sleep(FRAME_MILLIS);
+      } catch(java.io.IOException e) {
+        return;
+      } catch(InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
+      }
+    }
   }
 
   private boolean handleKey(KeyStroke key) {
-    if(model == null || key.getKeyType() != KeyType.Character) {
+    if(model == null) {
       return false;
     }
-    EncounterAction action = KEYS.get(Character.toLowerCase(key.getCharacter()));
+    // The ships come in fast when the player takes part: the keys answer at once.
+    content.skipEntry();
+    if(awaitingLeave) {
+      // The scene is over: the player leaves with intro, escape or flying the ship away.
+      if(key.getKeyType() == KeyType.Enter || key.getKeyType() == KeyType.Escape) {
+        awaitingLeave = false;
+        closeNow();
+        return true;
+      }
+      manoeuvre(key);
+      return true;
+    }
+    if(manoeuvre(key)) {
+      return true;
+    }
+    if(key.getKeyType() == KeyType.Enter) {
+      return accept();
+    }
+    if(key.getKeyType() != KeyType.Character) {
+      return false;
+    }
+    char character = Character.toLowerCase(key.getCharacter());
+    if(character == ' ') {
+      // The other ship has to answer first: no two of our shots in one exchange.
+      if(!content.responding()) {
+        execute(EncounterAction.Attack);
+      }
+      return true;
+    }
+    EncounterAction action = KEYS.get(character);
     if(action == null || !model.actions().contains(action)) {
       return false;
     }
-    commands.execute(action);
+    execute(action);
     return true;
   }
 
-  private static void addShips(List<String> lines, EncounterViewModel model) {
-    List<String> you = ShipSprites.of(model.youType());
-    List<String> opponent = ShipSprites.of(model.opponentType());
-    lines.add(pad(model.youShip(), SHIP_COLUMN) + model.opponentShip());
-    for(int i = 0; i < Math.max(you.size(), opponent.size()); i++) {
-      String left = i < you.size() ? you.get(i) : "";
-      String right = i < opponent.size() ? opponent.get(i) : "";
-      lines.add(pad(left, SHIP_COLUMN) + right);
-    }
-    lines.add(pad(model.youHull() + "   " + model.youShields(), SHIP_COLUMN)
-        + model.opponentHull() + "   " + model.opponentShields());
+  /**
+   * The half turn, and the advance away: the ship holds its place while the sky
+   * moves the other way. Advancing away is an escape attempt: the game decides
+   * whether the other one follows (it closes in) or loses us (it leaves the
+   * scene). The camera follows us, so the ship only goes as far as the edge.
+   */
+  private void advanceAway() {
+    // The first press turns the ship where it stands; the next one sends it
+    // away (the stars sell the retreat). Reaching the edge asks the game for
+    // the escape.
+    content.move(-1, 0);
   }
 
-  private static String pad(String text, int width) {
-    return text.length() >= width ? text.substring(0, width) : text + " ".repeat(width - text.length());
-  }
-
-  private static String actionsLine(Set<EncounterAction> actions) {
-    StringBuilder line = new StringBuilder();
-    for(EncounterAction action : actions) {
-      if(line.length() > 0) {
-        line.append("  ");
-      }
-      line.append('[').append(keyOf(action)).append(']').append(label(action));
-    }
-    return line.toString();
-  }
-
-  private static char keyOf(EncounterAction action) {
-    for(Map.Entry<Character, EncounterAction> entry : KEYS.entrySet()) {
-      if(entry.getValue() == action) {
-        return Character.toUpperCase(entry.getKey());
-      }
-    }
-    return '?';
-  }
-
-  private static String label(EncounterAction action) {
-    switch(action) {
-      case Attack:
-        return Strings.EncounterActionAttack;
-      case Board:
-        return Strings.EncounterActionBoard;
-      case Bribe:
-        return Strings.EncounterActionBribe;
-      case Drink:
-        return Strings.EncounterActionDrink;
-      case Flee:
-        return Strings.EncounterActionFlee;
-      case Ignore:
-        return Strings.EncounterActionIgnore;
-      case Interrupt:
-        return Strings.EncounterActionInterrupt;
-      case Meet:
-        return Strings.EncounterActionMeet;
-      case Plunder:
-        return Strings.EncounterActionPlunder;
-      case Submit:
-        return Strings.EncounterActionSubmit;
-      case Surrender:
-        return Strings.EncounterActionSurrender;
-      case Trade:
-        return Strings.EncounterActionTrade;
-      case Yield:
-        return Strings.EncounterActionYield;
+  /** The manoeuvres: the arrows and the vim keys move the ship. */
+  private boolean manoeuvre(KeyStroke key) {
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        content.move(0, -1);
+        return true;
+      case ArrowDown:
+        content.move(0, 1);
+        return true;
+      case ArrowLeft:
+        advanceAway();
+        return true;
+      case ArrowRight:
+        content.move(1, 0);
+        return true;
+      case Character:
+        char character = Character.toLowerCase(key.getCharacter());
+        if(character == 'k') {
+          content.move(0, -1);
+          return true;
+        }
+        if(character == 'j') {
+          content.move(0, 1);
+          return true;
+        }
+        if(character == 'h') {
+          advanceAway();
+          return true;
+        }
+        if(character == 'l') {
+          content.move(1, 0);
+          return true;
+        }
+        return false;
       default:
-        return action.name();
+        return false;
     }
+  }
+
+  /**
+   * The intro key: the natural action of the encounter (deal with the trader,
+   * allow the search, meet the captain, take the drink, board a disabled ship) or,
+   * if there is none, giving up (surrender, submit or yield the cargo).
+   */
+  private boolean accept() {
+    for(EncounterAction action : java.util.List.of(EncounterAction.Trade, EncounterAction.Submit,
+        EncounterAction.Meet, EncounterAction.Drink, EncounterAction.Board, EncounterAction.Surrender,
+        EncounterAction.Yield)) {
+      if(model.actions().contains(action)) {
+        // The speech has been dealt with: it goes away and the scene plays.
+        content.deal();
+        execute(action);
+        return true;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Runs an action of the encounter. The trade ends with the scene waiting for the
+   * player (they leave with intro, escape or flying the ship away), so the window
+   * must not go when the presenter closes it after the deal.
+   */
+  private void execute(EncounterAction action) {
+    clearAlertSpeech();
+    if(action == EncounterAction.Trade) {
+      awaitingLeave = true;
+    }
+    commands.execute(action);
   }
 
   private static void addWrapped(List<String> lines, String text) {

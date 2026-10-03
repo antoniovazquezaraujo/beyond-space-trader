@@ -16,21 +16,32 @@ import com.googlecode.lanterna.input.KeyType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.HullFile;
 import org.gts.bst.view.LetterGrid;
 import org.gts.bst.view.ShipArtFile;
+import org.gts.bst.view.ShipDesign;
+import org.gts.bst.view.ShipSites;
 
 
 /**
  * The hull editor: on the left the numbered colour elements (colour, background
  * and blink; added with + and removed with -), then the drawing with its colour
  * letters (space paints or erases) and then the same hull painted with those
- * colours. The drawing is never touched.
+ * colours. The drawing is never touched. The size of a hull a type is wearing
+ * is fixed by that type; z only cycles the size of a free hull.
  */
 public final class HullEditorView extends ArtEditorWindow {
+  /** The colours of the art files (docs/ships.md), in the order the list shows them. */
   private static final String[] COLORS = {"white", "cyan", "red", "yellow", "green", "magenta", "blue", "orange",
-      "purple", "pink", "lightgrey", "darkgrey"};
-  private static final String[] BACKGROUNDS = {"", "black", "blue", "red", "green", "magenta", "yellow", "cyan"};
+      "purple", "pink", "brown", "lightgrey", "darkgrey", "gold", "navy", "teal", "olive", "maroon", "lime",
+      "skyblue", "brightwhite", "brightcyan", "brightred", "brightyellow", "brightgreen", "brightmagenta",
+      "brightblue"};
+  /** The backgrounds: none first, then the dark and basic ones, then the rest. */
+  private static final String[] BACKGROUNDS = {"", "black", "blue", "red", "green", "magenta", "yellow", "cyan",
+      "darkgrey", "lightgrey", "navy", "teal", "olive", "maroon", "purple", "brown", "orange", "white", "gold",
+      "pink", "lime", "skyblue", "brightwhite", "brightcyan", "brightred", "brightyellow", "brightgreen",
+      "brightmagenta", "brightblue"};
   private static final int STRIP_ROWS = 3;
   private static final String[] SIZES = {"", "tiny", "small", "medium", "large", "huge", "any"};
   private final List<ShipArtFile> hulls;
@@ -41,10 +52,15 @@ public final class HullEditorView extends ArtEditorWindow {
   private int cursorX = 2;
   private int cursorY = 2;
   private boolean nameLetter;
+  private boolean listOpen;
+  private boolean backgroundList;
+  private int listIndex;
   private String hullSize = "";
   private String message = "";
   /** The chassis file the editor saves to (a field so the tests can point elsewhere). */
   private String hullsPath = ShipArtFile.resolve("chassis.txt").toString();
+  /** The ships file the editor reads to know which types use a hull. */
+  private String shipsPath = ShipArtFile.resolve("ships.txt").toString();
 
   public HullEditorView(List<ShipArtFile> hulls) {
     super("hull editor");
@@ -55,6 +71,11 @@ public final class HullEditorView extends ArtEditorWindow {
   /** Points the editor to another chassis file (the tests use a temp one). */
   void hullsPath(String path) {
     hullsPath = path;
+  }
+
+  /** Points the editor to another ships file (the tests use a temp one). */
+  void shipsPath(String path) {
+    shipsPath = path;
   }
 
   private void loadHull(int index) {
@@ -122,7 +143,24 @@ public final class HullEditorView extends ArtEditorWindow {
         redraw();
         return true;
       }
+      if(listOpen) {
+        listOpen = false;
+        redraw();
+        return true;
+      }
       close();
+      return true;
+    }
+    if(listOpen) {
+      List<String> items = items();
+      if(key.getKeyType() == KeyType.ArrowUp && !items.isEmpty()) {
+        listIndex = (listIndex + items.size() - 1) % items.size();
+      } else if(key.getKeyType() == KeyType.ArrowDown && !items.isEmpty()) {
+        listIndex = (listIndex + 1) % items.size();
+      } else if(key.getKeyType() == KeyType.Enter) {
+        pick();
+      }
+      redraw();
       return true;
     }
     if(nameLetter && key.getKeyType() == KeyType.Character) {
@@ -227,10 +265,10 @@ public final class HullEditorView extends ArtEditorWindow {
         message = "type the letter for the combination " + currentLetter().color();
         break;
       case 't':
-        styleColor();
+        openList(false);
         break;
       case 'f':
-        styleBackground();
+        openList(true);
         break;
       case 'i':
         styleBlink();
@@ -304,7 +342,13 @@ public final class HullEditorView extends ArtEditorWindow {
     message = "blink " + (!letter.blink() ? "on" : "off") + " for " + letter.letter();
   }
 
+  /** Cycles the size of a free hull; the size of a hull a type uses is fixed by that type. */
   private void styleSize() {
+    String users = usedBy(hull());
+    if(!users.isEmpty()) {
+      message = "⚠ in use by " + users;
+      return;
+    }
     int index = 0;
     for(int i = 0; i < SIZES.length; i++) {
       if(SIZES[i].equalsIgnoreCase(hullSize)) {
@@ -314,6 +358,32 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     hullSize = SIZES[(index + 1) % SIZES.length];
     message = "size: " + (hullSize.isEmpty() ? "(not set)" : hullSize);
+  }
+
+  /** The types that wear a hull, with their size (`[Gnat] (small)`); empty when it is free. */
+  private String usedBy(ShipArtFile hull) {
+    if(hull == null) {
+      return "";
+    }
+    List<ShipDesign> designs;
+    try {
+      designs = ShipDesign.load(shipsPath);
+    } catch(IOException e) {
+      return "";
+    }
+    StringBuilder users = new StringBuilder();
+    for(ShipDesign design : designs) {
+      ShipType type = ShipSites.typeOf(design.type());
+      if(type == null || !design.chassis().equalsIgnoreCase(hull.name())) {
+        continue;
+      }
+      String label = "[" + type.name() + "] (" + ShipSites.budgetOf(type.name()).size().name()
+          .toLowerCase(java.util.Locale.ROOT) + ")";
+      if(users.indexOf(label) < 0) {
+        users.append(users.length() == 0 ? "" : ", ").append(label);
+      }
+    }
+    return users.toString();
   }
 
   private void addLetter() {
@@ -335,30 +405,29 @@ public final class HullEditorView extends ArtEditorWindow {
     return false;
   }
 
-  private void styleColor() {
-    ShipArtFile.ColorLetter letter = currentLetter();
-    int index = indexOf(COLORS, letter.color());
-    letters.set(letterIndex, new ShipArtFile.ColorLetter(letter.letter(), COLORS[(index + 1) % COLORS.length],
-        letter.bgColor(), letter.blink()));
-    message = "colour " + COLORS[(index + 1) % COLORS.length] + " for " + letter.letter();
+  /** The items of the open list: the colours or the backgrounds. */
+  private List<String> items() {
+    return java.util.Arrays.asList(backgroundList ? BACKGROUNDS : COLORS);
   }
 
-  private void styleBackground() {
-    ShipArtFile.ColorLetter letter = currentLetter();
-    int index = indexOf(BACKGROUNDS, letter.bgColor());
-    letters.set(letterIndex, new ShipArtFile.ColorLetter(letter.letter(), letter.color(),
-        BACKGROUNDS[(index + 1) % BACKGROUNDS.length], letter.blink()));
-    message = "background " + (BACKGROUNDS[(index + 1) % BACKGROUNDS.length].isEmpty() ? "(none)"
-        : BACKGROUNDS[(index + 1) % BACKGROUNDS.length]) + " for " + letter.letter();
+  /** Opens the list of colours (or backgrounds) on the one the element has now. */
+  private void openList(boolean backgrounds) {
+    backgroundList = backgrounds;
+    String current = backgrounds ? currentLetter().bgColor() : currentLetter().color();
+    listIndex = Math.max(0, items().indexOf(current));
+    listOpen = true;
+    message = backgrounds ? "pick the background" : "pick the colour";
   }
 
-  private static int indexOf(String[] values, String value) {
-    for(int i = 0; i < values.length; i++) {
-      if(values[i].equals(value)) {
-        return i;
-      }
-    }
-    return -1;
+  /** Takes the colour (or background) of the list for the element. */
+  private void pick() {
+    String value = items().get(listIndex);
+    ShipArtFile.ColorLetter letter = currentLetter();
+    letters.set(letterIndex, new ShipArtFile.ColorLetter(letter.letter(), backgroundList ? letter.color() : value,
+        backgroundList ? value : letter.bgColor(), letter.blink()));
+    listOpen = false;
+    message = (backgroundList ? "background " : "colour ") + (value.isEmpty() ? "(none)" : value);
+    redraw();
   }
 
   private void save() {
@@ -378,6 +447,10 @@ public final class HullEditorView extends ArtEditorWindow {
     graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     for(int row = 0; row < size.getRows(); row++) {
       graphics.putString(0, row, " ".repeat(size.getColumns()));
+    }
+    if(listOpen) {
+      paintList(graphics, size);
+      return;
     }
     int rows = size.getRows() - STRIP_ROWS;
     int panel = panelWidth(size);
@@ -479,6 +552,28 @@ public final class HullEditorView extends ArtEditorWindow {
           .append(i == hullIndex ? "]" : "");
     }
     return text.toString();
+  }
+
+  /** Draws the open list of colours or backgrounds, every row with its own preview. */
+  private void paintList(TextGUIGraphics graphics, TerminalSize size) {
+    List<String> items = items();
+    int left = Math.max(1, (size.getColumns() - 30) / 2);
+    int top = Math.max(0, (size.getRows() - items.size() - 2) / 2);
+    graphics.setForegroundColor(TextColor.ANSI.WHITE);
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    graphics.putString(left, top, backgroundList ? "background:" : "colour:");
+    for(int i = 0; i < items.size() && top + 1 + i < size.getRows() - 1; i++) {
+      String item = items.get(i);
+      graphics.setForegroundColor(TextColor.ANSI.WHITE);
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      graphics.putString(left, top + 1 + i, i == listIndex ? ">" : " ");
+      graphics.setForegroundColor(org.gts.bst.view.ShipColors.color(backgroundList ? currentLetter().color() : item));
+      graphics.setBackgroundColor(backgroundList && !item.isEmpty() ? org.gts.bst.view.ShipColors.color(item)
+          : TextColor.ANSI.BLACK);
+      graphics.putString(left + 2, top + 1 + i, "■ " + (item.isEmpty() ? "(none)" : item));
+    }
+    UiPalette.reset(graphics);
+    graphics.putString(1, size.getRows() - 1, "[arrows] choose · [ENTER] take · [ESC] cancel");
   }
 
   /** The vertical panel on the left: the numbered colour elements, ready to pick. */

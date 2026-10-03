@@ -13,6 +13,7 @@ import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import org.gts.bst.view.ShipArtFile;
+import org.gts.bst.view.ShipPicture;
 import org.gts.bst.view.ShipColors;
 
 
@@ -26,14 +27,15 @@ final class EditorText {
   }
 
   /**
-   * The brush of a drawing: the colour over its background, and when the blink is
-   * in its dark half the colour hides in the background (no background: black).
+   * The brush of a drawing: the colour over its background. With the blink in its
+   * dark half the two swap, so the shape shows in the background colour over a
+   * block of its own colour.
    */
   static Brush brush(String color, String background, boolean blink, boolean blinkOn) {
     TextColor foreground = ShipColors.color(color);
     TextColor behind = background == null || background.isEmpty() ? TextColor.ANSI.BLACK
         : ShipColors.color(background);
-    return new Brush(blink && !blinkOn ? behind : foreground, behind);
+    return blink && !blinkOn ? new Brush(behind, foreground) : new Brush(foreground, behind);
   }
 
   /** Draws one glyph (a code point) with a brush, optionally reversed. */
@@ -48,6 +50,41 @@ final class EditorText {
     glyph(graphics, column, row, codePoint, new Brush(color, TextColor.ANSI.BLACK), reverse);
   }
 
+  /** Draws one cell of a ship picture (its colours come as names). */
+  static void glyph(TextGUIGraphics graphics, int column, int row, ShipPicture.Cell cell) {
+    glyph(graphics, column, row, cell, true);
+  }
+
+  /** Draws one cell of a ship picture: with the blink off, it hides in its background. */
+  static void glyph(TextGUIGraphics graphics, int column, int row, ShipPicture.Cell cell, boolean blinkOn) {
+    glyph(graphics, column, row, cell.codePoint(), brush(cell.color(), cell.background(), cell.blink(), blinkOn), false);
+  }
+
+  /**
+   * Paints a ship picture centred in a column, from a row on and down to another:
+   * returns how many rows it used, so the caller can keep laying out below it.
+   */
+  static int picture(TextGUIGraphics graphics, int left, int row, int width, int maxRow, ShipPicture picture) {
+    return picture(graphics, left, row, width, maxRow, picture, true);
+  }
+
+  /** The same painting, with the phase of the blink of the drawing. */
+  static int picture(TextGUIGraphics graphics, int left, int row, int width, int maxRow, ShipPicture picture,
+      boolean blinkOn) {
+    int from = left + Math.max(0, (width - picture.width()) / 2);
+    int rows = 0;
+    for(int y = 0; y < picture.height() && row + y < maxRow; y++) {
+      for(int x = 0; x < picture.width(); x++) {
+        ShipPicture.Cell cell = picture.at(x, y);
+        if(cell != null && !cell.continuation()) {
+          glyph(graphics, from + x, row + y, cell, blinkOn);
+        }
+      }
+      rows++;
+    }
+    return rows;
+  }
+
   /** A panel section: the title inside a line, like `─ Ships ─────`. */
   static String section(String title, int cells) {
     String head = "─ " + title + " ";
@@ -55,6 +92,29 @@ final class EditorText {
       return cut(head, cells);
     }
     return head + "─".repeat(cells - head.length());
+  }
+
+  /** The width in cells of a text: a glyph the terminal paints wide takes two. */
+  static int width(String text) {
+    int width = 0;
+    for(int i = 0; i < text.length(); ) {
+      int codePoint = text.codePointAt(i);
+      i += Character.charCount(codePoint);
+      width += ShipArtFile.isWide(codePoint) ? 2 : 1;
+    }
+    return width;
+  }
+
+  /** Pads a text with spaces on the right, up to a number of cells. */
+  static String padRight(String text, int cells) {
+    int pad = cells - width(text);
+    return pad <= 0 ? text : text + " ".repeat(pad);
+  }
+
+  /** Pads a text with spaces on the left, up to a number of cells. */
+  static String padLeft(String text, int cells) {
+    int pad = cells - width(text);
+    return pad <= 0 ? text : " ".repeat(pad) + text;
   }
 
   /** Trims a text to a number of cells, without breaking a glyph in half. */

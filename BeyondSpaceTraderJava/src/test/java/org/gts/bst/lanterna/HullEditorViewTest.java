@@ -46,7 +46,10 @@ class HullEditorViewTest {
       assertTrue(screenText(screen).contains("uno"), screenText(screen));
 
       view.handleKey(new KeyStroke('+', false, false));
+      // t opens the colour list on white: one down (cyan) and take it
       view.handleKey(new KeyStroke('t', false, false));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("1. Cyan (A)"), "the panel of elements: " + screenText(screen));
@@ -79,7 +82,10 @@ class HullEditorViewTest {
       gui.updateScreen();
 
       view.handleKey(new KeyStroke('+', false, false));
+      // t opens the colour list on white: one down (cyan) and take it
       view.handleKey(new KeyStroke('t', false, false));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("1. Cyan (A)"), screenText(screen));
@@ -116,10 +122,12 @@ class HullEditorViewTest {
       gui.updateScreen();
       assertFalse(hasBackground(screen, TextColor.ANSI.BLUE), screenText(screen));
 
-      // + adds the element, f cycles its background to blue and space paints it
+      // + adds the element, f opens the backgrounds on (none): two downs (black, blue)
       view.handleKey(new KeyStroke('+', false, false));
       view.handleKey(new KeyStroke('f', false, false));
-      view.handleKey(new KeyStroke('f', false, false));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(hasBackground(screen, TextColor.ANSI.BLUE),
@@ -127,6 +135,50 @@ class HullEditorViewTest {
     } finally {
       screen.stopScreen();
       screen.close();
+    }
+  }
+
+  @Test
+  void zOnlyCyclesTheSizeOfAFreeHull() throws IOException {
+    String chassisText = "[shuttle]\nsize=small\ncolor=white\nxxxxx\nxxxxx\n[libre]\nsize=small\ncolor=white\nxxxxx\nxxxxx\n";
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(chassisText));
+    Path chassisFile = Files.createTempFile("chassis", ".txt");
+    Files.writeString(chassisFile, chassisText);
+    Path shipsFile = Files.createTempFile("naves", ".txt");
+    Files.writeString(shipsFile, "[gnat]\ntype=Gnat\nchasis=shuttle\n");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      HullEditorView view = new HullEditorView(hulls);
+      view.hullsPath(chassisFile.toString());
+      view.shipsPath(shipsFile.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      // the shuttle is used by the Gnat: its size is fixed by that type
+      view.handleKey(new KeyStroke('z', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("in use by [Gnat] (small)"),
+          "z warns who fixes the size: " + screenText(screen));
+      view.handleKey(new KeyStroke('s', false, false));
+      assertTrue(Files.readString(chassisFile).contains("[shuttle]\nsize=small"),
+          "the size of a hull in use does not change: " + Files.readString(chassisFile));
+
+      // the libre hull is used by nobody: z cycles its size
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke('z', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("size: medium"), screenText(screen));
+      view.handleKey(new KeyStroke('s', false, false));
+      assertTrue(Files.readString(chassisFile).contains("[libre]\nsize=medium"),
+          "a free hull takes the new size: " + Files.readString(chassisFile));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(chassisFile);
+      Files.deleteIfExists(shipsFile);
     }
   }
 
