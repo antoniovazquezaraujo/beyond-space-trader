@@ -62,4 +62,25 @@ public final class LanternaDialogService implements DialogService {
     return host.show(Functions.StringVars(definition.title(), args),
         Functions.StringVars(definition.message(), args), buttons);
   }
+
+  /**
+   * A free-text message with one OK button. It never goes through the quiet sink:
+   * the offer must be seen even when the informative alerts are being logged.
+   */
+  @Override
+  public DialogResult message(String title, String message) {
+    return host.show(title, message,
+        List.of(new AlertButton(spacetrader.Strings.AlertButtonOk, DialogResult.OK)));
+  }
+
+  /**
+   * A free-text yes/no question. It never goes through the quiet sink either: the
+   * player must answer it.
+   */
+  @Override
+  public DialogResult confirm(String title, String message) {
+    return host.show(title, message, List.of(
+        new AlertButton(spacetrader.Strings.AlertButtonYes, DialogResult.Yes),
+        new AlertButton(spacetrader.Strings.AlertButtonNo, DialogResult.No)));
+  }
 }

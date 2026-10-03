@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import spacetrader.Functions;
+import spacetrader.Strings;
 import spacetrader.enums.AlertType;
 
 
@@ -99,17 +100,64 @@ class LanternaDialogServiceTest {
     assertEquals("Ok", host.buttons.get(0).text());
   }
 
+  @Test
+  void showsAMessageWithTheOkButton() {
+    FakeHost host = new FakeHost();
+
+    DialogResult result = new LanternaDialogService(host).message("Moon For Sale", "Buy the moon?");
+
+    assertEquals(DialogResult.OK, result);
+    assertEquals("Moon For Sale", host.title);
+    assertEquals("Buy the moon?", host.message);
+    assertEquals(1, host.buttons.size());
+    assertEquals(Strings.AlertButtonOk, host.buttons.get(0).text());
+    assertEquals(DialogResult.OK, host.buttons.get(0).result());
+  }
+
+  @Test
+  void showsTheYesAndNoButtonsOfAConfirmation() {
+    FakeHost host = new FakeHost();
+
+    DialogResult result = new LanternaDialogService(host).confirm("Moon For Sale", "Buy the moon?");
+
+    assertEquals(DialogResult.Yes, result, "the fake presses the first button");
+    assertEquals("Moon For Sale", host.title);
+    assertEquals("Buy the moon?", host.message);
+    assertEquals(2, host.buttons.size());
+    assertEquals(Strings.AlertButtonYes, host.buttons.get(0).text());
+    assertEquals(DialogResult.Yes, host.buttons.get(0).result());
+    assertEquals(Strings.AlertButtonNo, host.buttons.get(1).text());
+    assertEquals(DialogResult.No, host.buttons.get(1).result());
+  }
+
+  @Test
+  void theOfferNeverGoesThroughTheQuietSink() {
+    FakeHost host = new FakeHost();
+    List<String> log = new ArrayList<>();
+    LanternaDialogService service = new LanternaDialogService(host);
+    service.quietTo((type, line) -> log.add(line));
+
+    service.message("Title", "story");
+    List<AlertButton> messageButtons = host.buttons;
+    service.confirm("Title", "question");
+
+    assertEquals(List.of(), log, "the offer must be shown even while the outcomes are logged");
+    assertEquals(1, messageButtons.size(), "the message kept its dialog");
+    assertEquals(2, host.buttons.size(), "the confirmation kept its dialog");
+  }
+
   private static class FakeHost implements AlertDialogHost {
     private String title;
     private String message;
     private List<AlertButton> buttons;
+    private int chosen;
 
     @Override
     public DialogResult show(String title, String message, List<AlertButton> buttons) {
       this.title = title;
       this.message = message;
       this.buttons = buttons;
-      return buttons.get(0).result();
+      return buttons.get(chosen).result();
     }
   }
 }

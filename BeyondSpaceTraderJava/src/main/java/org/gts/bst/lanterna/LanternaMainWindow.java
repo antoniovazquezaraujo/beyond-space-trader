@@ -73,6 +73,7 @@ import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.GameEndException;
+import spacetrader.SpecialEvent;
 import spacetrader.StarSystem;
 import spacetrader.enums.StarSystemId;
 import org.gts.bst.ship.ShipType;
@@ -1318,7 +1319,9 @@ public final class LanternaMainWindow
 
   /**
    * Accepts the special event of the current system (the quests, the moon, the
-   * deliveries...), like the Special button of the Swing front-end.
+   * deliveries...), like the Special button of the Swing front-end. The offer is
+   * read first: the message-only events need an OK and the rest a Yes before
+   * anything is applied.
    */
   private void acceptSpecialEvent() {
     Game game = gameSupplier.get();
@@ -1331,8 +1334,17 @@ public final class LanternaMainWindow
       content.invalidate();
       return;
     }
-    if(game.Commander().CashToSpend() < system.SpecialEvent().Price()) {
+    SpecialEvent event = system.SpecialEvent();
+    if(game.Commander().CashToSpend() < event.Price()) {
       game.Dialogs().alert(AlertType.SpecialIF);
+      return;
+    }
+    String text = offer(event);
+    DialogResult answer = event.MessageOnly()
+        ? game.Dialogs().message(event.Title(), text)
+        : game.Dialogs().confirm(event.Title(), text);
+    if(answer != DialogResult.OK && answer != DialogResult.Yes) {
+      // No answer or a No: the offer stays in the system.
       return;
     }
     try {
@@ -1342,6 +1354,30 @@ public final class LanternaMainWindow
       return;
     }
     refresh();
+  }
+
+  /** The offer text plus its cost or reward line, when the event has a price. */
+  private static String offer(SpecialEvent event) {
+    StringBuilder text = new StringBuilder();
+    String story = event.String();
+    if(story != null && !story.isBlank()) {
+      text.append(story);
+    }
+    if(event.Price() > 0) {
+      addLine(text, Functions.StringVars(Strings.SpecialEventCost,
+          Functions.Multiples(event.Price(), Strings.MoneyUnit)));
+    } else if(event.Price() < 0) {
+      addLine(text, Functions.StringVars(Strings.SpecialEventReward,
+          Functions.Multiples(-event.Price(), Strings.MoneyUnit)));
+    }
+    return text.toString();
+  }
+
+  private static void addLine(StringBuilder text, String line) {
+    if(text.length() > 0) {
+      text.append('\n');
+    }
+    text.append(line);
   }
 
   /** Selects a system as the target and refreshes what depends on it. */

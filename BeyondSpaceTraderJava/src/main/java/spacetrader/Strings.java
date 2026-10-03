@@ -297,6 +297,8 @@ public final class Strings {
   public static final String MainChartGalactic = text("MainChartGalactic");
   public static final String MainChartShortRange = text("MainChartShortRange");
   public static final String AlertButtonOk = text("AlertButtonOk");
+  public static final String AlertButtonYes = text("AlertButtonYes");
+  public static final String AlertButtonNo = text("AlertButtonNo");
   public static final String MainDay = text("MainDay");
   public static final String MainDebt = text("MainDebt");
   public static final String MainFuel = text("MainFuel");
@@ -314,6 +316,8 @@ public final class Strings {
   public static final String MainWormhole = text("MainWormhole");
   public static final String MainSpecial = text("MainSpecial");
   public static final String MainSpecialNone = text("MainSpecialNone");
+  public static final String SpecialEventCost = text("SpecialEventCost");
+  public static final String SpecialEventReward = text("SpecialEventReward");
   public static final String MainTech = text("MainTech");
   public static final String MainTracking = text("MainTracking");
   public static final String MainUntracking = text("MainUntracking");

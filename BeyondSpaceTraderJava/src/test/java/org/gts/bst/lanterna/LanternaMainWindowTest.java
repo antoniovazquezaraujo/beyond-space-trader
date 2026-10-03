@@ -752,6 +752,143 @@ class LanternaMainWindowTest {
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setConfirmResult(DialogResult.Yes);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(600000);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.Moon);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      assertEquals(SpecialEvent.StatusMoonBought, holder[0].getQuestStatusMoon(),
+          "the moon offer must be accepted");
+      assertEquals(100000, holder[0].Commander().getCash(), "the moon price was paid");
+      assertEquals(SpecialEventType.NA, holder[0].Commander().CurrentSystem().SpecialEventType(),
+          "the accepted offer leaves the system");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theNoKeyLeavesTheSpecialEventOfferUntouched() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setConfirmResult(DialogResult.No);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(600000);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.Moon);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      assertEquals(SpecialEvent.StatusMoonNotStarted, holder[0].getQuestStatusMoon());
+      assertEquals(600000, holder[0].Commander().getCash(), "a No spends nothing");
+      assertEquals(SpecialEventType.Moon, holder[0].Commander().CurrentSystem().SpecialEventType(),
+          "the offer stays in the system");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theOfferShowsTheTitleAndTheStoryBeforeAsking() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setConfirmResult(DialogResult.Yes);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(600000);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.Moon);
+      SpecialEvent offer = holder[0].Commander().CurrentSystem().SpecialEvent();
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      assertEquals(List.of(offer.Title()), dialogs.confirmTitles());
+      assertEquals(1, dialogs.confirms().size());
+      String shown = dialogs.confirms().get(0);
+      assertTrue(shown.contains(offer.String()), shown);
+      assertTrue(shown.contains(Functions.StringVars(Strings.SpecialEventCost,
+          Functions.Multiples(offer.Price(), Strings.MoneyUnit))), "the cost line is shown: " + shown);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void acceptsAMessageOnlySpecialEventWithTheOkButton() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setMessageResult(DialogResult.OK);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(1000);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.Lottery);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      assertEquals(2000, holder[0].Commander().getCash(), "the lottery prize was paid");
+      assertEquals(SpecialEventType.NA, holder[0].Commander().CurrentSystem().SpecialEventType());
+      assertEquals(1, dialogs.messages().size(), "a message-only event shows a message");
+      assertTrue(dialogs.confirms().isEmpty(), "a message-only event asks no question");
+      assertEquals(List.of(Strings.SpecialEventTitles.get(SpecialEventType.Lottery.CastToInt())),
+          dialogs.messageTitles());
+      assertTrue(dialogs.messages().get(0).contains(Functions.StringVars(Strings.SpecialEventReward,
+          Functions.Multiples(1000, Strings.MoneyUnit))),
+          "the reward line is shown: " + dialogs.messages().get(0));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void withNoUserInterfaceTheOfferIsNotApplied() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       Game[] holder = new Game[1];
       LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
       holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
@@ -766,8 +903,43 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
       gui.updateScreen();
 
-      assertEquals(SpecialEvent.StatusMoonBought, holder[0].getQuestStatusMoon(),
-          "the moon offer must be accepted");
+      // Without a front-end there is nobody to accept the offer.
+      assertEquals(SpecialEvent.StatusMoonNotStarted, holder[0].getQuestStatusMoon());
+      assertEquals(600000, holder[0].Commander().getCash());
+      assertEquals(SpecialEventType.Moon, holder[0].Commander().CurrentSystem().SpecialEventType());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theNarrativeFailuresKeepTheirEventAfterBeingRead() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setMessageResult(DialogResult.OK);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.ExperimentFailed);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      assertEquals(SpecialEventType.ExperimentFailed, holder[0].Commander().CurrentSystem().SpecialEventType(),
+          "the failure story can be read again");
+
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.GemulonInvaded);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      assertEquals(SpecialEventType.GemulonInvaded, holder[0].Commander().CurrentSystem().SpecialEventType(),
+          "the invasion story can be read again");
+      assertEquals(2, dialogs.messages().size());
     } finally {
       screen.stopScreen();
       screen.close();
