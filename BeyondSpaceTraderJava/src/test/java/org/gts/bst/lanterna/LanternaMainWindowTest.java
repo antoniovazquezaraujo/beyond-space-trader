@@ -471,6 +471,8 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.ShipTitle), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.ShipCargoLabel), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.ShipCargoNone), screenText(screen));
       assertFalse(screenText(screen).contains("| o o >"), "the old sprite is gone: " + screenText(screen));
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
@@ -483,6 +485,37 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertFalse(screenText(screen).contains(Strings.PersonnelTitle));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theShipPanelListsTheCargoWithItsAverageCost() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      holder[0].Commander().getShip().Cargo()[0] = 3;
+      holder[0].Commander().PriceCargo()[0] = 75;
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains(Strings.ShipCargoLabel), text);
+      assertTrue(text.contains("Water"), text);
+      assertTrue(text.contains(Functions.StringVars(Strings.ShipCargoBoughtAt, Functions.FormatMoney(25))), text);
+      assertFalse(text.contains(Strings.ShipCargoNone), "the hold is not empty: " + text);
     } finally {
       screen.stopScreen();
       screen.close();

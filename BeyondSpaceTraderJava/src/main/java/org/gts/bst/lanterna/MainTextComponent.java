@@ -805,6 +805,21 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         UiPalette.draw(graphics, x, row++, line, UiPalette.WARN, x + panelWidth);
       }
     }
+    if(row < height - 5) {
+      UiPalette.title(graphics, x, row++, Strings.ShipCargoLabel, panelWidth);
+    }
+    if(ship.cargo().isEmpty()) {
+      if(row < height - 5) {
+        graphics.putString(x, row, cut(Strings.ShipCargoNone, panelWidth));
+      }
+      return;
+    }
+    for(String cargoLine : ship.cargo()) {
+      if(row >= height - 5) {
+        break;
+      }
+      graphics.putString(x, row++, cut(cargoLine, panelWidth));
+    }
   }
 
   private void drawShipListPanel(TextGUIGraphics graphics, int x, int height) {

@@ -387,6 +387,10 @@ public final class Strings {
   public static final String PersonnelForHire = text("PersonnelForHire");
   public static final String PersonnelKeys = text("PersonnelKeys");
   public static final String PersonnelTitle = text("PersonnelTitle");
+  public static final String ShipCargoBoughtAt = text("ShipCargoBoughtAt");
+  public static final String ShipCargoCostUnknown = text("ShipCargoCostUnknown");
+  public static final String ShipCargoLabel = text("ShipCargoLabel");
+  public static final String ShipCargoNone = text("ShipCargoNone");
   public static final String ShipKeys = text("ShipKeys");
   public static final String ShipSpecialCargo = text("ShipSpecialCargo");
   public static final String ShipTitle = text("ShipTitle");
