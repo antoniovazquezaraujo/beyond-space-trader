@@ -599,6 +599,174 @@ class LanternaMainWindowTest {
       }
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.QuestMoon), screenText(screen));
+
+      // ENTER sets the destination of the last entry as the map target and closes.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertSame(game.Universe()[StarSystemId.Utopia.CastToInt()], game.SelectedSystem(),
+          "ENTER targets the last quest (the moon)");
+      assertFalse(screenText(screen).contains(Strings.QuestsTitle), screenText(screen));
+
+      // Reopening resets the cursor; 25 presses wrap around the twelve entries
+      // instead of overflowing the index (25 = 2 × 12 + 1: the second entry).
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      for(int i = 0; i < 25; i++) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      }
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertSame(game.Universe()[StarSystemId.Daled.CastToInt()], game.SelectedSystem(),
+          "many arrow presses wrap to the second quest without overflowing");
+      assertFalse(screenText(screen).contains(Strings.QuestsTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theQuestsPanelWithNoDestinationsHasNoCursorAndSetsNothing() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      holder[0].Commander().getShip().setTribbles(2);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      String text = screenText(screen);
+      assertTrue(text.contains(Strings.QuestTribbles), text);
+      assertFalse(text.contains("→"), "an entry without a destination has no marker: " + text);
+      assertFalse(questPanelHasSelection(screen), "no cursor without destinations: " + text);
+
+      // The arrows do not turn the tribbles into a target.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      gui.updateScreen();
+      assertNull(holder[0].SelectedSystem());
+      assertFalse(questPanelHasSelection(screen), "the arrows paint no cursor: " + screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertNull(holder[0].SelectedSystem(), "ENTER on a quest without a destination sets no target");
+      assertFalse(screenText(screen).contains(Strings.QuestsTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aDynamicQuestWithoutAPlacedEventKeepsNoMarker() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // The artifact is on board but its delivery event is not placed anywhere:
+      // the quest must be listed without a destination and without crashing.
+      Game game = holder[0];
+      game.setQuestStatusArtifact(SpecialEvent.StatusArtifactOnBoard);
+      Consts.SpecialEvents.get(SpecialEventType.ArtifactDelivery.CastToInt())
+          .Location(game.Universe()).SpecialEventType(SpecialEventType.NA);
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      String text = screenText(screen);
+      assertTrue(text.contains("Deliver the alien artifact"), text);
+      assertFalse(text.contains("→"), "an unplaced destination has no marker: " + text);
+      assertFalse(questPanelHasSelection(screen), "no cursor without a destination: " + text);
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertNull(game.SelectedSystem(), "the missing destination cannot be targeted");
+      assertFalse(screenText(screen).contains(Strings.QuestsTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theQuestsPanelEnterWiresTheTargetAndTheMapFollows() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      Game game = holder[0];
+      game.Commander().getShip().setFuel(game.Commander().getShip().FuelTanks());
+
+      // A quest whose destination is within range of some other system, so the
+      // panel can set the target and SPACE can travel there right away.
+      StarSystemId chosen = null;
+      StarSystem home = null;
+      StarSystem target = null;
+      for(StarSystemId id : QUEST_DESTINATIONS) {
+        StarSystem destination = game.Universe()[id.CastToInt()];
+        for(StarSystem system : game.Universe()) {
+          if(system != destination
+              && Functions.Distance(system, destination) <= game.Commander().getShip().getFuel()) {
+            chosen = id;
+            home = system;
+            target = destination;
+            break;
+          }
+        }
+        if(chosen != null) {
+          break;
+        }
+      }
+      assertNotNull(chosen, "the galaxy must have a quest destination within range");
+      game.Commander().CurrentSystem(home);
+      activateQuest(game, chosen);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("→ " + target.Name()), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertSame(target, game.SelectedSystem(), "ENTER points the map at the quest destination");
+      assertFalse(screenText(screen).contains(Strings.QuestsTitle));
+
+      // The panel refresh: the navigation panel shows the new target instead of
+      // the current system and the trade table gains the target prices columns.
+      String text = screenText(screen);
+      assertTrue(text.contains(Functions.StringVars(Strings.MainSystem, target.Name(),
+          Strings.Sizes.get(target.Size().CastToInt()))),
+          "the navigation panel must show the new target: " + text);
+      assertTrue(text.contains(String.format("%-10s %10s %10s %5s", Strings.TradeItem, Strings.TradeSell,
+          Strings.TradeBuy, Strings.TradePct)), "the target prices must be refreshed: " + text);
+
+      // The flow goes on: SPACE travels to the destination the panel set.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertSame(target, game.Commander().CurrentSystem(),
+          "SPACE travels to the quest target: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -3076,6 +3244,48 @@ class LanternaMainWindowTest {
       game.Commander().getShip().Cargo()[i] = i + 1;
       game.Commander().PriceCargo()[i] = (i + 1) * 100;
     }
+  }
+
+  /** The fixed destinations of the quests the tests can activate. */
+  private static final StarSystemId[] QUEST_DESTINATIONS = {
+      StarSystemId.Gemulon, StarSystemId.Daled, StarSystemId.Nix, StarSystemId.Acamar,
+      StarSystemId.Japori, StarSystemId.Baratas, StarSystemId.Melina, StarSystemId.Regulas,
+      StarSystemId.Zalkon, StarSystemId.Centauri, StarSystemId.Inthara, StarSystemId.Qonos,
+      StarSystemId.Endor, StarSystemId.Utopia};
+
+  /** Opens one quest whose destination is that fixed system. */
+  private static void activateQuest(Game game, StarSystemId id) {
+    switch(id) {
+      case Gemulon -> game.setQuestStatusGemulon(SpecialEvent.StatusGemulonStarted);
+      case Daled -> game.setQuestStatusExperiment(SpecialEvent.StatusExperimentStarted);
+      case Nix -> game.setQuestStatusReactor(SpecialEvent.StatusReactorDelivered);
+      case Acamar -> game.setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterAtAcamar);
+      case Japori -> game.setQuestStatusJapori(SpecialEvent.StatusJaporiInTransit);
+      case Baratas -> game.setQuestStatusDragonfly(SpecialEvent.StatusDragonflyFlyBaratas);
+      case Melina -> game.setQuestStatusDragonfly(SpecialEvent.StatusDragonflyFlyMelina);
+      case Regulas -> game.setQuestStatusDragonfly(SpecialEvent.StatusDragonflyFlyRegulas);
+      case Zalkon -> game.setQuestStatusDragonfly(SpecialEvent.StatusDragonflyFlyZalkon);
+      case Centauri -> game.setQuestStatusPrincess(SpecialEvent.StatusPrincessFlyCentauri);
+      case Inthara -> game.setQuestStatusPrincess(SpecialEvent.StatusPrincessFlyInthara);
+      case Qonos -> game.setQuestStatusPrincess(SpecialEvent.StatusPrincessFlyQonos);
+      case Endor -> game.setQuestStatusSculpture(SpecialEvent.StatusSculptureDelivered);
+      case Utopia -> game.setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+      default -> throw new IllegalArgumentException("no quest points at " + id);
+    }
+  }
+
+  /** Whether the quests panel (the last 60 columns) paints a selected row. */
+  private static boolean questPanelHasSelection(Screen screen) {
+    int columns = screen.getTerminalSize().getColumns();
+    int from = Math.max(0, columns - 60);
+    for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
+      for(int x = from; x < columns; x++) {
+        if(screen.getBackCharacter(x, y).getBackgroundColor() == UiPalette.SELECTED_BG) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private static String screenText(Screen screen) {

@@ -54,6 +54,14 @@ class MainTextComponentTest {
 
     component.moveQuestSelection(1);
     assertEquals(0, component.questIndex(), "the selection wraps around");
+
+    // Many presses in either direction stay inside the list: the index wraps
+    // instead of overflowing.
+    component.moveQuestSelection(999);
+    assertEquals(1, component.questIndex(), "999 presses wrap without overflowing");
+    assertNull(component.selectedQuestSystem());
+    component.moveQuestSelection(-1000);
+    assertEquals(1, component.questIndex(), "1000 presses up wrap without underflowing");
   }
 
   @Test
