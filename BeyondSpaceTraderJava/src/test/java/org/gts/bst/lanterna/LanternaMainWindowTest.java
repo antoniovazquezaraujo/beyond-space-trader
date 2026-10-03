@@ -29,6 +29,7 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -947,6 +948,144 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void retiringToTheMoonEndsTheGameAfterTheConfirmation() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setConfirmResult(DialogResult.Yes);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(250000);
+      holder[0].setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.MoonRetirement);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      assertEquals(SpecialEvent.StatusMoonDone, holder[0].getQuestStatusMoon(),
+          "the retirement was accepted");
+      assertEquals(250000, holder[0].Commander().getCash(), "retiring costs nothing");
+      assertEquals(1, dialogs.confirms().size(), "the retirement is a yes/no question");
+      String offered = dialogs.confirms().get(0);
+      assertTrue(offered.contains(
+          Strings.SpecialEventStrings.get(SpecialEventType.MoonRetirement.CastToInt())), offered);
+      assertFalse(offered.contains(Strings.SpecialEventCost), "a free event shows no cost line");
+      assertFalse(offered.contains(Strings.SpecialEventReward), "a free event shows no reward line");
+      assertTrue(dialogs.alerts().contains(AlertType.GameEndBoughtMoon),
+          "the moon ending is announced: " + dialogs.alerts());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aRewardOfferIsNeverBlockedByTheEmptyPurse() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setConfirmResult(DialogResult.Yes);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(0);
+      holder[0].Commander().setPoliceRecordScore(-10);
+      holder[0].Commander().setReputationScore(50);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.Sculpture);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      // The -2000 price is an advance for the carrier: an empty purse must not refuse it.
+      assertEquals(SpecialEvent.StatusSculptureInTransit, holder[0].getQuestStatusSculpture());
+      assertEquals(2000, holder[0].Commander().getCash(), "the 2000 credit advance is paid");
+      assertEquals(SpecialEventType.NA, holder[0].Commander().CurrentSystem().SpecialEventType());
+      assertEquals(1, dialogs.confirms().size());
+      assertTrue(dialogs.confirms().get(0).contains(Functions.StringVars(Strings.SpecialEventReward,
+          Functions.Multiples(2000, Strings.MoneyUnit))),
+          "the reward line is shown: " + dialogs.confirms().get(0));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void withNoUserInterfaceAMessageOnlyOfferIsNotApplied() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(1000);
+      holder[0].Commander().CurrentSystem().SpecialEventType(SpecialEventType.Lottery);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('y', false, false));
+      gui.updateScreen();
+
+      // The lottery only has an OK button: with no front-end nobody presses it.
+      assertEquals(1000, holder[0].Commander().getCash(), "the prize is not paid");
+      assertEquals(SpecialEventType.Lottery, holder[0].Commander().CurrentSystem().SpecialEventType(),
+          "the offer stays in the system");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theOfferProtectsItselfFromAMissingStoryAndOmitsTheZeroPrice() throws Exception {
+    assertOffer("", new SpecialEvent(null, 0, 0, false) {
+      @Override
+      public String String() {
+        return null;
+      }
+    });
+    assertOffer(Functions.StringVars(Strings.SpecialEventCost,
+        Functions.Multiples(1000, Strings.MoneyUnit)), new SpecialEvent(null, 1000, 3, false) {
+      @Override
+      public String String() {
+        return "   ";
+      }
+    });
+    assertOffer(Functions.StringVars(Strings.SpecialEventReward,
+        Functions.Multiples(15000, Strings.MoneyUnit)), new SpecialEvent(null, -15000, 0, true) {
+      @Override
+      public String String() {
+        return "";
+      }
+    });
+  }
+
+  private static void assertOffer(String expected, SpecialEvent event) throws Exception {
+    Method offer = LanternaMainWindow.class.getDeclaredMethod("offer", SpecialEvent.class);
+    offer.setAccessible(true);
+    assertEquals(expected, offer.invoke(null, event));
+  }
+
+  @Test
   void doesNotAcceptTheSpecialEventWithoutEnoughMoney() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -968,7 +1107,12 @@ class LanternaMainWindowTest {
       gui.updateScreen();
 
       assertEquals(SpecialEvent.StatusMoonNotStarted, holder[0].getQuestStatusMoon());
+      assertEquals(450000, holder[0].Commander().getCash(), "the failed offer spends nothing");
+      assertEquals(SpecialEventType.Moon, holder[0].Commander().CurrentSystem().SpecialEventType(),
+          "the offer stays in the system");
       assertTrue(dialogs.alerts().contains(AlertType.SpecialIF), dialogs.alerts().toString());
+      assertTrue(dialogs.confirms().isEmpty(), "the offer is not even asked");
+      assertTrue(dialogs.messages().isEmpty(), "no message is shown either");
     } finally {
       screen.stopScreen();
       screen.close();
