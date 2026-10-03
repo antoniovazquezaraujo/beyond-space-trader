@@ -9,20 +9,24 @@
 package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
+import org.gts.bst.view.ShipColors;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
@@ -77,22 +81,129 @@ class TitleSplashTest {
   }
 
   @Test
-  void sharedLoadsTheRealResource() {
+  void sharedLoadsTheRealResource() throws Exception {
     TitleSplash splash = TitleSplash.shared();
 
     assertNotNull(splash, "the splash resource is packaged");
     assertTrue(splash.width() > 0 && splash.height() > 0, "the splash has a drawing");
-    boolean planet = false;
-    boolean moon = false;
-    for(int y = 0; y < splash.height(); y++) {
-      for(int x = 0; x < splash.width(); x++) {
-        TextColor color = splash.colorAt(x, y);
-        planet |= TextColor.ANSI.GREEN.equals(color);
-        moon |= TextColor.ANSI.YELLOW.equals(color);
+
+    // The shared splash is exactly the parsed resource.
+    String text = resourceText();
+    TitleSplash parsed = TitleSplash.parse(new StringReader(text));
+    assertEquals(parsed.lines(), splash.lines());
+    assertEquals(parsed.width(), splash.width());
+    assertEquals(parsed.height(), splash.height());
+
+    // And the drawing applies the colours its own definition declares.
+    assertFollowsItsDefinition(splash, text);
+  }
+
+  /**
+   * The drawing follows the definition written in the resource: every ink cell takes
+   * the colour of the last zone that catches it (or the default), and every zone that
+   * catches ink is applied to at least one of its cells. Nothing here is tied to a
+   * concrete colour or coordinate, so editing the art or its palette keeps the test
+   * meaning the same thing.
+   */
+  private static void assertFollowsItsDefinition(TitleSplash splash, String text) {
+    TextColor defaultColor = TextColor.ANSI.CYAN;
+    List<Zone> zones = new ArrayList<>();
+    for(String raw : text.split("\n", -1)) {
+      String line = raw.strip();
+      if(line.startsWith("color=")) {
+        defaultColor = ShipColors.color(line.substring("color=".length()).strip());
+      } else if(line.startsWith("zone=")) {
+        zones.add(zoneOf(line.substring("zone=".length()).strip()));
       }
     }
-    assertTrue(planet, "the resource paints the planet in green");
-    assertTrue(moon, "the resource paints the moon in yellow");
+
+    int ink = 0;
+    int[] visibleInk = new int[zones.size()];
+    int[] appliedInk = new int[zones.size()];
+    for(int y = 0; y < splash.height(); y++) {
+      for(int x = 0; x < splash.width(); x++) {
+        int codePoint = splash.codePointAt(x, y);
+        if(codePoint == ' ' || codePoint == TitleSplash.CONTINUATION) {
+          continue;
+        }
+        ink++;
+        TextColor expected = defaultColor;
+        int lastZone = -1;
+        for(int i = 0; i < zones.size(); i++) {
+          if(zones.get(i).contains(x, y)) {
+            expected = zones.get(i).color();
+            lastZone = i;
+          }
+        }
+        TextColor actual = splash.colorAt(x, y);
+        assertEquals(expected, actual, "the colour of cell " + x + "," + y + " follows the definition");
+        if(lastZone >= 0) {
+          visibleInk[lastZone]++;
+          if(expected.equals(actual)) {
+            appliedInk[lastZone]++;
+          }
+        }
+      }
+    }
+    assertTrue(ink > 0, "the splash has ink");
+    for(int i = 0; i < zones.size(); i++) {
+      assertFalse(visibleInk[i] > 0 && appliedInk[i] == 0,
+          "the zone " + zones.get(i) + " must paint its ink cells");
+    }
+  }
+
+  /** A zone of the resource definition, parsed independently from the splash class. */
+  private record Zone(TextColor color, int x, int y, int w, int h) {
+    boolean contains(int column, int row) {
+      return column >= x && column < x + w && row >= y && row < y + h;
+    }
+  }
+
+  private static Zone zoneOf(String definition) {
+    String[] tokens = definition.split("\\s+");
+    TextColor color = tokens.length == 0 || tokens[0].isEmpty()
+        ? TextColor.ANSI.CYAN : ShipColors.color(tokens[0]);
+    int x = 0;
+    int y = 0;
+    int w = 0;
+    int h = 0;
+    for(int i = 1; i < tokens.length; i++) {
+      String[] pair = tokens[i].split("=", 2);
+      if(pair.length != 2) {
+        continue;
+      }
+      int value;
+      try {
+        value = Integer.parseInt(pair[1]);
+      } catch(NumberFormatException e) {
+        continue;
+      }
+      switch(pair[0]) {
+        case "x":
+          x = value;
+          break;
+        case "y":
+          y = value;
+          break;
+        case "w":
+          w = value;
+          break;
+        case "h":
+          h = value;
+          break;
+        default:
+          break;
+      }
+    }
+    return new Zone(color, x, y, w, h);
+  }
+
+  /** The bytes of the splash resource as packaged for the tests. */
+  private static String resourceText() throws IOException {
+    try(InputStream stream = TitleSplashTest.class.getResourceAsStream("/org/gts/bst/lanterna/splash.txt")) {
+      assertNotNull(stream, "the splash resource is packaged");
+      return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+    }
   }
 
   @Test
@@ -149,17 +260,8 @@ class TitleSplashTest {
       TitleSplash packaged = TitleSplash.parse(new StringReader(text));
 
       assertTrue(packaged.width() > 0 && packaged.height() > 0, "the packaged splash has a drawing");
-      boolean planet = false;
-      boolean moon = false;
-      for(int y = 0; y < packaged.height(); y++) {
-        for(int x = 0; x < packaged.width(); x++) {
-          TextColor color = packaged.colorAt(x, y);
-          planet |= TextColor.ANSI.GREEN.equals(color);
-          moon |= TextColor.ANSI.YELLOW.equals(color);
-        }
-      }
-      assertTrue(planet, "the packaged splash paints the planet in green");
-      assertTrue(moon, "the packaged splash paints the moon in yellow");
+      // The packaged copy follows whatever art and palette it carries.
+      assertFollowsItsDefinition(packaged, text);
     }
   }
 

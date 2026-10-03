@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,6 +43,7 @@ import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.DialogService;
 import org.gts.bst.view.GameWindow;
 import org.gts.bst.view.LanternaDialogService;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import spacetrader.Consts;
 import spacetrader.Functions;
@@ -99,7 +101,14 @@ class LanternaMainWindowTest {
 
   @Test
   void theTitleLogoKeepsItsShapeWhenTheSplashDoesNotFit() throws IOException {
-    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 15)));
+    TitleSplash splash = TitleSplash.shared();
+    // A screen deliberately one cell too small for the splash (but still above the
+    // minimum window size): the title falls back to the centred banner.
+    int columns = splash == null ? 60 : Math.max(60, splash.width() - 1);
+    int rows = splash == null ? 15 : Math.max(15, splash.height() - 1);
+    Assumptions.assumeTrue(splash == null || splash.width() > columns || splash.height() > rows,
+        "the splash does not fit on this screen");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(columns, rows)));
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -111,17 +120,14 @@ class LanternaMainWindowTest {
       gui.addWindow(window.asWindow());
       gui.updateScreen();
 
-      // The splash is taller than the screen: the banner is the fallback.
-      TitleSplash splash = TitleSplash.shared();
-      assertTrue(splash == null || splash.height() > 15, "the splash does not fit on this screen");
       String[] lines = Strings.MainBanner.split("\n", -1);
       int block = 0;
       for(String line : lines) {
-        block = Math.max(block, line.length());
+        block = Math.max(block, EditorText.width(line));
       }
-      int left = 1 + (60 - block) / 2;
+      int left = 1 + (columns - block) / 2;
       int top = -1;
-      for(int y = 0; y < 15; y++) {
+      for(int y = 0; y < rows; y++) {
         if(row(screen, y).contains(lines[0])) {
           top = y;
           break;
@@ -136,6 +142,34 @@ class LanternaMainWindowTest {
       }
       assertEquals(lines[1].indexOf('|') + 1, lines[0].indexOf('_'),
           "the B keeps its leading space");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void spaceOnTheTitleScreenDoesNotTryToWarp() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
+      MainPresenter presenter = new MainPresenter(() -> null, window);
+      window.setPresenter(presenter);
+      window.showTitleScreen();
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // The first key leaves the title screen; with no game loaded, SPACE must not
+      // reach the warp code (there is no commander to warp with).
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains(Strings.MainNoGame), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -175,7 +209,12 @@ class LanternaMainWindowTest {
 
   @Test
   void showsTheSplashOnTheTitleScreen() throws IOException {
-    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    TitleSplash splash = TitleSplash.shared();
+    assertNotNull(splash, "the splash resource is packaged");
+    // A screen with a margin on all four sides. The expectations are derived from
+    // the drawing itself, so editing the art or its colours does not move them.
+    TerminalSize size = new TerminalSize(splash.width() + 8, splash.height() + 6);
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(size));
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -187,31 +226,32 @@ class LanternaMainWindowTest {
       gui.addWindow(window.asWindow());
       gui.updateScreen();
 
-      TitleSplash splash = TitleSplash.shared();
-      assertNotNull(splash, "the splash resource is packaged");
-      assertTrue(screenText(screen).contains("Beyond"), screenText(screen));
-      assertTrue(screenText(screen).contains("Space Trader"), screenText(screen));
-
-      int left = (100 - splash.width()) / 2;
-      int top = (30 - splash.height()) / 2;
-      int[] planet = inkOf(splash, TextColor.ANSI.GREEN);
-      int[] moon = inkOf(splash, TextColor.ANSI.YELLOW);
-      assertNotNull(planet, "the splash draws the planet in green");
-      assertNotNull(moon, "the splash draws the moon in yellow");
-      assertEquals(TextColor.ANSI.GREEN, foregroundAt(screen, left + planet[0], top + planet[1]),
-          "the planet cell is green");
-      assertEquals(TextColor.ANSI.BLACK,
-          screen.getBackCharacter(left + planet[0], top + planet[1]).getBackgroundColor(),
-          "the sky behind the splash stays black");
-      assertEquals(TextColor.ANSI.YELLOW, foregroundAt(screen, left + moon[0], top + moon[1]),
-          "the moon cell is yellow");
+      int left = (size.getColumns() - splash.width()) / 2;
+      int top = (size.getRows() - splash.height()) / 2;
+      int ink = 0;
+      for(int y = 0; y < splash.height(); y++) {
+        for(int x = 0; x < splash.width(); x++) {
+          int codePoint = splash.codePointAt(x, y);
+          if(codePoint == ' ' || codePoint == TitleSplash.CONTINUATION) {
+            continue;
+          }
+          ink++;
+          assertEquals(splash.colorAt(x, y), foregroundAt(screen, left + x, top + y),
+              "the splash colour of the cell " + x + "," + y);
+          assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(left + x, top + y).getBackgroundColor(),
+              "the sky behind the splash stays black");
+        }
+      }
+      assertTrue(ink > 0, "the splash has ink:\n" + screenText(screen));
 
       // The block is centred: the logo line lands where the splash puts it.
       int logoRow = rowOf(splash, "Beyond");
+      assertTrue(logoRow >= 0, "the splash carries the logo");
       int[] beyond = find(screen, "Beyond");
       assertNotNull(beyond, screenText(screen));
-      assertEquals(left + splash.lines().get(logoRow).indexOf("Beyond"), beyond[0],
-          "the splash is centred as a block");
+      String logoLine = splash.lines().get(logoRow);
+      int logoColumn = EditorText.width(logoLine.substring(0, logoLine.indexOf("Beyond")));
+      assertEquals(left + logoColumn, beyond[0], "the splash is centred as a block");
       assertEquals(top + logoRow, beyond[1], "the splash is centred as a block");
     } finally {
       screen.stopScreen();
@@ -252,7 +292,11 @@ class LanternaMainWindowTest {
 
   @Test
   void theSkyShowsThroughTheSpacesOfTheSplash() throws IOException {
-    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    TitleSplash splash = TitleSplash.shared();
+    assertNotNull(splash, "the splash resource is packaged");
+    // The screen just fits the splash with a margin, so the block does not cover it.
+    TerminalSize size = new TerminalSize(splash.width() + 8, splash.height() + 6);
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(size));
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -264,10 +308,8 @@ class LanternaMainWindowTest {
       gui.addWindow(window.asWindow());
       gui.updateScreen();
 
-      TitleSplash splash = TitleSplash.shared();
-      assertNotNull(splash, "the splash resource is packaged");
-      int left = (100 - splash.width()) / 2;
-      int top = (30 - splash.height()) / 2;
+      int left = (size.getColumns() - splash.width()) / 2;
+      int top = (size.getRows() - splash.height()) / 2;
       int[] space = null;
       for(int y = 0; y < splash.height() && space == null; y++) {
         for(int x = 0; x < splash.width(); x++) {
@@ -1320,18 +1362,6 @@ class LanternaMainWindowTest {
     return screen.getBackCharacter(x, y).getForegroundColor();
   }
 
-  /** The first cell of the splash that paints a glyph in a colour, or null. */
-  private static int[] inkOf(TitleSplash splash, TextColor color) {
-    for(int y = 0; y < splash.height(); y++) {
-      for(int x = 0; x < splash.width(); x++) {
-        if(color.equals(splash.colorAt(x, y))) {
-          return new int[] {x, y};
-        }
-      }
-    }
-    return null;
-  }
-
   /** The first drawing row of the splash that contains a text, or -1. */
   private static int rowOf(TitleSplash splash, String text) {
     for(int y = 0; y < splash.height(); y++) {
@@ -1370,7 +1400,9 @@ class LanternaMainWindowTest {
   @Test
   void warpTargetWithNoSelectionCrossesTheWormhole() {
     Game game = newGame();
-    StarSystem current = systemWithWormhole(game);
+    // Not the first slot of the wormhole map, so a bug that always jumped through
+    // the first slot cannot pass this test by chance.
+    StarSystem current = systemWithWormholeAwayFromTheFirstSlot(game);
     StarSystem pair = Functions.WormholeTarget(current.Id().CastToInt());
     game.Commander().CurrentSystem(current);
     game.SelectedSystemId(StarSystemId.NA);
@@ -1379,6 +1411,7 @@ class LanternaMainWindowTest {
     assertSame(pair, window.warpTarget(game));
     assertSame(current, game.SelectedSystem());
     assertSame(pair, game.WarpSystem());
+    assertTrue(game.TargetWormhole(), "the trip must be marked as a wormhole jump");
   }
 
   @Test
@@ -1452,7 +1485,7 @@ class LanternaMainWindowTest {
       LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
       holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
       holder[0].setAutoSave(false);
-      StarSystem end = systemWithWormhole(holder[0]);
+      StarSystem end = systemWithWormholeAwayFromTheFirstSlot(holder[0]);
       StarSystem pair = Functions.WormholeTarget(end.Id().CastToInt());
       holder[0].Commander().CurrentSystem(end);
       MainPresenter presenter = new MainPresenter(() -> holder[0], window);
@@ -1462,6 +1495,8 @@ class LanternaMainWindowTest {
       gui.updateScreen();
 
       int fuel = holder[0].Commander().getShip().getFuel();
+      int cash = holder[0].Commander().getCash();
+      int toll = Consts.WormDist * holder[0].Commander().getShip().getFuelCost();
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
       gui.updateScreen();
 
@@ -1469,6 +1504,96 @@ class LanternaMainWindowTest {
       assertSame(pair, holder[0].WarpSystem(), "the arrival keeps the wormhole as the target");
       assertTrue(holder[0].getArrivedViaWormhole(), "the arrival came through the wormhole");
       assertEquals(fuel, holder[0].Commander().getShip().getFuel(), "a wormhole trip spends no fuel");
+      assertEquals(cash - toll, holder[0].Commander().getCash(),
+          "a wormhole trip pays the toll and nothing else");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void spaceWithoutASelectionOrAWormholeKeepsTheNoTargetMessage() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].setAutoSave(false);
+      // No wormhole here, no selection either: the old "no target" warning stays.
+      StarSystem current = systemWithoutWormhole(holder[0]);
+      holder[0].Commander().CurrentSystem(current);
+      holder[0].SelectedSystemId(StarSystemId.NA);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+
+      assertSame(current, holder[0].Commander().CurrentSystem(), "the ship does not move");
+      assertFalse(holder[0].TargetWormhole(), "nothing marks a wormhole");
+      assertTrue(screenText(screen).contains(Strings.MainWarpNoTarget), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void movingTheCursorAfterAWormholeJumpClearsTheWormholeMark() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].setAutoSave(false);
+      StarSystem current = systemWithWormhole(holder[0]);
+      StarSystem pair = Functions.WormholeTarget(current.Id().CastToInt());
+      holder[0].Commander().CurrentSystem(current);
+      holder[0].SelectedSystemId(current.Id());
+      // No money for the toll: SPACE targets the wormhole and the trip does not happen.
+      holder[0].Commander().setCash(0);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertSame(current, holder[0].Commander().CurrentSystem(), "without the toll the ship stays");
+      assertSame(pair, holder[0].WarpSystem());
+      assertTrue(holder[0].TargetWormhole(), "the wormhole mark is on while the target is the wormhole");
+      // The panel labels the target with the far end of its own wormhole.
+      StarSystem destination = Functions.WormholeTarget(pair.Id().CastToInt());
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.MainWormhole, destination.Name())),
+          screenText(screen));
+
+      // Moving the cursor takes the target over: the wormhole mark must not stick.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('l', false, false));
+      gui.updateScreen();
+      if(holder[0].SelectedSystem() == current) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('h', false, false));
+        gui.updateScreen();
+      }
+      assertNotSame(current, holder[0].SelectedSystem(), "the cursor moved to another system");
+      StarSystem moved = holder[0].SelectedSystem();
+      assertFalse(holder[0].TargetWormhole(), "moving the cursor clears the wormhole mark");
+      assertSame(moved, holder[0].WarpSystem(), "the cursor drives the target again");
+      StarSystem movedPair = Functions.WormholeTarget(moved.Id().CastToInt());
+      if(movedPair == null) {
+        assertFalse(screenText(screen).contains(Strings.MainWormhole), screenText(screen));
+      } else {
+        assertTrue(screenText(screen).contains(Functions.StringVars(Strings.MainWormhole, movedPair.Name())),
+            screenText(screen));
+      }
     } finally {
       screen.stopScreen();
       screen.close();
@@ -2224,6 +2349,24 @@ class LanternaMainWindowTest {
       }
     }
     fail("the galaxy must have a wormhole");
+    return null;
+  }
+
+  /**
+   * A system with a wormhole whose far end is not the one a bug that always jumped
+   * through the first slot of the wormhole map would pick. The wormhole map is a
+   * random permutation, so the first system of the galaxy is not a stable stand-in.
+   */
+  private static StarSystem systemWithWormholeAwayFromTheFirstSlot(Game game) {
+    StarSystem first = game.Universe()[game.Wormholes()[0]];
+    StarSystem firstPair = Functions.WormholeTarget(first.Id().CastToInt());
+    for(StarSystem system : game.Universe()) {
+      if(Functions.WormholeTarget(system.Id().CastToInt()) != null
+          && system != first && system != firstPair) {
+        return system;
+      }
+    }
+    fail("the galaxy must have a wormhole away from the first slot");
     return null;
   }
 
