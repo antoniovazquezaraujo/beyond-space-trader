@@ -80,6 +80,43 @@ class ShipPresenterTest {
   }
 
   @Test
+  void ordersAndAlignsTheProductsWithTheirAveragePrice() {
+    Game game = newGame();
+    game.Commander().getShip().Cargo()[0] = 1;
+    game.Commander().PriceCargo()[0] = 3;
+    game.Commander().getShip().Cargo()[4] = 12;
+    game.Commander().PriceCargo()[4] = 600;
+    game.Commander().getShip().Cargo()[8] = 10;
+    game.Commander().PriceCargo()[8] = 35000;
+    RecordingView view = new RecordingView();
+
+    new ShipPresenter(game, view).update();
+
+    assertEquals(List.of(
+        "Water       1   bought at 3 cr.",
+        "Games      12   bought at 50 cr.",
+        "Narcotics  10   bought at 3,500 cr."), view.model.cargo());
+  }
+
+  @Test
+  void mixesBoughtAndLootedCargoInOrder() {
+    Game game = newGame();
+    game.Commander().getShip().Cargo()[0] = 2; // plundered: no recorded cost
+    game.Commander().getShip().Cargo()[1] = 3;
+    game.Commander().PriceCargo()[1] = 750;
+    game.Commander().getShip().Cargo()[6] = 4;
+    game.Commander().PriceCargo()[6] = 100;
+    RecordingView view = new RecordingView();
+
+    new ShipPresenter(game, view).update();
+
+    assertEquals(List.of(
+        "Water       2   —",
+        "Furs        3   bought at 250 cr.",
+        "Medicine    4   bought at 25 cr."), view.model.cargo());
+  }
+
+  @Test
   void showsSpecialCargo() {
     Game game = newGame();
     game.Commander().getShip().setTribbles(5);

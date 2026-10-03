@@ -523,6 +523,106 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void cutsTheCargoLineToThePanelWidth() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 31)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      holder[0].Commander().getShip().Cargo()[8] = 1; // Narcotics, the longest name
+      holder[0].Commander().PriceCargo()[8] = Integer.MAX_VALUE;
+      // At 60 columns the ship panel is 36 wide: min(width - 24, 50).
+      String line = String.format("%-10s %2d   %s", "Narcotics", 1,
+          Functions.StringVars(Strings.ShipCargoBoughtAt, Functions.FormatMoney(Integer.MAX_VALUE)));
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(line.length() > 36, "the scenario needs a line wider than the panel: " + line);
+      assertTrue(text.contains(line.substring(0, 36)), "the line is cut to the panel width: " + text);
+      assertFalse(text.contains(line), "the price tail does not fit in the panel: " + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void hidesTheCargoLinesThatDoNotFitInThePanel() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      fillTheHold(holder[0]);
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains(Strings.ShipCargoLabel), text);
+      assertTrue(text.contains("Machines"), "the last line that fits is drawn: " + text);
+      assertFalse(text.contains("Narcotics"), "the first line that does not fit is hidden: " + text);
+      assertFalse(text.contains("Robots"), "the rest of the hold is hidden: " + text);
+      // Row height - 5 stays reserved: the ship panel occupies the right 50 columns.
+      assertTrue(row(screen, 25).substring(50).isBlank(), "nothing is drawn on the reserved row: " + row(screen, 25));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void keepsTheCargoInsideAShortPanel() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 21)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, DialogService.NONE);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      fillTheHold(holder[0]);
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains(Strings.ShipTitle), text);
+      assertTrue(text.contains(Strings.ShipKeys), "the panel keys survive a hold that does not fit: " + text);
+      for(int y = 16; y < 21; y++) { // height - 5 and below: the keys area
+        String panel = row(screen, y).substring(50);
+        for(int i = 0; i < Consts.TradeItems.size(); i++) {
+          assertFalse(panel.contains(Consts.TradeItems.get(i).Name()),
+              "nothing spills past the height limit, row " + y + ": " + panel);
+        }
+      }
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void opensTheShipListAndEquipmentPanels() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -2086,6 +2186,14 @@ class LanternaMainWindowTest {
     }
     fail("the dialog was not shown");
     return null;
+  }
+
+  /** A hold with every product and a recorded average price. */
+  private static void fillTheHold(Game game) {
+    for(int i = 0; i < Consts.TradeItems.size(); i++) {
+      game.Commander().getShip().Cargo()[i] = i + 1;
+      game.Commander().PriceCargo()[i] = (i + 1) * 100;
+    }
   }
 
   private static String screenText(Screen screen) {
