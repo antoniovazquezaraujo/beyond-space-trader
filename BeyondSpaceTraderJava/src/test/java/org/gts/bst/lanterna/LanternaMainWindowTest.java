@@ -1358,6 +1358,162 @@ class LanternaMainWindowTest {
     }
   }
 
+  @Test
+  void escapeOnTheMapAsksBeforeQuitting() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // "No" leaves the game running.
+      dialogs.setResult(DialogResult.No);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      assertEquals(List.of(AlertType.GameAbandonConfirm), dialogs.alerts(),
+          "the escape asks before abandoning the unmapped progress");
+      assertTrue(gui.getWindows().contains(window.asWindow()), "No keeps the game open");
+
+      // "Yes" closes the window.
+      dialogs.setResult(DialogResult.Yes);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      assertEquals(2, dialogs.alerts().size(), "the second escape asks again");
+      assertFalse(gui.getWindows().contains(window.asWindow()), "Yes closes the window");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void escapeClosesAnOpenPanelWithoutAsking() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setResult(DialogResult.Yes);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.TradeTitle), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+
+      assertTrue(dialogs.alerts().isEmpty(), "closing a panel is not quitting: " + dialogs.alerts());
+      assertTrue(gui.getWindows().contains(window.asWindow()), "the window stays open");
+      assertFalse(screenText(screen).contains(Strings.TradeTitle), "the panel is closed");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void escapeWithNoGameClosesWithoutAsking() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
+      MainPresenter presenter = new MainPresenter(() -> null, window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+
+      assertFalse(gui.getWindows().contains(window.asWindow()),
+          "with no game there is nothing to lose: the window closes at once");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theQuitMenuItemAsksBeforeLeavingAGame() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, window, dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // "No" leaves the game running; the menu lists Quit as its last entry.
+      dialogs.setResult(DialogResult.No);
+      activateQuitMenuItem(window);
+      assertEquals(List.of(AlertType.GameAbandonConfirm), dialogs.alerts(),
+          "the Quit entry asks before abandoning the unmapped progress");
+      assertTrue(gui.getWindows().contains(window.asWindow()), "No keeps the game open");
+
+      // "Yes" closes the window.
+      dialogs.setResult(DialogResult.Yes);
+      activateQuitMenuItem(window);
+      assertEquals(2, dialogs.alerts().size(), "the second Quit asks again");
+      assertFalse(gui.getWindows().contains(window.asWindow()), "Yes closes the window");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theQuitMenuItemClosesWithNoGameWithoutAsking() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
+      MainPresenter presenter = new MainPresenter(() -> null, window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      activateQuitMenuItem(window);
+
+      assertFalse(gui.getWindows().contains(window.asWindow()),
+          "with no game the Quit entry closes at once");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** Opens the F10 menu, moves to its last entry (Quit) and activates it. */
+  private static void activateQuitMenuItem(LanternaMainWindow window) {
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F10));
+    for(int i = 0; i < 6; i++) {
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+    }
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+  }
+
   private static TextColor foregroundAt(Screen screen, int x, int y) {
     return screen.getBackCharacter(x, y).getForegroundColor();
   }

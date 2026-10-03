@@ -418,7 +418,7 @@ public final class LanternaMainWindow
         content.closePanel();
         return true;
       }
-      window.close();
+      quit();
       return true;
     }
     if(key.getKeyType() == KeyType.Character && key.getCharacter() == ' ' && isReadOnlyPanel(content.panel())) {
@@ -1536,6 +1536,27 @@ public final class LanternaMainWindow
     }
   }
 
+  /**
+   * Leaves the program, asking first when a game is loaded: the progress lives only
+   * in memory until the player saves it (F5) or the departure/arrival autosaves run.
+   * The question is the abandon confirmation of New Game and Load, so a player who
+   * quits by mistake is told the same thing in every way out.
+   */
+  private void quit() {
+    if(confirmQuit()) {
+      window.close();
+    }
+  }
+
+  /** True when quitting is confirmed (or there is nothing to lose: no game loaded). */
+  private boolean confirmQuit() {
+    Game game = gameSupplier.get();
+    if(game == null) {
+      return true;
+    }
+    return game.Dialogs().alert(AlertType.GameAbandonConfirm) == DialogResult.Yes;
+  }
+
   private void toggleMenu() {
     if(content.menuVisible()) {
       content.hideMenu();
@@ -1550,7 +1571,7 @@ public final class LanternaMainWindow
     addMenuItem(items, Strings.MenuLoad, () -> runAction(loadGameAction, Strings.MainLoadUnavailable));
     addMenuItem(items, Strings.MenuNewGame, () -> runAction(newGameAction, Strings.MainNewGameUnavailable));
     addMenuItem(items, Strings.MenuAbout, this::openAbout);
-    addMenuItem(items, Strings.MenuQuit, window::close);
+    addMenuItem(items, Strings.MenuQuit, this::quit);
     content.showMenu(items);
   }
 

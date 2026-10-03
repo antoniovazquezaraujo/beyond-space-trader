@@ -228,7 +228,7 @@ chart is hidden; the chart comes back when the panel closes.
 | TAB | Local chart / galactic chart |
 | ENTER / T | Confirm / track the selected system (T again stops tracking it) |
 | / | Find a system by name and select it (asks which one if several match) |
-| ESC | Close the panel / go back / quit |
+| ESC | Close the panel / go back; on the map (or through the Quit menu entry), leave the program asking first when a game is loaded, so unsaved progress is not lost by mistake |
 | SPACE | Close a read-only panel; on the map, warp to the selected system (normal trip: spends fuel and a day). With the cursor on the current system and a wormhole there, it crosses to the other end of the wormhole |
 | C | Trade panel |
 | B | Bank panel |
