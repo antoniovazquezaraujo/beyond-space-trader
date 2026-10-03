@@ -356,7 +356,7 @@ public final class LanternaMainWindow
     refresh();
   }
 
-  /** The panels that only show information: they close with space (or escape). */
+  /** The panels that close with space (escape always closes any panel). */
   private static boolean isReadOnlyPanel(MainPanel panel) {
     switch(panel) {
       case Quests:
@@ -433,7 +433,7 @@ public final class LanternaMainWindow
       return handleBankKey(key);
     }
     if(content.panel() == MainPanel.Quests) {
-      return false;
+      return handleQuestsKey(key);
     }
     if(content.panel() == MainPanel.Personnel) {
       return handlePersonnelKey(key);
@@ -1669,6 +1669,46 @@ public final class LanternaMainWindow
       }
     }
     return false;
+  }
+
+  /**
+   * The quests panel: the arrows move the selection and ENTER sets the destination of
+   * the selected entry as the map target and closes the panel. Space and escape keep
+   * closing it.
+   */
+  private boolean handleQuestsKey(KeyStroke key) {
+    switch(key.getKeyType()) {
+      case ArrowUp:
+        content.moveQuestSelection(-1);
+        return true;
+      case ArrowDown:
+        content.moveQuestSelection(1);
+        return true;
+      case Enter:
+        selectQuestTarget();
+        content.closePanel();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /** Points the map at the destination of the selected quest entry, when it has one. */
+  private void selectQuestTarget() {
+    Game game = gameSupplier.get();
+    String name = content.selectedQuestSystem();
+    if(game == null || name == null) {
+      return;
+    }
+    if(questsPresenter != null) {
+      questsPresenter.selectSystem(name);
+    } else {
+      game.setSelectedSystemByName(name);
+    }
+    StarSystem system = game.SelectedSystem();
+    if(system != null && system.Name().equalsIgnoreCase(name)) {
+      selectedSystem(game, system);
+    }
   }
 
   private boolean handleNewsKey(KeyStroke key) {

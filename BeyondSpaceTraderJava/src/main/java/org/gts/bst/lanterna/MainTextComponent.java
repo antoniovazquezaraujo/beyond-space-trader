@@ -104,6 +104,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   private final List<String> newsLines = new ArrayList<>();
   private String newsHead = "";
   private int newsScroll;
+  private int questIndex;
+  private int questScroll;
   private String directKeys = "";
   private final List<String> menuItems = new ArrayList<>();
   private boolean menuVisible;
@@ -144,6 +146,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
 
   public void quests(QuestsViewModel quests) {
     this.quests = quests;
+    questIndex = 0;
+    questScroll = 0;
+    invalidate();
   }
 
   public void personnel(PersonnelViewModel personnel) {
@@ -271,6 +276,39 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     invalidate();
   }
 
+  public int questCount() {
+    return quests == null ? 0 : quests.quests().size();
+  }
+
+  public int questIndex() {
+    return questIndex;
+  }
+
+  public void questIndex(int index) {
+    if(questCount() > 0) {
+      questIndex = Math.floorMod(index, questCount());
+    }
+    invalidate();
+  }
+
+  /** Moves the quests cursor; the panel scrolls to keep the selected entry visible. */
+  public void moveQuestSelection(int delta) {
+    if(questCount() == 0) {
+      return;
+    }
+    questIndex = Math.floorMod(questIndex + delta, questCount());
+    invalidate();
+  }
+
+  /** The destination of the selected quest entry, or {@code null} when it has none. */
+  public String selectedQuestSystem() {
+    if(quests == null || questIndex < 0 || questIndex >= quests.quests().size()) {
+      return null;
+    }
+    QuestsViewModel.Entry entry = quests.quests().get(questIndex);
+    return entry.hasSystem() ? entry.systemName() : null;
+  }
+
   public int equipmentEntryCount() {
     if(equipment == null) {
       return 0;
@@ -319,6 +357,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   public void openQuests() {
+    questIndex = 0;
+    questScroll = 0;
     panel = MainPanel.Quests;
     invalidate();
   }
@@ -1135,17 +1175,86 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         "" + (newsLines.isEmpty() ? 0 : newsScroll + 1), "" + newsLines.size()), panelWidth));
   }
 
+  /**
+   * Draws the quests as paragraphs separated by a blank line. The selected entry is
+   * highlighted and the panel scrolls to keep it visible; entries with a destination
+   * show it under the text, so ENTER knows where to point the map.
+   */
   private void drawQuestsPanel(TextGUIGraphics graphics, int x, int height) {
     UiPalette.title(graphics, x, contentTop, Strings.QuestsTitle, panelWidth);
-    int row = contentTop + 1;
+    int first = contentTop + 1;
+    int limit = height - 5;
     if(quests == null) {
       return;
     }
-    List<String> lines = new ArrayList<>();
-    wrap(lines, quests.text(), panelWidth);
-    for(int i = 0; i < lines.size() && row < height - 5; i++) {
-      graphics.putString(x, row++, cut(lines.get(i), panelWidth));
+    if(quests.quests().isEmpty()) {
+      if(first < limit) {
+        UiPalette.line(graphics, x, first, cut(Strings.QuestNone, panelWidth), panelWidth);
+      }
+      return;
     }
+    List<QuestLine> lines = questLines();
+    scrollQuestsToSelection(lines, Math.max(1, limit - first));
+    int row = first;
+    for(int i = questScroll; i < lines.size() && row < limit; i++) {
+      QuestLine line = lines.get(i);
+      if(line.entry() < 0) {
+        row++;
+      } else if(quests.hasDestinations() && line.entry() == questIndex) {
+        UiPalette.selected(graphics, x, row++, line.text(), panelWidth);
+      } else if(line.marker()) {
+        UiPalette.draw(graphics, x, row++, line.text(), UiPalette.ACCENT, x + panelWidth);
+      } else {
+        graphics.putString(x, row++, cut(line.text(), panelWidth));
+      }
+    }
+  }
+
+  /** One drawn row of the quests panel: a paragraph line, its destination note or a blank. */
+  private record QuestLine(int entry, String text, boolean marker) {
+  }
+
+  /** Every quest as a wrapped paragraph, its destination note and a separating blank line. */
+  private List<QuestLine> questLines() {
+    List<QuestLine> lines = new ArrayList<>();
+    for(int i = 0; i < quests.quests().size(); i++) {
+      if(i > 0) {
+        lines.add(new QuestLine(-1, "", false));
+      }
+      QuestsViewModel.Entry entry = quests.quests().get(i);
+      List<String> wrapped = new ArrayList<>();
+      wrap(wrapped, entry.text(), panelWidth - 2);
+      for(String text : wrapped) {
+        lines.add(new QuestLine(i, "  " + text, false));
+      }
+      if(entry.hasSystem()) {
+        lines.add(new QuestLine(i, "  → " + entry.systemName(), true));
+      }
+    }
+    return lines;
+  }
+
+  /** Scrolls the quests just enough to keep the selected entry visible. */
+  private void scrollQuestsToSelection(List<QuestLine> lines, int visible) {
+    int selectedTop = -1;
+    int selectedBottom = -1;
+    for(int i = 0; i < lines.size(); i++) {
+      if(lines.get(i).entry() == questIndex) {
+        if(selectedTop < 0) {
+          selectedTop = i;
+        }
+        selectedBottom = i;
+      }
+    }
+    if(selectedTop < 0) {
+      return;
+    }
+    if(selectedTop < questScroll) {
+      questScroll = selectedTop;
+    } else if(selectedBottom >= questScroll + visible) {
+      questScroll = Math.max(selectedTop, selectedBottom - visible + 1);
+    }
+    questScroll = Math.max(0, Math.min(questScroll, Math.max(0, lines.size() - visible)));
   }
 
   private void drawTradePanel(TextGUIGraphics graphics, int x, int height) {

@@ -210,7 +210,12 @@ chart is hidden; the chart comes back when the panel closes.
   - *Shipyard*: repairs, fuel, ships for sale, equipment (sections of the panel).
   - *Bank*: cash, debt, loans, insurance.
   - *Personnel*: crew/mercenaries, skills, hire/dismiss.
-  - *Quests & news*: active quests, latest news, newspaper.
+  - *Quests*: the open quests, one paragraph per quest, each one with its destination
+    system marked under the text. The arrows move the selection (the panel scrolls to
+    keep the selected entry visible) and ENTER sets the destination of the selected
+    entry as the map target and closes the panel; SPACE and ESC also close it. An entry
+    without a destination (the tribbles) cannot be targeted, so ENTER just closes.
+  - *News*: the newspaper of the day, scrolled with the arrows.
   - *About*: where the game comes from, the authors and the license (it mirrors the
     NOTICE file); in the menu and on the `A` key.
   - *Encounter*: replaces the panel (map dimmed); actions offered with keys
@@ -232,7 +237,7 @@ chart is hidden; the chart comes back when the panel closes.
 | SPACE | Close a read-only panel; on the map, warp to the selected system (normal trip: spends fuel and a day). With the cursor on the current system and a wormhole there, it crosses to the other end of the wormhole |
 | C | Trade panel |
 | B | Bank panel |
-| Q | Quests panel |
+| Q | Quests panel: arrows pick an entry, ENTER sets its system as the target and closes |
 | N | Newspaper panel |
 | G | Jump with the Portable Singularity, only while it is on board |
 | F / R | Buy fuel / repair the hull |

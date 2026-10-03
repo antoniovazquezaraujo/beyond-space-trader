@@ -9,8 +9,11 @@
 package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import org.gts.bst.view.QuestsViewModel;
 import org.junit.jupiter.api.Test;
 
 
@@ -32,6 +35,25 @@ class MainTextComponentTest {
 
     component.moveNewsScroll(1000);
     assertEquals(component.newsLineCount() - 1, component.newsScroll());
+  }
+
+  @Test
+  void movesTheQuestSelectionAndReadsItsDestination() {
+    MainTextComponent component = new MainTextComponent(() -> null, key -> false);
+    component.quests(new QuestsViewModel(List.of(
+        new QuestsViewModel.Entry("Deliver the reactor to Nix.", "Nix"),
+        new QuestsViewModel.Entry("Get rid of those pesky tribbles.", null))));
+
+    assertEquals(2, component.questCount());
+    assertEquals(0, component.questIndex());
+    assertEquals("Nix", component.selectedQuestSystem());
+
+    component.moveQuestSelection(1);
+    assertEquals(1, component.questIndex());
+    assertNull(component.selectedQuestSystem());
+
+    component.moveQuestSelection(1);
+    assertEquals(0, component.questIndex(), "the selection wraps around");
   }
 
   @Test

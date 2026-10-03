@@ -491,6 +491,121 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theQuestsPanelSetsTheSelectedTargetOnEnter() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      holder[0].setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+      StarSystem utopia = holder[0].Universe()[StarSystemId.Utopia.CastToInt()];
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.QuestMoon), screenText(screen));
+      assertTrue(screenText(screen).contains("→ " + utopia.Name()), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+
+      assertSame(utopia, holder[0].SelectedSystem(),
+          "ENTER points the map at the destination of the selected quest");
+      assertFalse(screenText(screen).contains(Strings.QuestsTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theQuestsPanelArrowsMoveTheSelection() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      holder[0].setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterAtAcamar);
+      holder[0].setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      gui.updateScreen();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+
+      assertSame(holder[0].Universe()[StarSystemId.Utopia.CastToInt()], holder[0].SelectedSystem(),
+          "the arrow moved the selection to the second quest");
+      assertNotSame(holder[0].Universe()[StarSystemId.Acamar.CastToInt()], holder[0].SelectedSystem());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theQuestsPanelScrollsToTheLastQuest() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      Game game = holder[0];
+      game.setQuestStatusGemulon(SpecialEvent.StatusGemulonStarted);
+      game.setQuestStatusExperiment(SpecialEvent.StatusExperimentStarted);
+      game.setQuestStatusReactor(SpecialEvent.StatusReactorFuelOk);
+      game.setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterAtAcamar);
+      game.setQuestStatusJapori(SpecialEvent.StatusJaporiInTransit);
+      game.setQuestStatusDragonfly(SpecialEvent.StatusDragonflyFlyBaratas);
+      game.setQuestStatusPrincess(SpecialEvent.StatusPrincessFlyCentauri);
+      game.setQuestStatusScarab(SpecialEvent.StatusScarabHunting);
+      game.setQuestStatusSculpture(SpecialEvent.StatusSculptureInTransit);
+      game.setQuestStatusArtifact(SpecialEvent.StatusArtifactOnBoard);
+      game.Commander().getShip().setTribbles(1);
+      game.setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      String open = screenText(screen);
+      assertTrue(open.contains(Strings.QuestReactor), open);
+      assertFalse(open.contains(Strings.QuestMoon), open);
+
+      // The moon is the last of the twelve entries: only scrolling reaches it.
+      for(int i = 0; i < 11; i++) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      }
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.QuestMoon), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void opensTheInformationPanels() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
