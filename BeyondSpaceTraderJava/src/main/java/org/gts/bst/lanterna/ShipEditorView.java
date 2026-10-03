@@ -18,7 +18,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
+import org.gts.bst.view.HullFile;
 import org.gts.bst.view.LetterGrid;
 import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipDesign;
@@ -26,15 +28,17 @@ import org.gts.bst.view.ShipSites;
 
 
 /**
- * The ship editor: on the left the ship type, the list of ships (TAB moves
- * through them) and the numbered elements (the piece keys the game may fill a
- * site with); then the hull with its site letters (space paints or erases) and
- * then the same ship with the real pieces. The hull is never touched: the
- * letters are the groups the game will fill with the pieces that say `key=`
- * them.
+ * The ship editor: on the left the 17 types of the game, always in enum order
+ * and always complete (TAB moves through them), and the numbered elements (the
+ * piece keys the game may fill a site with); then the hull with its site letters
+ * (space paints or erases) and then the same ship with the real pieces. The type
+ * of a design is fixed: only its name, its chassis and its groups can change.
+ * The hull is never touched: the letters are the groups the game will fill with
+ * the pieces that say `key=` them.
  */
 public final class ShipEditorView extends ArtEditorWindow {
   private static final int STRIP_ROWS = 2;
+  /** One slot per game type, in enum order: a design never leaves its type. */
   private final List<ShipDesign> designs;
   private final List<ShipArtFile> hulls;
   private final List<ShipArtFile> pieces;
@@ -48,15 +52,24 @@ public final class ShipEditorView extends ArtEditorWindow {
   private boolean listOpen;
   private int listIndex;
   private String message = "";
+  /** Designs of the file dropped for not having a single known type. */
+  private int ignored;
+  /** True when a hull without size has taken the size of a type. */
+  private boolean hullSizesAdopted;
   /** The ships file the editor saves to (a field so the tests can point elsewhere). */
   private String shipsPath = ShipArtFile.resolve("ships.txt").toString();
+  /** The chassis file the editor saves to when it has adopted a hull size. */
+  private String hullsPath = ShipArtFile.resolve("chassis.txt").toString();
 
   public ShipEditorView(List<ShipDesign> designs, List<ShipArtFile> hulls, List<ShipArtFile> pieces) {
     super("ship editor");
-    this.designs = new ArrayList<>(designs);
     this.hulls = hulls;
     this.pieces = pieces;
+    this.designs = slots(designs);
     loadDesign(0);
+    if(ignored > 0) {
+      message = "ignored " + ignored + " designs with an unknown or repeated type";
+    }
   }
 
   /** Points the editor to another ships file (the tests use a temp one). */
@@ -64,14 +77,79 @@ public final class ShipEditorView extends ArtEditorWindow {
     shipsPath = path;
   }
 
+  /** Points the editor to another chassis file (the tests use a temp one). */
+  void hullsPath(String path) {
+    hullsPath = path;
+  }
+
+  /**
+   * One design per game type, in enum order: the loaded design of that type, or
+   * a new one (named after the type, with the first hull of its size and no
+   * groups) when the file has none. Designs whose type is unknown or repeated
+   * are dropped.
+   */
+  private List<ShipDesign> slots(List<ShipDesign> loaded) {
+    Map<ShipType, ShipDesign> byType = new LinkedHashMap<>();
+    for(ShipDesign design : loaded) {
+      ShipType type = ShipSites.typeOf(design.type());
+      if(type == null || byType.containsKey(type)) {
+        ignored++;
+        continue;
+      }
+      byType.put(type, design);
+    }
+    List<ShipDesign> slots = new ArrayList<>();
+    for(ShipType type : ShipType.values()) {
+      ShipDesign design = byType.get(type);
+      if(design == null) {
+        slots.add(new ShipDesign(type.name(), type.name(), newChassis(type), List.of()));
+      } else {
+        slots.add(new ShipDesign(design.name(), type.name(), design.chassis(), design.groups()));
+      }
+    }
+    return slots;
+  }
+
+  /** The first hull of the size of a type; an unsized one takes that size. */
+  private String newChassis(ShipType type) {
+    ShipSites.Budget budget = ShipSites.budgetOf(type.name());
+    ShipArtFile unsized = null;
+    for(ShipArtFile hull : hulls) {
+      if(hull.size().equalsIgnoreCase(budget.size().name())) {
+        return hull.name();
+      }
+      if(unsized == null && isUnsized(hull.size())) {
+        unsized = hull;
+      }
+    }
+    if(unsized == null) {
+      return "";
+    }
+    adoptSize(unsized.name(), budget.size());
+    return unsized.name();
+  }
+
+  /** True when a hull declares no usable size (empty or `any`). */
+  private static boolean isUnsized(String size) {
+    return size == null || size.isEmpty() || size.equalsIgnoreCase("any");
+  }
+
+  /** Writes the size of a type into a hull that had none; true when the hull changed. */
+  private boolean adoptSize(String hullName, ShipSize size) {
+    for(int i = 0; i < hulls.size(); i++) {
+      ShipArtFile hull = hulls.get(i);
+      if(hull.name().equalsIgnoreCase(hullName) && isUnsized(hull.size())) {
+        hulls.set(i, new ShipArtFile(hull.name(), hull.color(), hull.cells(), hull.blink(), hull.bgColor(),
+            hull.letter(), hull.letters(), hull.zones(), size.name().toLowerCase(java.util.Locale.ROOT)));
+        hullSizesAdopted = true;
+        return true;
+      }
+    }
+    return false;
+  }
+
   private void loadDesign(int index) {
     designIndex = Math.max(0, Math.min(index, designs.size() - 1));
-    if(designs.isEmpty()) {
-      grid = new LetterGrid();
-      message = "no ships: write [name] with type= and chasis= in ships.txt";
-      updateTitle();
-      return;
-    }
     ShipDesign design = designs.get(designIndex);
     grid = LetterGrid.ofDesign(design);
     if(pen == 0 || variantsOf(pen).isEmpty()) {
@@ -80,46 +158,29 @@ public final class ShipEditorView extends ArtEditorWindow {
     updateTitle();
   }
 
-  /** Adds a ship, with the chassis of the current one and a free name. */
-  private void newDesign() {
-    storeCurrent();
-    ShipDesign design = design();
-    String name = "new";
-    int number = 2;
-    while(nameTaken(name)) {
-      name = "new" + number++;
-    }
-    designs.add(new ShipDesign(name, "", design == null ? "" : design.chassis(), List.of()));
-    loadDesign(designs.size() - 1);
-    message = "new ship " + name + ": pick its type with [y]";
-    redraw();
-  }
-
-  private boolean nameTaken(String name) {
-    for(ShipDesign other : designs) {
-      if(other.name().equalsIgnoreCase(name)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   /** Renames the open ship with a little dialog (the [name] of ships.txt). */
   private void renameDesign() {
     ShipDesign design = design();
     com.googlecode.lanterna.gui2.WindowBasedTextGUI gui = getTextGUI();
-    if(design == null || gui == null) {
+    if(gui == null) {
       return;
     }
     String typed = com.googlecode.lanterna.gui2.dialogs.TextInputDialog.showDialog(gui, "ship name",
         "Name (it will be the [name] in ships.txt):", design.name());
-    if(typed != null && !typed.isBlank()) {
-      storeCurrent();
-      designs.set(designIndex, new ShipDesign(typed.strip(), design.type(), design.chassis(), design.groups()));
-      updateTitle();
-      message = "renamed: " + typed.strip();
-      redraw();
+    rename(typed);
+  }
+
+  /** Renames the open ship; the type never changes (the tests call it without the dialog). */
+  void rename(String name) {
+    if(name == null || name.isBlank()) {
+      return;
     }
+    storeCurrent();
+    ShipDesign design = design();
+    designs.set(designIndex, new ShipDesign(name.strip(), design.type(), design.chassis(), design.groups()));
+    updateTitle();
+    message = "renamed: " + name.strip();
+    redraw();
   }
 
   /** Moves to another ship, cycling: from the last one it goes back to the first. */
@@ -133,17 +194,13 @@ public final class ShipEditorView extends ArtEditorWindow {
     redraw();
   }
 
-  /** Says which ship is open, so TAB does not look like it does nothing. */
+  /** Says which type is open, so TAB does not look like it does nothing. */
   private void announceShip() {
     ShipDesign design = design();
-    message = design == null ? "no ships in ships.txt"
-        : "ship " + (designIndex + 1) + "/" + designs.size() + ": " + design.name();
+    message = "ship " + (designIndex + 1) + "/" + designs.size() + ": " + design.name();
   }
 
   private void storeCurrent() {
-    if(designs.isEmpty()) {
-      return;
-    }
     ShipDesign design = designs.get(designIndex);
     List<ShipDesign.LetterGroup> groups = new ArrayList<>();
     for(LetterGrid.Run run : grid.runs()) {
@@ -153,7 +210,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   }
 
   private ShipDesign design() {
-    return designs.isEmpty() ? null : designs.get(designIndex);
+    return designs.get(designIndex);
   }
 
   private ShipArtFile hull() {
@@ -200,29 +257,6 @@ public final class ShipEditorView extends ArtEditorWindow {
     pen = index < 0 ? pens.get(step < 0 ? pens.size() - 1 : 0)
         : pens.get((index + step + pens.size()) % pens.size());
     message = "element: " + elementLabel(pen) + (variantsOf(pen).size() > 1 ? " · [v] variants" : "");
-  }
-
-  /** Cycles the ship type of the open ship (the game decides the quotas with it). */
-  private void cycleType() {
-    ShipDesign design = design();
-    if(design == null) {
-      message = "no ships in ships.txt";
-      return;
-    }
-    ShipType[] types = ShipType.values();
-    int index = -1;
-    for(int i = 0; i < types.length; i++) {
-      if(types[i].name().equalsIgnoreCase(design.type())) {
-        index = i;
-        break;
-      }
-    }
-    storeCurrent();
-    ShipType next = types[(index + 1) % types.length];
-    designs.set(designIndex, new ShipDesign(design.name(), next.name(), design.chassis(), design.groups()));
-    updateTitle();
-    message = "type=" + next.name();
-    redraw();
   }
 
   /** Picks an element by its number (the keys 1 to 9). */
@@ -400,17 +434,11 @@ public final class ShipEditorView extends ArtEditorWindow {
       case 'v':
         cycleVariant();
         break;
-      case '+':
-        newDesign();
-        break;
       case 't':
         renameDesign();
         break;
       case 'f':
         openList();
-        break;
-      case 'y':
-        cycleType();
         break;
       case 's':
         save();
@@ -457,7 +485,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     }
     int max = maxOfKind(kind);
     if(max < 0) {
-      message = "⚠ pick the ship type with [y] before painting sites";
+      message = "⚠ the type " + design().type() + " fixes no limit";
       return false;
     }
     char previous = grid.at(cursorX, cursorY);
@@ -476,11 +504,44 @@ public final class ShipEditorView extends ArtEditorWindow {
     return true;
   }
 
-  /** The items of the open list: the hulls of chassis.txt. */
+  /** The hulls the open type may use: the ones of its size or without size. */
+  private List<ShipArtFile> offeredHulls() {
+    List<ShipArtFile> offered = new ArrayList<>();
+    ShipSites.Budget budget = ShipSites.budgetOf(design().type());
+    if(budget == null) {
+      return offered;
+    }
+    for(ShipArtFile hull : hulls) {
+      if(offer(hull, budget.size())) {
+        offered.add(hull);
+      }
+    }
+    return offered;
+  }
+
+  /**
+   * True when a hull suits a size. A hull with a size only suits that size; a
+   * hull without one suits any size, but not when a type of another size is
+   * already using it (it cannot serve two sizes).
+   */
+  private boolean offer(ShipArtFile hull, ShipSize size) {
+    if(!isUnsized(hull.size())) {
+      return ShipSites.sizeFits(hull.size(), size);
+    }
+    for(ShipDesign other : designs) {
+      ShipSites.Budget budget = ShipSites.budgetOf(other.type());
+      if(budget != null && budget.size() != size && other.chassis().equalsIgnoreCase(hull.name())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** The items of the open list: the hulls the open type may use, in file order. */
   private List<String> items() {
     List<String> items = new ArrayList<>();
-    for(ShipArtFile hull : hulls) {
-      items.add(hull.name());
+    for(ShipArtFile hull : offeredHulls()) {
+      items.add(hull.name() + (isUnsized(hull.size()) ? " (no size)" : ""));
     }
     return items;
   }
@@ -488,11 +549,11 @@ public final class ShipEditorView extends ArtEditorWindow {
   /** Opens the list of chassis, with the current one selected. */
   private void openList() {
     ShipDesign design = design();
-    String current = design == null ? "" : design.chassis();
-    List<String> items = items();
+    String current = design.chassis();
+    List<ShipArtFile> offered = offeredHulls();
     listIndex = 0;
-    for(int i = 0; i < items.size(); i++) {
-      if(items.get(i).equalsIgnoreCase(current)) {
+    for(int i = 0; i < offered.size(); i++) {
+      if(offered.get(i).name().equalsIgnoreCase(current)) {
         listIndex = i;
         break;
       }
@@ -502,31 +563,35 @@ public final class ShipEditorView extends ArtEditorWindow {
   }
 
   private void pick() {
-    List<String> items = items();
+    List<ShipArtFile> offered = offeredHulls();
     ShipDesign design = design();
-    if(design == null || items.isEmpty() || listIndex >= items.size()) {
+    if(listIndex < 0 || listIndex >= offered.size()) {
       listOpen = false;
       redraw();
       return;
     }
-    String value = items.get(listIndex);
+    ShipArtFile hull = offered.get(listIndex);
+    ShipSize size = ShipSites.budgetOf(design.type()).size();
     storeCurrent();
-    designs.set(designIndex, new ShipDesign(design.name(), design.type(), value, design.groups()));
+    designs.set(designIndex, new ShipDesign(design.name(), design.type(), hull.name(), design.groups()));
     listOpen = false;
     updateTitle();
-    message = "chasis=" + value;
+    boolean adopted = adoptSize(hull.name(), size);
+    message = "chasis=" + hull.name()
+        + (adopted ? " (size=" + size.name().toLowerCase(java.util.Locale.ROOT) + ")" : "");
     redraw();
   }
 
   private void save() {
-    if(designs.isEmpty()) {
-      message = "no ships to save";
-      return;
-    }
     storeCurrent();
     try {
       ShipDesign.save(shipsPath, designs);
-      message = "saved: " + shipsPath + " (" + designs.size() + " ships)";
+      String chassis = "";
+      if(hullSizesAdopted) {
+        HullFile.save(hullsPath, hulls);
+        chassis = " and " + hullsPath;
+      }
+      message = "saved: " + shipsPath + chassis + " (" + designs.size() + " ships)";
     } catch(IOException e) {
       message = "could not save: " + e.getMessage();
     }
@@ -557,9 +622,8 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipArtFile hull = hull();
     if(hull == null) {
       ShipDesign design = design();
-      graphics.putString(panel + 2, 1, EditorText.cut(design == null ? "no ships in ships.txt"
-          : "cannot find the chassis " + design.chassis() + " (pick one from chassis.txt with [f])",
-          canvas - 1));
+      graphics.putString(panel + 2, 1, EditorText.cut("cannot find the chassis " + design.chassis()
+          + " (pick one from chassis.txt with [f])", canvas - 1));
       graphics.putString(panel + 2, 2, EditorText.cut("hulls: " + hullsLine(), canvas - 1));
     } else {
       paintHull(graphics, hull, panel + 1, 0, half, rows, true);
@@ -593,16 +657,13 @@ public final class ShipEditorView extends ArtEditorWindow {
     return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
   }
 
-  /** The vertical panel on the left: the ships (with their type) and the numbered elements. */
+  /** The vertical panel on the left: the 17 types (with their design) and the numbered elements. */
   private void paintPanel(TextGUIGraphics graphics, int width, int rows) {
     ShipDesign design = design();
     ShipSites.Budget budget = design == null ? null : ShipSites.budgetOf(design.type());
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.putString(0, 0, EditorText.section("Ships", width));
     int row = 1;
-    if(designs.isEmpty()) {
-      graphics.putString(0, row++, EditorText.cut("(no ships in ships.txt)", width));
-    }
     int nameColumn = shipNameColumn(width);
     int first = Math.max(0, designIndex - 5);
     for(int i = first; i < designs.size() && i < first + 6 && row < rows; i++, row++) {
@@ -837,9 +898,8 @@ public final class ShipEditorView extends ArtEditorWindow {
   private String keysLine() {
     ShipDesign design = design();
     return "[arrows] or hjkl move · space paint/erase · [n/p] element · [1-9] pick · [v] variant"
-        + " · [+] new ship · [t] rename · [f] frame · [y] type (cycles)"
-        + (design == null ? "" : " (" + design.chassis() + ")")
-        + " · [s] save · [TAB] ship · [ESC] exit";
+        + " · [t] rename · [f] frame" + (design == null ? "" : " (" + design.chassis() + ")")
+        + " · [s] save · [TAB] type · [ESC] exit";
   }
 
   private static TextColor color(String name) {

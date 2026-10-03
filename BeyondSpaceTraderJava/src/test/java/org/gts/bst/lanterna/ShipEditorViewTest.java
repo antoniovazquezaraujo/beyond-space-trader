@@ -25,6 +25,7 @@ import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipDesign;
 import org.junit.jupiter.api.Test;
@@ -33,8 +34,8 @@ import org.junit.jupiter.api.Test;
 class ShipEditorViewTest {
   @Test
   void writesLettersAndSavesThem() throws IOException {
-    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\nxxxxx\n"));
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Flea\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=tiny\ncolor=cyan\nxxxxx\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Engine]\nkey=M\ncolor=red\nM\n"));
     Path file = Files.createTempFile("naves", ".txt");
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
@@ -46,7 +47,9 @@ class ShipEditorViewTest {
       view.shipsPath(file.toString());
       gui.addWindow(view);
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("prueba"), screenText(screen));
+      int row = panelRowWith(screen, "[Flea]");
+      assertTrue(row >= 0 && screenText(screen).split("\n", -1)[row].contains("prueba"),
+          "the loaded design is at the place of its type: " + screenText(screen));
       assertTrue(screenText(screen).contains("1  M  Engine  0/1  ⚠"),
           "the panel of elements: " + screenText(screen));
 
@@ -57,8 +60,9 @@ class ShipEditorViewTest {
 
       view.handleKey(new KeyStroke('s', false, false));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
-      assertEquals(1, saved.size());
-      assertEquals("Firefly", saved.get(0).type());
+      assertEquals(ShipType.values().length, saved.size(), "one design per game type");
+      assertEquals("prueba", saved.get(0).name());
+      assertEquals("Flea", saved.get(0).type());
       assertEquals("uno", saved.get(0).chassis());
       assertEquals(1, saved.get(0).groups().size());
       assertEquals(new ShipDesign.LetterGroup('M', 2, 2, 1), saved.get(0).groups().get(0));
@@ -81,54 +85,114 @@ class ShipEditorViewTest {
   }
 
   @Test
-  void picksTheChassisFromTheListAndCyclesTheType() throws IOException {
-    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\nchasis=nope\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\n"));
-    List<ShipArtFile> pieces = List.of();
-    Path file = java.nio.file.Files.createTempFile("naves", ".txt");
+  void listsTheSeventeenTypesInEnumOrder() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
-      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
-      view.shipsPath(file.toString());
+      ShipEditorView view = new ShipEditorView(List.of(), List.of(), List.of());
       gui.addWindow(view);
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("cannot find the chassis"), screenText(screen));
-      assertTrue(screenText(screen).contains("─ Ships "), screenText(screen));
-      assertTrue(screenText(screen).contains("─ Elements "), screenText(screen));
-      assertTrue(panelRowOf(screen, "prueba") >= 0, screenText(screen));
 
-      // f opens the chassis list
-      view.handleKey(new KeyStroke('f', false, false));
-      gui.updateScreen();
-      assertTrue(screenText(screen).contains("chassis:"), screenText(screen));
-      assertTrue(screenText(screen).contains("uno"), screenText(screen));
-      view.handleKey(new KeyStroke(KeyType.Enter));
-
-      // y cycles the type: it is written next to the name, in brackets
-      for(int i = 0; i < 3; i++) {
-        view.handleKey(new KeyStroke('y', false, false));
+      ShipType[] types = ShipType.values();
+      assertEquals(17, types.length, "the game has 17 ship types");
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "[Flea]")).getBackgroundColor(),
+          "the first type is open: " + screenText(screen));
+      for(int i = 1; i < types.length; i++) {
+        view.handleKey(new KeyStroke(KeyType.Tab));
+        gui.updateScreen();
+        assertTrue(screenText(screen).contains("ship " + (i + 1) + "/17: " + types[i].name()),
+            "TAB walks the enum in order: " + screenText(screen));
       }
-      gui.updateScreen();
-      assertTrue(panelRowOf(screen, "prueba [Firefly]") >= 0, screenText(screen));
-      view.handleKey(new KeyStroke('s', false, false));
 
-      List<ShipDesign> saved = ShipDesign.load(file.toString());
-      assertEquals("uno", saved.get(0).chassis(), "the chassis is picked from the list");
-      assertEquals("Firefly", saved.get(0).type(), "the third type in the enum");
+      // from the last one it goes back to the first
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("ship 1/17: " + types[0].name()),
+          "the list is a cycle: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
-      java.nio.file.Files.deleteIfExists(file);
+    }
+  }
+
+  @Test
+  void picksTheChassisOfItsSizeAndKeepsTheType() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader(
+        "[big]\ntype=Wasp\nchasis=ocupado\n[prueba]\ntype=Firefly\nchasis=nope\n"));
+    String chassisText = "[trini]\nsize=tiny\ncolor=cyan\nxxxxx\n"
+        + "[chico]\nsize=small\ncolor=cyan\nxxxxx\n"
+        + "[medio]\nsize=medium\ncolor=cyan\nxxxxx\n"
+        + "[largo]\nsize=large\ncolor=cyan\nxxxxx\n"
+        + "[grande]\nsize=huge\ncolor=cyan\nxxxxx\n"
+        + "[libre]\ncolor=cyan\nxxxxx\n"
+        + "[ocupado]\ncolor=cyan\nxxxxx\n";
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(chassisText));
+    Path file = Files.createTempFile("naves", ".txt");
+    Path chassisFile = Files.createTempFile("chassis", ".txt");
+    Files.writeString(chassisFile, chassisText);
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, List.of());
+      view.shipsPath(file.toString());
+      view.hullsPath(chassisFile.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      // the design of Firefly is the third one of the list
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      gui.updateScreen();
+      assertTrue(panelRowWith(screen, "[Firefly]") >= 0, screenText(screen));
+
+      // f only offers the hulls of the size of the type and the ones without size
+      view.handleKey(new KeyStroke('f', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("chassis:"), screenText(screen));
+      assertTrue(screenText(screen).contains("chico"), "the hull of the size: " + screenText(screen));
+      assertTrue(screenText(screen).contains("libre (no size)"),
+          "a hull without size is offered, marked: " + screenText(screen));
+      assertFalse(screenText(screen).contains("grande"), "another size is out: " + screenText(screen));
+      assertFalse(screenText(screen).contains("ocupado"),
+          "a hull used by another size is out: " + screenText(screen));
+
+      // pick the hull without size: it adopts the size of the type
+      view.handleKey(new KeyStroke(KeyType.ArrowDown));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("chasis=libre (size=small)"), screenText(screen));
+
+      // y no longer cycles the type
+      assertEquals(-1, panelRowWith(screen, "[Wasp]"));
+      view.handleKey(new KeyStroke('y', false, false));
+      view.handleKey(new KeyStroke('y', false, false));
+      gui.updateScreen();
+      assertTrue(panelRowWith(screen, "[Firefly]") >= 0, screenText(screen));
+
+      view.handleKey(new KeyStroke('s', false, false));
+      List<ShipDesign> saved = ShipDesign.load(file.toString());
+      assertEquals(17, saved.size());
+      assertEquals("prueba", saved.get(ShipType.Firefly.ordinal()).name());
+      assertEquals("Firefly", saved.get(ShipType.Firefly.ordinal()).type(), "the type never changes");
+      assertEquals("libre", saved.get(ShipType.Firefly.ordinal()).chassis());
+      assertTrue(Files.readString(chassisFile).contains("[libre]\nsize=small"),
+          "the adopted size lands in chassis.txt");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(file);
+      Files.deleteIfExists(chassisFile);
     }
   }
 
   @Test
   void refusesMorePiecesThanTheShipAdmits() throws IOException {
-    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Gnat\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Pulse Laser]\nkey=A\ncolor=red\nA\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -137,12 +201,13 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
 
       view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("1  A  Weapon  1/1  ✓"),
-          "the Firefly admits one weapon: " + screenText(screen));
+          "the Gnat admits one weapon: " + screenText(screen));
 
       // another weapon, apart: it counts all the same and does not fit
       view.handleKey(new KeyStroke(KeyType.ArrowRight));
@@ -158,7 +223,7 @@ class ShipEditorViewTest {
   }
 
   @Test
-  void needsTheTypeAndRefusesTheEnginesOverTheLimit() throws IOException {
+  void refusesTheEnginesOverTheLimitAndWarnsOfTheSize() throws IOException {
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(
         "[uno]\nsize=tiny\ncolor=cyan\nxxxxxxx\nxxxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Engine]\nkey=M\ncolor=red\nM\n"));
@@ -168,22 +233,13 @@ class ShipEditorViewTest {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
 
-      // without type= no site can be placed
-      ShipEditorView noType = new ShipEditorView(
-          ShipDesign.parse(new StringReader("[prueba]\nchasis=uno\n")), hulls, pieces);
-      gui.addWindow(noType);
-      gui.updateScreen();
-      noType.handleKey(new KeyStroke(' ', false, false));
-      gui.updateScreen();
-      assertTrue(screenText(screen).contains("pick the ship type"), screenText(screen));
-      assertTrue(screenText(screen).contains("1  M  Engine  ?  ?"),
-          "without a type there is no maximum: " + screenText(screen));
-      noType.handleKey(new KeyStroke(KeyType.Escape));
-
       // with type=Wasp (Huge) three engines fit and the fourth does not
       ShipEditorView wasp = new ShipEditorView(
           ShipDesign.parse(new StringReader("[prueba]\ntype=Wasp\nchasis=uno\n")), hulls, pieces);
       gui.addWindow(wasp);
+      for(int i = 0; i < 9; i++) {
+        wasp.handleKey(new KeyStroke(KeyType.Tab));
+      }
       for(int i = 0; i < 3; i++) {
         wasp.handleKey(new KeyStroke(' ', false, false));
         wasp.handleKey(new KeyStroke(KeyType.ArrowRight));
@@ -207,7 +263,7 @@ class ShipEditorViewTest {
   @Test
   void drawsOnePiecePerLetterAndCyclesTheVariants() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Wasp\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxxxx\nxxxxxxx\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=huge\ncolor=cyan\nxxxxxxx\nxxxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nL\n[Beam Laser]\nkey=A\ncolor=cyan\nB\n"
         + "[Cargo Gauge]\nkey=B\ncolor=green\n.\n"));
@@ -218,6 +274,9 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      for(int i = 0; i < 9; i++) {
+        view.handleKey(new KeyStroke(KeyType.Tab));
+      }
       gui.updateScreen();
 
       // two weapons in a row: the preview draws a piece at every letter
@@ -247,12 +306,12 @@ class ShipEditorViewTest {
     }
   }
 
-
   @Test
-  void addsANewShipAndSavesIt() throws IOException {
-    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\n"));
-    List<ShipArtFile> pieces = List.of();
+  void createsTheMissingDesignAndSavesIt() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=scout\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(
+        "[trini]\nsize=tiny\ncolor=cyan\nxxxxx\n[scout]\nsize=small\ncolor=cyan\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Engine]\nkey=M\ncolor=red\nM\n"));
     Path file = Files.createTempFile("naves", ".txt");
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -264,15 +323,23 @@ class ShipEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
 
-      view.handleKey(new KeyStroke('+', false, false));
+      // the file has no design for Flea: the editor makes one of the type and its size
+      int row = panelRowWith(screen, "[Flea]");
+      assertTrue(row >= 0 && screenText(screen).split("\n", -1)[row].contains("Flea"),
+          "the missing design is created in memory: " + screenText(screen));
+
+      // and it is editable like any other
+      view.handleKey(new KeyStroke(' ', false, false));
       gui.updateScreen();
-      assertTrue(screenText(screen).contains("new"), "the new ship: " + screenText(screen));
+      assertTrue(screenText(screen).contains("1  M  Engine  1/1  ✓"), screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
-      assertEquals(2, saved.size());
-      assertEquals("new", saved.get(1).name());
-      assertEquals("uno", saved.get(1).chassis(), "the new ship starts with the same chassis");
+      assertEquals(17, saved.size());
+      assertEquals("Flea", saved.get(ShipType.Flea.ordinal()).name());
+      assertEquals("Flea", saved.get(ShipType.Flea.ordinal()).type());
+      assertEquals("trini", saved.get(ShipType.Flea.ordinal()).chassis(), "the first hull of its size");
+      assertEquals(1, saved.get(ShipType.Flea.ordinal()).groups().size(), "the painted site is saved");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -281,10 +348,131 @@ class ShipEditorViewTest {
   }
 
   @Test
-  void tabCyclesTheShips() throws IOException {
+  void dropsUnknownAndRepeatedDesignsAndSavesTheSeventeen() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader(
-        "[uno]\ntype=Firefly\nchasis=h1\n[dos]\ntype=Gnat\nchasis=h2\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[h1]\ncolor=cyan\nxxxxx\n[h2]\ncolor=red\nxxxxx\n"));
+        "[uno]\ntype=Nope\nchasis=h1\n"
+        + "[dos]\ntype=Firefly\nchasis=h1\n"
+        + "[tres]\ntype=Firefly\nchasis=h1\n"
+        + "[cuatro]\ntype=Flea\nchasis=h1\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[h1]\ncolor=cyan\nxxxxx\n"));
+    Path file = Files.createTempFile("naves", ".txt");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, List.of());
+      view.shipsPath(file.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("ignored 2 designs"),
+          "the editor says what it dropped: " + screenText(screen));
+
+      view.handleKey(new KeyStroke('s', false, false));
+      List<ShipDesign> saved = ShipDesign.load(file.toString());
+      assertEquals(17, saved.size());
+      ShipType[] types = ShipType.values();
+      for(int i = 0; i < types.length; i++) {
+        assertEquals(types[i].name(), saved.get(i).type(), "one design per type, in enum order");
+      }
+      assertEquals("cuatro", saved.get(ShipType.Flea.ordinal()).name());
+      assertEquals("dos", saved.get(ShipType.Firefly.ordinal()).name());
+      for(ShipDesign design : saved) {
+        assertFalse(design.name().equals("uno") || design.name().equals("tres"),
+            "the unknown and the repeated one are gone: " + design.name());
+      }
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(file);
+    }
+  }
+
+  @Test
+  void noLongerAddsShipsWithPlusNorCyclesTheTypeWithY() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\n"));
+    Path file = Files.createTempFile("naves", ".txt");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, List.of());
+      view.shipsPath(file.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains("[+]"), "the keys line has no new ship: " + screenText(screen));
+      assertFalse(screenText(screen).contains("[y]"), "the keys line has no type cycle: " + screenText(screen));
+      assertTrue(screenText(screen).contains("[t] rename"), "renaming stays: " + screenText(screen));
+
+      // + does nothing and y does not touch the type: the 17 are already there
+      view.handleKey(new KeyStroke('+', false, false));
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke('y', false, false));
+      view.handleKey(new KeyStroke('y', false, false));
+      gui.updateScreen();
+      assertFalse(screenText(screen).contains("new"), "no ship was added: " + screenText(screen));
+      assertTrue(panelRowWith(screen, "[Firefly]") >= 0, screenText(screen));
+
+      view.handleKey(new KeyStroke('s', false, false));
+      List<ShipDesign> saved = ShipDesign.load(file.toString());
+      assertEquals(17, saved.size());
+      assertEquals("prueba", saved.get(ShipType.Firefly.ordinal()).name());
+      assertEquals("Firefly", saved.get(ShipType.Firefly.ordinal()).type());
+      for(ShipDesign design : saved) {
+        assertFalse(design.name().equals("new"), "no ship called `new`");
+      }
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(file);
+    }
+  }
+
+  @Test
+  void renamingKeepsTheType() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\n"));
+    Path file = Files.createTempFile("naves", ".txt");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, List.of());
+      view.shipsPath(file.toString());
+      gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      gui.updateScreen();
+
+      // the [t] dialog lands in this method: rename and the type is untouched
+      view.rename("otra nave");
+      gui.updateScreen();
+      int row = panelRowWith(screen, "[Firefly]");
+      assertTrue(row >= 0 && screenText(screen).split("\n", -1)[row].contains("otra nave"),
+          "the renamed design: " + screenText(screen));
+      assertTrue(screenText(screen).contains("renamed: otra nave"), screenText(screen));
+
+      view.handleKey(new KeyStroke('s', false, false));
+      List<ShipDesign> saved = ShipDesign.load(file.toString());
+      assertEquals("otra nave", saved.get(ShipType.Firefly.ordinal()).name());
+      assertEquals("Firefly", saved.get(ShipType.Firefly.ordinal()).type());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(file);
+    }
+  }
+
+  @Test
+  void tabCyclesTheTypes() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader(
+        "[uno]\ntype=Flea\nchasis=h1\n[dos]\ntype=Gnat\nchasis=h2\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(
+        "[h1]\nsize=tiny\ncolor=cyan\nxxxxx\n[h2]\nsize=small\ncolor=red\nxxxxx\n"));
     List<ShipArtFile> pieces = List.of();
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -296,23 +484,25 @@ class ShipEditorViewTest {
       gui.updateScreen();
       // the title bar does not repeat the open ship: it is in the list
       assertFalse(screenText(screen).contains("ships: uno"), screenText(screen));
-      // the open ship is the one with a background of its own in the ships list
-      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "uno")).getBackgroundColor(),
+      // the open type is the one with a background of its own in the ships list
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "[Flea]")).getBackgroundColor(),
           screenText(screen));
-      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowOf(screen, "dos")).getBackgroundColor(),
-          screenText(screen));
-
-      view.handleKey(new KeyStroke(KeyType.Tab));
-      gui.updateScreen();
-      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "dos")).getBackgroundColor(),
-          screenText(screen));
-      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowOf(screen, "uno")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowWith(screen, "[Gnat]")).getBackgroundColor(),
           screenText(screen));
 
       view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
-      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowOf(screen, "uno")).getBackgroundColor(),
-          "from the last one it goes back to the first: " + screenText(screen));
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "[Gnat]")).getBackgroundColor(),
+          screenText(screen));
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowWith(screen, "[Flea]")).getBackgroundColor(),
+          screenText(screen));
+      assertTrue(screenText(screen).contains("ship 2/17: dos"), screenText(screen));
+
+      // ⇧TAB goes back
+      view.handleKey(new KeyStroke(KeyType.ReverseTab));
+      gui.updateScreen();
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "[Flea]")).getBackgroundColor(),
+          "from the second one it goes back: " + screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -321,8 +511,8 @@ class ShipEditorViewTest {
 
   @Test
   void spaceErasesAnyLetterEvenIfItIsNotThePen() throws IOException {
-    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Gnat\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Engine]\nkey=M\ncolor=white\nM\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(110, 30)));
@@ -332,6 +522,7 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
 
       // the pen starts on A (the weapon): space paints it
@@ -361,8 +552,8 @@ class ShipEditorViewTest {
 
   @Test
   void marksTheSelectedElementWithItsOwnBackground() throws IOException {
-    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Gnat\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Engine]\nkey=M\ncolor=white\nM\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(110, 30)));
@@ -372,6 +563,7 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
 
       int weapon = panelRowOf(screen, "1  A  Weapon");
@@ -400,7 +592,7 @@ class ShipEditorViewTest {
   @Test
   void linesUpTheElementColumnsAndLeavesTheKeyWithoutParentheses() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Energy Shield]\nkey=E\ncolor=cyan\nE\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
@@ -410,6 +602,8 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
 
       String[] lines = screenText(screen).split("\n", -1);
@@ -432,8 +626,9 @@ class ShipEditorViewTest {
   @Test
   void linesUpTheShipsAndTheirTypes() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader(
-        "[uno]\ntype=Firefly\nchasis=h1\n[una nave larga]\ntype=Gnat\nchasis=h2\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[h1]\ncolor=cyan\nxxxxx\n[h2]\ncolor=red\nxxxxx\n"));
+        "[uno]\ntype=Flea\nchasis=h1\n[una nave larga]\ntype=Gnat\nchasis=h2\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(
+        "[h1]\nsize=tiny\ncolor=cyan\nxxxxx\n[h2]\nsize=small\ncolor=red\nxxxxx\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
@@ -444,10 +639,10 @@ class ShipEditorViewTest {
       gui.updateScreen();
 
       String[] lines = screenText(screen).split("\n", -1);
-      int first = panelRowWith(screen, "[Firefly]");
+      int first = panelRowWith(screen, "[Flea]");
       int second = panelRowWith(screen, "[Gnat]");
       assertTrue(first >= 0 && second >= 0, screenText(screen));
-      assertEquals(lines[first].indexOf("[Firefly]"), lines[second].indexOf("[Gnat]"),
+      assertEquals(lines[first].indexOf("[Flea]"), lines[second].indexOf("[Gnat]"),
           "the type column: " + screenText(screen));
 
       // the highlight of the open ship covers the whole panel row
@@ -467,27 +662,28 @@ class ShipEditorViewTest {
 
   @Test
   void warnsOnlyWhenTheHullSizeDoesNotMatchTheType() throws IOException {
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=tiny\ncolor=cyan\nxxxxx\nxxxxx\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
 
-      // Firefly is Small: the size of the chassis fits, so there is no warning
+      // Flea is Tiny: the size of the chassis fits, so there is no warning
       ShipEditorView fits = new ShipEditorView(
-          ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n")), hulls, List.of());
+          ShipDesign.parse(new StringReader("[prueba]\ntype=Flea\nchasis=uno\n")), hulls, List.of());
       gui.addWindow(fits);
       gui.updateScreen();
       assertFalse(screenText(screen).contains("hull size"), screenText(screen));
       fits.handleKey(new KeyStroke(KeyType.Escape));
 
-      // Wasp is Huge: the warning says which size each one has, inside the panel
+      // the same Flea with a Small chassis: the warning says which size each one has
       ShipEditorView mismatched = new ShipEditorView(
-          ShipDesign.parse(new StringReader("[prueba]\ntype=Wasp\nchasis=uno\n")), hulls, List.of());
+          ShipDesign.parse(new StringReader("[prueba]\ntype=Flea\nchasis=uno\n")),
+          ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n")), List.of());
       gui.addWindow(mismatched);
       gui.updateScreen();
-      String warning = "⚠ hull size: small (type: huge)";
+      String warning = "⚠ hull size: small (type: tiny)";
       assertTrue(screenText(screen).contains(warning), screenText(screen));
       int row = panelRowWith(screen, warning);
       String[] lines = screenText(screen).split("\n", -1);
@@ -504,7 +700,7 @@ class ShipEditorViewTest {
     // Arrange: ten elements, so the number column is two cells wide, with names
     // and counts of the same width (a tie) and one kind without a known limit
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n"
         + "[Energy Shield]\nkey=E\ncolor=cyan\nE\n"
@@ -523,6 +719,8 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke(KeyType.Tab));
 
       // Act
       gui.updateScreen();
@@ -559,12 +757,13 @@ class ShipEditorViewTest {
 
   @Test
   void cutsLongNamesWithoutMovingTheTypeColumn() throws IOException {
-    // Arrange: a name longer than the name column, with the ties of two equal names
+    // Arrange: a name longer than the name column, with two other types to line up
     List<ShipDesign> designs = ShipDesign.parse(new StringReader(
         "[una nave extremadamente larga]\ntype=Firefly\nchasis=h1\n"
-        + "[nave alfa]\ntype=Firefly\nchasis=h1\n"
-        + "[nave beta]\ntype=Gnat\nchasis=h2\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[h1]\ncolor=cyan\nxxxxx\n[h2]\ncolor=red\nxxxxx\n"));
+        + "[nave alfa]\ntype=Gnat\nchasis=h2\n"
+        + "[nave beta]\ntype=Mosquito\nchasis=h3\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(
+        "[h1]\nsize=small\ncolor=cyan\nxxxxx\n[h2]\nsize=small\ncolor=red\nxxxxx\n[h3]\nsize=small\ncolor=red\nxxxxx\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
     try {
@@ -585,7 +784,7 @@ class ShipEditorViewTest {
           "the type column does not move: " + screenText(screen));
       assertFalse(screenText(screen).contains("una nave extremadamente larga"),
           "the long name is cut: " + screenText(screen));
-      assertTrue(screenText(screen).contains("una nave extremadament"),
+      assertTrue(screenText(screen).contains("una nave extremadam"),
           "the head of the name is kept: " + screenText(screen));
       int divider = lines[first].indexOf('│', 1);
       assertTrue(lines[first].indexOf("[Firefly]") + "[Firefly]".length() <= divider,
@@ -601,7 +800,7 @@ class ShipEditorViewTest {
     // Arrange: a design with two shields where the Firefly takes one
     List<ShipDesign> designs = ShipDesign.parse(new StringReader(
         "[prueba]\ntype=Firefly\nchasis=uno\ngroup=E x=2 y=2 n=2\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Energy Shield]\nkey=E\ncolor=cyan\nE\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
@@ -611,6 +810,8 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke(KeyType.Tab));
 
       // Act
       gui.updateScreen();
@@ -642,7 +843,7 @@ class ShipEditorViewTest {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader(
         "[prueba]\ntype=Firefly\nchasis=uno\n"
         + "group=E x=2 y=2 n=2\ngroup=M x=4 y=2\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n"
         + "[Energy Shield]\nkey=E\ncolor=cyan\nE\n"
@@ -655,6 +856,8 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke(KeyType.Tab));
 
       // Act: the pen starts on the weapon, which is thus selected
       gui.updateScreen();
@@ -694,8 +897,8 @@ class ShipEditorViewTest {
 
   @Test
   void paintsTheWholeSelectedRowOfAnElement() throws IOException {
-    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Gnat\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Engine]\nkey=M\ncolor=white\nM\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
@@ -705,6 +908,7 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
 
       // Act
       gui.updateScreen();
@@ -743,6 +947,9 @@ class ShipEditorViewTest {
       ShipEditorView view = new ShipEditorView(
           ShipDesign.parse(new StringReader("[prueba]\ntype=Beetle\nchasis=uno\n")), hulls, pieces);
       gui.addWindow(view);
+      for(int i = 0; i < 5; i++) {
+        view.handleKey(new KeyStroke(KeyType.Tab));
+      }
       gui.updateScreen();
 
       // Act: pick the shield, so the weapon row (a check mark) stays unselected
@@ -772,7 +979,7 @@ class ShipEditorViewTest {
   @Test
   void keepsThePanelAndTheColumnsAtEightyAndHundredColumns() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Energy Shield]\nkey=E\ncolor=cyan\nE\n"));
     for(int columns : List.of(80, 100)) {
@@ -783,6 +990,8 @@ class ShipEditorViewTest {
         gui.setTheme(LanternaTheme.create());
         ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
         gui.addWindow(view);
+        view.handleKey(new KeyStroke(KeyType.Tab));
+        view.handleKey(new KeyStroke(KeyType.Tab));
 
         // Act
         gui.updateScreen();
@@ -812,7 +1021,7 @@ class ShipEditorViewTest {
   @Test
   void paintsTheBackgroundsOfThePieces() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nbgcolor=blue\nA\n"));
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(110, 30)));
@@ -822,6 +1031,8 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
       assertFalse(hasBackground(screen, TextColor.ANSI.BLUE), screenText(screen));
 

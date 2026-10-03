@@ -138,6 +138,50 @@ class HullEditorViewTest {
     }
   }
 
+  @Test
+  void zOnlyCyclesTheSizeOfAFreeHull() throws IOException {
+    String chassisText = "[shuttle]\nsize=small\ncolor=white\nxxxxx\nxxxxx\n[libre]\nsize=small\ncolor=white\nxxxxx\nxxxxx\n";
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(chassisText));
+    Path chassisFile = Files.createTempFile("chassis", ".txt");
+    Files.writeString(chassisFile, chassisText);
+    Path shipsFile = Files.createTempFile("naves", ".txt");
+    Files.writeString(shipsFile, "[gnat]\ntype=Gnat\nchasis=shuttle\n");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      HullEditorView view = new HullEditorView(hulls);
+      view.hullsPath(chassisFile.toString());
+      view.shipsPath(shipsFile.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      // the shuttle is used by the Gnat: its size is fixed by that type
+      view.handleKey(new KeyStroke('z', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("in use by [Gnat] (small)"),
+          "z warns who fixes the size: " + screenText(screen));
+      view.handleKey(new KeyStroke('s', false, false));
+      assertTrue(Files.readString(chassisFile).contains("[shuttle]\nsize=small"),
+          "the size of a hull in use does not change: " + Files.readString(chassisFile));
+
+      // the libre hull is used by nobody: z cycles its size
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke('z', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("size: medium"), screenText(screen));
+      view.handleKey(new KeyStroke('s', false, false));
+      assertTrue(Files.readString(chassisFile).contains("[libre]\nsize=medium"),
+          "a free hull takes the new size: " + Files.readString(chassisFile));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(chassisFile);
+      Files.deleteIfExists(shipsFile);
+    }
+  }
+
   private static boolean hasBackground(Screen screen, TextColor color) {
     for(int row = 0; row < screen.getTerminalSize().getRows(); row++) {
       for(int column = 0; column < screen.getTerminalSize().getColumns(); column++) {

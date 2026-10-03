@@ -16,16 +16,20 @@ import com.googlecode.lanterna.input.KeyType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.HullFile;
 import org.gts.bst.view.LetterGrid;
 import org.gts.bst.view.ShipArtFile;
+import org.gts.bst.view.ShipDesign;
+import org.gts.bst.view.ShipSites;
 
 
 /**
  * The hull editor: on the left the numbered colour elements (colour, background
  * and blink; added with + and removed with -), then the drawing with its colour
  * letters (space paints or erases) and then the same hull painted with those
- * colours. The drawing is never touched.
+ * colours. The drawing is never touched. The size of a hull a type is wearing
+ * is fixed by that type; z only cycles the size of a free hull.
  */
 public final class HullEditorView extends ArtEditorWindow {
   /** The colours of the art files (docs/ships.md), in the order the list shows them. */
@@ -55,6 +59,8 @@ public final class HullEditorView extends ArtEditorWindow {
   private String message = "";
   /** The chassis file the editor saves to (a field so the tests can point elsewhere). */
   private String hullsPath = ShipArtFile.resolve("chassis.txt").toString();
+  /** The ships file the editor reads to know which types use a hull. */
+  private String shipsPath = ShipArtFile.resolve("ships.txt").toString();
 
   public HullEditorView(List<ShipArtFile> hulls) {
     super("hull editor");
@@ -65,6 +71,11 @@ public final class HullEditorView extends ArtEditorWindow {
   /** Points the editor to another chassis file (the tests use a temp one). */
   void hullsPath(String path) {
     hullsPath = path;
+  }
+
+  /** Points the editor to another ships file (the tests use a temp one). */
+  void shipsPath(String path) {
+    shipsPath = path;
   }
 
   private void loadHull(int index) {
@@ -331,7 +342,13 @@ public final class HullEditorView extends ArtEditorWindow {
     message = "blink " + (!letter.blink() ? "on" : "off") + " for " + letter.letter();
   }
 
+  /** Cycles the size of a free hull; the size of a hull a type uses is fixed by that type. */
   private void styleSize() {
+    String users = usedBy(hull());
+    if(!users.isEmpty()) {
+      message = "⚠ in use by " + users;
+      return;
+    }
     int index = 0;
     for(int i = 0; i < SIZES.length; i++) {
       if(SIZES[i].equalsIgnoreCase(hullSize)) {
@@ -341,6 +358,32 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     hullSize = SIZES[(index + 1) % SIZES.length];
     message = "size: " + (hullSize.isEmpty() ? "(not set)" : hullSize);
+  }
+
+  /** The types that wear a hull, with their size (`[Gnat] (small)`); empty when it is free. */
+  private String usedBy(ShipArtFile hull) {
+    if(hull == null) {
+      return "";
+    }
+    List<ShipDesign> designs;
+    try {
+      designs = ShipDesign.load(shipsPath);
+    } catch(IOException e) {
+      return "";
+    }
+    StringBuilder users = new StringBuilder();
+    for(ShipDesign design : designs) {
+      ShipType type = ShipSites.typeOf(design.type());
+      if(type == null || !design.chassis().equalsIgnoreCase(hull.name())) {
+        continue;
+      }
+      String label = "[" + type.name() + "] (" + ShipSites.budgetOf(type.name()).size().name()
+          .toLowerCase(java.util.Locale.ROOT) + ")";
+      if(users.indexOf(label) < 0) {
+        users.append(users.length() == 0 ? "" : ", ").append(label);
+      }
+    }
+    return users.toString();
   }
 
   private void addLetter() {
