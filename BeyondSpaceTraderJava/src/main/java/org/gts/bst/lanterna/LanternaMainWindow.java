@@ -1460,13 +1460,33 @@ public final class LanternaMainWindow
   }
 
   /**
-   * The normal trip: warps to the selected target system, spending the fuel of the
+   * The destination of the SPACE key: the selected system, or the far end of the
+   * current system's wormhole when the cursor rests on the current system (or nothing
+   * is selected). Without a wormhole it returns the plain target, so {@link #warp()}
+   * keeps its usual messages.
+   */
+  StarSystem warpTarget(Game game) {
+    StarSystem current = game.Commander().CurrentSystem();
+    StarSystem target = game.WarpSystem();
+    if(target == null || target == current) {
+      StarSystem pair = Functions.WormholeTarget(current.Id().CastToInt());
+      if(pair != null) {
+        game.SelectedSystemId(current.Id());
+        game.TargetWormhole(true);
+        return game.WarpSystem();
+      }
+    }
+    return target;
+  }
+
+  /**
+   * The normal trip: warps to the target system, spending the fuel of the
    * distance (unless a wormhole connects both systems) and advancing a day. The
    * Portable Singularity Jump is a separate action ({@link #jump()}).
    */
   private void warp() {
     Game game = gameSupplier.get();
-    StarSystem target = game.WarpSystem();
+    StarSystem target = warpTarget(game);
     if(target == null) {
       content.log(Strings.MainWarpNoTarget);
       content.invalidate();

@@ -54,7 +54,7 @@ and the presenters stay.
 |                                     |  information: no keys)             |
 +-------------------------------------+------------------------------------+
 | Last message (embedded in the separator line)                            |
-| [TAB] map · [C] trade · [B] bank · [Q] quests · [N] news · [W] warp ...  |
+| [TAB] map · [C] trade · [B] bank · [Q] quests · [N] news · [Space] warp  |
 | ... [T] track · [F] fuel · [R] repairs · [I] cmdr · [V] ship ...         |
 | ... plus the actions available here ([S] ships, [E] equipment, ...)      |
 | ... and the program menu ([F10] menu) last                               |
@@ -229,12 +229,11 @@ chart is hidden; the chart comes back when the panel closes.
 | ENTER / T | Confirm / track the selected system (T again stops tracking it) |
 | / | Find a system by name and select it (asks which one if several match) |
 | ESC | Close the panel / go back / quit |
-| SPACE | Close a read-only panel (commander, ship, quests, high scores) |
+| SPACE | Close a read-only panel; on the map, warp to the selected system (normal trip: spends fuel and a day). With the cursor on the current system and a wormhole there, it crosses to the other end of the wormhole |
 | C | Trade panel |
 | B | Bank panel |
 | Q | Quests panel |
 | N | Newspaper panel |
-| W | Warp to the selected system (normal trip: spends fuel and a day) |
 | G | Jump with the Portable Singularity, only while it is on board |
 | F / R | Buy fuel / repair the hull |
 | F10 | Dropdown menu (scores, options, save/load, new game, about, quit) |

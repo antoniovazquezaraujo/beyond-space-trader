@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -1352,6 +1353,129 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void warpTargetCrossesTheWormholeWhenTheCurrentSystemIsSelected() {
+    Game game = newGame();
+    StarSystem current = systemWithWormhole(game);
+    StarSystem pair = Functions.WormholeTarget(current.Id().CastToInt());
+    game.Commander().CurrentSystem(current);
+    game.SelectedSystemId(current.Id());
+    LanternaMainWindow window = new LanternaMainWindow(() -> game, null);
+
+    assertSame(pair, window.warpTarget(game));
+    assertSame(current, game.SelectedSystem(), "the cursor stays on the current system");
+    assertSame(pair, game.WarpSystem());
+    assertTrue(game.TargetWormhole(), "the trip must be marked as a wormhole jump");
+  }
+
+  @Test
+  void warpTargetWithNoSelectionCrossesTheWormhole() {
+    Game game = newGame();
+    StarSystem current = systemWithWormhole(game);
+    StarSystem pair = Functions.WormholeTarget(current.Id().CastToInt());
+    game.Commander().CurrentSystem(current);
+    game.SelectedSystemId(StarSystemId.NA);
+    LanternaMainWindow window = new LanternaMainWindow(() -> game, null);
+
+    assertSame(pair, window.warpTarget(game));
+    assertSame(current, game.SelectedSystem());
+    assertSame(pair, game.WarpSystem());
+  }
+
+  @Test
+  void warpTargetWithoutAWormholeStaysOnTheCurrentSystem() {
+    Game game = newGame();
+    StarSystem current = systemWithoutWormhole(game);
+    game.Commander().CurrentSystem(current);
+    game.SelectedSystemId(current.Id());
+    LanternaMainWindow window = new LanternaMainWindow(() -> game, null);
+
+    assertSame(current, window.warpTarget(game));
+    assertSame(current, game.WarpSystem());
+    assertFalse(game.TargetWormhole());
+  }
+
+  @Test
+  void warpTargetWithNoSelectionAndNoWormholeStaysEmpty() {
+    Game game = newGame();
+    game.Commander().CurrentSystem(systemWithoutWormhole(game));
+    game.SelectedSystemId(StarSystemId.NA);
+    LanternaMainWindow window = new LanternaMainWindow(() -> game, null);
+
+    assertNull(window.warpTarget(game));
+    assertNull(game.WarpSystem());
+    assertFalse(game.TargetWormhole());
+  }
+
+  @Test
+  void warpTargetKeepsAnotherSelectedSystem() {
+    Game game = newGame();
+    StarSystem current = systemWithWormhole(game);
+    StarSystem pair = Functions.WormholeTarget(current.Id().CastToInt());
+    game.Commander().CurrentSystem(current);
+    StarSystem other = null;
+    for(StarSystem system : game.Universe()) {
+      if(system != current && system != pair) {
+        other = system;
+        break;
+      }
+    }
+    assertNotNull(other, "the galaxy must have a third system");
+    game.SelectedSystemId(other.Id());
+    LanternaMainWindow window = new LanternaMainWindow(() -> game, null);
+
+    assertSame(other, window.warpTarget(game));
+    assertSame(other, game.WarpSystem());
+    assertFalse(game.TargetWormhole(), "a plain selection is not a wormhole target");
+  }
+
+  @Test
+  void warpTargetKeepsThePairSelected() {
+    Game game = newGame();
+    StarSystem current = systemWithWormhole(game);
+    StarSystem pair = Functions.WormholeTarget(current.Id().CastToInt());
+    game.Commander().CurrentSystem(current);
+    game.SelectedSystemId(pair.Id());
+    LanternaMainWindow window = new LanternaMainWindow(() -> game, null);
+
+    assertSame(pair, window.warpTarget(game));
+    assertSame(pair, game.WarpSystem());
+    assertFalse(game.TargetWormhole());
+  }
+
+  @Test
+  void spaceTravelsThroughTheWormholeOfTheCurrentSystem() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].setAutoSave(false);
+      StarSystem end = systemWithWormhole(holder[0]);
+      StarSystem pair = Functions.WormholeTarget(end.Id().CastToInt());
+      holder[0].Commander().CurrentSystem(end);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      int fuel = holder[0].Commander().getShip().getFuel();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+
+      assertSame(pair, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertSame(pair, holder[0].WarpSystem(), "the arrival keeps the wormhole as the target");
+      assertTrue(holder[0].getArrivedViaWormhole(), "the arrival came through the wormhole");
+      assertEquals(fuel, holder[0].Commander().getShip().getFuel(), "a wormhole trip spends no fuel");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void warpsToTheSelectedSystemAndSpendsFuel() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -1408,6 +1532,8 @@ class LanternaMainWindowTest {
       LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
       holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
       holder[0].setAutoSave(false);
+      // Without a wormhole, SPACE on the current system keeps warning "already here".
+      holder[0].Commander().CurrentSystem(systemWithoutWormhole(holder[0]));
       MainPresenter presenter = new MainPresenter(() -> holder[0], window);
       window.setPresenter(presenter);
       presenter.updateAll();
@@ -2084,6 +2210,32 @@ class LanternaMainWindowTest {
       Thread.sleep(20);
     }
     return screenText(screen).contains(needle);
+  }
+
+  private static Game newGame() {
+    return new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+  }
+
+  /** A system whose wormhole leads to its pair. */
+  private static StarSystem systemWithWormhole(Game game) {
+    for(StarSystem system : game.Universe()) {
+      if(Functions.WormholeTarget(system.Id().CastToInt()) != null) {
+        return system;
+      }
+    }
+    fail("the galaxy must have a wormhole");
+    return null;
+  }
+
+  /** A system without a wormhole, so SPACE there keeps the plain warp. */
+  private static StarSystem systemWithoutWormhole(Game game) {
+    for(StarSystem system : game.Universe()) {
+      if(Functions.WormholeTarget(system.Id().CastToInt()) == null) {
+        return system;
+      }
+    }
+    fail("the galaxy must have a system without a wormhole");
+    return null;
   }
 
   private static StarSystem farthestSystem(Game game) {
