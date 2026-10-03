@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Window;
@@ -211,6 +212,78 @@ class LanternaMainWindowTest {
       assertEquals(left + splash.lines().get(logoRow).indexOf("Beyond"), beyond[0],
           "the splash is centred as a block");
       assertEquals(top + logoRow, beyond[1], "the splash is centred as a block");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theTitleScreenIsStillWhenNothingChanges() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
+      MainPresenter presenter = new MainPresenter(() -> null, window);
+      window.setPresenter(presenter);
+      window.showTitleScreen();
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+      String first = screenText(screen);
+
+      // The old title timer moved the starfield every 110 ms: wait past that
+      // and force a repaint; the drawing must be exactly the same.
+      Thread.sleep(350);
+      window.refresh();
+      gui.updateScreen();
+
+      assertEquals(first, screenText(screen), "the title changed without any input");
+    } catch(InterruptedException e) {
+      Thread.currentThread().interrupt();
+      fail("interrupted while waiting", e);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theSkyShowsThroughTheSpacesOfTheSplash() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
+      MainPresenter presenter = new MainPresenter(() -> null, window);
+      window.setPresenter(presenter);
+      window.showTitleScreen();
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      TitleSplash splash = TitleSplash.shared();
+      assertNotNull(splash, "the splash resource is packaged");
+      int left = (100 - splash.width()) / 2;
+      int top = (30 - splash.height()) / 2;
+      int[] space = null;
+      for(int y = 0; y < splash.height() && space == null; y++) {
+        for(int x = 0; x < splash.width(); x++) {
+          if(splash.codePointAt(x, y) == ' ') {
+            space = new int[] {x, y};
+            break;
+          }
+        }
+      }
+      assertNotNull(space, "the splash has empty cells");
+      assertTrue(left > 0 || top > 0, "the splash does not cover the whole screen");
+
+      // A space is transparent: the cell keeps the black sky of the cleared
+      // screen, exactly like the cell at the top-left corner, outside the block.
+      TextCharacter inside = screen.getBackCharacter(left + space[0], top + space[1]);
+      TextCharacter sky = screen.getBackCharacter(0, 0);
+      assertEquals(sky, inside, "a space of the splash leaves the sky untouched");
     } finally {
       screen.stopScreen();
       screen.close();

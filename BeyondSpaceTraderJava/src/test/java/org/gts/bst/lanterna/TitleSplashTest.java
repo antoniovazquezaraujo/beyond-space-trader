@@ -14,8 +14,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
+import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 
@@ -85,5 +93,93 @@ class TitleSplashTest {
     }
     assertTrue(planet, "the resource paints the planet in green");
     assertTrue(moon, "the resource paints the moon in yellow");
+  }
+
+  @Test
+  void aZoneCoversItsLastCellAndStopsAtTheOnePastIt() throws Exception {
+    TitleSplash splash = TitleSplash.parse(new StringReader(
+        "color=cyan\n"
+        + "zone=green x=1 y=1 w=2 h=2\n"
+        + "aaaa\n"
+        + "bbbb\n"
+        + "cccc\n"
+        + "dddd\n"));
+
+    assertEquals(TextColor.ANSI.CYAN, splash.colorAt(0, 1), "the cell before the zone");
+    assertEquals(TextColor.ANSI.GREEN, splash.colorAt(1, 1), "the first cell inside");
+    assertEquals(TextColor.ANSI.GREEN, splash.colorAt(2, 1), "the last column of the zone is inside");
+    assertEquals(TextColor.ANSI.CYAN, splash.colorAt(3, 1), "the column past the zone is outside");
+    assertEquals(TextColor.ANSI.CYAN, splash.colorAt(1, 0), "the row before the zone");
+    assertEquals(TextColor.ANSI.GREEN, splash.colorAt(1, 2), "the last row of the zone is inside");
+    assertEquals(TextColor.ANSI.CYAN, splash.colorAt(1, 3), "the row past the zone is outside");
+  }
+
+  @Test
+  void theDefaultColourIsCyanWhenTheColorLineIsMissing() throws Exception {
+    TitleSplash splash = TitleSplash.parse(new StringReader("ab\ncd\n"));
+
+    for(int y = 0; y < splash.height(); y++) {
+      for(int x = 0; x < splash.width(); x++) {
+        assertEquals(TextColor.ANSI.CYAN, splash.colorAt(x, y), "cell " + x + "," + y);
+      }
+    }
+  }
+
+  @Test
+  void aWideGlyphReservesItsSecondCell() throws Exception {
+    TitleSplash splash = TitleSplash.parse(new StringReader("color=cyan\n一x\n"));
+
+    assertEquals(3, splash.width(), "the wide glyph counts two cells");
+    assertEquals('一', splash.codePointAt(0, 0));
+    assertEquals(TitleSplash.CONTINUATION, splash.codePointAt(1, 0), "the second cell is the continuation");
+    assertEquals('x', splash.codePointAt(2, 0));
+    assertNull(splash.colorAt(1, 0), "the continuation cell is skipped");
+    assertEquals(TextColor.ANSI.CYAN, splash.colorAt(2, 0));
+  }
+
+  @Test
+  void theShadedJarCarriesTheSplash() throws Exception {
+    Path jar = shadedJar();
+    Assumptions.assumeTrue(jar != null, "the shaded jar is built after the tests (mvn package)");
+
+    try(JarFile jarFile = new JarFile(jar.toFile())) {
+      JarEntry entry = jarFile.getJarEntry("org/gts/bst/lanterna/splash.txt");
+      assertNotNull(entry, "the jar carries the splash resource");
+      String text = new String(jarFile.getInputStream(entry).readAllBytes(), StandardCharsets.UTF_8);
+      TitleSplash packaged = TitleSplash.parse(new StringReader(text));
+
+      assertTrue(packaged.width() > 0 && packaged.height() > 0, "the packaged splash has a drawing");
+      boolean planet = false;
+      boolean moon = false;
+      for(int y = 0; y < packaged.height(); y++) {
+        for(int x = 0; x < packaged.width(); x++) {
+          TextColor color = packaged.colorAt(x, y);
+          planet |= TextColor.ANSI.GREEN.equals(color);
+          moon |= TextColor.ANSI.YELLOW.equals(color);
+        }
+      }
+      assertTrue(planet, "the packaged splash paints the planet in green");
+      assertTrue(moon, "the packaged splash paints the moon in yellow");
+    }
+  }
+
+  /** The shaded jar of the module, or null when it has not been packaged yet. */
+  private static Path shadedJar() throws IOException {
+    for(String folder : List.of("target", "BeyondSpaceTraderJava/target")) {
+      Path target = Path.of(folder);
+      if(!Files.isDirectory(target)) {
+        continue;
+      }
+      try(Stream<Path> files = Files.list(target)) {
+        Path jar = files
+            .filter(path -> path.getFileName().toString().endsWith(".jar"))
+            .filter(path -> !path.getFileName().toString().startsWith("original-"))
+            .findFirst().orElse(null);
+        if(jar != null) {
+          return jar;
+        }
+      }
+    }
+    return null;
   }
 }
