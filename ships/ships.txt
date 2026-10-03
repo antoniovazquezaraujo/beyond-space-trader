@@ -100,7 +100,7 @@ group=A x=42 y=5 n=1
 group=E x=29 y=6 n=1
 group=E x=32 y=6 n=1
 [gnat]
-type=Gnat
+type=Bumblebee
 chasis=shuttle
 group=R x=10 y=0 n=1
 group=C x=14 y=0 n=1
@@ -114,19 +114,20 @@ group=E x=21 y=2 n=1
 group=M x=12 y=3 n=2
 group=A x=21 y=3 n=1
 [mosquito]
-type=Mosquito
+type=Scorpion
 chasis=courier
 group=R x=9 y=0 n=1
 group=C x=13 y=0 n=1
-group=P x=2 y=1 n=1
 group=B x=6 y=1 n=5
 group=E x=18 y=1 n=1
 group=D x=10 y=2 n=1
 group=G x=11 y=2 n=1
 group=G x=13 y=2 n=1
 group=E x=19 y=2 n=1
-group=M x=11 y=4 n=2
+group=D x=10 y=3 n=1
+group=M x=11 y=4 n=3
 group=A x=19 y=4 n=1
+group=A x=20 y=5 n=1
 [beetle]
 type=Beetle
 chasis=gunship
@@ -178,43 +179,48 @@ group=G x=19 y=4 n=1
 group=B x=20 y=4 n=3
 group=E x=23 y=4 n=1
 [bottle]
-type=Bottle
+type=Beetle
 chasis=shuttle
 group=R x=10 y=0 n=1
 group=C x=14 y=0 n=1
 group=P x=2 y=1 n=1
-group=B x=7 y=1 n=5
-group=E x=20 y=1 n=1
+group=B x=2 y=2 n=2
+group=B x=7 y=2 n=4
 group=D x=11 y=2 n=1
 group=G x=12 y=2 n=1
-group=G x=14 y=2 n=1
 group=E x=21 y=2 n=1
+group=B x=11 y=3 n=1
 group=M x=12 y=3 n=2
-group=A x=21 y=3 n=1
 [mantis]
 type=Mantis
 chasis=frigate
 group=R x=5 y=1 n=1
-group=P x=8 y=2 n=1
 group=C x=15 y=2 n=1
-group=A x=19 y=2 n=2
+group=A x=19 y=2 n=1
 group=D x=8 y=3 n=1
 group=M x=9 y=3 n=2
-group=B x=12 y=3 n=5
+group=B x=12 y=3 n=2
+group=A x=21 y=3 n=1
+group=G x=9 y=4 n=1
+group=G x=11 y=4 n=1
 group=G x=14 y=4 n=1
 group=E x=17 y=4 n=1
+group=A x=24 y=4 n=1
 [scarab]
-type=Scarab
+type=Grasshopper
 chasis=freighter
-group=R x=5 y=1 n=1
+group=R x=21 y=1 n=1
+group=A x=31 y=2 n=1
 group=P x=8 y=3 n=1
-group=C x=15 y=3 n=1
+group=C x=33 y=3 n=1
 group=M x=8 y=4 n=2
-group=B x=12 y=4 n=5
-group=A x=34 y=4 n=1
-group=G x=20 y=5 n=2
-group=A x=35 y=5 n=1
+group=G x=19 y=5 n=3
+group=A x=34 y=5 n=1
+group=B x=19 y=6 n=2
+group=B x=22 y=6 n=2
+group=B x=25 y=6 n=2
 group=E x=32 y=6 n=2
+group=D x=17 y=7 n=2
 [monster]
 type=SpaceMonster
 chasis=dreadnought
