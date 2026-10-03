@@ -354,8 +354,11 @@ class ShipEditorViewTest {
         + "[dos]\ntype=Firefly\nchasis=h1\n"
         + "[tres]\ntype=Firefly\nchasis=h1\n"
         + "[cuatro]\ntype=Flea\nchasis=h1\n"));
-    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[h1]\ncolor=cyan\nxxxxx\n"));
+    String chassisText = "[h1]\ncolor=cyan\nxxxxx\n";
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(chassisText));
     Path file = Files.createTempFile("naves", ".txt");
+    Path chassisFile = Files.createTempFile("chassis", ".txt");
+    Files.writeString(chassisFile, chassisText);
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
@@ -363,12 +366,15 @@ class ShipEditorViewTest {
       gui.setTheme(LanternaTheme.create());
       ShipEditorView view = new ShipEditorView(designs, hulls, List.of());
       view.shipsPath(file.toString());
+      view.hullsPath(chassisFile.toString());
       gui.addWindow(view);
       gui.updateScreen();
       assertTrue(screenText(screen).contains("ignored 2 designs"),
           "the editor says what it dropped: " + screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
+      assertTrue(Files.readString(chassisFile).contains("[h1]\nsize=small"),
+          "the adopted size lands in the temp chassis, never in the real one: " + Files.readString(chassisFile));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
       assertEquals(17, saved.size());
       ShipType[] types = ShipType.values();
@@ -385,6 +391,7 @@ class ShipEditorViewTest {
       screen.stopScreen();
       screen.close();
       Files.deleteIfExists(file);
+      Files.deleteIfExists(chassisFile);
     }
   }
 
