@@ -96,6 +96,48 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theTitleLogoKeepsItsShape() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaMainWindow window = new LanternaMainWindow(() -> null, gui);
+      MainPresenter presenter = new MainPresenter(() -> null, window);
+      window.setPresenter(presenter);
+      window.showTitleScreen();
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      String[] lines = Strings.MainBanner.split("\n", -1);
+      int block = 0;
+      for(String line : lines) {
+        block = Math.max(block, line.length());
+      }
+      int left = 1 + (100 - block) / 2;
+      int top = -1;
+      for(int y = 0; y < 30; y++) {
+        if(row(screen, y).contains(lines[0])) {
+          top = y;
+          break;
+        }
+      }
+      assertTrue(top >= 0, "the logo is on the title screen:\n" + screenText(screen));
+      // The block is centred as a whole: every line starts on the same column,
+      // so the ASCII art keeps its shape under the stars.
+      for(int i = 0; i < lines.length; i++) {
+        assertEquals(lines[i], row(screen, top + i).substring(left, left + lines[i].length()),
+            "the logo keeps its shape, line " + i + ":\n" + screenText(screen));
+      }
+      assertEquals(lines[1].indexOf('|') + 1, lines[0].indexOf('_'),
+          "the B keeps its leading space");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theTitleScreenActsOnTheMenuKeysAtOnce() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();

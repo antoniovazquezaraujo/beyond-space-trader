@@ -510,13 +510,20 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     UiPalette.reset(graphics);
   }
 
-  /** The project logo, centred, on the empty screen. */
+  /** The project logo, centred as a block, on the empty screen. */
   private void drawBanner(TextGUIGraphics graphics, int chartWidth, int chartHeight) {
     List<String> lines = new ArrayList<>();
     wrap(lines, Strings.MainBanner, Math.max(10, chartWidth - 4));
+    // The logo is ASCII art: its lines are centred together, or the figure
+    // breaks (each line would land on a different column). Wide glyphs count
+    // as the two cells they take.
+    int block = 0;
+    for(String line : lines) {
+      block = Math.max(block, EditorText.width(line));
+    }
+    int left = 1 + Math.max(0, (chartWidth - block) / 2);
     int top = contentTop + 1 + Math.max(0, (chartHeight - lines.size()) / 2);
     for(String line : lines) {
-      int left = 1 + Math.max(0, (chartWidth - line.length()) / 2);
       UiPalette.draw(graphics, left, top++, line, UiPalette.TITLE, 1 + chartWidth);
     }
   }
