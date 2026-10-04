@@ -29,13 +29,13 @@ jobs:
       - name: Build snap
         run: |
           sudo snapcraft pack --destructive-mode
-          mv *.snap beyond-space-trader.snap
+          mv *.snap beyond-space-trader-tui.snap
 
       - name: Upload snap artifact
         uses: actions/upload-artifact@v4
         with:
-          name: beyond-space-trader-snap
-          path: beyond-space-trader.snap
+          name: beyond-space-trader-tui-snap
+          path: beyond-space-trader-tui.snap
 
       - name: Publish snap
         if: github.event_name != 'pull_request'
@@ -43,5 +43,5 @@ jobs:
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
-          snap: beyond-space-trader.snap
+          snap: beyond-space-trader-tui.snap
           release: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'edge' }}
