@@ -100,7 +100,7 @@ En cada tag `v*`, después de subir los zips a la Release de GitHub, el workflow
 
 ## 4. Publicación en la Snap Store
 
-El workflow `.github/workflows/snap.yml` construye el snap `beyond-space-trader` y lo publica en la Snap Store:
+El workflow `.github/workflows/snap.yml` construye el snap `beyond-space-trader-tui` y lo publica en la Snap Store:
 
 - **Tag `v*`:** publica en el canal `stable`.
 - **Ejecución manual (`workflow_dispatch`):** publica en el canal `edge` (ideal para probar antes de una release).
@@ -116,8 +116,8 @@ El snap:
 
 ### Alta (solo el dueño)
 
-1. Con una cuenta de Ubuntu One, registrar el nombre: `snapcraft register beyond-space-trader`.
-2. Exportar las credenciales de publicación: `snapcraft export-login snapcraft-creds` (caduca; conviene reexportarlas si el login expira) y guardarlas como secreto **`SNAPCRAFT_STORE_CREDENTIALS`** en el repositorio.
+1. Con una cuenta de Ubuntu One, registrar el nombre: `snapcraft register beyond-space-trader-tui`.
+2. Exportar las credenciales de publicación: `snapcraft export-login --snaps=beyond-space-trader-tui --acls=package_access,package_push,package_release snapcraft-creds` (conviene limitarlas a ese snap y reexportarlas si el login expira) y guardarlas como secreto **`SNAPCRAFT_STORE_CREDENTIALS`** en el repositorio.
 
 ### Flujo
 
@@ -128,7 +128,7 @@ El snap:
 Una vez publicado, el jugador lo instala con:
 
 ```bash
-sudo snap install beyond-space-trader
+sudo snap install beyond-space-trader-tui
 ```
 
 ---

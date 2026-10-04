@@ -1,4 +1,4 @@
-name: beyond-space-trader
+name: beyond-space-trader-tui
 base: core22
 version: git
 summary: A Java port of Space Trader, a text-mode space trading game
@@ -12,11 +12,11 @@ grade: stable
 confinement: strict
 
 apps:
-  beyond-space-trader:
-    command: bin/beyond-space-trader
+  beyond-space-trader-tui:
+    command: bin/beyond-space-trader-tui
 
 parts:
-  beyond-space-trader:
+  beyond-space-trader-tui:
     plugin: nil
     source: .
     build-packages:
@@ -38,7 +38,7 @@ parts:
             output/BeyondSpaceTrader/NOTICE \
             "$CRAFT_PART_INSTALL/"
 
-      cat > "$CRAFT_PART_INSTALL/bin/beyond-space-trader" <<'EOF'
+      cat > "$CRAFT_PART_INSTALL/bin/beyond-space-trader-tui" <<'EOF'
       #!/bin/sh
       # Beyond Space Trader (snap): the game writes data/ and save/ relative to the
       # current directory and reads ships/ from there, so run it from a writable
@@ -56,4 +56,4 @@ parts:
         -Dcom.googlecode.lanterna.terminal.UnixTerminal.sttyCommand="$SNAP/usr/bin/stty" \
         -jar "$SNAP/lib/app/"*.jar "$@"
       EOF
-      chmod 755 "$CRAFT_PART_INSTALL/bin/beyond-space-trader"
+      chmod 755 "$CRAFT_PART_INSTALL/bin/beyond-space-trader-tui"
