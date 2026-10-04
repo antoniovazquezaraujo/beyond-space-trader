@@ -1,6 +1,9 @@
 # Build output (Maven)
 target/
 
+# Packaged application (jlink runtime + launchers)
+output/
+
 # Compiled classes and archives
 *.class
 *.jar
