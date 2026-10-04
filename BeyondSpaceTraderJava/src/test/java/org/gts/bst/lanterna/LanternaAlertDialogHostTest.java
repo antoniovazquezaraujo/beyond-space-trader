@@ -89,6 +89,43 @@ class LanternaAlertDialogHostTest {
   }
 
   @Test
+  void nAndPWithASingleButtonKeepTheFocusAndEnterStillChooses() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaAlertDialogHost host = new LanternaAlertDialogHost(gui);
+      DialogResult[] answer = new DialogResult[1];
+      Thread worker = new Thread(() -> answer[0] = host.show("Title", "Message",
+          List.of(new AlertButton("Ok", DialogResult.OK))));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui);
+      gui.updateScreen();
+
+      assertEquals("Ok", ((Button)dialog.getFocusedInteractable()).getLabel());
+      dialog.handleInput(new KeyStroke('n', false, false));
+      assertEquals("Ok", ((Button)dialog.getFocusedInteractable()).getLabel(),
+          "n with one button keeps the focus");
+      dialog.handleInput(new KeyStroke('P', false, false));
+      assertEquals("Ok", ((Button)dialog.getFocusedInteractable()).getLabel(),
+          "P with one button keeps the focus");
+      // A letter that is not a move key goes to the dialog and leaves the focus alone.
+      dialog.handleInput(new KeyStroke('x', false, false));
+      assertEquals("Ok", ((Button)dialog.getFocusedInteractable()).getLabel());
+
+      // ENTER keeps choosing the focused button.
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the dialog should close with ENTER");
+      assertEquals(DialogResult.OK, answer[0]);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void longMessagesAreWrappedInsteadOfCut() throws IOException, InterruptedException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

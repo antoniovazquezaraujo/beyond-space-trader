@@ -65,6 +65,21 @@ class MainTextComponentTest {
   }
 
   @Test
+  void aSingleQuestEntryKeepsTheSelectionWhenMovingEitherWay() {
+    MainTextComponent component = new MainTextComponent(() -> null, key -> false);
+    component.quests(new QuestsViewModel(List.of(
+        new QuestsViewModel.Entry("Deliver the moon to Utopia.", "Utopia"))));
+
+    component.moveQuestSelection(1);
+    assertEquals(0, component.questIndex(), "down on the only entry wraps onto it");
+    assertEquals("Utopia", component.selectedQuestSystem());
+
+    component.moveQuestSelection(-1);
+    assertEquals(0, component.questIndex(), "up on the only entry wraps onto it");
+    assertEquals("Utopia", component.selectedQuestSystem());
+  }
+
+  @Test
   void scrollToKeepsTheViewStillUntilTheSelectionReachesTheMargin() {
     // First time: the view is centred on the selection.
     assertEquals(30, MainTextComponent.scrollTo(-1, 60, 60, 154, 6));

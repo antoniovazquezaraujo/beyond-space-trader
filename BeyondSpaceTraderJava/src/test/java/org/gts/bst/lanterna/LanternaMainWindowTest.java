@@ -533,6 +533,54 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theBankPKeyStillPaysBackAndTheNKeyOpensNothing() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().setCash(100000);
+      holder[0].Commander().setDebt(5000);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('b', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.BankTitle), screenText(screen));
+
+      // The bank is no list: P still pays the debt back instead of moving a selection.
+      Thread worker = new Thread(() -> window.asWindow().getFocusedInteractable()
+          .handleInput(new KeyStroke('p', false, false)));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui, window.asWindow());
+      // The main component is locked while the worker waits in the dialog, so the
+      // test must not repaint: it reads the dialog title and closes it.
+      assertEquals(Strings.DialogPayBackTitle, dialog.getTitle(),
+          "P must open the pay back dialog");
+      dialog.handleInput(new KeyStroke(KeyType.Escape));
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the pay back dialog should close with ESCAPE");
+      gui.updateScreen();
+
+      // N is not a bank key: it opens no dialog and the panel stays on screen.
+      int openWindows = gui.getWindows().size();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertEquals(openWindows, gui.getWindows().size(), "n must not open anything in the bank");
+      assertTrue(screenText(screen).contains(Strings.BankTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theQuestsPanelSetsTheSelectedTargetOnEnter() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -634,6 +682,45 @@ class LanternaMainWindowTest {
       gui.updateScreen();
       assertSame(holder[0].Universe()[StarSystemId.Acamar.CastToInt()], holder[0].SelectedSystem(),
           "p moves back up to the first quest");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theQuestsNAndPWithASingleEntryKeepItSelected() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // Only the moon quest: the list has one entry.
+      holder[0].setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+      StarSystem utopia = holder[0].Universe()[StarSystemId.Utopia.CastToInt()];
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.QuestMoon), screenText(screen));
+
+      // N and P (uppercase too) wrap onto the only entry instead of losing it.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('N', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('P', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("→ " + utopia.Name()),
+          "the only entry stays selected: " + screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertSame(utopia, holder[0].SelectedSystem(),
+          "ENTER targets the only entry after the N/P presses");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -2071,6 +2158,47 @@ class LanternaMainWindowTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
           Strings.OptionAutoFuel, Strings.OptionsOn)), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theOptionsNAndPWrapAroundTheList() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F8));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionAutoFuel, Strings.OptionsOff)), screenText(screen));
+
+      // p at the first entry wraps up to the last one: ENTER changes the galaxy columns.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionGalaxyColumns, "3")), screenText(screen));
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionAutoFuel, Strings.OptionsOff)), "p must not toggle the first entry");
+
+      // n at the last entry wraps down to the first one.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionAutoFuel, Strings.OptionsOn)), "n must wrap to the first entry");
     } finally {
       screen.stopScreen();
       screen.close();
