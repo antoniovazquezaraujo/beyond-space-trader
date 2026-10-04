@@ -3,7 +3,7 @@
 - **Estado**: sustituido en parte por el [ADR 0002](0002-letras-como-datos.md)
   (las letras ya no viven en el dibujo del chasis y el editor cambia de forma)
 - **Fecha**: 2026-09-29
-- **Referencias**: `docs/ships.md` (el formato y las tablas), `docs/ui-design.md`,
+- **Referencias**: `docs/developer/ships.md` (el formato y las tablas), `docs/developer/ui-design.md`,
   `ships/chassis.txt`, `ships/pieces.txt`
 
 ## Contexto
@@ -18,7 +18,7 @@ experimentos se descartaron en la #179).
 
 1. **El arte vive en ficheros de texto** editables a mano y recargables:
    `ships/chassis.txt` (chasis), `ships/pieces.txt` (piezas) y `ships/ships.txt`
-   (el montaje/previsualización). Formato detallado en `docs/ships.md`: espacio =
+   (el montaje/previsualización). Formato detallado en `docs/developer/ships.md`: espacio =
    vacío, punto = tinta, comentarios `;;`, claves `color`, `bgcolor`, `blink`,
    `wide`/`narrow`; colores con nombre en inglés, `#rrggbb` o índice 0-255.
 2. **Un montaje por tipo de nave** (los 17 del juego). Los 10 comprables se
@@ -31,7 +31,7 @@ experimentos se descartaron en la #179).
 4. **Sitios**: letras reservadas dibujadas en el chasis — `C` cabina, `M`
    motores, `D` depósito, `B` medidor de bodegas, `R` rol, `A` arma, `E` escudo,
    `G` artilugio, `P` cápsula de escape. Cada tipo exige unos mínimos y máximos
-   (tabla en `docs/ships.md`): los máximos salen de las fichas del juego
+   (tabla en `docs/developer/ships.md`): los máximos salen de las fichas del juego
    (ranuras), los fijos del tamaño. Un grupo de letras (`MMM`) es el hueco que
    puede ocupar la pieza.
 5. **Los sitios van en huecos del dibujo**: el compositor no pisa el fuselaje.
@@ -49,7 +49,7 @@ experimentos se descartaron en la #179).
      `escudo*`, `artilugio*`, `marca *`) más el medidor de bodegas; presets:
      vacía, comerciante, pirata, policía, a tope.
 7. **Los glifos**: se leen como puntos de código (Unicode completo). Hay una
-   **paleta segura** y una extendida en `docs/ships.md`; los glifos de
+   **paleta segura** y una extendida en `docs/developer/ships.md`; los glifos de
    presentación emoji quedan fuera; `wide=`/`narrow=` corrigen los que el
    terminal pinta distinto; la tira (`g`) del compositor es el juez.
 8. **El medidor de bodegas** es braille: 1 punto = 1 bodega, 2 a 9 celdas según

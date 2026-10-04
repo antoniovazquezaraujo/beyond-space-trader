@@ -2,7 +2,7 @@
 
 - **Estado**: propuesto
 - **Fecha**: 2026-09-30
-- **Referencias**: [ADR 0002](0002-letras-como-datos.md), `docs/ships.md`,
+- **Referencias**: [ADR 0002](0002-letras-como-datos.md), `docs/developer/ships.md`,
   `spacetrader/Encounter.java` (las reglas), `LanternaEncounterView` (la vista
   actual)
 

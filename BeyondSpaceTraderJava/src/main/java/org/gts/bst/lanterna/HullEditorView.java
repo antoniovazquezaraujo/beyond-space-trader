@@ -34,7 +34,7 @@ import spacetrader.Strings;
  * is fixed by that type; z only cycles the size of a free hull.
  */
 public final class HullEditorView extends ArtEditorWindow {
-  /** The colours of the art files (docs/ships.md), in the order the list shows them. */
+  /** The colours of the art files (docs/developer/ships.md), in the order the list shows them. */
   private static final String[] COLORS = {"white", "cyan", "red", "yellow", "green", "magenta", "blue", "orange",
       "purple", "pink", "brown", "lightgrey", "darkgrey", "gold", "navy", "teal", "olive", "maroon", "lime",
       "skyblue", "brightwhite", "brightcyan", "brightred", "brightyellow", "brightgreen", "brightmagenta",

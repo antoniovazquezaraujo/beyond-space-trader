@@ -43,22 +43,32 @@ mvn -B -ntp -Pquality verify  # what CI runs (tests + SpotBugs)
   (port of the original: `Game`, `Ship`, `Trade`, `UniverseGenerator`…).
 - **Lanterna** UI only in `org.gts.bst.view` / `lanterna`; the model must not
   depend on the UI.
-- Technical documentation in `docs/`: `ui-design.md`, `ships.md`, `encounters.md`.
+- Developer documentation in `docs/developer/`: `ui-design.md`, `ships.md`,
+  `encounters.md`, the ADRs under `adr/` and the release process under
+  `release/`. See `docs/developer/README.md`.
+- Player documentation in `docs/user/` (manual and cheat sheet, in English and
+  Spanish); it is published to GitHub Pages. If a change is visible to players,
+  update it in the same PR.
 
 ## Architecture decisions (ADRs)
 
-In `docs/adr/`, numbered (`0001`, `0002`…) and **never rewritten**: when a decision
-changes, a new ADR is added that supersedes the old one, which is marked as
-*superseded* in its header. See `docs/adr/README.md`. ADRs are written in Spanish;
-follow their format.
+In `docs/developer/adr/`, numbered (`0001`, `0002`…) and **never rewritten**: when
+a decision changes, a new ADR is added that supersedes the old one, which is marked
+as *superseded* in its header. See `docs/developer/adr/README.md`. ADRs are written
+in Spanish; follow their format.
 
 ## Process (GitHub Flow)
 
-- `main` always builds; **never commit directly to it**.
-- One short-lived branch per change with a prefix:
+- `develop` is the default and protected branch: **never commit directly to it**;
+  every change goes through a PR.
+- One short-lived branch per change, created from `develop`, with a prefix:
   `feature/… fix/… refactor/… docs/… build/… test/…`.
-- Keep PRs **small and focused** on a single change; CI (`mvn -B verify`) must be green.
+- Keep PRs **small and focused** on one change; write them in English. CI
+  (`mvn -B -ntp -Pquality verify`) must be green.
 - Merge with **squash** and delete the branch (local and remote) once integrated.
+- `main` only receives releases (a PR from `develop` plus a tag); see
+  `docs/developer/release/Release_Process.md`.
 - Write commits in the imperative mood, with a Conventional Commits prefix when it helps
   (`feat:`, `fix:`, `refactor:`, `docs:`, `build:`, `test:`).
 - Reference the issue being closed in the PR body (`Closes #12`).
+- If a change is visible to players, update `docs/user/` in the same PR.

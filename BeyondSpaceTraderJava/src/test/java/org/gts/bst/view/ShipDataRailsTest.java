@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
  * fails here with the offending line, before it reaches the editor.
  */
 class ShipDataRailsTest {
-  /** The site letters of the game (docs/ships.md): C, M, D, B, R, A, E, G and P. */
+  /** The site letters of the game (docs/developer/ships.md): C, M, D, B, R, A, E, G and P. */
   private static final String SITE_LETTERS = "AEGCMDBRP";
 
   @Test
