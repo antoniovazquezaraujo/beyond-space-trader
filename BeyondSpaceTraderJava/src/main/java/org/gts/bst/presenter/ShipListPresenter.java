@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.gts.bst.view.ShipInfoViewModel;
 import org.gts.bst.view.ShipListView;
+import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipListViewModel;
 import spacetrader.Commander;
 import spacetrader.Consts;
@@ -78,7 +79,8 @@ public class ShipListPresenter {
         Functions.FormatNumber(spec.getGadgetSlots()),
         Functions.FormatNumber(spec.getCrewQuarters()),
         spec.ImageIndex(),
-        spec.Type()));
+        spec.Type(),
+        ShipCatalog.shared().picture(spec.Type(), ShipArtItems.fixed(spec.Type()), spec.CargoBays())));
   }
 
   public void notifyTribblesTradeInIfNeeded() {

@@ -1,0 +1,1479 @@
+/*
+ * This file is part of Beyond Space Trader.
+ *
+ * Distributed under the GNU General Public License, version 3 or later; see
+ * the LICENSE file. Based on SpaceTrader for Java, which is based on Space
+ * Trader for Windows, which is based on Space Trader by Pieter Spronck; see
+ * the NOTICE file for the full provenance chain.
+ */
+package org.gts.bst.lanterna;
+
+import com.googlecode.lanterna.TerminalPosition;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.gui2.AbstractInteractableComponent;
+import com.googlecode.lanterna.gui2.Interactable;
+import com.googlecode.lanterna.gui2.InteractableRenderer;
+import com.googlecode.lanterna.gui2.TextGUIGraphics;
+import com.googlecode.lanterna.input.KeyStroke;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+import org.gts.bst.view.EncounterAction;
+import org.gts.bst.view.EncounterViewModel;
+import org.gts.bst.view.ShipArtFile;
+import org.gts.bst.view.ShipCatalog;
+import org.gts.bst.view.ShipPicture;
+import org.gts.bst.view.ShipSites;
+import spacetrader.Commander;
+import spacetrader.Strings;
+import org.gts.bst.view.Starfield;
+
+
+/**
+ * The encounter scene: both ships facing each other over a moving starfield,
+ * with their hull and shield bars above, the log under them and the fight over
+ * the drawing (projectiles, sparks, damage numbers, smoke and explosions).
+ * When a commander is given, the header of the game stays at the top with its
+ * live values (hull, shields, ...), and the scene starts under it.
+ *
+ * <p>The game is the referee: the presenter fills the model (one round at a
+ * time) and this component only plays it. The shot of the player is born when
+ * it fires and learns its fate on the next round; the shot of the other ship is
+ * born with the part of the round already decided.
+ */
+public final class EncounterSceneComponent extends AbstractInteractableComponent<EncounterSceneComponent> {
+  /**
+   * Handles a key; returns whether it was consumed.
+   */
+  @FunctionalInterface
+  public interface KeyHandler {
+    boolean handle(KeyStroke keyStroke);
+  }
+
+  /** The bars take the first rows; the log these under the ships. */
+  private static final int BARS_ROWS = 2;
+  private static final int LOG_ROWS = 5;
+  private static final int BAR_CELLS = 8;
+  private static final char BAR_FULL = '█';
+  private static final char BAR_EMPTY = '░';
+  private static final char BEAM_DOT = '·';
+  private static final char SPARK = '✶';
+  private static final char BURST = '✱';
+  private static final char[] SMOKE = {'░', '▒', '▓'};
+  private static final int HIT_FRAMES = 8;
+  private static final int DEBRIS_FRAMES = 5;
+  private static final char[] DEBRIS = {'*', '\u00b7', '+', 'x', '/', '\\', '|', '-'};
+  private static final int[][] SPREAD = {{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}};
+  private static final int SPARK_FRAMES = 3;
+  private static final int NUMBER_FRAMES = 5;
+  private static final int BURST_FRAMES = 8;
+  private static final int BEAM_FRAMES = 3;
+  /** Frames between our beam and the reply of the other ship: the exchange is a turn. */
+  private static final int RESPONSE_FRAMES = 5;
+  private static final int SCAN_FRAMES = 16;
+  private static final int EXTEND_FRAMES = 12;
+  private static final int HAUL_FRAMES = 12;
+  private static final int RETRACT_FRAMES = 8;
+  private static final int TRADE_GAP = 12;
+  private static final int OPPONENT_LEAVE_FRAMES = 12;
+  /** The ships never touch: they stop this many cells apart (their drawings). */
+  private static final int MIN_GAP = 2;
+  /** The wide berth a ship that ignores us keeps from our path. */
+  private static final int KEEPS_CLEAR = 40;
+  private static final char[] SPARKLE = {'\\', '|', '/'};
+  private static final int ENTER_FRAMES = 14;
+  private static final char HORIZONTAL = '─';
+  private static final char VERTICAL = '│';
+  private static final char JOINT = '┼';
+  private static final char BRIDGE = '═';
+  private static final char BRIDGE_VERTICAL = '║';
+  /** The corner where the bridge bends down (left + down) or up (left + up). */
+  private static final char BRIDGE_DOWN = '╗';
+  private static final char BRIDGE_UP = '╝';
+  private static final char BOX = '■';
+  /** Cells the ship glides on every frame: the dashes go at double speed. */
+  private static final int GLIDE_SPEED = 3;
+  /** Cells the ship that ignores us crosses on every frame: it just goes on. */
+  private static final int IGNORE_SPEED = 3;
+  private static final int LEGEND_COLUMNS = 24;
+  /**
+   * The order of the key bar: the actions of the enum, but the interrupt at the
+   * end. The interrupt is a control of the automatic fight, not a decision of the
+   * encounter, so it is the first entry to fall when the bar runs out of room.
+   */
+  private static final EncounterAction[] BAR_ORDER = barOrder();
+
+  /** A beam: the shot of a ship, a line of light from its nose to where the game says. */
+  private record Beam(int x1, int y1, int x2, int y2, TextColor color, int frames) {
+    Beam aged() {
+      return new Beam(x1, y1, x2, y2, color, frames - 1);
+    }
+  }
+
+  /** A piece of a hit ship flying away. */
+  private record Debris(int x, int y, int dx, int dy, char glyph, TextColor color, int frames) {
+    Debris aged() {
+      return new Debris(x + dx, y + dy, dx, dy, glyph, color, frames - 1);
+    }
+  }
+
+  /** A flash of the fight: sparks, bursts, a damage number or a puff of smoke. */
+  private record Flash(int x, int y, String text, TextColor color, int frames, boolean rises) {
+    Flash aged() {
+      return new Flash(x, y + (rises ? -1 : 0), text, color, frames - 1, rises);
+    }
+  }
+
+  /** A row of the log of the encounter, already wrapped, with its colour. */
+  private record LogRow(String text, TextColor color) {
+  }
+
+  private final KeyHandler keyHandler;
+  private final List<String> log = new ArrayList<>();
+  private final List<String> alerts = new ArrayList<>();
+  private final List<Beam> beams = new ArrayList<>();
+  private final List<Flash> flashes = new ArrayList<>();
+  private final List<Debris> debris = new ArrayList<>();
+  private EncounterViewModel model;
+  private Supplier<Commander> commanderSupplier;
+  private Starfield starfield;
+  private int frame;
+  private int youRow;
+  private int youColumn;
+  private int opponentRow;
+  private int opponentColumn;
+  private boolean youTurned;
+  private int rowTarget = Integer.MIN_VALUE;
+  private int columnTarget = Integer.MIN_VALUE;
+  private boolean exiting;
+  /** True while the ship is on a dash to an edge (the only one that can ask to flee). */
+  private boolean escapeDash;
+  /** The side that dash was armed for: only its arrival settles the side of the escape. */
+  private boolean dashToTheRight;
+  private Runnable onExit;
+  private Runnable onOpponentGone;
+  private int responseFrames;
+  private boolean pendingOppHit;
+  private int pendingOppDamage;
+  private int scanFrames;
+  private String scanSpeech;
+  private boolean catwalkPending;
+  private Catwalk catwalk = Catwalk.NONE;
+  private int catwalkFrames;
+  private boolean catwalkAuto;
+  private boolean leaving;
+  private String said = "";
+  private boolean dealt;
+  private int enterFrames;
+  private int youHitFrames;
+  private int opponentHitFrames;
+  private boolean opponentLeaving;
+  private int opponentRowTarget = Integer.MIN_VALUE;
+  private boolean opponentLeavesRight;
+  private boolean opponentGone;
+  private boolean exitedRight;
+  /** The geometry of the last paint: where the shots are born and where they land. */
+  private int youLeft;
+  private int youWidth;
+  private int youHeight;
+  private int opponentLeft;
+  private int opponentWidth;
+  private int opponentHeight;
+  private int areaTop;
+  private int areaBottom;
+  private int screenWidth;
+
+  public EncounterSceneComponent(KeyHandler keyHandler) {
+    this.keyHandler = keyHandler;
+  }
+
+  /**
+   * The current commander for the header: its live values (hull, shields, ...)
+   * are read on every paint, so the fight is always up to date. With no supplier,
+   * or no commander, the scene draws no header and keeps every row for itself.
+   */
+  public void commander(Supplier<Commander> commanderSupplier) {
+    this.commanderSupplier = commanderSupplier;
+    invalidate();
+  }
+
+  /** The scene model: both ships, their pictures, their bars and the round. */
+  public void model(EncounterViewModel model) {
+    EncounterViewModel before = this.model;
+    this.model = model;
+    dealt = false;
+    if(before != null && before.commanderFleeing() != model.commanderFleeing()) {
+      // The chase starts (or the fight is taken up again) and the ship turns with it.
+      youTurned = model.commanderFleeing();
+    }
+    if(before != null && before.opponentIgnores() && !model.opponentIgnores()) {
+      // It was going its way; now it is done with ignoring us: it comes back.
+      opponentGone = false;
+      opponentLeaving = false;
+      opponentColumn = 0;
+      opponentRow = 0;
+      opponentRowTarget = Integer.MIN_VALUE;
+    }
+    if(before != null && model.commanderFleeing() && screenWidth > 0) {
+      // Every round of the chase brings the other one closer, always behind us.
+      int toward = yourX() > opponentX() ? 1 : -1;
+      int gap = toward > 0 ? yourX() - (opponentX() + opponentWidth) : opponentX() - (yourX() + youWidth);
+      if(gap > 4) {
+        opponentColumn += toward * Math.min(3, gap - 4);
+      }
+    }
+    if(before == null) {
+      // The encounter opens with the empty sky: both ships come in from the edges.
+      enterFrames = ENTER_FRAMES;
+    }
+    if(before != null && before.round() != model.round() && screenWidth > 0) {
+      play(before, model);
+    }
+    invalidate();
+  }
+
+  /** A quiet alert of the game (an outcome, no question): one more line of the log. */
+  public void addAlert(String line) {
+    alerts.add(line);
+    invalidate();
+  }
+
+  /** The log lines of the encounter, already wrapped. */
+  public void log(List<String> lines) {
+    this.log.clear();
+    this.log.addAll(lines);
+    invalidate();
+  }
+
+  /**
+   * One press does one thing. Sideways: the ship turns away (the sky sells the
+   * retreat) or faces the other one again, and advancing glides it on, stopping
+   * at a distance from the other ship or at the edge; the camera follows us, so
+   * the ship never leaves the scene. Vertically it glides to the top or to the
+   * bottom, and a press against the glide brakes it.
+   */
+  public void move(int dx, int dy) {
+    if(model == null || screenWidth <= 0 || enterFrames > 0 || catwalk != Catwalk.NONE) {
+      return;
+    }
+    if(dx != 0 && columnTarget != Integer.MIN_VALUE
+        && Integer.signum(columnTarget - youColumn) == -Integer.signum(dx)) {
+      // A press against the advance brakes the ship; the next one turns it.
+      columnTarget = Integer.MIN_VALUE;
+      escapeDash = false;
+      invalidate();
+      return;
+    }
+    if(dy != 0 && rowTarget != Integer.MIN_VALUE
+        && Integer.signum(rowTarget - youRow) == -Integer.signum(dy)) {
+      rowTarget = Integer.MIN_VALUE;
+      invalidate();
+      return;
+    }
+    int restRow = centreRow(true);
+    if(dy < 0) {
+      rowTarget = areaTop - restRow;
+    } else if(dy > 0) {
+      rowTarget = Math.max(areaTop - restRow, areaBottom - youHeight - restRow);
+    }
+    if(dx < 0) {
+      if(youTurned) {
+        // Advancing away: the camera follows us, so the ship only glides to the
+        // left edge and stays there, visible, still facing away. Only this dash
+        // (not a wide ship parked at the edge) can ask the game for the escape.
+        columnTarget = -youLeft;
+        escapeDash = true;
+        dashToTheRight = false;
+      } else {
+        // The half turn: the ship holds its place and the world moves the other way.
+        youTurned = true;
+      }
+    } else if(dx > 0) {
+      if(youTurned) {
+        // Facing the other one again.
+        youTurned = false;
+      } else {
+        // Advancing (to slip through the gap): the ship glides to the right edge
+        // and stays there, visible; the camera follows it and never loses it.
+        columnTarget = Math.max(youColumn, screenWidth - youWidth - youLeft);
+        escapeDash = true;
+        dashToTheRight = true;
+      }
+    }
+    invalidate();
+  }
+
+  /** True while the ship is turned away (running from the other one). */
+  public boolean facingAway() {
+    return youTurned;
+  }
+
+  /** True when the last dash that arrived at an edge went to the right one (a dodge). */
+  public boolean exitedRight() {
+    return exitedRight;
+  }
+
+  /** Tells the view when a dash of the ship reaches the edge of the scene (it fled, or dodged). */
+  public void onExit(Runnable exit) {
+    this.onExit = exit;
+  }
+
+  /**
+   * Tells the view when the ship that ignores us has finished crossing and is
+   * gone: the encounter is over (the same as ignoring it). It only fires for
+   * that crossing, once per crossing, and never for a ship that leaves because
+   * it lost us.
+   */
+  public void onOpponentGone(Runnable gone) {
+    this.onOpponentGone = gone;
+  }
+
+  /** Puts both ships back in their places (a failed flee, or the start of the fight). */
+  public void resetPosition() {
+    youColumn = 0;
+    opponentColumn = 0;
+    opponentRow = 0;
+    youTurned = false;
+    exiting = false;
+    escapeDash = false;
+    rowTarget = Integer.MIN_VALUE;
+    columnTarget = Integer.MIN_VALUE;
+    invalidate();
+  }
+
+  /** The drawing of the player ship, turned around when it is withdrawing. */
+  private ShipPicture yourPicture() {
+    ShipPicture picture = model.youPicture().cropped();
+    // Withdrawing (or being chased after a flee) turns the ship around; the
+    // manoeuvres of the player always have the last word on where it points.
+    return youTurned ? picture.mirrored() : picture;
+  }
+
+  /** The phases of the catwalk of a trade (or of a police seizure). */
+  private enum Catwalk {
+    NONE, EXTEND, HOLD, HAUL, RETRACT
+  }
+
+  /**
+   * The path of the catwalk from our nose to the rival, as a list of cells: a
+   * horizontal run at our height and, when the other ship is at another one, a
+   * vertical leg by its hull (an L). With both ships at the same height it is a
+   * straight line, as before.
+   */
+  private record CatwalkPath(int start, int row, int horizontal, int vertical, int step) {
+    /**
+     * The path between our nose and the middle of the rival, or {@code null}
+     * when the corner falls beside or beyond our nose (nothing sane to draw).
+     */
+    static CatwalkPath between(int start, int row, int corner, int targetRow) {
+      int horizontal = corner - start + 1;
+      if(horizontal <= 1) {
+        return null;
+      }
+      int lift = targetRow - row;
+      return new CatwalkPath(start, row, horizontal, Math.abs(lift), Integer.signum(lift));
+    }
+
+    /** The cells of the path, horizontal run plus vertical leg. */
+    int length() {
+      return horizontal + vertical;
+    }
+
+    /** The glyph of the path at {@code at} cells from our nose. */
+    char glyphAt(int at) {
+      if(at < horizontal) {
+        if(at == horizontal - 1 && step != 0) {
+          return step > 0 ? BRIDGE_DOWN : BRIDGE_UP;
+        }
+        return BRIDGE;
+      }
+      return BRIDGE_VERTICAL;
+    }
+
+    /** The column of the path at {@code at} cells from our nose. */
+    int xAt(int at) {
+      return at < horizontal ? start + at : start + horizontal - 1;
+    }
+
+    /** The row of the path at {@code at} cells from our nose. */
+    int yAt(int at) {
+      return at < horizontal ? row : row + step * (at - horizontal + 1);
+    }
+  }
+
+  /** True when the player ship, moving by (dx, dy), keeps a distance from the other one. */
+  private boolean canMove(int dx, int dy) {
+    return opponentGone || model.opponentHull().value() <= 0
+        || farEnough(yourPicture(), yourX() + dx, yourY() + dy,
+            model.opponentPicture().cropped(), opponentX(), opponentY());
+  }
+
+  /** True when the other ship, moving by (dx, dy), keeps a distance from the player one. */
+  private boolean canOpponentMove(int dx, int dy) {
+    return farEnough(model.opponentPicture().cropped(), opponentX() + dx, opponentY() + dy,
+        yourPicture(), yourX(), yourY());
+  }
+
+  /** True when the drawings of two ships stay apart (they never touch, see MIN_GAP). */
+  private static boolean farEnough(ShipPicture ship, int left, int top, ShipPicture other, int otherLeft,
+      int otherTop) {
+    int gapX = Math.max(left - (otherLeft + other.width()), otherLeft - (left + ship.width()));
+    int gapY = Math.max(top - (otherTop + other.height()), otherTop - (top + ship.height()));
+    return gapX >= MIN_GAP || gapY >= MIN_GAP;
+  }
+
+  /** The frames the other ship takes to react: the better its pilot, the fewer. */
+  static int reactionFrames(int pilot) {
+    return Math.max(1, 5 - pilot / 2);
+  }
+
+  /** The rival: it ignores us, mirrors our height at its own pace, or chases us. */
+  private void moveOpponent() {
+    if(model == null || model.opponentHull().value() <= 0 || model.opponentDisabled()
+        || catwalk != Catwalk.NONE || opponentGone || opponentLeaving) {
+      return;
+    }
+    if(model.opponentIgnores()) {
+      // It goes on with its own business, crossing the scene at speed, and slips
+      // out of our way on the way: no interest in us at all, unless we attack it.
+      glideOpponent();
+      if(opponentRowTarget == Integer.MIN_VALUE && !clearOfUs()) {
+        // Away from us: if we are below, it slips upwards, and the other way
+        // round; a draw still picks a lane (the lower one), never a standstill.
+        opponentRowTarget = yourMiddleY() > opponentMiddleY() ? upperLane() : lowerLane();
+      }
+      // Cell by cell, so a whole stride can never jump over us (see MIN_GAP).
+      for(int i = 0; i < IGNORE_SPEED && canOpponentMove(-1, 0); i++) {
+        opponentColumn--;
+      }
+      if(!canOpponentMove(-1, 0)
+          && (opponentRowTarget == Integer.MIN_VALUE || opponentRowTarget == opponentRow)) {
+        // Our lane is taken: it veers to the other one at once instead of
+        // stalling in front of us. When the ships are so tall that there is no
+        // other lane (upperLane equals lowerLane), it keeps the no-touch rule
+        // and crosses as soon as the way opens.
+        int other = otherLane();
+        if(other != opponentRow) {
+          opponentRowTarget = other;
+        }
+      }
+      if(opponentX() + opponentWidth < 0) {
+        // Its way takes it out of the scene: it is gone, minding its business.
+        opponentGone = true;
+        if(onOpponentGone != null) {
+          // The crossing is over: the encounter ends by itself.
+          onOpponentGone.run();
+        }
+      }
+      return;
+    }
+    if(model.commanderFleeing()) {
+      // The chase: it follows us, keeping a distance, until the game decides.
+      int toward = yourX() > opponentX() ? 1 : -1;
+      int gap = toward > 0 ? yourX() - (opponentX() + opponentWidth) : opponentX() - (yourX() + youWidth);
+      if(frame % 2 == 0 && gap > 4 && canOpponentMove(toward, 0)) {
+        // It rushes to us when it is far, and closes in calmly when it is near.
+        opponentColumn += toward * Math.min(4, Math.max(1, gap / 10));
+      }
+      return;
+    }
+    // The mirror: it copies our height, a cell every so many frames.
+    if(opponentRow == youRow || frame % reactionFrames(model.opponentPilot()) != 0) {
+      return;
+    }
+    int step = youRow > opponentRow ? 1 : -1;
+    int restRow = centreRow(false);
+    int topRow = areaTop - restRow;
+    int bottomRow = Math.max(topRow, areaBottom - opponentHeight - restRow);
+    int row = Math.max(topRow, Math.min(bottomRow, opponentRow + step));
+    if(row != opponentRow && canOpponentMove(0, row - opponentRow)) {
+      opponentRow = row;
+    }
+  }
+
+  private int yourX() {
+    return youLeft + youColumn + enteringOffset(true);
+  }
+
+  private int yourY() {
+    return centreRow(true) + youRow;
+  }
+
+  private int opponentX() {
+    return opponentLeft + opponentColumn + enteringOffset(false);
+  }
+
+  /** While the ships are coming in, they are still beyond their edge. */
+  private int enteringOffset(boolean yours) {
+    if(enterFrames <= 0 || screenWidth <= 0 || (yours ? youWidth : opponentWidth) <= 0) {
+      return 0;
+    }
+    int off = yours ? -(youLeft + youWidth + 2) : screenWidth - opponentLeft + 2;
+    return off * enterFrames / ENTER_FRAMES;
+  }
+
+  private int opponentY() {
+    return centreRow(false) + opponentRow;
+  }
+
+  /** The row where a ship rests with no manoeuvre: the middle of the scene. */
+  private int centreRow(boolean yours) {
+    int shipHeight = yours ? youHeight : opponentHeight;
+    return areaTop + Math.max(0, (areaBottom - areaTop - shipHeight) / 2);
+  }
+
+  private int opponentMiddleY() {
+    return opponentY() + Math.max(0, opponentHeight / 2);
+  }
+
+  private int yourMiddleY() {
+    return yourY() + Math.max(0, youHeight / 2);
+  }
+
+  /** Moves the stars and the fight: the window timer calls it on every frame. */
+  public void tick() {
+    frame++;
+    if(starfield != null) {
+      // The camera follows the ship: facing forward the sky drifts left, facing
+      // away (turning back, or fleeing) it drags the other way.
+      starfield.advance(youTurned);
+    }
+    if(enterFrames > 0 && screenWidth > 0) {
+      enterFrames--;
+      invalidate();
+      return;
+    }
+    for(int i = beams.size() - 1; i >= 0; i--) {
+      Beam beam = beams.get(i);
+      if(beam.frames() <= 1) {
+        beams.remove(i);
+      } else {
+        beams.set(i, beam.aged());
+      }
+    }
+    for(int i = flashes.size() - 1; i >= 0; i--) {
+      Flash flash = flashes.get(i);
+      if(flash.frames() <= 1) {
+        flashes.remove(i);
+      } else {
+        flashes.set(i, flash.aged());
+      }
+    }
+    for(int i = debris.size() - 1; i >= 0; i--) {
+      Debris piece = debris.get(i);
+      if(piece.frames() <= 1) {
+        debris.remove(i);
+      } else {
+        debris.set(i, piece.aged());
+      }
+    }
+    if(youHitFrames > 0) {
+      youHitFrames--;
+    }
+    if(opponentHitFrames > 0) {
+      opponentHitFrames--;
+    }
+    if(opponentLeaving && !opponentGone) {
+      // It goes away through its side of the scene, losing us: all the way out.
+      int toward = opponentLeavesRight ? 1 : -1;
+      int distance = toward > 0 ? Math.max(1, screenWidth + opponentWidth - opponentX())
+          : Math.max(1, opponentX() + opponentWidth + 1);
+      opponentColumn += toward * Math.max(3, distance / OPPONENT_LEAVE_FRAMES);
+      if(toward > 0 && opponentX() >= screenWidth + 2
+          || toward < 0 && opponentX() + opponentWidth <= -2) {
+        opponentGone = true;
+        opponentLeaving = false;
+      }
+    }
+    if(responseFrames > 0 && --responseFrames == 0) {
+      playTheReply();
+    }
+    if(scanFrames > 0 && --scanFrames == 0) {
+      if(catwalkPending) {
+        catwalkPending = false;
+        startCatwalk(true);
+      } else if(scanSpeech != null) {
+        // The police are done: they say how it went.
+        say(scanSpeech);
+        scanSpeech = null;
+      }
+    }
+    if(catwalk != Catwalk.NONE) {
+      // The rival closes in, at a distance, while the catwalk stretches out.
+      if(catwalk == Catwalk.EXTEND && model != null && frame % 2 == 0
+          && opponentX() - (yourX() + youWidth) > TRADE_GAP && canOpponentMove(-1, 0)) {
+        opponentColumn--;
+      }
+      if(catwalkFrames > 0 && --catwalkFrames == 0) {
+        advanceCatwalk();
+      }
+    }
+    glidePlayer();
+    moveOpponent();
+    invalidate();
+  }
+
+  /** True when the other drawing is well away from ours, head on. */
+  private boolean clearOfUs() {
+    return opponentX() - (yourX() + youWidth) >= KEEPS_CLEAR || yourX() - (opponentX() + opponentWidth) >= KEEPS_CLEAR;
+  }
+
+  /** The upper lane of the scene, as a row relative to the resting row. */
+  private int upperLane() {
+    return areaTop - centreRow(false);
+  }
+
+  /** The lower lane of the scene, as a row relative to the resting row. */
+  private int lowerLane() {
+    return Math.max(upperLane(), areaBottom - opponentHeight - centreRow(false));
+  }
+
+  /** The lane on the other side of the one the other ship took (top <-> bottom). */
+  private int otherLane() {
+    int taken = opponentRowTarget == Integer.MIN_VALUE ? opponentRow : opponentRowTarget;
+    return taken - upperLane() <= lowerLane() - taken ? lowerLane() : upperLane();
+  }
+
+  /** The other ship glides to the side it dodged to, like our own manoeuvre. */
+  private void glideOpponent() {
+    for(int i = 0; i < GLIDE_SPEED && opponentRowTarget != Integer.MIN_VALUE
+        && opponentRow != opponentRowTarget; i++) {
+      int step = opponentRowTarget > opponentRow ? 1 : -1;
+      if(!canOpponentMove(0, step)) {
+        opponentRowTarget = Integer.MIN_VALUE;
+        break;
+      }
+      opponentRow += step;
+    }
+    if(opponentRowTarget != Integer.MIN_VALUE && opponentRow == opponentRowTarget) {
+      opponentRowTarget = Integer.MIN_VALUE;
+    }
+  }
+
+  /** The player ship glides to its target a few cells per frame; a wall stops it. */
+  private void glidePlayer() {
+    for(int i = 0; i < GLIDE_SPEED && rowTarget != Integer.MIN_VALUE && youRow != rowTarget; i++) {
+      int step = rowTarget > youRow ? 1 : -1;
+      if(!canMove(0, step)) {
+        rowTarget = Integer.MIN_VALUE;
+        bump();
+        break;
+      }
+      youRow += step;
+    }
+    // Advancing (to slip through the gap) and escaping go at double speed.
+    for(int i = 0; i < GLIDE_SPEED * 2 && columnTarget != Integer.MIN_VALUE && youColumn != columnTarget; i++) {
+      int step = columnTarget > youColumn ? 1 : -1;
+      if(!canMove(step, 0)) {
+        columnTarget = Integer.MIN_VALUE;
+        escapeDash = false;
+        bump();
+        break;
+      }
+      youColumn += step;
+    }
+    if(rowTarget != Integer.MIN_VALUE && youRow == rowTarget) {
+      rowTarget = Integer.MIN_VALUE;
+    }
+    // The camera follows us: only the dash the player asked for can reach an
+    // edge, and when it gets there the game is asked for the escape (or the
+    // dodge). A ship parked at the edge (a wide one at the spawn) asks nothing.
+    // The notice fires once, and is re-armed only when the ship is back inside
+    // the scene, so a new dash can ask for another escape.
+    boolean atEdge = screenWidth > 0 && (yourX() <= 0 || yourX() + youWidth >= screenWidth);
+    if(escapeDash && columnTarget != Integer.MIN_VALUE && youColumn == columnTarget) {
+      escapeDash = false;
+      // The side of the escape is settled by the dash that arrives: a dash that
+      // was braked or blocked never changes it (the other ship is where it is).
+      exitedRight = dashToTheRight;
+      if(!exiting) {
+        exiting = true;
+        if(onExit != null) {
+          onExit.run();
+        }
+      }
+    } else if(!atEdge && exiting) {
+      exiting = false;
+    }
+  }
+
+  /** A knock against the other ship, so the wall reads as a wall. */
+  private void bump() {
+    flashes.add(new Flash(opponentX(), yourMiddleY(), "*", TextColor.ANSI.WHITE, 2, false));
+  }
+
+  @Override
+  protected Interactable.Result handleKeyStroke(KeyStroke keyStroke) {
+    return keyHandler.handle(keyStroke) ? Interactable.Result.HANDLED : Interactable.Result.UNHANDLED;
+  }
+
+  @Override
+  protected InteractableRenderer<EncounterSceneComponent> createDefaultRenderer() {
+    return new InteractableRenderer<EncounterSceneComponent>() {
+      @Override
+      public TerminalPosition getCursorLocation(EncounterSceneComponent component) {
+        return null;
+      }
+
+      @Override
+      public TerminalSize getPreferredSize(EncounterSceneComponent component) {
+        return TerminalSize.ZERO;
+      }
+
+      @Override
+      public void drawComponent(TextGUIGraphics graphics, EncounterSceneComponent component) {
+        paint(graphics);
+      }
+    };
+  }
+
+  /** Plays a round with the game already resolved: beams, smoke and explosions. */
+  private void play(EncounterViewModel before, EncounterViewModel after) {
+    boolean down = after.opponentHull().value() <= 0;
+    if(down && before.opponentHull().value() > 0) {
+      for(int i = 0; i < 4; i++) {
+        flashes.add(new Flash(opponentX() + opponentWidth / 2 - 2 + i, opponentMiddleY() - 1 + i % 2,
+            String.valueOf(BURST), i % 2 == 0 ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.RED_BRIGHT,
+            BURST_FRAMES, false));
+      }
+      return;
+    }
+    // My beam: aimed at the other ship, where it stops (a hit) or goes on (a miss).
+    if(after.youAttacked()) {
+      int nose = yourX() + youWidth;
+      int row = yourMiddleY();
+      int targetX = opponentX() + opponentWidth / 2;
+      int targetY = opponentMiddleY();
+      int toX = after.youHit() ? targetX : screenWidth - 1;
+      int toY = after.youHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
+      beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.GREEN_BRIGHT, BEAM_FRAMES));
+      if(after.youHit()) {
+        impact(opponentX(), targetY, after.youDamage(), true);
+      }
+    }
+    // Their beam is kept for a short lapse, so the two shots do not get mixed up.
+    if(!down && !after.opponentDisabled()) {
+      pendingOppHit = after.oppHit();
+      pendingOppDamage = after.oppDamage();
+      responseFrames = RESPONSE_FRAMES;
+    } else {
+      responseFrames = 0;
+    }
+  }
+
+  /** True while the other ship is about to answer: attacking again has to wait. */
+  public boolean responding() {
+    return responseFrames > 0;
+  }
+
+  /** The police scanner over our ship, and then the catwalk if they take cargo. */
+  public void inspection(boolean confiscated) {
+    inspection(confiscated, null);
+  }
+
+  /** The police scanner; when it ends, they say the outcome (all clear). */
+  public void inspection(boolean confiscated, String afterScan) {
+    scanFrames = SCAN_FRAMES;
+    catwalkPending = confiscated;
+    scanSpeech = afterScan;
+    invalidate();
+  }
+
+  /** The looting of a pirate: the rival closes in, the catwalk goes out and the boxes cross. */
+  public void loot() {
+    startCatwalk(true);
+  }
+
+  /** The catwalk of a trade: it goes out between the ships and waits there. */
+  public void catwalk() {
+    startCatwalk(false);
+  }
+
+  /** True when the catwalk is fully out and quiet: the question can be asked. */
+  public boolean catwalkOut() {
+    return catwalk == Catwalk.HOLD;
+  }
+
+  /** The boxes cross the catwalk with the goods of the deal. */
+  public void haul() {
+    if(catwalk == Catwalk.HOLD) {
+      catwalk = Catwalk.HAUL;
+      catwalkFrames = HAUL_FRAMES;
+      invalidate();
+    }
+  }
+
+  /** The catwalk is taken back in. */
+  public void retract() {
+    if(catwalk != Catwalk.NONE) {
+      catwalk = Catwalk.RETRACT;
+      catwalkFrames = RETRACT_FRAMES;
+      invalidate();
+    }
+  }
+
+  /** True when the catwalk is gone: the scene of the trade is over. */
+  public boolean catwalkGone() {
+    return catwalk == Catwalk.NONE;
+  }
+
+  private void startCatwalk(boolean auto) {
+    catwalkAuto = auto;
+    catwalk = Catwalk.EXTEND;
+    catwalkFrames = EXTEND_FRAMES;
+    invalidate();
+  }
+
+  /** A phase is over: the catwalk waits, or goes on by itself (the police seizure). */
+  private void advanceCatwalk() {
+    switch(catwalk) {
+      case EXTEND:
+        catwalk = catwalkAuto ? Catwalk.HAUL : Catwalk.HOLD;
+        catwalkFrames = catwalkAuto ? HAUL_FRAMES : 0;
+        break;
+      case HAUL:
+        catwalk = catwalkAuto ? Catwalk.RETRACT : Catwalk.HOLD;
+        catwalkFrames = catwalkAuto ? RETRACT_FRAMES : 0;
+        break;
+      default:
+        catwalk = Catwalk.NONE;
+        catwalkFrames = 0;
+        break;
+    }
+    invalidate();
+  }
+
+  /** What the other ship is saying now (an offer of the trader), under it. */
+  public void say(String text) {
+    said = text == null ? "" : text;
+    dealt = false;
+    invalidate();
+  }
+
+  /** The speech has been dealt with: it goes away. */
+  public void deal() {
+    said = "";
+    dealt = true;
+    invalidate();
+  }
+
+  /**
+   * The bubble of a past alert goes away: the scene says what the model says again
+   * (nothing, or the demand of the police or the trader's hail).
+   */
+  public void clearSpeech() {
+    said = "";
+    dealt = false;
+    invalidate();
+  }
+
+  /** The player takes part while the ships come in: the entry stops at once. */
+  public void skipEntry() {
+    if(enterFrames > 0) {
+      enterFrames = 0;
+      invalidate();
+    }
+  }
+
+  /** The ship goes on facing away (it is running, even if the other falls behind). */
+  public void turnAway() {
+    youTurned = true;
+    invalidate();
+  }
+
+  /**
+   * Turns the ship to face away from the other one: away is the side opposite
+   * to where the other ship is, by their midpoints. The view calls it when the
+   * game settles an escape, so the ship that got away is seen heading out.
+   */
+  public void faceAway() {
+    if(screenWidth <= 0) {
+      return;
+    }
+    // With the other one ahead (to our right), away is behind us, and the other
+    // way round after slipping past it.
+    youTurned = opponentX() + opponentWidth / 2 > yourX() + youWidth / 2;
+    invalidate();
+  }
+
+  /** The other ship loses us: it goes away through its side of the scene. */
+  public void opponentLeaves() {
+    opponentLeaves(true);
+  }
+
+  /**
+   * The same, towards the side asked for: away from us, so it never reads as if
+   * it were chasing when it is the one that leaves.
+   */
+  public void opponentLeaves(boolean toTheRight) {
+    if(model != null && !opponentGone && !opponentLeaving) {
+      opponentLeaving = true;
+      opponentLeavesRight = toTheRight;
+      invalidate();
+    }
+  }
+
+  /** The sky of the scene (the tests follow its drift). */
+  Starfield sky() {
+    return starfield;
+  }
+
+  /** The scene shows a result to read: it stays until the player leaves (intro). */
+  public void awaitLeave() {
+    leaving = true;
+    invalidate();
+  }
+
+  /** True while the scene has something to finish (the close has to wait for it). */
+  public boolean animating() {
+    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving || opponentLeaving;
+  }
+
+  /** The reply of the other ship, played a moment after our shot. */
+  private void playTheReply() {
+    int nose = opponentX();
+    int row = opponentMiddleY();
+    int targetX = yourX() + youWidth / 2;
+    int targetY = yourMiddleY();
+    int toX = pendingOppHit ? targetX : 0;
+    int toY = pendingOppHit ? targetY : aimedY(nose, row, targetX, targetY, toX);
+    beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
+    if(pendingOppHit) {
+      impact(yourX(), targetY, pendingOppDamage, false);
+    }
+  }
+
+  /** The y of the line from (x1,y1) to (x2,y2) when it reaches {@code x}: the aim is kept. */
+  private static int aimedY(int x1, int y1, int x2, int y2, int x) {
+    if(x2 == x1) {
+      return y1;
+    }
+    return (int)Math.round(y1 + (double)(y2 - y1) * (x - x1) / (x2 - x1));
+  }
+
+  /**
+   * A beam hit. The shield takes it with a flash of sparks; the hull takes it with a
+   * crack: the ship breaks up for a moment and the pieces fly out in every direction.
+   */
+  private void impact(int shipLeft, int row, int damage, boolean onOpponent) {
+    boolean shield = onOpponent ? model.opponentShield().value() > 0 : model.youShield().value() > 0;
+    int x = shipLeft + (onOpponent ? opponentWidth : youWidth) / 2;
+    if(shield) {
+      for(int i = 0; i < 3; i++) {
+        flashes.add(new Flash(x - 1 + i, row + i % 2, String.valueOf(SPARK), TextColor.ANSI.CYAN_BRIGHT, SPARK_FRAMES, false));
+      }
+      if(damage > 0) {
+        flashes.add(new Flash(x, row - 2, "-" + damage, TextColor.ANSI.RED_BRIGHT, NUMBER_FRAMES, true));
+      }
+      return;
+    }
+    if(onOpponent) {
+      opponentHitFrames = HIT_FRAMES;
+    } else {
+      youHitFrames = HIT_FRAMES;
+    }
+    TextColor burst = onOpponent ? TextColor.ANSI.GREEN_BRIGHT : TextColor.ANSI.RED_BRIGHT;
+    for(int i = 0; i < SPREAD.length; i++) {
+      int[] direction = SPREAD[i];
+      debris.add(new Debris(x, row, direction[0], direction[1], DEBRIS[i % DEBRIS.length],
+          i % 3 == 0 ? TextColor.ANSI.WHITE : burst, DEBRIS_FRAMES + i % 3));
+    }
+    for(int i = 0; i < 3; i++) {
+      flashes.add(new Flash(x - 1 + i, row + i % 2, String.valueOf(BURST), TextColor.ANSI.YELLOW_BRIGHT, SPARK_FRAMES, false));
+    }
+    if(damage > 0) {
+      flashes.add(new Flash(x, row - 2, "-" + damage, TextColor.ANSI.RED_BRIGHT, NUMBER_FRAMES, true));
+    }
+  }
+
+  private void paint(TextGUIGraphics graphics) {
+    TerminalSize size = getSize();
+    int width = size.getColumns();
+    int height = size.getRows();
+    // The blink of the drawings (the badges and the like) goes with the clock.
+    boolean blinkOn = frame / 3 % 2 == 0;
+    UiPalette.reset(graphics);
+    for(int row = 0; row < height; row++) {
+      graphics.putString(0, row, " ".repeat(width));
+    }
+    drawStars(graphics, width, height);
+    Commander cmdr = commanderSupplier == null ? null : commanderSupplier.get();
+    int barsTop = 0;
+    if(cmdr != null) {
+      // The header of the game over the sky, so the values of the fight (hull,
+      // shields, ...) stay visible; the scene starts under its separating line.
+      barsTop = HeaderBar.draw(graphics, width, cmdr) + 1;
+    }
+    if(model == null) {
+      return;
+    }
+    int sceneWidth = Math.max(40, width - LEGEND_COLUMNS);
+    drawBars(graphics, sceneWidth, barsTop);
+    areaTop = barsTop + BARS_ROWS;
+    int logTop = Math.max(areaTop + 2, height - LOG_ROWS);
+    int half = (sceneWidth - 1) / 2;
+    ShipPicture you = yourPicture();
+    ShipPicture opponent = model.opponentPicture().cropped();
+    // It faces us when it chases us from behind. One that ignores us, and one that
+    // loses us and goes, never turn: it leaves the scene in reverse.
+    boolean faceRight = !opponentLeaving && !model.opponentIgnores() && opponentX() < yourX();
+    if(faceRight) {
+      opponent = opponent.mirrored();
+    }
+    screenWidth = sceneWidth;
+    youLeft = shipLeft(0, half, you);
+    youWidth = you.width();
+    youHeight = you.height();
+    opponentLeft = shipLeft(half + 1, sceneWidth - half - 1, opponent);
+    opponentWidth = opponent.width();
+    opponentHeight = opponent.height();
+    areaBottom = Math.max(areaTop + 1, logTop - 1);
+    boolean down = model.opponentHull().value() <= 0;
+    if(youHitFrames > 0) {
+      crackedPicture(graphics, yourX(), yourY(), height, you, blinkOn);
+    } else {
+      EditorText.picture(graphics, yourX(), yourY(), you.width(), height, you, blinkOn);
+    }
+    if(!down && !opponentGone) {
+      if(opponentHitFrames > 0) {
+        crackedPicture(graphics, opponentX(), opponentY(), height, opponent, blinkOn);
+      } else {
+        EditorText.picture(graphics, opponentX(), opponentY(), opponentWidth, height, opponent, blinkOn);
+      }
+      if(model.opponentDisabled()) {
+        drawSmoke(graphics);
+      }
+    }
+    drawFight(graphics);
+    drawInspection(graphics);
+    drawSpeech(graphics);
+    drawLegend(graphics, width, height, barsTop + BARS_ROWS);
+    drawLog(graphics, sceneWidth, height, logTop);
+    drawActionKeys(graphics, sceneWidth, height);
+  }
+
+  /** The column of the right: the pieces of both ships, each with its glyph. */
+  private void drawLegend(TextGUIGraphics graphics, int width, int height, int top) {
+    int column = Math.max(0, width - LEGEND_COLUMNS);
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    for(int row = top; row < height; row++) {
+      graphics.putString(column, row, " ".repeat(Math.max(0, width - column)));
+    }
+    graphics.setForegroundColor(UiPalette.TEXT);
+    for(int row = top; row < height; row++) {
+      graphics.setCharacter(column, row, VERTICAL);
+    }
+    int row = top + 1;
+    graphics.setForegroundColor(UiPalette.TITLE);
+    graphics.putString(column + 2, row, Strings.EncounterLegend);
+    row += 2;
+    row = legendPieces(graphics, column, row, model.youPieces(), model.youShip(), model.youCargoBays());
+    legendPieces(graphics, column, row, model.opponentPieces(), model.opponentShip(), model.opponentCargoBays());
+    UiPalette.reset(graphics);
+  }
+
+  /** The pieces of a ship and its cargo gauge: the glyph of each part and its name. */
+  private int legendPieces(TextGUIGraphics graphics, int column, int row, List<String> pieces, String ship,
+      int cargoBays) {
+    if(pieces.isEmpty() && cargoBays <= 0) {
+      return row;
+    }
+    graphics.setForegroundColor(UiPalette.ACCENT);
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    graphics.putString(column + 2, row++, EditorText.cut(ship, LEGEND_COLUMNS - 4));
+    for(String name : pieces) {
+      if(row >= getSize().getRows() - 1) {
+        return row;
+      }
+      ShipArtFile piece = ShipCatalog.shared().piece(name);
+      if(piece == null) {
+        continue;
+      }
+      int codePoint = firstCodePoint(piece);
+      if(codePoint < 0) {
+        continue;
+      }
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      EditorText.glyph(graphics, column + 2, row,
+          new ShipPicture.Cell(codePoint, piece.color(), piece.bgColor(), piece.blink()));
+      graphics.setForegroundColor(UiPalette.TEXT);
+      graphics.putString(column + 6, row, EditorText.cut(name, LEGEND_COLUMNS - 7));
+      row++;
+    }
+    if(cargoBays > 0 && row < getSize().getRows() - 1) {
+      // The cargo: one braille dot per bay, as the art of the ships paints it.
+      String gauge = ShipSites.gauge(cargoBays);
+      for(int i = 0; i < gauge.length() && column + 2 + i < column + 6; i++) {
+        EditorText.glyph(graphics, column + 2 + i, row,
+            new ShipPicture.Cell(gauge.codePointAt(i), "green", "", false));
+      }
+      graphics.setForegroundColor(UiPalette.TEXT);
+      graphics.putString(column + 6, row, Strings.EncounterLegendCargo);
+      row++;
+    }
+    return row + 1;
+  }
+
+  /** The first glyph of the art of a piece: the one the legend shows. */
+  private static int firstCodePoint(ShipArtFile piece) {
+    for(int row = 0; row < piece.height(); row++) {
+      for(int column = 0; column < piece.width(); column++) {
+        int codePoint = piece.at(row, column);
+        if(codePoint != ' ' && codePoint != ShipArtFile.CONTINUATION) {
+          return codePoint;
+        }
+      }
+    }
+    return -1;
+  }
+
+  /** The smoke of a ship with its systems disabled. */
+  private void drawSmoke(TextGUIGraphics graphics) {
+    for(int i = 0; i < 3; i++) {
+      graphics.setForegroundColor(i % 2 == 0 ? TextColor.ANSI.WHITE : new TextColor.Indexed(240));
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      graphics.setCharacter(opponentX() + i * 2, opponentMiddleY() - 3 - i, SMOKE[(frame / 2 + i) % SMOKE.length]);
+    }
+    UiPalette.reset(graphics);
+  }
+
+  /** Draws a beam from its nose to its end as a line of dots (the aim is kept). */
+  private static void drawBeam(TextGUIGraphics graphics, Beam beam) {
+    graphics.setForegroundColor(beam.color());
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    int x = beam.x1();
+    int y = beam.y1();
+    int dx = Math.abs(beam.x2() - x);
+    int dy = Math.abs(beam.y2() - y);
+    int sx = x <= beam.x2() ? 1 : -1;
+    int sy = y <= beam.y2() ? 1 : -1;
+    int error = dx - dy;
+    while(true) {
+      graphics.setCharacter(x, y, BEAM_DOT);
+      if(x == beam.x2() && y == beam.y2()) {
+        break;
+      }
+      int twice = 2 * error;
+      if(twice > -dy) {
+        error -= dy;
+        x += sx;
+      }
+      if(twice < dx) {
+        error += dx;
+        y += sy;
+      }
+    }
+  }
+
+  private static final int SPEECH_WIDTH = 44;
+
+  /** The green waves of the scanner and the catwalk of a transfer. */
+  private void drawInspection(TextGUIGraphics graphics) {
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    if(scanFrames > 0) {
+      // A green cross sweeps the ship: the horizontal line goes down while the
+      // vertical one goes across, and they meet in a joint.
+      int progress = SCAN_FRAMES - scanFrames;
+      int left = Math.max(0, yourX() - 2);
+      int right = yourX() + youWidth + 2;
+      int top = yourY() - 1;
+      int bottom = yourY() + youHeight + 1;
+      int row = top + progress * Math.max(1, bottom - top) / SCAN_FRAMES;
+      int column = left + progress * Math.max(1, right - left) / SCAN_FRAMES;
+      graphics.setForegroundColor(TextColor.ANSI.GREEN_BRIGHT);
+      for(int x = left; x < right; x++) {
+        graphics.setCharacter(x, row, HORIZONTAL);
+      }
+      for(int y = top; y < bottom; y++) {
+        graphics.setCharacter(column, y, VERTICAL);
+      }
+      graphics.setCharacter(column, row, JOINT);
+    }
+    if(catwalk != Catwalk.NONE) {
+      // From our nose to just before the hull of the rival (their middle when
+      // they fly at another height: the catwalk bends into an L).
+      CatwalkPath path = CatwalkPath.between(yourX() + youWidth, yourMiddleY(),
+          opponentX() - 1, opponentMiddleY());
+      if(path != null) {
+        int total = path.length();
+        int shown = total;
+        if(catwalk == Catwalk.EXTEND) {
+          shown = total * (EXTEND_FRAMES - catwalkFrames) / EXTEND_FRAMES;
+        } else if(catwalk == Catwalk.RETRACT) {
+          shown = total * catwalkFrames / RETRACT_FRAMES;
+        }
+        graphics.setForegroundColor(TextColor.ANSI.WHITE);
+        for(int at = 0; at < shown; at++) {
+          graphics.setCharacter(path.xAt(at), path.yAt(at), path.glyphAt(at));
+        }
+        if(catwalk == Catwalk.HAUL) {
+          // The boxes cross the whole path, one each way (horizontal and vertical).
+          int walked = (HAUL_FRAMES - catwalkFrames) * Math.max(1, total) / HAUL_FRAMES;
+          int forward = Math.min(walked, Math.max(0, total - 1));
+          graphics.setForegroundColor(TextColor.ANSI.YELLOW_BRIGHT);
+          graphics.setCharacter(path.xAt(forward), path.yAt(forward), BOX);
+          int backward = Math.max(0, total - 1 - forward);
+          graphics.setCharacter(path.xAt(backward), path.yAt(backward), BOX);
+        }
+      }
+    }
+    UiPalette.reset(graphics);
+  }
+
+  /** What the other ship says: the text floating under it, with no frame. */
+  private void drawSpeech(TextGUIGraphics graphics) {
+    String speech = dealt ? "" : said.isEmpty() && model != null ? model.speech() : said;
+    if(speech.isBlank() || screenWidth <= 0) {
+      return;
+    }
+    java.util.List<String> lines = wrap(speech, SPEECH_WIDTH);
+    if(lines.size() > 3) {
+      lines = lines.subList(0, 3);
+    }
+    int row = opponentY() + opponentHeight + 1;
+    graphics.setForegroundColor(TextColor.ANSI.YELLOW_BRIGHT);
+    graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+    for(String line : lines) {
+      int centered = opponentX() + opponentWidth / 2 - line.length() / 2;
+      // Saying goodbye while leaving: the bubble goes out with the ship, no clamp.
+      int left = opponentLeaving ? centered
+          : Math.max(0, Math.min(screenWidth - line.length() - 1, centered));
+      graphics.putString(left, row++, line);
+    }
+    UiPalette.reset(graphics);
+  }
+
+  /** Cuts a text into lines of a width, at the spaces. */
+  private static java.util.List<String> wrap(String text, int width) {
+    java.util.List<String> lines = new java.util.ArrayList<>();
+    for(String paragraph : text.split("\n")) {
+      String rest = paragraph.strip();
+      while(rest.length() > width) {
+        int cut = rest.lastIndexOf(' ', width);
+        if(cut <= 0) {
+          cut = width;
+        }
+        lines.add(rest.substring(0, cut).strip());
+        rest = rest.substring(cut).strip();
+      }
+      if(!rest.isEmpty()) {
+        lines.add(rest);
+      }
+    }
+    return lines;
+  }
+
+  /**
+   * The hit ship for a moment: some of its cells turn into flying debris and the
+   * whole drawing flashes white on alternate frames, as if it were coming apart.
+   */
+  private void crackedPicture(TextGUIGraphics graphics, int left, int row, int maxRow, ShipPicture picture,
+      boolean blinkOn) {
+    boolean flash = frame % 2 == 0;
+    for(int y = 0; y < picture.height() && row + y < maxRow; y++) {
+      for(int x = 0; x < picture.width(); x++) {
+        ShipPicture.Cell cell = picture.at(x, y);
+        if(cell == null || cell.continuation()) {
+          continue;
+        }
+        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+        if((x * 7 + y * 5 + frame) % 4 == 0) {
+          graphics.setForegroundColor((x + y + frame) % 2 == 0 ? TextColor.ANSI.WHITE : TextColor.ANSI.RED_BRIGHT);
+          graphics.setCharacter(left + x, row + y, DEBRIS[(x + y + frame) % DEBRIS.length]);
+        } else if(flash) {
+          graphics.setForegroundColor(TextColor.ANSI.WHITE);
+          graphics.putString(left + x, row + y, new String(Character.toChars(cell.codePoint())));
+        } else {
+          EditorText.glyph(graphics, left + x, row + y, cell, blinkOn);
+        }
+      }
+    }
+  }
+
+  /** The shots of the round and the flashes. */
+  private void drawFight(TextGUIGraphics graphics) {
+    for(Beam beam : beams) {
+      drawBeam(graphics, beam);
+    }
+    for(Debris piece : debris) {
+      if(piece.x() >= 0 && piece.y() >= 0 && piece.x() < graphics.getSize().getColumns()
+          && piece.y() < graphics.getSize().getRows()) {
+        graphics.setForegroundColor(piece.color());
+        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+        graphics.setCharacter(piece.x(), piece.y(), piece.glyph());
+      }
+    }
+    for(Flash flash : flashes) {
+      graphics.setForegroundColor(flash.color());
+      graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      graphics.putString(flash.x(), flash.y(), flash.text());
+    }
+    UiPalette.reset(graphics);
+  }
+
+  /** The parallax starfield of the fight, in braille with grey shades. */
+  private void drawStars(TextGUIGraphics graphics, int width, int height) {
+    int columns = Math.max(1, width - 1);
+    int rows = Math.max(1, height - 1);
+    if(starfield == null || starfield.dotWidth() != columns * 2 || starfield.dotHeight() != rows * 4) {
+      starfield = new Starfield(columns, rows, 0.12, 42);
+    }
+    Starfield.Frame frame = starfield.frame(columns, rows);
+    for(int row = 0; row < rows; row++) {
+      for(int column = 0; column < columns; column++) {
+        int shade = frame.shades()[row][column];
+        if(shade >= 0) {
+          graphics.setForegroundColor(new TextColor.Indexed(shade));
+          graphics.setCharacter(column, row, frame.lines().get(row).charAt(column));
+        }
+      }
+    }
+    UiPalette.reset(graphics);
+  }
+
+  /** The name and the two bars of each ship: yours on the left, the other on the right. */
+  private void drawBars(TextGUIGraphics graphics, int width, int top) {
+    drawShipBars(graphics, 1, top, width / 2, model.youShip(), model.youHull(), model.youShield());
+    int reserved = model.opponentShip().length() + 8 + BAR_CELLS + 9 + BAR_CELLS;
+    drawShipBars(graphics, Math.max(width / 2 + 1, width - reserved - 1), top, width - 1, model.opponentShip(),
+        model.opponentHull(), model.opponentShield());
+  }
+
+  private void drawShipBars(TextGUIGraphics graphics, int x, int row, int maxX, String name, EncounterViewModel.Bar hull,
+      EncounterViewModel.Bar shield) {
+    int at = UiPalette.draw(graphics, x, row, name, UiPalette.ACCENT, maxX);
+    at = UiPalette.draw(graphics, at, row, "  casco ", UiPalette.TEXT, maxX);
+    at = UiPalette.draw(graphics, at, row, bar(hull), UiPalette.statusColor(hull.value(), hull.max()), maxX);
+    at = UiPalette.draw(graphics, at, row, "  escudo ", UiPalette.TEXT, maxX);
+    UiPalette.draw(graphics, at, row, bar(shield), UiPalette.statusColor(shield.value(), shield.max()), maxX);
+  }
+
+  /** A bar of {@code BAR_CELLS} cells: the filled part stands for the value. */
+  private static String bar(EncounterViewModel.Bar bar) {
+    int filled = bar.max() <= 0 ? 0 : Math.max(0, Math.min(BAR_CELLS, bar.value() * BAR_CELLS / bar.max()));
+    return String.valueOf(BAR_FULL).repeat(filled) + String.valueOf(BAR_EMPTY).repeat(BAR_CELLS - filled);
+  }
+
+  /** The log of the encounter: the newest rows take the room that is left. */
+  private void drawLog(TextGUIGraphics graphics, int width, int height, int logTop) {
+    List<LogRow> rows = logRows(width);
+    // The area of the log never paints the last row of the screen: it is kept
+    // for the action keys, or for the leave key while the scene waits. When the
+    // whole log does not fit, the oldest rows are the ones scrolled out, so the
+    // newest line (an alert of the game) keeps the rows over the keys.
+    int capacity = Math.max(0, height - 1 - logTop);
+    int from = Math.max(0, rows.size() - capacity);
+    for(int i = 0; i < capacity && from + i < rows.size(); i++) {
+      LogRow row = rows.get(from + i);
+      if(!row.text().isEmpty()) {
+        UiPalette.draw(graphics, 1, logTop + i, row.text(), row.color(), width - 1);
+      }
+    }
+    if(leaving) {
+      UiPalette.draw(graphics, 1, height - 1, "[ENTER] continue", UiPalette.WARN, width - 1);
+    }
+  }
+
+  /** The lines of the log and the alerts, wrapped to the width of the scene. */
+  private List<LogRow> logRows(int width) {
+    List<LogRow> rows = new ArrayList<>();
+    for(String line : log) {
+      addLogRows(rows, line, UiPalette.TEXT, width);
+    }
+    for(String alert : alerts) {
+      addLogRows(rows, alert, UiPalette.ACCENT, width);
+    }
+    return rows;
+  }
+
+  /**
+   * Wraps a line of the log (or a quiet alert) to the room left by the keys and
+   * appends its rows. An empty line still takes its row, as the log always did.
+   */
+  private static void addLogRows(List<LogRow> rows, String text, TextColor color, int width) {
+    List<String> wrapped = wrap(text, Math.max(1, width - 2));
+    if(wrapped.isEmpty()) {
+      rows.add(new LogRow("", color));
+      return;
+    }
+    for(String line : wrapped) {
+      rows.add(new LogRow(line, color));
+    }
+  }
+
+  /**
+   * The keys of the actions available, at the bottom of the scene: one whole entry
+   * per action ({@code [X] Name}), in the order of the enum except the interrupt,
+   * which goes last (it is a control, not a decision: the first to fall when the
+   * bar runs out of room, see {@link #BAR_ORDER}), and none half-drawn. While the
+   * scene waits for the player that row keeps its leave key.
+   */
+  private void drawActionKeys(TextGUIGraphics graphics, int width, int height) {
+    if(leaving || model.actions().isEmpty()) {
+      return;
+    }
+    int available = width - 1;
+    StringBuilder bar = new StringBuilder();
+    for(EncounterAction action : BAR_ORDER) {
+      if(!model.actions().contains(action)) {
+        continue;
+      }
+      Character key = LanternaEncounterView.keyOf(action);
+      if(key == null) {
+        // Every action of the encounter has a key: one without it is not shown.
+        continue;
+      }
+      String entry = (bar.length() == 0 ? "" : "  ") + "[" + Character.toUpperCase(key) + "] "
+          + actionName(action);
+      if(bar.length() + entry.length() > available) {
+        // The entry that does not fit is not offered half-way.
+        break;
+      }
+      bar.append(entry);
+    }
+    if(bar.length() > 0) {
+      UiPalette.keys(graphics, 1, height - 1, bar.toString(), available);
+    }
+  }
+
+  /**
+   * Builds {@link #BAR_ORDER}: the actions of the enum in their order, with the
+   * interrupt moved to the end.
+   */
+  private static EncounterAction[] barOrder() {
+    EncounterAction[] order = new EncounterAction[EncounterAction.values().length];
+    int at = 0;
+    for(EncounterAction action : EncounterAction.values()) {
+      if(action != EncounterAction.Interrupt) {
+        order[at++] = action;
+      }
+    }
+    order[at] = EncounterAction.Interrupt;
+    return order;
+  }
+
+  /** The name of an action, as the classic text UI wrote it. */
+  private static String actionName(EncounterAction action) {
+    return switch(action) {
+      case Attack -> Strings.EncounterActionAttack;
+      case Board -> Strings.EncounterActionBoard;
+      case Bribe -> Strings.EncounterActionBribe;
+      case Drink -> Strings.EncounterActionDrink;
+      case Flee -> Strings.EncounterActionFlee;
+      case Ignore -> Strings.EncounterActionIgnore;
+      case Interrupt -> Strings.EncounterActionInterrupt;
+      case Meet -> Strings.EncounterActionMeet;
+      case Plunder -> Strings.EncounterActionPlunder;
+      case Submit -> Strings.EncounterActionSubmit;
+      case Surrender -> Strings.EncounterActionSurrender;
+      case Trade -> Strings.EncounterActionTrade;
+      case Yield -> Strings.EncounterActionYield;
+    };
+  }
+
+  /** The left of a ship picture centred in a column. */
+  private static int shipLeft(int left, int width, ShipPicture picture) {
+    return left + Math.max(0, (width - picture.width()) / 2);
+  }
+}

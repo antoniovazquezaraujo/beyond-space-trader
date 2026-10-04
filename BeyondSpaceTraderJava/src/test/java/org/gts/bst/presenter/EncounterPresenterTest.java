@@ -10,23 +10,41 @@ package org.gts.bst.presenter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
+import org.gts.bst.cargo.TradeItemType;
+import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
+import org.gts.bst.ship.equip.Gadget;
+import org.gts.bst.ship.equip.GadgetType;
+import org.gts.bst.view.Alerts;
+import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
 import org.junit.jupiter.api.Test;
+import spacetrader.Consts;
+import spacetrader.Functions;
 import spacetrader.Game;
+import spacetrader.Ship;
+import spacetrader.SpecialEvent;
+import spacetrader.StarSystem;
+import spacetrader.Strings;
 import spacetrader.TestDialogService;
 import spacetrader.enums.AlertType;
+import spacetrader.enums.SkillType;
 import spacetrader.enums.StarSystemId;
+import spacetrader.enums.TechLevel;
 
 
 class EncounterPresenterTest {
@@ -65,6 +83,47 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void thePoliceSaysTheDemandOnItsShip() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.PoliceInspect);
+
+    new EncounterPresenter(game, view).start();
+
+    assertEquals(Strings.EncounterSaysPolice, view.model.speech(), "the demand of the inspection");
+
+    game.encounter().setEncounterType(EncounterType.PoliceSurrender);
+    new EncounterPresenter(game, view).start();
+
+    assertEquals(Strings.EncounterSaysPoliceArrest, view.model.speech(), "the demand of the surrender");
+  }
+
+  @Test
+  void theTraderSaysWhatItWantsOnItsShip() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+
+    new EncounterPresenter(game, view).start();
+    assertEquals(Strings.EncounterSaysTraderSells, view.model.speech());
+
+    game.encounter().setEncounterType(EncounterType.TraderBuy);
+    new EncounterPresenter(game, view).start();
+    assertEquals(Strings.EncounterSaysTraderBuys, view.model.speech());
+  }
+
+  @Test
+  void aPirateSaysNothing() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+
+    new EncounterPresenter(game, view).start();
+
+    assertEquals("", view.model.speech());
+  }
+
+  @Test
   void showsTheInterruptWhileRepeatingAnAction() {
     Game game = newGame();
     FakeView view = new FakeView();
@@ -91,6 +150,250 @@ class EncounterPresenterTest {
 
     assertTrue(view.closed);
     assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void ignoringTheEncounterAlsoStopsTheAutomaticRounds() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.TraderIgnore);
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+    presenter.start();
+    // The game had the automatic rounds running when the ship finished crossing.
+    game.encounter().setEncounterContinueAttacking(true);
+    game.encounter().setEncounterContinueFleeing(true);
+
+    presenter.ignore();
+
+    assertFalse(game.encounter().getEncounterContinueAttacking(), "the automatic attack stops");
+    assertFalse(game.encounter().getEncounterContinueFleeing(), "and the automatic flee too");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result(), "the encounter ends as ignored");
+  }
+
+  @Test
+  void surrenderingToAPirateShowsTheLootingWhenCargoIsTaken() {
+    Game game = newGame();
+    game.Commander().getShip().Cargo()[0] = 1;
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertTrue(view.lootedCargo, "and that the cargo was taken");
+    assertTrue(view.closed, "and the encounter closes");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToAPirateLogsWhatTheyTook() {
+    Game game = newGame();
+    Ship ship = game.Commander().getShip();
+    ship.Cargo()[0] = 2;
+    ship.Cargo()[2] = 1;
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    String taken = "2 " + Consts.TradeItems.get(0).Name() + ", 1 " + Consts.TradeItems.get(2).Name();
+    assertEquals(List.of(Functions.StringVars(Strings.EncounterPiratesTake, taken)), view.logs,
+        "the log lists the cargo they took");
+    assertFalse(view.loggedAfterClose, "the line is logged while the scene waits, not after it closes");
+    assertTrue(view.closed, "and then the encounter closes");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToAPirateLogsOnlyWhatTheHoldsLost() {
+    Game game = newGame();
+    Ship ship = game.Commander().getShip();
+    ship.Cargo()[0] = 3;
+    ship.Cargo()[2] = 2;
+    // The pirate can carry two units and takes the most expensive first: only
+    // the two food units leave, and only those are listed.
+    Ship pirate = new Ship(ShipType.Scorpion);
+    pirate.Cargo()[0] = pirate.FreeCargoBays() - 2;
+    game.encounter().setOpponent(pirate);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    String taken = "2 " + Consts.TradeItems.get(2).Name();
+    assertEquals(List.of(Functions.StringVars(Strings.EncounterPiratesTake, taken)), view.logs,
+        "only the goods that left the hold are listed");
+    assertEquals(3, ship.Cargo()[0], "the water the pirate could not carry stays on board");
+    assertEquals(0, ship.Cargo()[2], "and the food leaves");
+    assertTrue(view.lootedCargo, "the scene shows the transfer");
+    assertTrue(view.closed);
+  }
+
+  @Test
+  void surrenderingToAPirateWithNothingToTakeShowsNoCatwalk() {
+    Game game = newGame();
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertFalse(view.lootedCargo, "but the blackmail took no cargo");
+    assertTrue(view.logs.isEmpty(), "the blackmail leaves no loot line: " + view.logs);
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToTheMantisWithTheArtifactIsNotALooting() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    game.setQuestStatusArtifact(SpecialEvent.StatusArtifactOnBoard);
+    game.encounter().setOpponent(new Ship(ShipType.Mantis));
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertFalse(view.lootedCalled, "handing over the artifact is not a cargo looting");
+    assertTrue(view.logs.isEmpty(), "the artifact is not cargo: no loot line: " + view.logs);
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToThePoliceIsAnArrestAndNotALooting() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    game.encounter().setEncounterType(EncounterType.PoliceAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertFalse(view.lootedCalled, "the arrest is not a looting");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Arrested, presenter.result());
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPoliceSurrender), dialogs.alerts().toString());
+  }
+
+  @Test
+  void surrenderingToAPirateWithNoFreeBaysTakesNothing() {
+    Game game = newGame();
+    game.Commander().getShip().Cargo()[0] = 2;
+    // The pirate sails with its holds full: it has no room for the loot.
+    Ship pirate = new Ship(ShipType.Scorpion);
+    pirate.Cargo()[0] = pirate.FreeCargoBays();
+    game.encounter().setOpponent(pirate);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertEquals(0, pirate.FreeCargoBays(), "the pirate has no room for the loot");
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertFalse(view.lootedCargo, "with no room, no box crossed");
+    assertEquals(2, game.Commander().getShip().Cargo()[0], "the cargo stays on board");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToAPirateWithTheCargoInSecretBaysIsNotALooting() {
+    Game game = newGame();
+    Ship ship = game.Commander().getShip();
+    ship.AddEquipment(new Gadget(GadgetType.HiddenCargoBays, SkillType.NA, 60000, TechLevel.t8, 0));
+    ship.Cargo()[0] = ship.HiddenCargoBays();
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(ship.HasGadget(GadgetType.HiddenCargoBays), "the ship carries secret holds");
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertFalse(view.lootedCargo, "the pirate finds nothing in the secret holds");
+    assertTrue(view.logs.isEmpty(), "the hidden holds keep their cargo out of the log: " + view.logs);
+    assertEquals(5, ship.Cargo()[0], "the cargo stays hidden on board");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void surrenderingToAPirateWithMoreHiddenBaysThanCargoEndsWell() {
+    TestDialogService dialogs = new TestDialogService();
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    Ship ship = game.Commander().getShip();
+    ship.AddEquipment(new Gadget(GadgetType.HiddenCargoBays, SkillType.NA, 60000, TechLevel.t8, 0));
+    // The secret holds hide five units, but only two are on board: the old
+    // unbounded range blew up here and the surrender died.
+    ship.Cargo()[0] = 2;
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertFalse(view.lootedCargo, "with nothing in reach, no box crossed");
+    assertEquals(2, ship.Cargo()[0], "the cargo stays hidden on board");
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPiratesFindNoCargo),
+        "the pirates find nothing and blackmail instead: " + dialogs.alerts());
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result(), "the game goes on");
+  }
+
+  @Test
+  void surrenderingToAPirateWithHiddenBaysLootsOnlyWhatItCanFind() {
+    Game game = newGame();
+    Ship ship = game.Commander().getShip();
+    ship.AddEquipment(new Gadget(GadgetType.HiddenCargoBays, SkillType.NA, 60000, TechLevel.t8, 0));
+    // One bay in the open, the rest in the secret holds.
+    ship.Cargo()[0] = ship.HiddenCargoBays() + 1;
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(view.lootedCalled, "the scene is told about the looting");
+    assertTrue(view.lootedCargo, "the open bay is looted");
+    assertEquals(5, ship.Cargo()[0], "the secret holds keep their cargo");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void aPirateRefusesTheSurrenderOfThePrincessWithoutSecretBays() {
+    TestDialogService dialogs = new TestDialogService();
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    // The princess needs quarters of her own, and the ship no secret holds.
+    Ship ship = new Ship(ShipType.Beetle);
+    ship.Crew()[1] = game.Mercenaries()[CrewMemberId.Princess.CastToInt()];
+    game.Commander().setShip(ship);
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertFalse(view.lootedCalled, "a refused surrender is not a looting");
+    assertFalse(view.closed, "the encounter stays open for another decision");
+    assertEquals(EncounterResult.Continue, presenter.result());
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPiratesSurrenderPrincess), dialogs.alerts().toString());
   }
 
   @Test
@@ -138,6 +441,7 @@ class EncounterPresenterTest {
     assertEquals(hull, game.Commander().getShip().getHull(), "on Beginner fleeing is unharmed");
     assertTrue(dialogs.alerts().contains(AlertType.EncounterEscaped), dialogs.alerts().toString());
     assertTrue(view.closed);
+    assertTrue(view.escaped, "and the scene is told that the other ship loses us");
   }
 
   @Test
@@ -174,24 +478,212 @@ class EncounterPresenterTest {
     assertEquals(1, game.Commander().getShip().Cargo()[0]);
   }
 
-  private static Game newGame() {
-    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+  @Test
+  void submittingWithIllegalCargoConfiscatesAndFinesWithTheScanner() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.Commander().getShip().Cargo()[TradeItemType.Narcotics.CastToInt()] = 1;
+    game.encounter().setEncounterType(EncounterType.PoliceInspect);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.submit();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPoliceFine), dialogs.alerts().toString());
+    assertTrue(view.inspectionCalled, "the scanner runs");
+    assertTrue(view.inspectionConfiscated, "and the cargo was taken");
+    assertTrue(view.closed, "the scene waits for the player to read it");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void submittingWithOnlySpecialCargoIsArrestedButNotFined() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.setQuestStatusSculpture(SpecialEvent.StatusSculptureInTransit);
+    game.encounter().setEncounterType(EncounterType.PoliceInspect);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.submit();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPoliceSubmit), dialogs.alerts().toString());
+    assertFalse(dialogs.alerts().contains(AlertType.EncounterPoliceFine),
+        "the fine only speaks when there were goods to confiscate: " + dialogs.alerts());
+    assertTrue(view.inspectionCalled, "the scanner runs");
+    assertFalse(view.inspectionConfiscated, "there was nothing to confiscate");
+    assertEquals(EncounterResult.Arrested, presenter.result());
+  }
+
+  @Test
+  void bribingWhereThePoliceTakeNoBribesIsMetWithARefusal() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    StarSystem noBribe = noBribeSystem(game);
+    assertNotNull(noBribe, "the galaxy must have a system where the police take no bribes");
+    game.SelectedSystemId(noBribe.Id());
+    game.encounter().setEncounterType(EncounterType.PoliceInspect);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.bribe();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterPoliceBribeCant), dialogs.alerts().toString());
+    assertFalse(view.closed, "the encounter goes on: the refusal is only feedback");
+    assertEquals(EncounterResult.Continue, presenter.result());
+  }
+
+  @Test
+  void bribingTheMarieCelestePoliceIsMetWithARefusal() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.encounter().setEncounterType(EncounterType.MarieCelestePolice);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.bribe();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterMarieCelesteNoBribe), dialogs.alerts().toString());
+    assertFalse(view.closed, "the encounter goes on: the refusal is only feedback");
+    assertEquals(EncounterResult.Continue, presenter.result());
+  }
+
+  @Test
+  void theMantisWithoutTheArtifactRefusesTheSurrender() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.encounter().setOpponent(new Ship(ShipType.Mantis));
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterSurrenderRefused), dialogs.alerts().toString());
+    assertFalse(view.closed, "the encounter goes on: the refusal is only feedback");
+    assertEquals(EncounterResult.Continue, presenter.result());
+  }
+
+  @Test
+  void thePsychopathPoliceRefusesTheSurrenderAsWellAsTheMantis() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.Commander().setPoliceRecordScore(Consts.PoliceRecordScorePsychopath);
+    game.encounter().setEncounterType(EncounterType.PoliceAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertTrue(dialogs.alerts().contains(AlertType.EncounterSurrenderRefused), dialogs.alerts().toString());
+    assertFalse(view.closed, "the encounter goes on: the refusal is only feedback");
+    assertEquals(EncounterResult.Continue, presenter.result());
+  }
+
+  @Test
+  void theArrestIsSaidUnderThePoliceShipBeforeTheSceneCloses() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.encounter().setEncounterType(EncounterType.PoliceAttack);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.surrender();
+
+    assertEquals(List.of(Alerts.get(AlertType.EncounterArrested).message()), view.speechAndWaits,
+        "the arrest reads under the police ship");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Arrested, presenter.result());
+  }
+
+  @Test
+  void yieldingWithIllegalSpecialCargoIsArrestedAndSaidUnderTheShip() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.setQuestStatusSculpture(SpecialEvent.StatusSculptureInTransit);
+    game.encounter().setEncounterType(EncounterType.MarieCelestePolice);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.yield();
+
+    assertEquals(List.of(Alerts.get(AlertType.EncounterArrested).message()), view.speechAndWaits,
+        "the arrest reads under the police ship");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Arrested, presenter.result());
+  }
+
+  @Test
+  void yieldingWithoutSpecialCargoCooperatesAndTheShipSaysThePardon() {
+    TestDialogService dialogs = new TestDialogService();
+    dialogs.setResult(DialogResult.Yes);
+    Game game = gameWith(dialogs);
+    game.encounter().setEncounterType(EncounterType.MarieCelestePolice);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.yield();
+
+    assertEquals(List.of(Alerts.get(AlertType.EncounterPostMarie).message()), view.speechAndWaits,
+        "the confiscation is said under the police ship");
+    assertTrue(view.closed);
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  private static Game gameWith(TestDialogService dialogs) {
+    Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
     game.SelectedSystemId(StarSystemId.FromInt(0));
     return game;
   }
 
+  /** A system where the police take no bribes, or {@code null} if the galaxy has none. */
+  private static StarSystem noBribeSystem(Game game) {
+    for(StarSystem system : game.Universe()) {
+      if(system.PoliticalSystem().BribeLevel() <= 0) {
+        return system;
+      }
+    }
+    return null;
+  }
+
+  private static Game newGame() {
+    return gameWith(new TestDialogService());
+  }
+
   private static class FakeView implements EncounterView {
+    private final List<String> logs = new ArrayList<>();
+    private final List<String> speechAndWaits = new ArrayList<>();
     private EncounterViewModel model;
     private boolean closed;
+    private boolean loggedAfterClose;
     private boolean timer;
     private boolean jettisonShown;
+    private boolean escaped;
+    private boolean lootedCalled;
+    private boolean lootedCargo;
     private boolean plunderShown;
+    private boolean inspectionCalled;
+    private boolean inspectionConfiscated;
     private Integer cargoBuyAnswer;
     private Integer cargoSellAnswer;
 
     @Override
     public void render(EncounterViewModel model) {
       this.model = model;
+    }
+
+    @Override
+    public void log(String line) {
+      logs.add(line);
+      loggedAfterClose |= closed;
     }
 
     @Override
@@ -207,6 +699,28 @@ class EncounterPresenterTest {
     @Override
     public void stopTimer() {
       timer = false;
+    }
+
+    @Override
+    public void escaped() {
+      escaped = true;
+    }
+
+    @Override
+    public void inspection(boolean confiscated) {
+      inspectionCalled = true;
+      inspectionConfiscated = confiscated;
+    }
+
+    @Override
+    public void speechAndWait(String line) {
+      speechAndWaits.add(line);
+    }
+
+    @Override
+    public void looted(boolean cargo) {
+      lootedCalled = true;
+      lootedCargo = cargo;
     }
 
     @Override
@@ -227,6 +741,37 @@ class EncounterPresenterTest {
     @Override
     public Integer askCargoSellQuantity(CargoSellOffer offer) {
       return cargoSellAnswer;
+    }
+  }
+
+  @Test
+  void theOtherShipStopsBlockingWhenItLeavesTheFight() {
+    assertTrue(EncounterPresenter.opponentLeaves("PirateIgnore", false), "it ignores us");
+    assertTrue(EncounterPresenter.opponentLeaves("PirateFlee", false), "it flees");
+    assertFalse(EncounterPresenter.opponentLeaves("PoliceSurrender", false),
+        "it stays waiting for our decision");
+    assertFalse(EncounterPresenter.opponentLeaves("PirateSurrender", false),
+        "it stays waiting for our decision");
+    assertFalse(EncounterPresenter.opponentLeaves("TraderSurrender", false),
+        "it stays waiting for our decision");
+    assertTrue(EncounterPresenter.opponentLeaves("PirateAttack", true), "it cannot see a cloaked ship");
+    assertFalse(EncounterPresenter.opponentLeaves("PirateAttack", false), "while it attacks, it blocks");
+    assertFalse(EncounterPresenter.opponentLeaves("TraderBuy", false));
+  }
+
+  @Test
+  void thePresentedModelOfASurrenderedShipDoesNotIgnoreUs() {
+    // The scene only knows the model: the surrender must arrive there as a ship
+    // that stays, not only as a flag of the helper above.
+    for(EncounterType type : List.of(EncounterType.PoliceSurrender, EncounterType.PirateSurrender,
+        EncounterType.TraderSurrender)) {
+      Game game = newGame();
+      FakeView view = new FakeView();
+      game.encounter().setEncounterType(type);
+
+      new EncounterPresenter(game, view).start();
+
+      assertFalse(view.model.opponentIgnores(), type + " stays waiting for our decision");
     }
   }
 }

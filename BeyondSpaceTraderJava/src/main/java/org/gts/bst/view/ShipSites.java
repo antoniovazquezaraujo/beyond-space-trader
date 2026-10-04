@@ -49,6 +49,19 @@ public final class ShipSites {
       int role, int weapons, int shields, int gadgets, int pod) {
   }
 
+  /** The ship type with that name, ignoring case, or null when it is not a type. */
+  public static ShipType typeOf(String name) {
+    if(name == null) {
+      return null;
+    }
+    for(ShipType type : ShipType.values()) {
+      if(type.name().equalsIgnoreCase(name.strip())) {
+        return type;
+      }
+    }
+    return null;
+  }
+
   /** The budget of a ship type by name, or null when the name is not a type. */
   public static Budget budgetOf(String ship) {
     if(ship == null) {

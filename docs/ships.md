@@ -39,8 +39,9 @@ blink=true                   ← optional; only true or false (false by default)
   (`key=M`).
 - **In a chassis**, `size=` declares its size (`tiny`, `small`, `medium`, `large`,
   `huge` or `any`; empty means unknown). The ship editor warns when it does not
-  match the size of the ship type, so a rowing boat cannot pass for a cargo ship
-  without a warning; the hull editor sets it with `z`.
+  match the size of the ship type (`⚠ hull size: small (type: huge)`), so a
+  rowing boat cannot pass for a cargo ship without a warning; the hull editor
+  sets it with `z`.
 - **In a chassis**, `key=` with a style defines a **colour letter** (a free
   letter and the colour, background and blink it paints with:
   `key=X color=red bgcolor=blue blink=true`) and `zone=` paints a **colour
@@ -322,6 +323,9 @@ group=M x=6 y=3
 - `[nombre]` is free; `type=` names the ship type of the game specs (with no
   type, the panel cannot check the sites); `chasis=` must match a `[name]` of
   `chassis.txt` (`chassis=` is accepted too).
+- The editor keeps **one design per game type**, the 17 of `ShipType` in enum
+  order: a design whose `type=` is unknown or repeated is ignored when loading
+  and dropped when saving (the editor says how many).
 - `group=<letter> x=<n> y=<n> [n=<count>]`: a run of the same site
   letter starting at `(x,y)`, `n` letters long (one by default), in a colour.
 - Coordinates: `(0,0)` is the first stored row and column of the chassis
@@ -331,21 +335,34 @@ group=M x=6 y=3
 
 ## The editors
 
-`run-composer.sh` opens a menu with the two editors: the **ship editor** and the
-**hull editor**. Escape in an editor goes back to the menu (which reloads the
-files, so the changes are there); Escape in the menu quits.
+`run-composer.sh` opens a menu with the two editors and Quit, centred over the
+**composer's own cover** (`org/gts/bst/lanterna/composer.txt`: the SHIP EDITOR logo
+above, the shuttle and the mark below, and the middle rows free for the menu). The
+arrows and `n`/`p` move the selection, ENTER chooses the option and Escape quits
+(the menu texts are localised, like the rest of the UI). Escape in an editor goes
+back to the menu (which reloads the files, so the changes are there).
 
 Both editors have a vertical panel on the left, and the selected row of every
 list has a background of its own; each list opens with its title inside a line
 (`─ Ships ───`, `─ Elements ───`). The **ship editor** panel starts with the
-ships: every one shows its type in brackets (`mi nave [Bumblebee]`), `TAB` and
-`⇧TAB` move through the list, the open one is highlighted and `y` cycles its
-type. Then come the numbered elements: `n` and `p` move through them and the
-keys `1` to `9` pick one directly. Each element is a piece key the game may
-fill a site with (`1. Weapon (A)`), with how many the ship has against the
-maximum (and a mark: `✓` right, `⚠` missing, `✗` over, `?` without a type);
-then come the hull with its colours and the same ship with the real pieces
-painted over it.
+**17 ship types of the game, always in enum order and always complete**: every
+row is one design, its name and its type in brackets (`mi nave [Bumblebee]`),
+each in its own column, `TAB` and `⇧TAB` move through them and the open one is
+highlighted. The type is fixed: there is no `+` (a new design) and no `y` (to
+cycle the type); `t` renames the design and `f` picks its chassis. When
+`ships.txt` has no design for a type, the editor makes one in memory (named
+after the type, with the first hull of its size and no groups), so no type is
+ever editable without a design; saving writes the 17 designs in enum order, each
+with its correct `type=`, and leaves out the designs whose type is unknown or
+repeated. Then come the numbered elements: `n` and `p` move through them and the
+keys `1` to `9` pick one directly. Each element is a piece key the game may fill
+a site with, one column per field (number, key, name, `have/max` and mark:
+`1  A  Weapon  1/2  ⚠`), where the mark is `✓` right, `⚠` missing, `✗` over and
+`?` without a type. The sign colours the **whole row**: yellow when missing, red
+when over and lime when just right, while `?` (the type fixes no maximum) stays
+plain; the selected row keeps its inverted highlight over that colour. Then come
+the hull with its colours and the same ship with the real pieces painted over
+it.
 
 | Key | Action |
 | --- | --- |
@@ -354,17 +371,19 @@ painted over it.
 | `1` to `9` | Pick the element with that number |
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the element painted. The cursor moves one cell right either way |
 | `v` | Preview: cycle which piece of the element is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
-| `+` / `t` | Add a ship / rename it (title) |
-| `f` / `y` | Pick the frame (chassis) from a list / cycle the type of the open ship |
-| `TAB` / `⇧TAB` | Next / previous ship (the file keeps every design) |
-| `s` | Save every ship back to `ships.txt` |
+| `t` | Rename the open ship (it stays in its type) |
+| `f` | Pick the frame (chassis) from a list: only the hulls of the size of the type, so a type can never wear a hull of another size; a hull without size (`size=` empty or `any`) is listed as `(no size)` and takes the size of the type when picked |
+| `TAB` / `⇧TAB` | Next / previous type (the file keeps one design per type) |
+| `s` | Save every ship back to `ships.txt` (the 17 designs in enum order); when the editor has given a size to a hull, `chassis.txt` is written too |
 | `Esc` | Back to the menu |
 
 The **hull editor** paints the colours of a hull: the drawing is read only. Its
 panel lists the colour elements (`1. Cyan/Black/Blink (A)`); they are added with
 `+` and removed with `-`, and removing one also erases the letters it had
 painted. Then come the drawing with its colour letters and the same hull painted
-with those colours.
+with those colours. The size of a hull that a type is using is fixed by that
+type: `z` only cycles the size of a free hull, and on a hull in use it warns
+with the type that wears it (`⚠ in use by [Gnat] (small)`).
 
 | Key | Action |
 | --- | --- |
@@ -374,8 +393,13 @@ with those colours.
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the colour letter painted. The cursor moves one cell right either way |
 | `+` / `-` | Add a colour element (the next free letter) / remove the selected one |
 | `r` | Rename the selected element's letter (then type the letter) |
-| `t` / `f` / `i` | Cycle its colour / background / blink |
-| `z` | Cycle the size of the hull (empty, tiny, small, medium, large, huge, any) |
+| `t` / `f` / `i` | Pick its colour or its background from a list / cycle its blink |
+| `z` | Cycle the size of the hull (empty, tiny, small, medium, large, huge, any); a hull a type is using keeps the size of that type |
 | `TAB` / `⇧TAB` | Previous / next hull |
 | `s` | Save every edited hull back to `chassis.txt` |
 | `Esc` | Back to the menu |
+
+Inside an open list (the chassis with `f` in the ship editor, the colours and
+backgrounds with `t`/`f` in the hull editor) the arrows and `n`/`p` move the
+selection and ENTER picks it; outside the list `n`/`p` keep cycling the elements
+as the tables above say.

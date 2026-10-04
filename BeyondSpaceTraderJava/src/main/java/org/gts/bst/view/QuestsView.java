@@ -10,8 +10,9 @@ package org.gts.bst.view;
 
 
 /**
- * Read-only quests screen. The presenter fills a {@link QuestsViewModel}; the front-end
- * only renders it (and turns system names into links).
+ * Quests screen. The presenter fills a {@link QuestsViewModel} with one entry per open
+ * quest; the front-end lists them, moves the selection through them and, on ENTER, sets
+ * the destination of the selected entry as the map target.
  */
 public interface QuestsView {
   void render(QuestsViewModel model);

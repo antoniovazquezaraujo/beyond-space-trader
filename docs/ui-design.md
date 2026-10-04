@@ -12,6 +12,11 @@ and the presenters stay.
 - **Clean terminal.** Simple boxes and borders, a small intentional palette
   (default/green/yellow/red), no bevels, no system dialogs, no system fonts.
 - **Keyboard first.** Every action has a visible key; the mouse is optional.
+- **One move key everywhere.** In every list (the panels, the F10 menu and the alert
+  buttons) `n` moves down and `p` moves up like the arrows, with wrap-around (the
+  `n`/`p` idiom of the ship editor). The map keeps `j`/`k` for the chart cursor. In
+  the designer `R` renames the ship, because `n`/`p` are navigation there as well
+  (on the map `n`/`p` stay the newspaper and personnel shortcuts).
 - **Header:** the fields in the sketch below (commander, day, credits, debt, fuel,
   hull, shields, cargo, police record and warnings).
 - **Charts:** one at a time in the centre; `TAB` switches between the local and the
@@ -54,7 +59,7 @@ and the presenters stay.
 |                                     |  information: no keys)             |
 +-------------------------------------+------------------------------------+
 | Last message (embedded in the separator line)                            |
-| [TAB] map · [C] trade · [B] bank · [Q] quests · [N] news · [W] warp ...  |
+| [TAB] map · [C] trade · [B] bank · [Q] quests · [N] news · [Space] warp  |
 | ... [T] track · [F] fuel · [R] repairs · [I] cmdr · [V] ship ...         |
 | ... plus the actions available here ([S] ships, [E] equipment, ...)      |
 | ... and the program menu ([F10] menu) last                               |
@@ -210,7 +215,13 @@ chart is hidden; the chart comes back when the panel closes.
   - *Shipyard*: repairs, fuel, ships for sale, equipment (sections of the panel).
   - *Bank*: cash, debt, loans, insurance.
   - *Personnel*: crew/mercenaries, skills, hire/dismiss.
-  - *Quests & news*: active quests, latest news, newspaper.
+  - *Quests*: the open quests, one paragraph per quest, each one with its destination
+    system marked under the text. The arrows (or `n`/`p`) move the selection (the
+    panel scrolls to keep the selected entry visible) and ENTER sets the destination
+    of the selected entry as the map target and closes the panel; SPACE and ESC also
+    close it. An entry without a destination (the tribbles) cannot be targeted, so
+    ENTER just closes.
+  - *News*: the newspaper of the day, scrolled with the arrows (or `n`/`p`).
   - *About*: where the game comes from, the authors and the license (it mirrors the
     NOTICE file); in the menu and on the `A` key.
   - *Encounter*: replaces the panel (map dimmed); actions offered with keys
@@ -224,17 +235,17 @@ chart is hidden; the chart comes back when the panel closes.
 | Key | Action |
 | --- | --- |
 | Arrows | Move the cursor on the map or in the panel |
+| N / P | Move down / up in every list, like the arrows (the map keeps its shortcuts: N news, P personnel) |
 | hjkl | Move the cursor on the map and up/down in the lists (vim style) |
 | TAB | Local chart / galactic chart |
 | ENTER / T | Confirm / track the selected system (T again stops tracking it) |
 | / | Find a system by name and select it (asks which one if several match) |
-| ESC | Close the panel / go back / quit |
-| SPACE | Close a read-only panel (commander, ship, quests, high scores) |
+| ESC | Close the panel / go back; on the map (or through the Quit menu entry), leave the program asking first when a game is loaded, so unsaved progress is not lost by mistake |
+| SPACE | Close a read-only panel; on the map, warp to the selected system (normal trip: spends fuel and a day). With the cursor on the current system and a wormhole there, it crosses to the other end of the wormhole |
 | C | Trade panel |
 | B | Bank panel |
-| Q | Quests panel |
+| Q | Quests panel: arrows pick an entry, ENTER sets its system as the target and closes |
 | N | Newspaper panel |
-| W | Warp to the selected system (normal trip: spends fuel and a day) |
 | G | Jump with the Portable Singularity, only while it is on board |
 | F / R | Buy fuel / repair the hull |
 | F10 | Dropdown menu (scores, options, save/load, new game, about, quit) |
@@ -277,6 +288,35 @@ UI draws it in the ship panel (`V`), in the selected-ship card of the ship list 
 and in the encounter screen, with the two ships facing each other. The drawings are
 monochrome for now (colour roles come later) and the file can be edited freely: the
 game loads it at startup, and a ship without art falls back to a generic sprite.
+
+## Title splash
+
+The title screen paints the splash of `BeyondSpaceTraderJava/src/main/resources/org/gts/bst/lanterna/splash.txt`
+centred as a block, one glyph per cell, with the black screen left as the sky. The file
+is a plain drawing with a few commands:
+
+- Lines starting with `;;` are comments.
+- `color=<name>` sets the default colour of the drawing (cyan when the line is missing).
+- `zone=<name> x= y= w= h=` paints a rectangle of colour over the cells of the drawing
+  (coordinates in drawing cells, `0,0` at the top left; the last zone that catches a cell
+  wins, so a later zone can repaint part of an earlier one).
+- Every other line is part of the drawing: one character per cell, spaces left empty
+  (the black sky shows through) and a glyph the terminal paints wide taking two cells.
+
+The colour names are the ones of the ship art (`green`, `yellow`, `lime`, `cyan`...,
+see `ShipColors`). The resource is packaged inside the jar, so a change needs a
+recompile (`mvn package`) to be seen, unlike the ship art files read from `ships/`.
+When the splash is missing (or does not fit the terminal), the title falls back to
+`Strings.MainBanner` centred as a block. The animated starfield (`Starfield`) is only
+the backdrop of the encounters now.
+
+`TitleSplash.fromResource(path)` reads any other cover with the same format, and its
+`draw(graphics, left, top)` paints it at a given cell. The composer uses it for its own
+cover (`org/gts/bst/lanterna/composer.txt`): the GUI takes it as the background
+component (`new MultiWindowTextGUI(screen, new DefaultWindowManager(), cover)`), so the
+cover stays behind the centred menu window. The art leaves its middle rows free and,
+when the terminal is smaller than the drawing, the cover is left out and the black
+screen shows through.
 
 ## What happens to the current forms
 

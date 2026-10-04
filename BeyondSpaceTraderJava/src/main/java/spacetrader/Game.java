@@ -996,6 +996,9 @@ public final class Game extends STSerializableObject {
         setQuestStatusExperiment(SpecialEvent.StatusExperimentStarted);
         break;
       case ExperimentFailed:
+        // The failure is narrative only: it changes neither the ship nor the quest,
+        // so the event is kept in the system for the player to reread its story.
+        remove = false;
         break;
       case ExperimentStopped:
         setQuestStatusExperiment(SpecialEvent.StatusExperimentCancelled);
@@ -1017,6 +1020,11 @@ public final class Game extends STSerializableObject {
       case GemulonRescued:
         curSys.SpecialEventType(SpecialEventType.GemulonFuel);
         setQuestStatusGemulon(SpecialEvent.StatusGemulonFuel);
+        remove = false;
+        break;
+      case GemulonInvaded:
+        // Like ExperimentFailed, the invasion report is narrative only: the event is
+        // kept so its bad news can be read again instead of vanishing.
         remove = false;
         break;
       case Japori:

@@ -34,5 +34,39 @@ public interface EncounterView {
   Integer askCargoBuyQuantity(CargoBuyOffer offer);
 
   Integer askCargoSellQuantity(CargoSellOffer offer);
+
+  /** One more line of the log of the scene, to read while the scene waits. */
+  default void log(String line) {
+  }
+
+  /**
+   * A quiet alert of the game that the other ship says aloud, as a bubble under it.
+   * It is feedback of an action: the next part, round or action takes it away.
+   */
+  default void speech(String line) {
+  }
+
+  /**
+   * Like {@link #speech(String)}, but the scene stays waiting for the player to read
+   * it (the encounter closes when they leave). For the alerts that end the encounter.
+   */
+  default void speechAndWait(String line) {
+  }
+
+  /**
+   * You got away while fleeing: the camera follows you, so you stay in the
+   * scene and the other ship (behind you) is the one that leaves it.
+   */
+  default void escaped() {
+  }
+
+  /** The police inspecting the ship: the scanner, and the catwalk if they take cargo. */
+  default void inspection(boolean confiscated) {
+  }
+
+  /** The pirates looting the ship: the catwalk and the boxes if they take cargo. */
+  default void looted(boolean cargo) {
+  }
+
 }
 

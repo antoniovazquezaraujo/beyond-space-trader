@@ -27,6 +27,38 @@ public interface DialogService {
    */
   DialogResult alert(AlertType type, String... messageArgs);
 
+  /**
+   * Shows a plain message with a single OK button. The title and the message arrive
+   * already resolved: this is the free-text companion of {@link #alert}, for the
+   * texts that live outside the predefined alerts.
+   *
+   * <p>The default implementation returns {@link DialogResult#None}: with no user
+   * interface there is nobody to acknowledge the message, so the caller must not
+   * apply the action behind it. Front-ends override it to really ask.
+   *
+   * @param title the window title
+   * @param message the body text
+   * @return the button the player pressed, never null
+   */
+  default DialogResult message(String title, String message) {
+    return DialogResult.None;
+  }
+
+  /**
+   * Asks a yes/no question over an already resolved text.
+   *
+   * <p>The default implementation returns {@link DialogResult#None}, not a Yes: a
+   * service without a user interface cannot consent, so the caller must not apply
+   * the action behind the question. Front-ends override it to really ask.
+   *
+   * @param title the window title
+   * @param message the question
+   * @return Yes, No or None when nobody could answer, never null
+   */
+  default DialogResult confirm(String title, String message) {
+    return DialogResult.None;
+  }
+
   DialogService NONE = new DialogService() {
     @Override
     public DialogResult alert(AlertType type, String... messageArgs) {

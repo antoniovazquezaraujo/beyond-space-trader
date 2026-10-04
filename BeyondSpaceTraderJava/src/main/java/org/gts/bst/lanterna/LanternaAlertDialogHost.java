@@ -43,9 +43,13 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
       return DialogResult.None;
     }
     DialogResult[] chosen = {buttons.get(0).result()};
+    List<Button> row = new ArrayList<>();
     BasicWindow dialog = new BasicWindow(title) {
       @Override
       public boolean handleInput(KeyStroke key) {
+        if(moveButtonFocus(row, this, key)) {
+          return true;
+        }
         if(key.getKeyType() == KeyType.Escape) {
           chosen[0] = cancelResult(buttons);
           close();
@@ -62,19 +66,20 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
     Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
     panel.addComponent(new Label(wrapped(message)));
     panel.addComponent(new EmptySpace(TerminalSize.ONE));
-    Panel row = new Panel(new LinearLayout(Direction.HORIZONTAL));
+    Panel buttonRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
     Button first = null;
     for(AlertButton button : buttons) {
       Button component = new Button(button.text(), () -> {
         chosen[0] = button.result();
         dialog.close();
       });
-      row.addComponent(component);
+      buttonRow.addComponent(component);
+      row.add(component);
       if(first == null) {
         first = component;
       }
     }
-    panel.addComponent(row);
+    panel.addComponent(buttonRow);
     dialog.setComponent(panel);
     if(first != null) {
       dialog.setFocusedInteractable(first);
@@ -82,6 +87,27 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
     gui.addWindow(dialog);
     gui.waitForWindowToClose(dialog);
     return chosen[0];
+  }
+
+  /**
+   * The n/p keys move the focus along the row of buttons (down/up), wrapping
+   * around; any other key is left to the dialog.
+   */
+  private static boolean moveButtonFocus(List<Button> row, BasicWindow dialog, KeyStroke key) {
+    if(row.isEmpty() || key.getKeyType() != KeyType.Character) {
+      return false;
+    }
+    char character = Character.toLowerCase(key.getCharacter());
+    if(character != 'n' && character != 'p') {
+      return false;
+    }
+    int current = row.indexOf(dialog.getFocusedInteractable());
+    // No button focused: n picks the first and p the last.
+    int next = current < 0
+        ? (character == 'n' ? 0 : row.size() - 1)
+        : Math.floorMod(current + (character == 'n' ? 1 : -1), row.size());
+    dialog.setFocusedInteractable(row.get(next));
+    return true;
   }
 
   /** The message wrapped to a width that fits in the terminal. */

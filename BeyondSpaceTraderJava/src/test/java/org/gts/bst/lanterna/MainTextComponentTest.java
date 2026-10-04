@@ -9,8 +9,11 @@
 package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import org.gts.bst.view.QuestsViewModel;
 import org.junit.jupiter.api.Test;
 
 
@@ -32,6 +35,48 @@ class MainTextComponentTest {
 
     component.moveNewsScroll(1000);
     assertEquals(component.newsLineCount() - 1, component.newsScroll());
+  }
+
+  @Test
+  void movesTheQuestSelectionAndReadsItsDestination() {
+    MainTextComponent component = new MainTextComponent(() -> null, key -> false);
+    component.quests(new QuestsViewModel(List.of(
+        new QuestsViewModel.Entry("Deliver the reactor to Nix.", "Nix"),
+        new QuestsViewModel.Entry("Get rid of those pesky tribbles.", null))));
+
+    assertEquals(2, component.questCount());
+    assertEquals(0, component.questIndex());
+    assertEquals("Nix", component.selectedQuestSystem());
+
+    component.moveQuestSelection(1);
+    assertEquals(1, component.questIndex());
+    assertNull(component.selectedQuestSystem());
+
+    component.moveQuestSelection(1);
+    assertEquals(0, component.questIndex(), "the selection wraps around");
+
+    // Many presses in either direction stay inside the list: the index wraps
+    // instead of overflowing.
+    component.moveQuestSelection(999);
+    assertEquals(1, component.questIndex(), "999 presses wrap without overflowing");
+    assertNull(component.selectedQuestSystem());
+    component.moveQuestSelection(-1000);
+    assertEquals(1, component.questIndex(), "1000 presses up wrap without underflowing");
+  }
+
+  @Test
+  void aSingleQuestEntryKeepsTheSelectionWhenMovingEitherWay() {
+    MainTextComponent component = new MainTextComponent(() -> null, key -> false);
+    component.quests(new QuestsViewModel(List.of(
+        new QuestsViewModel.Entry("Deliver the moon to Utopia.", "Utopia"))));
+
+    component.moveQuestSelection(1);
+    assertEquals(0, component.questIndex(), "down on the only entry wraps onto it");
+    assertEquals("Utopia", component.selectedQuestSystem());
+
+    component.moveQuestSelection(-1);
+    assertEquals(0, component.questIndex(), "up on the only entry wraps onto it");
+    assertEquals("Utopia", component.selectedQuestSystem());
   }
 
   @Test
