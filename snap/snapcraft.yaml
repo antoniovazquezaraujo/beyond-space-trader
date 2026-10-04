@@ -8,6 +8,10 @@ description: |
 
   The snap bundles its own Java runtime (jlink) and works offline.
 
+license: GPL-3.0-or-later
+contact: https://github.com/antoniovazquezaraujo/beyond-space-trader/issues
+issues: https://github.com/antoniovazquezaraujo/beyond-space-trader/issues
+
 grade: stable
 confinement: strict
 
