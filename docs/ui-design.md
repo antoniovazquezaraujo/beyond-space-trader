@@ -13,10 +13,10 @@ and the presenters stay.
   (default/green/yellow/red), no bevels, no system dialogs, no system fonts.
 - **Keyboard first.** Every action has a visible key; the mouse is optional.
 - **One move key everywhere.** In every list (the panels, the F10 menu and the alert
-  buttons) `n` moves down and `p` moves up like the arrows, with wrap-around, as in
-  the ship editor; `j`/`k` keep working too. In the designer `R` renames the ship,
-  because `n`/`p` are navigation there as well (on the map `n`/`p` stay the newspaper
-  and personnel shortcuts).
+  buttons) `n` moves down and `p` moves up like the arrows, with wrap-around (the
+  `n`/`p` idiom of the ship editor). The map keeps `j`/`k` for the chart cursor. In
+  the designer `R` renames the ship, because `n`/`p` are navigation there as well
+  (on the map `n`/`p` stay the newspaper and personnel shortcuts).
 - **Header:** the fields in the sketch below (commander, day, credits, debt, fuel,
   hull, shields, cargo, police record and warnings).
 - **Charts:** one at a time in the centre; `TAB` switches between the local and the
