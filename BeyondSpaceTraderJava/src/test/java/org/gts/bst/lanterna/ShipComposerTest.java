@@ -50,7 +50,9 @@ class ShipComposerTest {
       assertEquals(TextColor.ANSI.CYAN, star.getForegroundColor());
 
       // The centred menu rides in the free band: logo and mark stay whole behind it.
-      assertTrue(screenText(screen).contains("Ships: design the ships"), screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.ComposerShips), screenText(screen));
+      assertFalse(screenText(screen).contains("ENTER"),
+          "the menu keeps to its three entries, with no keys line: " + screenText(screen));
       assertEquals('⣿', screen.getBackCharacter(37, 0).getCharacter(), "the menu starts below the logo");
       assertEquals('_', screen.getBackCharacter(31, 24).getCharacter(), "the menu ends above the shuttle");
       assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(62, 25).getForegroundColor(),
@@ -72,7 +74,7 @@ class ShipComposerTest {
       gui.updateScreen();
 
       assertEquals(' ', screen.getBackCharacter(5, 1).getCharacter(), "the cover does not fit: it is not painted");
-      assertTrue(screenText(screen).contains("Ships:"), "the menu is still drawn: " + screenText(screen));
+      assertTrue(screenText(screen).contains(Strings.ComposerShips), "the menu is still drawn: " + screenText(screen));
 
       // And it still responds: n moves to the hull editor and ENTER chooses it.
       menu.handleInput(new KeyStroke('n', false, false));

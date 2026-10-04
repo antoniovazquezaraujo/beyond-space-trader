@@ -11,11 +11,7 @@ package org.gts.bst.lanterna;
 import com.googlecode.lanterna.gui2.ActionListBox;
 import com.googlecode.lanterna.gui2.BasicWindow;
 import com.googlecode.lanterna.gui2.DefaultWindowManager;
-import com.googlecode.lanterna.gui2.Direction;
-import com.googlecode.lanterna.gui2.Label;
-import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
-import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -117,10 +113,7 @@ public final class ShipComposer {
       menu.addItem(Strings.ComposerShips, () -> choose(0));
       menu.addItem(Strings.ComposerHulls, () -> choose(1));
       menu.addItem(Strings.ComposerQuit, () -> choose(QUIT));
-      Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
-      panel.addComponent(menu);
-      panel.addComponent(new Label(Strings.ComposerKeys));
-      setComponent(panel);
+      setComponent(menu);
       setHints(Set.of(Window.Hint.CENTERED));
       setFocusedInteractable(menu);
     }

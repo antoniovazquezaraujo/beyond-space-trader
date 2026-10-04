@@ -80,20 +80,17 @@ class StringsSpanishTest {
   }
 
   /**
-   * The composer menu, its keys line, its Quit row and the editor titles are
-   * localised: a test running in en_US would not notice a broken Spanish text
-   * otherwise.
+   * The composer menu, its Quit row and the editor titles are localised: a test
+   * running in en_US would not notice a broken Spanish text otherwise.
    */
   @Test
   void theComposerTextsAreLocalisedInBothBundles() throws IOException {
     Properties english = properties("Strings.properties");
     Properties spanish = properties("Strings_es.properties");
     String[][] texts = {
-      {"ComposerShips", "Ships: design the ships (keys and pieces)", "Naves: diseñar las naves (teclas y piezas)"},
-      {"ComposerHulls", "Hulls: paint the hulls' colours", "Cascos: pintar los colores de los cascos"},
+      {"ComposerShips", "Ship design", "Diseño de naves"},
+      {"ComposerHulls", "Hull paint", "Pintar cascos"},
       {"ComposerQuit", "Quit", "Salir"},
-      {"ComposerKeys", "[↑↓/N/P] move · [ENTER] choose · [ESC] back",
-        "[↑↓/N/P] mover · [INTRO] elegir · [ESC] volver"},
       {"EditorShipTitle", "ship editor", "editor de naves"},
       {"EditorHullTitle", "hull editor", "editor de cascos"},
       {"EditorHullNamed", "hulls: ^1", "cascos: ^1"},

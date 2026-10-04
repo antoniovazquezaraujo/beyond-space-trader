@@ -542,7 +542,6 @@ public final class Strings {
   public static final String ComposerShips = text("ComposerShips");
   public static final String ComposerHulls = text("ComposerHulls");
   public static final String ComposerQuit = text("ComposerQuit");
-  public static final String ComposerKeys = text("ComposerKeys");
   public static final String EditorShipTitle = text("EditorShipTitle");
   public static final String EditorHullTitle = text("EditorHullTitle");
   public static final String EditorHullNamed = text("EditorHullNamed");
