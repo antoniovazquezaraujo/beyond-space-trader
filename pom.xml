@@ -43,7 +43,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.2</version>
+        <version>3.6.0</version>
         <configuration>
           <!-- The tests run against the English bundle whatever the machine locale is
                (systemPropertyVariables are set after the JVM starts, too late for the
