@@ -27,7 +27,8 @@ parts:
       - coreutils
     override-build: |
       cd "$CRAFT_PART_SRC"
-      export PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH
+      export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+      export PATH="$JAVA_HOME/bin:$PATH"
       mvn -B -ntp clean package -DskipTests
 
       mkdir -p "$CRAFT_PART_INSTALL/bin"
