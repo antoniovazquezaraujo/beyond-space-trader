@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
@@ -48,6 +49,43 @@ class LanternaAlertDialogHostTest {
     DialogResult answer = answerWith(new KeyStroke(KeyType.Escape),
         List.of(new AlertButton("Ok", DialogResult.OK)));
     assertEquals(DialogResult.OK, answer);
+  }
+
+  @Test
+  void nAndPMoveTheFocusBetweenTheButtonsWithWrap() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaAlertDialogHost host = new LanternaAlertDialogHost(gui);
+      DialogResult[] answer = new DialogResult[1];
+      List<AlertButton> buttons = List.of(
+          new AlertButton("Yes", DialogResult.Yes),
+          new AlertButton("No", DialogResult.No),
+          new AlertButton("Cancel", DialogResult.Cancel));
+      Thread worker = new Thread(() -> answer[0] = host.show("Title", "Message", buttons));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui);
+
+      assertEquals("Yes", ((Button)dialog.getFocusedInteractable()).getLabel());
+      // p wraps up to the last button and n walks down again (uppercase works too).
+      dialog.handleInput(new KeyStroke('p', false, false));
+      assertEquals("Cancel", ((Button)dialog.getFocusedInteractable()).getLabel());
+      dialog.handleInput(new KeyStroke('n', false, false));
+      assertEquals("Yes", ((Button)dialog.getFocusedInteractable()).getLabel());
+      dialog.handleInput(new KeyStroke('N', false, false));
+      assertEquals("No", ((Button)dialog.getFocusedInteractable()).getLabel());
+
+      // ENTER keeps choosing the focused button.
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the dialog should close with ENTER");
+      assertEquals(DialogResult.No, answer[0]);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
   }
 
   @Test

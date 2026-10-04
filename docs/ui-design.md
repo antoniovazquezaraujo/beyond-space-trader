@@ -12,6 +12,11 @@ and the presenters stay.
 - **Clean terminal.** Simple boxes and borders, a small intentional palette
   (default/green/yellow/red), no bevels, no system dialogs, no system fonts.
 - **Keyboard first.** Every action has a visible key; the mouse is optional.
+- **One move key everywhere.** In every list (the panels, the F10 menu and the alert
+  buttons) `n` moves down and `p` moves up like the arrows, with wrap-around, as in
+  the ship editor; `j`/`k` keep working too. In the designer `R` renames the ship,
+  because `n`/`p` are navigation there as well (on the map `n`/`p` stay the newspaper
+  and personnel shortcuts).
 - **Header:** the fields in the sketch below (commander, day, credits, debt, fuel,
   hull, shields, cargo, police record and warnings).
 - **Charts:** one at a time in the centre; `TAB` switches between the local and the
@@ -211,11 +216,12 @@ chart is hidden; the chart comes back when the panel closes.
   - *Bank*: cash, debt, loans, insurance.
   - *Personnel*: crew/mercenaries, skills, hire/dismiss.
   - *Quests*: the open quests, one paragraph per quest, each one with its destination
-    system marked under the text. The arrows move the selection (the panel scrolls to
-    keep the selected entry visible) and ENTER sets the destination of the selected
-    entry as the map target and closes the panel; SPACE and ESC also close it. An entry
-    without a destination (the tribbles) cannot be targeted, so ENTER just closes.
-  - *News*: the newspaper of the day, scrolled with the arrows.
+    system marked under the text. The arrows (or `n`/`p`) move the selection (the
+    panel scrolls to keep the selected entry visible) and ENTER sets the destination
+    of the selected entry as the map target and closes the panel; SPACE and ESC also
+    close it. An entry without a destination (the tribbles) cannot be targeted, so
+    ENTER just closes.
+  - *News*: the newspaper of the day, scrolled with the arrows (or `n`/`p`).
   - *About*: where the game comes from, the authors and the license (it mirrors the
     NOTICE file); in the menu and on the `A` key.
   - *Encounter*: replaces the panel (map dimmed); actions offered with keys
@@ -229,6 +235,7 @@ chart is hidden; the chart comes back when the panel closes.
 | Key | Action |
 | --- | --- |
 | Arrows | Move the cursor on the map or in the panel |
+| N / P | Move down / up in every list, like the arrows (the map keeps its shortcuts: N news, P personnel) |
 | hjkl | Move the cursor on the map and up/down in the lists (vim style) |
 | TAB | Local chart / galactic chart |
 | ENTER / T | Confirm / track the selected system (T again stops tracking it) |

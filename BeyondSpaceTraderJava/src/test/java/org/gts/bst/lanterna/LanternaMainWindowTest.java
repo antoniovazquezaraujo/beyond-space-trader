@@ -47,6 +47,7 @@ import org.gts.bst.view.LanternaDialogService;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import spacetrader.Consts;
+import spacetrader.CrewMember;
 import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.SpecialEvent;
@@ -454,6 +455,47 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theTradeNAndPMoveTheSelectionAndTheBKeyStillBuys() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      // The first item has stock, so the max-buy shortcut has something to buy.
+      holder[0].Commander().CurrentSystem().TradeItems()[0] = 50;
+      holder[0].Commander().setCash(100000);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Water"), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Furs"), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Water"), screenText(screen));
+
+      // Shift+B (the uppercase letter) buys the maximum without asking.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('B', false, false));
+      gui.updateScreen();
+      assertTrue(holder[0].Commander().getShip().Cargo()[0] > 0,
+          "the B shortcut keeps buying after the n/p navigation");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void opensTheBankAndQuestsPanels() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -552,6 +594,46 @@ class LanternaMainWindowTest {
       assertSame(holder[0].Universe()[StarSystemId.Utopia.CastToInt()], holder[0].SelectedSystem(),
           "the arrow moved the selection to the second quest");
       assertNotSame(holder[0].Universe()[StarSystemId.Acamar.CastToInt()], holder[0].SelectedSystem());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theQuestsNAndPMoveTheSelection() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      holder[0].setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterAtAcamar);
+      holder[0].setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertSame(holder[0].Universe()[StarSystemId.Utopia.CastToInt()], holder[0].SelectedSystem(),
+          "n moves down to the second quest");
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertSame(holder[0].Universe()[StarSystemId.Acamar.CastToInt()], holder[0].SelectedSystem(),
+          "p moves back up to the first quest");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -819,6 +901,92 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theMapKeepsNAndPAsNewsAndPersonnel() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // On the map n and p keep opening the newspaper and the personnel panels.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.NewsTitle), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.PersonnelTitle), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void thePersonnelNAndPMoveTheSelectionAndTheHKeyStillReachesThePresenter() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      // Two mercenaries in one system: the list has two rows to move between.
+      CrewMember[] mercs = holder[0].Mercenaries();
+      StarSystem system = holder[0].Universe()[0];
+      int moved = 0;
+      for(int i = 1; i < mercs.length && moved < 2; i++) {
+        if(mercs[i] != null) {
+          mercs[i].CurrentSystem(system);
+          moved++;
+        }
+      }
+      assertEquals(2, moved, "the universe must have two mercenaries");
+      holder[0].Commander().CurrentSystem(system);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.PersonnelTitle), screenText(screen));
+      int firstRow = selectedRow(screen);
+      assertTrue(firstRow > 0, "a personnel row is selected: " + screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      int downRow = selectedRow(screen);
+      assertTrue(downRow > firstRow, "n moves the personnel selection down: " + screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertEquals(firstRow, selectedRow(screen), "p moves the personnel selection back up");
+
+      // H still reaches the presenter: the Gnat has no free crew quarter, so it
+      // answers with its own alert instead of hiring.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('h', false, false));
+      gui.updateScreen();
+      assertTrue(dialogs.alerts().contains(AlertType.CrewNoQuarters),
+          "the H key still reaches the personnel presenter: " + dialogs.alerts());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theShipPanelListsTheCargoWithItsAverageCost() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -990,6 +1158,110 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theShipListNAndPMoveTheSelectionAndTheBKeyStillBuys() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      // The most technological system sells the Firefly, so the third row is buyable.
+      StarSystem best = holder[0].Universe()[0];
+      for(StarSystem candidate : holder[0].Universe()) {
+        if(candidate.TechLevel().ordinal() > best.TechLevel().ordinal()) {
+          best = candidate;
+        }
+      }
+      holder[0].Commander().CurrentSystem(best);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('s', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Flea"), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Gnat"), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Flea"), screenText(screen));
+
+      // B keeps buying: the handler runs on the third (buyable) row and the cursor
+      // returns to the first ship; without it the cursor would stay on the Firefly.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Firefly"), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('b', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Flea"),
+          "the B shortcut keeps working after the n/p navigation: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theEquipmentNAndPMoveTheSelectionAndTheBKeyStillReachesThePresenter() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      // The most technological system sells every weapon, so the buy list starts
+      // with the pulse and beam lasers.
+      StarSystem best = holder[0].Universe()[0];
+      for(StarSystem candidate : holder[0].Universe()) {
+        if(candidate.TechLevel().ordinal() > best.TechLevel().ordinal()) {
+          best = candidate;
+        }
+      }
+      holder[0].Commander().CurrentSystem(best);
+      holder[0].Commander().setCash(1000000);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      String pulse = Consts.EquipmentForSale.get(0).Name();
+      String beam = Consts.EquipmentForSale.get(1).Name();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('e', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> " + pulse), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> " + beam), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> " + pulse), screenText(screen));
+
+      // B still buys: the starting Gnat already mounts a pulse laser and has no
+      // free weapon slot, so the presenter answers with its own alert (proving
+      // the key was not eaten by the navigation).
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('b', false, false));
+      gui.updateScreen();
+      assertTrue(dialogs.alerts().contains(AlertType.EquipmentNotEnoughSlots),
+          "the B key still reaches the equipment presenter: " + dialogs.alerts());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theShiftHintAlsoAcceptsTheUppercaseLetter() {
     // Most terminals do not report the shift modifier for letters: Shift+B arrives
     // as 'B', so the uppercase letter must count as "all".
@@ -998,6 +1270,21 @@ class LanternaMainWindowTest {
     assertFalse(LanternaMainWindow.allAmount(new KeyStroke('b', false, false)));
     assertFalse(LanternaMainWindow.allAmount(new KeyStroke('s', false, false)));
     assertTrue(LanternaMainWindow.allAmount(new KeyStroke('B', true, false)));
+  }
+
+  @Test
+  void theListKeysTurnNAndPIntoTheArrows() {
+    assertEquals(KeyType.ArrowDown, LanternaMainWindow.listKey(new KeyStroke('n', false, false)).getKeyType());
+    assertEquals(KeyType.ArrowDown, LanternaMainWindow.listKey(new KeyStroke('N', false, false)).getKeyType());
+    assertEquals(KeyType.ArrowUp, LanternaMainWindow.listKey(new KeyStroke('p', false, false)).getKeyType());
+    assertEquals(KeyType.ArrowUp, LanternaMainWindow.listKey(new KeyStroke('P', true, false)).getKeyType());
+    // The other letters of the panels keep their own meaning.
+    for(char letter : new char[] {'b', 's', 'h', 'c', 'v', 'r', 'j', 'k', 'q'}) {
+      KeyStroke stroke = new KeyStroke(letter, false, false);
+      assertSame(stroke, LanternaMainWindow.listKey(stroke), "listKey must not touch " + letter);
+    }
+    KeyStroke arrow = new KeyStroke(KeyType.ArrowUp);
+    assertSame(arrow, LanternaMainWindow.listKey(arrow), "listKey must not touch the arrows");
   }
 
   @Test
@@ -1752,6 +2039,45 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theOptionsNAndPMoveTheSelection() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F8));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionAutoFuel, Strings.OptionsOff)), screenText(screen));
+
+      // n moves down to "Auto-repair" and ENTER toggles it.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionAutoRepair, Strings.OptionsOn)), screenText(screen));
+
+      // p comes back up to "Auto-fuel" and ENTER toggles it too.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionAutoFuel, Strings.OptionsOn)), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void opensTheDesignerAtAShipyard() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -1783,6 +2109,71 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertFalse(screenText(screen).contains(Strings.DesignerConstruct));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theDesignerNAndPMoveTheSelectionAndRNamesTheDesign() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      StarSystem shipyard = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system.Shipyard() != null) {
+          shipyard = system;
+          break;
+        }
+      }
+      assertNotNull(shipyard, "the universe must have shipyards");
+      holder[0].Commander().CurrentSystem(shipyard);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('d', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Size:"), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Template:"), screenText(screen));
+      assertFalse(screenText(screen).contains("> Size:"), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Size:"), screenText(screen));
+
+      // n no longer renames: it navigates, so no dialog opens and the marker moves.
+      Thread probe = new Thread(() -> window.asWindow().getFocusedInteractable()
+          .handleInput(new KeyStroke('n', false, false)));
+      probe.setDaemon(true);
+      probe.start();
+      probe.join(500);
+      assertFalse(probe.isAlive(), "n must navigate in the designer, not open the rename dialog");
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("> Template:"), screenText(screen));
+
+      // r renames the design again.
+      Thread worker = new Thread(() -> window.asWindow().getFocusedInteractable()
+          .handleInput(new KeyStroke('r', false, false)));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui, window.asWindow());
+      type(dialog, "Halcon");
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the rename should end when the name is accepted");
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("Halcon"), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -1848,6 +2239,49 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theNewsNAndPScrollThePaper() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      // A moon story in a nearby system gives the paper more than one line.
+      StarSystem near = null;
+      for(StarSystem candidate : holder[0].Universe()) {
+        if(candidate != holder[0].Commander().CurrentSystem() && candidate.DestOk()) {
+          near = candidate;
+          break;
+        }
+      }
+      assertNotNull(near, "the current system must have a neighbour in range");
+      near.SpecialEventType(SpecialEventType.Moon);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.NewsTitle), screenText(screen));
+
+      String top = screenText(screen);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertNotEquals(top, screenText(screen), "n scrolls the paper down");
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertEquals(top, screenText(screen), "p scrolls the paper back up");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void opensTheMenuAndActivatesAnEntry() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -1876,6 +2310,43 @@ class LanternaMainWindowTest {
       gui.updateScreen();
       assertTrue(screenText(screen).contains(Strings.OptionsTitle), screenText(screen));
       assertFalse(screenText(screen).contains(Strings.MenuQuit), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theMenuNAndPMoveTheSelection() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // The menu starts on "High scores": n goes down to "Options".
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F10));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.OptionsTitle), screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+
+      // p comes back up: from "Options" the cursor returns to "High scores".
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F10));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('n', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.HighScoresTitle), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
@@ -3272,6 +3743,20 @@ class LanternaMainWindowTest {
       case Utopia -> game.setQuestStatusMoon(SpecialEvent.StatusMoonBought);
       default -> throw new IllegalArgumentException("no quest points at " + id);
     }
+  }
+
+  /** The first painted row of the right-hand panel with a selected (cyan) row, or -1. */
+  private static int selectedRow(Screen screen) {
+    int columns = screen.getTerminalSize().getColumns();
+    int from = Math.max(0, columns - 60);
+    for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
+      for(int x = from; x < columns; x++) {
+        if(screen.getBackCharacter(x, y).getBackgroundColor() == UiPalette.SELECTED_BG) {
+          return y;
+        }
+      }
+    }
+    return -1;
   }
 
   /** Whether the quests panel (the last 60 columns) paints a selected row. */

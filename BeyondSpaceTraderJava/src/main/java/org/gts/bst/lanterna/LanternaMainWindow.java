@@ -508,6 +508,25 @@ public final class LanternaMainWindow
     return true;
   }
 
+  /**
+   * The n/p keys of a list: n goes down and p goes up like the arrows, as in the
+   * ship editor. Any other key is returned untouched, so the letters of the
+   * panels keep their own meaning.
+   */
+  static KeyStroke listKey(KeyStroke key) {
+    if(key.getKeyType() != KeyType.Character) {
+      return key;
+    }
+    char character = Character.toLowerCase(key.getCharacter());
+    if(character == 'n') {
+      return new KeyStroke(KeyType.ArrowDown, false, false);
+    }
+    if(character == 'p') {
+      return new KeyStroke(KeyType.ArrowUp, false, false);
+    }
+    return key;
+  }
+
   private boolean handleBankKey(KeyStroke key) {
     if(key.getKeyType() != KeyType.Character || bankPresenter == null) {
       return false;
@@ -660,6 +679,7 @@ public final class LanternaMainWindow
   }
 
   private boolean handleDesignerKey(KeyStroke key) {
+    key = listKey(key);
     ShipyardDesignerViewModel model = content.designer();
     if(shipyardPresenter == null || model == null) {
       return false;
@@ -679,7 +699,7 @@ public final class LanternaMainWindow
         return activateDesignerField(model);
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
-        if(character == 'n') {
+        if(character == 'r') {
           askDesignerName(model);
           return true;
         }
@@ -775,6 +795,7 @@ public final class LanternaMainWindow
   }
 
   private boolean handleOptionsKey(KeyStroke key) {
+    key = listKey(key);
     Game game = gameSupplier.get();
     if(game == null) {
       return false;
@@ -920,6 +941,7 @@ public final class LanternaMainWindow
   }
 
   private boolean handleShipListKey(KeyStroke key) {
+    key = listKey(key);
     if(shipListPresenter == null) {
       return false;
     }
@@ -957,6 +979,7 @@ public final class LanternaMainWindow
   }
 
   private boolean handleEquipmentKey(KeyStroke key) {
+    key = listKey(key);
     if(equipmentPresenter == null) {
       return false;
     }
@@ -1068,6 +1091,7 @@ public final class LanternaMainWindow
   }
 
   private boolean handlePersonnelKey(KeyStroke key) {
+    key = listKey(key);
     if(personnelPresenter == null) {
       return false;
     }
@@ -1191,6 +1215,7 @@ public final class LanternaMainWindow
   }
 
   private boolean handleTradeKey(KeyStroke key) {
+    key = listKey(key);
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveItemSelection(-1);
@@ -1554,6 +1579,7 @@ public final class LanternaMainWindow
   }
 
   private boolean handleMenuKey(KeyStroke key) {
+    key = listKey(key);
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveMenuSelection(-1);
@@ -1677,6 +1703,7 @@ public final class LanternaMainWindow
    * closing it.
    */
   private boolean handleQuestsKey(KeyStroke key) {
+    key = listKey(key);
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveQuestSelection(-1);
@@ -1712,6 +1739,7 @@ public final class LanternaMainWindow
   }
 
   private boolean handleNewsKey(KeyStroke key) {
+    key = listKey(key);
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveNewsScroll(-1);
