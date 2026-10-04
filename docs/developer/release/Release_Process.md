@@ -81,13 +81,13 @@ El workflow también se puede lanzar a mano desde la pestaña **Actions** (`work
 
 En cada tag `v*`, después de subir los zips a la Release de GitHub, el workflow `release` publica también los mismos artefactos en itch.io con [butler](https://itch.io/docs/butler/) (`.github/workflows/release.yml`):
 
-- La máquina Linux sube `BeyondSpaceTrader-Linux.zip` al canal `linux` del proyecto `avaraujo/beyond-space-trader`.
+- La máquina Linux sube `BeyondSpaceTrader-Linux.zip` al canal `linux` del proyecto `avaraujo/beyond-space-trader-tui`.
 - La máquina Windows sube `BeyondSpaceTrader-Windows.zip` al canal `windows`.
 - La versión que verá el jugador es el propio nombre de la etiqueta (`github.ref_name`, por ejemplo `v0.1.0`).
 
 ### Alta (solo el dueño)
 
-1. Crear el proyecto `beyond-space-trader` en itch.io (cuenta `avaraujo`) con los canales `linux` y `windows`.
+1. Crear el proyecto `beyond-space-trader-tui` en itch.io (cuenta `avaraujo`) con los canales `linux` y `windows`.
 2. Generar una API key de butler en **Account settings → API keys** y guardarla como secreto **`BUTLER_API_KEY`** en el repositorio (Settings → Secrets and variables → Actions). El workflow la pasa a butler en la variable de entorno del mismo nombre.
 
 ### Flujo
