@@ -102,11 +102,10 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
       return false;
     }
     int current = row.indexOf(dialog.getFocusedInteractable());
-    if(current < 0) {
-      // No button focused: n picks the first and p the last.
-      current = 0;
-    }
-    int next = Math.floorMod(current + (character == 'n' ? 1 : -1), row.size());
+    // No button focused: n picks the first and p the last.
+    int next = current < 0
+        ? (character == 'n' ? 0 : row.size() - 1)
+        : Math.floorMod(current + (character == 'n' ? 1 : -1), row.size());
     dialog.setFocusedInteractable(row.get(next));
     return true;
   }
