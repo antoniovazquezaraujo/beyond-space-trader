@@ -4,7 +4,7 @@
 - **Fecha**: 2026-09-29
 - **Sustituye en parte al**: [ADR 0001](0001-diseno-de-naves.md) — las letras ya
   no viven en el dibujo del chasis, y hay **dos editores separados**.
-- **Referencias**: `docs/ships.md`
+- **Referencias**: `docs/developer/ships.md`
 
 ## Contexto
 
@@ -41,7 +41,7 @@ quiere colorear el casco por zonas y no mezclar esa tarea con la de montar naves
    el fichero de fuselajes y las letras de las piezas en el de naves; cada editor
    tiene su propia lista. Así ninguna letra de un editor interfiere con el otro.
 6. **Los sitios** (lo que el juego rellena) son los de las piezas, con sus
-   mínimos y máximos por tipo (`docs/ships.md`); la validación de siempre
+   mínimos y máximos por tipo (`docs/developer/ships.md`); la validación de siempre
    (`puesto/máximo` y avisos) cuenta los grupos de la nave.
 7. **Las piezas** llevan `key=` en `pieces.txt`; se acabó la convención por
    nombre. Su estilo (color, fondo, parpadeo) es el que ya soporta el formato.
