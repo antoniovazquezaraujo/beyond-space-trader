@@ -238,6 +238,38 @@ class ShipEditorViewTest {
   }
 
   @Test
+  void nAndPCycleThePenWithoutAListAndWrap() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Gnat\nchasis=uno\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));
+    List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
+        "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Engine]\nkey=M\ncolor=white\nM\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(110, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
+      gui.addWindow(view);
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      gui.updateScreen();
+
+      // the pen starts on A: p wraps to the last element and n back to the first
+      view.handleKey(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("element: Engine (M)"), "p wraps to the last: " + screenText(screen));
+      view.handleKey(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("element: Weapon (A)"), "n wraps to the first: " + screenText(screen));
+      view.handleKey(new KeyStroke('N', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("element: Engine (M)"), "uppercase N too: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void refusesMorePiecesThanTheShipAdmits() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Gnat\nchasis=uno\n"));
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));

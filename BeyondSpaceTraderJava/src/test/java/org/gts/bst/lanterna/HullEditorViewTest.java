@@ -112,6 +112,42 @@ class HullEditorViewTest {
   }
 
   @Test
+  void nAndPCycleTheSelectedLetterWithoutAList() throws IOException {
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=white\nxxxxx\nxxxxx\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      HullEditorView view = new HullEditorView(hulls);
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      // two elements: A and B
+      view.handleKey(new KeyStroke('+', false, false));
+      view.handleKey(new KeyStroke('+', false, false));
+      gui.updateScreen();
+
+      // the last added (B) is selected: n wraps to A, n moves to B, p wraps to A
+      view.handleKey(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("element: White (A)"), "n wraps: " + screenText(screen));
+      view.handleKey(new KeyStroke('n', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("element: White (B)"), "n moves down: " + screenText(screen));
+      view.handleKey(new KeyStroke('p', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("element: White (A)"), "p moves up, wrapping: " + screenText(screen));
+      view.handleKey(new KeyStroke('P', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("element: White (B)"), "uppercase P too: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void removesTheSelectedElementAndItsLetters() throws IOException {
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=white\nxxxxx\nxxxxx\n"));
     Path file = Files.createTempFile("chassis", ".txt");

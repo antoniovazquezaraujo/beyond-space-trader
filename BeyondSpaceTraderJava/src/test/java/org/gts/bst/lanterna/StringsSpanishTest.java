@@ -79,6 +79,31 @@ class StringsSpanishTest {
         "the Spanish fine keeps the amount placeholder");
   }
 
+  /**
+   * The composer menu, its keys line, its Quit row and the editor titles are
+   * localised: a test running in en_US would not notice a broken Spanish text
+   * otherwise.
+   */
+  @Test
+  void theComposerTextsAreLocalisedInBothBundles() throws IOException {
+    Properties english = properties("Strings.properties");
+    Properties spanish = properties("Strings_es.properties");
+    String[][] texts = {
+      {"ComposerShips", "Ships: design the ships (keys and pieces)", "Naves: diseñar las naves (teclas y piezas)"},
+      {"ComposerHulls", "Hulls: paint the hulls' colours", "Cascos: pintar los colores de los cascos"},
+      {"ComposerQuit", "Quit", "Salir"},
+      {"ComposerKeys", "[↑↓/N/P] move · [ENTER] choose · [ESC] back",
+        "[↑↓/N/P] mover · [INTRO] elegir · [ESC] volver"},
+      {"EditorShipTitle", "ship editor", "editor de naves"},
+      {"EditorHullTitle", "hull editor", "editor de cascos"},
+      {"EditorHullNamed", "hulls: ^1", "cascos: ^1"},
+    };
+    for(String[] text : texts) {
+      assertEquals(text[1], english.getProperty(text[0]), text[0] + " (en)");
+      assertEquals(text[2], spanish.getProperty(text[0]), text[0] + " (es)");
+    }
+  }
+
   private static Set<String> keys(String resource) throws IOException {
     return properties(resource).stringPropertyNames();
   }

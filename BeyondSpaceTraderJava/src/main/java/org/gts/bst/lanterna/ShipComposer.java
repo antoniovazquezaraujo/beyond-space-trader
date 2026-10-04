@@ -51,8 +51,7 @@ public final class ShipComposer {
     Screen screen = new DefaultTerminalFactory().createScreen();
     screen.startScreen();
     try {
-      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen, new DefaultWindowManager(), ComposerCover.load());
-      gui.setTheme(LanternaTheme.create());
+      MultiWindowTextGUI gui = createGui(screen);
       while(true) {
         final List<ShipArtFile> chassis;
         final List<ShipArtFile> pieces;
@@ -78,6 +77,13 @@ public final class ShipComposer {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  /** The composer GUI: the cover as the background, with the project theme. */
+  static MultiWindowTextGUI createGui(Screen screen) {
+    MultiWindowTextGUI gui = new MultiWindowTextGUI(screen, new DefaultWindowManager(), ComposerCover.load());
+    gui.setTheme(LanternaTheme.create());
+    return gui;
   }
 
   /** The little menu: the ship editor, the hull editor or quit (Esc quits too). */
