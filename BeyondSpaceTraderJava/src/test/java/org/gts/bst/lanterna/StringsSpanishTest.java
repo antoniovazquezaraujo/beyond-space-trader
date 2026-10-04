@@ -9,6 +9,7 @@
 package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -99,6 +100,9 @@ class StringsSpanishTest {
       assertEquals(text[1], english.getProperty(text[0]), text[0] + " (en)");
       assertEquals(text[2], spanish.getProperty(text[0]), text[0] + " (es)");
     }
+    // The keys line left the menu, so its old key is gone from both bundles too.
+    assertFalse(english.containsKey("ComposerKeys"), "ComposerKeys is gone from the English bundle");
+    assertFalse(spanish.containsKey("ComposerKeys"), "ComposerKeys is gone from the Spanish bundle");
   }
 
   private static Set<String> keys(String resource) throws IOException {

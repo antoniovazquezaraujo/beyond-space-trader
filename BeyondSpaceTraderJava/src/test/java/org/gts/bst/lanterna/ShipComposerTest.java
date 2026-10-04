@@ -121,6 +121,74 @@ class ShipComposerTest {
   }
 
   @Test
+  void theMenuShowsExactlyItsThreeEntries() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = ShipComposer.createGui(screen);
+      ShipComposer.MenuWindow menu = ShipComposer.menu();
+      gui.addWindow(menu);
+      gui.updateScreen();
+
+      assertEquals(3, menu.menu().getItemCount(), "the menu has exactly its three entries");
+      String text = screenText(screen);
+      assertTrue(text.contains(Strings.ComposerShips), text);
+      assertTrue(text.contains(Strings.ComposerHulls), text);
+      assertTrue(text.contains(Strings.ComposerQuit), text);
+      // The keys line left the menu with the ComposerKeys resource: nothing on the
+      // screen spells ENTER, move, choose or back any more.
+      assertFalse(text.contains("ENTER"), "no ENTER on the menu: " + text);
+      assertFalse(text.contains("move") || text.contains("choose") || text.contains("back"),
+          "no keys line on the menu: " + text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theMenuStaysInTheFreeBandOfTheCover() throws IOException {
+    String[] coverOnly;
+    Screen alone = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    alone.startScreen();
+    try {
+      MultiWindowTextGUI gui = ShipComposer.createGui(alone);
+      gui.updateScreen(); // no window over it: the cover alone
+      coverOnly = screenRows(alone);
+    } finally {
+      alone.stopScreen();
+      alone.close();
+    }
+
+    String[] withMenu;
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = ShipComposer.createGui(screen);
+      gui.addWindow(ShipComposer.menu());
+      gui.updateScreen();
+      withMenu = screenRows(screen);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+
+    // The logo (rows 0-10) and the shuttle and mark (rows 21-29) are painted exactly
+    // as they are without the window: the shorter menu never covers them.
+    for(int y = 0; y <= 10; y++) {
+      assertEquals(coverOnly[y], withMenu[y], "the logo row " + y + " stays behind the menu");
+    }
+    for(int y = 21; y < withMenu.length; y++) {
+      assertEquals(coverOnly[y], withMenu[y], "the mark row " + y + " stays behind the menu");
+    }
+    boolean inTheBand = false;
+    for(int y = 11; y <= 20; y++) {
+      inTheBand |= !coverOnly[y].equals(withMenu[y]);
+    }
+    assertTrue(inTheBand, "the menu is drawn in the free band 11-20");
+  }
+
+  @Test
   void escapeReturnsTheQuitOption() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -244,6 +312,15 @@ class ShipComposerTest {
         screen.close();
       }
     }
+  }
+
+  /** Every row of the screen, keeping the trailing spaces. */
+  private static String[] screenRows(Screen screen) {
+    String[] lines = new String[screen.getTerminalSize().getRows()];
+    for(int y = 0; y < lines.length; y++) {
+      lines[y] = row(screen, y);
+    }
+    return lines;
   }
 
   /** A row of the screen, keeping the trailing spaces. */
