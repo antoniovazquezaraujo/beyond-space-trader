@@ -133,6 +133,11 @@
                   <fileset dir="${maven.multiModuleProjectDirectory}/ships"/>
                 </copy>
 
+                <!-- The GPL requires shipping the license (and the provenance
+                     notice) with the binaries. -->
+                <copy file="${maven.multiModuleProjectDirectory}/LICENSE" tofile="${bst.output}/LICENSE"/>
+                <copy file="${maven.multiModuleProjectDirectory}/NOTICE" tofile="${bst.output}/NOTICE"/>
+
                 <!-- Linux/macOS launcher (executable). -->
                 <mkdir dir="${bst.output}/bin"/>
                 <echo file="${bst.output}/bin/beyond-space-trader.sh" encoding="UTF-8">#!/bin/sh
@@ -169,8 +174,8 @@ lib/runtime. The launchers run the game from the package folder because the
 ship art is read from ships/ (chassis.txt, pieces.txt and ships.txt), which
 you can edit with any text editor.
 
-Licensed under the GNU GPL v3 or later. Sources and LICENSE:
-https://github.com/antoniovazquezaraujo/beyond-space-trader
+Licensed under the GNU GPL v3 or later: see LICENSE and NOTICE in this folder.
+Sources: https://github.com/antoniovazquezaraujo/beyond-space-trader
 
 ---
 
@@ -192,8 +197,8 @@ lib/runtime. Los lanzadores ejecutan el juego desde la carpeta del paquete
 porque el arte de las naves se lee de ships/ (chassis.txt, pieces.txt y
 ships.txt), que puedes editar con cualquier editor de texto.
 
-Licencia GNU GPL v3 o posterior. Código fuente y LICENSE:
-https://github.com/antoniovazquezaraujo/beyond-space-trader
+Licencia GNU GPL v3 o posterior: mira LICENSE y NOTICE en esta carpeta.
+Código fuente: https://github.com/antoniovazquezaraujo/beyond-space-trader
 </echo>
               </target>
             </configuration>
