@@ -1,0 +1,59 @@
+name: beyond-space-trader
+base: core22
+version: git
+summary: A Java port of Space Trader, a text-mode space trading game
+description: |
+  Beyond Space Trader is a terminal (TUI) remake of the classic Space Trader:
+  trade, fight and explore the galaxy from your terminal.
+
+  The snap bundles its own Java runtime (jlink) and works offline.
+
+grade: stable
+confinement: strict
+
+apps:
+  beyond-space-trader:
+    command: bin/beyond-space-trader
+
+parts:
+  beyond-space-trader:
+    plugin: nil
+    source: .
+    build-packages:
+      - openjdk-17-jdk
+      - maven
+    stage-packages:
+      # stty and the basic file tools used by the launcher.
+      - coreutils
+    override-build: |
+      cd "$CRAFT_PART_SRC"
+      export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+      export PATH="$JAVA_HOME/bin:$PATH"
+      mvn -B -ntp clean package -DskipTests
+
+      mkdir -p "$CRAFT_PART_INSTALL/bin"
+      cp -r output/BeyondSpaceTrader/lib \
+            output/BeyondSpaceTrader/ships \
+            output/BeyondSpaceTrader/LICENSE \
+            output/BeyondSpaceTrader/NOTICE \
+            "$CRAFT_PART_INSTALL/"
+
+      cat > "$CRAFT_PART_INSTALL/bin/beyond-space-trader" <<'EOF'
+      #!/bin/sh
+      # Beyond Space Trader (snap): the game writes data/ and save/ relative to the
+      # current directory and reads ships/ from there, so run it from a writable
+      # per-user folder. The ship art is copied once; cp -n keeps player edits.
+      set -eu
+
+      GAME_DIR="${SNAP_USER_DATA}/game"
+      mkdir -p "$GAME_DIR/ships"
+      cp -n "$SNAP/ships/"* "$GAME_DIR/ships/" 2>/dev/null || true
+      cd "$GAME_DIR"
+
+      # Lanterna shells out to stty to drive the terminal; the host /bin/stty is not
+      # reachable under strict confinement, so point it at the staged coreutils one.
+      exec "$SNAP/lib/runtime/bin/java" \
+        -Dcom.googlecode.lanterna.terminal.UnixTerminal.sttyCommand="$SNAP/usr/bin/stty" \
+        -jar "$SNAP/lib/app/"*.jar "$@"
+      EOF
+      chmod 755 "$CRAFT_PART_INSTALL/bin/beyond-space-trader"
