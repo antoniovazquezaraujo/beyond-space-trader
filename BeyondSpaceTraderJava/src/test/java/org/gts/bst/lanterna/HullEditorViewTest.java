@@ -67,6 +67,51 @@ class HullEditorViewTest {
   }
 
   @Test
+  void nAndPMoveInsideTheColourList() throws IOException {
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=white\nxxxxx\nxxxxx\n"));
+    Path file = Files.createTempFile("chassis", ".txt");
+    Files.writeString(file, "[uno]\ncolor=white\nxxxxx\nxxxxx\n");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      HullEditorView view = new HullEditorView(hulls);
+      view.hullsPath(file.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      // + adds an element (white); t opens the colour list on white: n goes down to cyan
+      view.handleKey(new KeyStroke('+', false, false));
+      view.handleKey(new KeyStroke('t', false, false));
+      view.handleKey(new KeyStroke('n', false, false));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("1. Cyan (A)"), "n moved to cyan: " + screenText(screen));
+
+      // p goes back up and wraps: from cyan (index 1) down to white and up to the last colour
+      view.handleKey(new KeyStroke('t', false, false));
+      view.handleKey(new KeyStroke('p', false, false));
+      view.handleKey(new KeyStroke('p', false, false));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      view.handleKey(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("1. Brightblue (A)"),
+          "p wrapped to the last colour: " + screenText(screen));
+
+      view.handleKey(new KeyStroke('s', false, false));
+      String saved = Files.readString(file);
+      assertTrue(saved.contains("key=A color=brightblue"), saved);
+      assertTrue(saved.contains("zone=A x=2 y=2 w=2 h=1"), saved);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(file);
+    }
+  }
+
+  @Test
   void removesTheSelectedElementAndItsLetters() throws IOException {
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=white\nxxxxx\nxxxxx\n"));
     Path file = Files.createTempFile("chassis", ".txt");

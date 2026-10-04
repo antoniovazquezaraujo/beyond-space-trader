@@ -22,6 +22,8 @@ import org.gts.bst.view.LetterGrid;
 import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipDesign;
 import org.gts.bst.view.ShipSites;
+import spacetrader.Functions;
+import spacetrader.Strings;
 
 
 /**
@@ -63,7 +65,7 @@ public final class HullEditorView extends ArtEditorWindow {
   private String shipsPath = ShipArtFile.resolve("ships.txt").toString();
 
   public HullEditorView(List<ShipArtFile> hulls) {
-    super("hull editor");
+    super(Strings.EditorHullTitle);
     this.hulls = new ArrayList<>(hulls);
     loadHull(0);
   }
@@ -131,7 +133,7 @@ public final class HullEditorView extends ArtEditorWindow {
 
   private void updateTitle() {
     ShipArtFile hull = hull();
-    setTitle(hull == null ? "hull editor" : "hulls: " + hull.name());
+    setTitle(hull == null ? Strings.EditorHullTitle : Functions.StringVars(Strings.EditorHullNamed, hull.name()));
   }
 
   @Override
@@ -153,11 +155,13 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     if(listOpen) {
       List<String> items = items();
-      if(key.getKeyType() == KeyType.ArrowUp && !items.isEmpty()) {
+      KeyType type = key.getKeyType();
+      char character = type == KeyType.Character ? Character.toLowerCase(key.getCharacter()) : 0;
+      if((type == KeyType.ArrowUp || character == 'p') && !items.isEmpty()) {
         listIndex = (listIndex + items.size() - 1) % items.size();
-      } else if(key.getKeyType() == KeyType.ArrowDown && !items.isEmpty()) {
+      } else if((type == KeyType.ArrowDown || character == 'n') && !items.isEmpty()) {
         listIndex = (listIndex + 1) % items.size();
-      } else if(key.getKeyType() == KeyType.Enter) {
+      } else if(type == KeyType.Enter) {
         pick();
       }
       redraw();

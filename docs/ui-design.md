@@ -310,6 +310,14 @@ When the splash is missing (or does not fit the terminal), the title falls back 
 `Strings.MainBanner` centred as a block. The animated starfield (`Starfield`) is only
 the backdrop of the encounters now.
 
+`TitleSplash.fromResource(path)` reads any other cover with the same format, and its
+`draw(graphics, left, top)` paints it at a given cell. The composer uses it for its own
+cover (`org/gts/bst/lanterna/composer.txt`): the GUI takes it as the background
+component (`new MultiWindowTextGUI(screen, new DefaultWindowManager(), cover)`), so the
+cover stays behind the centred menu window. The art leaves its middle rows free and,
+when the terminal is smaller than the drawing, the cover is left out and the black
+screen shows through.
+
 ## What happens to the current forms
 
 | Swing form | Where it goes |

@@ -98,6 +98,24 @@ class TitleSplashTest {
     assertFollowsItsDefinition(splash, text);
   }
 
+  @Test
+  void theComposerCoverComesFromItsOwnResource() {
+    TitleSplash cover = TitleSplash.fromResource("/org/gts/bst/lanterna/composer.txt");
+
+    assertNotNull(cover, "the composer cover resource is packaged");
+    assertEquals(30, cover.height(), "the cover has the 30 rows of the art");
+    assertTrue(cover.width() > 0 && cover.width() <= 100, "the cover fits a 100-column terminal");
+    assertEquals(TextColor.ANSI.WHITE, cover.colorAt(36, 0), "the SHIP EDITOR logo is white");
+    assertEquals(TextColor.ANSI.CYAN, cover.colorAt(4, 1), "the star of the logo is cyan");
+    assertEquals(TextColor.ANSI.CYAN, cover.colorAt(30, 24), "the shuttle of the cover is cyan");
+    assertEquals(TextColor.ANSI.WHITE, cover.colorAt(61, 25), "the Beyond Space Trader mark is white");
+  }
+
+  @Test
+  void aMissingResourceIsNull() {
+    assertNull(TitleSplash.fromResource("/org/gts/bst/lanterna/no-such-cover.txt"));
+  }
+
   /**
    * The drawing follows the definition written in the resource: every ink cell takes
    * the colour of the last zone that catches it (or the default), and every zone that

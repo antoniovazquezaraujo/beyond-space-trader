@@ -190,6 +190,54 @@ class ShipEditorViewTest {
   }
 
   @Test
+  void nAndPMoveInsideTheChassisList() throws IOException {
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=nope\n"));
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(
+        "[trini]\nsize=tiny\ncolor=cyan\nxxxxx\n"
+        + "[chico]\nsize=small\ncolor=cyan\nxxxxx\n"
+        + "[medio]\nsize=medium\ncolor=cyan\nxxxxx\n"
+        + "[largo]\nsize=large\ncolor=cyan\nxxxxx\n"
+        + "[grande]\nsize=huge\ncolor=cyan\nxxxxx\n"
+        + "[libre]\ncolor=cyan\nxxxxx\n"));
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      ShipEditorView view = new ShipEditorView(designs, hulls, List.of());
+      gui.addWindow(view);
+      gui.updateScreen();
+      // The open type is the Firefly: chico (small) and libre (no size) are offered.
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      view.handleKey(new KeyStroke(KeyType.Tab));
+
+      // f opens the list on the first offered hull (chico): n goes down to libre
+      view.handleKey(new KeyStroke('f', false, false));
+      view.handleKey(new KeyStroke('n', false, false));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("chasis=libre"), screenText(screen));
+
+      // now the list opens on libre: n wraps to the first one
+      view.handleKey(new KeyStroke('f', false, false));
+      view.handleKey(new KeyStroke('n', false, false));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("chasis=chico"), "n wraps around: " + screenText(screen));
+
+      // and p goes back up (chico is the first: p wraps to the last one, libre)
+      view.handleKey(new KeyStroke('f', false, false));
+      view.handleKey(new KeyStroke('p', false, false));
+      view.handleKey(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("chasis=libre"), "p wraps to the last one: " + screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void refusesMorePiecesThanTheShipAdmits() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Gnat\nchasis=uno\n"));
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\nxxxxx\n"));

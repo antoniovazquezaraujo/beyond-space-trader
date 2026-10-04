@@ -8,7 +8,9 @@
  */
 package org.gts.bst.lanterna;
 
+import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,8 +33,10 @@ import org.gts.bst.view.ShipColors;
  * per cell; spaces are left empty (the black screen shows through) and a glyph
  * the terminal paints two columns wide takes two cells.
  *
- * <p>{@link #shared()} returns {@code null} when the resource is missing, so the
- * title screen can fall back to the banner.</p>
+ * <p>{@link #shared()} is the game title, read once from its resource, and
+ * {@link #fromResource(String)} reads any other splash (the composer's cover). Both
+ * return {@code null} when the resource is missing, so each screen can fall back to
+ * its own banner.</p>
  */
 public final class TitleSplash {
   /** The second cell of a glyph the terminal paints two columns wide. */
@@ -70,6 +74,22 @@ public final class TitleSplash {
   /** The splash of the game, read once, or null when the resource is missing. */
   public static TitleSplash shared() {
     return SHARED;
+  }
+
+  /**
+   * A splash read from a classpath resource, or {@code null} when it is missing
+   * or unreadable. The composer loads its own cover this way.
+   */
+  public static TitleSplash fromResource(String resource) {
+    try(InputStream stream = TitleSplash.class.getResourceAsStream(resource)) {
+      if(stream == null) {
+        return null;
+      }
+      return parse(new InputStreamReader(stream, StandardCharsets.UTF_8));
+    } catch(IOException e) {
+      // The resource is missing or unreadable: there is nothing to draw.
+      return null;
+    }
   }
 
   /** The drawing, top to bottom, as written (the spaces are part of its shape). */
@@ -193,15 +213,28 @@ public final class TitleSplash {
     return new Zone(color, x, y, w, h);
   }
 
-  private static TitleSplash load() {
-    try(InputStream stream = TitleSplash.class.getResourceAsStream(RESOURCE)) {
-      if(stream == null) {
-        return null;
+  /**
+   * Paints the drawing with its top-left corner at {@code (left, top)}, over the black
+   * screen: spaces and the continuation cells of wide glyphs are skipped, so only the
+   * ink lands.
+   */
+  public void draw(TextGUIGraphics graphics, int left, int top) {
+    for(int y = 0; y < height; y++) {
+      for(int x = 0; x < width; x++) {
+        int codePoint = codePointAt(x, y);
+        if(codePoint == ' ' || codePoint == CONTINUATION) {
+          continue;
+        }
+        TextColor color = colorAt(x, y);
+        graphics.setForegroundColor(color);
+        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+        graphics.setCharacter(left + x, top + y,
+            TextCharacter.fromString(new String(Character.toChars(codePoint)), color, TextColor.ANSI.BLACK)[0]);
       }
-      return parse(new InputStreamReader(stream, StandardCharsets.UTF_8));
-    } catch(IOException e) {
-      // The resource is missing or unreadable: the title falls back to the banner.
-      return null;
     }
+  }
+
+  private static TitleSplash load() {
+    return fromResource(RESOURCE);
   }
 }

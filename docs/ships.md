@@ -335,9 +335,12 @@ group=M x=6 y=3
 
 ## The editors
 
-`run-composer.sh` opens a menu with the two editors: the **ship editor** and the
-**hull editor**. Escape in an editor goes back to the menu (which reloads the
-files, so the changes are there); Escape in the menu quits.
+`run-composer.sh` opens a menu with the two editors and Quit, centred over the
+**composer's own cover** (`org/gts/bst/lanterna/composer.txt`: the SHIP EDITOR logo
+above, the shuttle and the mark below, and the middle rows free for the menu). The
+arrows and `n`/`p` move the selection, ENTER chooses the option and Escape quits
+(the menu texts are localised, like the rest of the UI). Escape in an editor goes
+back to the menu (which reloads the files, so the changes are there).
 
 Both editors have a vertical panel on the left, and the selected row of every
 list has a background of its own; each list opens with its title inside a line
@@ -395,3 +398,8 @@ with the type that wears it (`⚠ in use by [Gnat] (small)`).
 | `TAB` / `⇧TAB` | Previous / next hull |
 | `s` | Save every edited hull back to `chassis.txt` |
 | `Esc` | Back to the menu |
+
+Inside an open list (the chassis with `f` in the ship editor, the colours and
+backgrounds with `t`/`f` in the hull editor) the arrows and `n`/`p` move the
+selection and ENTER picks it; outside the list `n`/`p` keep cycling the elements
+as the tables above say.

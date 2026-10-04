@@ -10,7 +10,6 @@ package org.gts.bst.lanterna;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.AbstractInteractableComponent;
 import com.googlecode.lanterna.gui2.Interactable;
@@ -535,19 +534,7 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
     }
     int left = (screenWidth - splash.width()) / 2;
     int top = (screenHeight - splash.height()) / 2;
-    for(int y = 0; y < splash.height(); y++) {
-      for(int x = 0; x < splash.width(); x++) {
-        int codePoint = splash.codePointAt(x, y);
-        if(codePoint == ' ' || codePoint == TitleSplash.CONTINUATION) {
-          continue;
-        }
-        TextColor color = splash.colorAt(x, y);
-        graphics.setForegroundColor(color);
-        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
-        graphics.setCharacter(left + x, top + y,
-            TextCharacter.fromString(new String(Character.toChars(codePoint)), color, TextColor.ANSI.BLACK)[0]);
-      }
-    }
+    splash.draw(graphics, left, top);
     UiPalette.reset(graphics);
     return true;
   }

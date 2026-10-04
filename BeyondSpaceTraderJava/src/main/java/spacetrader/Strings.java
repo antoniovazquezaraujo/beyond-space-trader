@@ -539,6 +539,14 @@ public final class Strings {
   public static final String MenuTitle = text("MenuTitle");
   public static final String MenuTradePanel = text("MenuTradePanel");
 
+  public static final String ComposerShips = text("ComposerShips");
+  public static final String ComposerHulls = text("ComposerHulls");
+  public static final String ComposerQuit = text("ComposerQuit");
+  public static final String ComposerKeys = text("ComposerKeys");
+  public static final String EditorShipTitle = text("EditorShipTitle");
+  public static final String EditorHullTitle = text("EditorHullTitle");
+  public static final String EditorHullNamed = text("EditorHullNamed");
+
   public static final String NavCrew = text("NavCrew");
   public static final String NavDesign = text("NavDesign");
   public static final String NavEquip = text("NavEquip");
