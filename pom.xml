@@ -33,7 +33,7 @@
     <lanterna.version>3.1.5</lanterna.version>
     <maven-antrun-plugin.version>3.2.0</maven-antrun-plugin.version>
     <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
-    <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+    <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
     <exec-maven-plugin.version>3.6.4</exec-maven-plugin.version>
     <spotbugs.plugin.version>4.10.4.1</spotbugs.plugin.version>
   </properties>
