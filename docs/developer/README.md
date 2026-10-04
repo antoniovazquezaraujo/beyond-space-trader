@@ -69,8 +69,8 @@ Presentador):
 * **[Decisiones de arquitectura (`adr/`)](adr/README.md):** los ADR numerados
   (`0001`…) que fijan las decisiones de diseño; no se reescriben, se sustituyen.
 * **[Proceso de release (`release/Release_Process.md`)](release/Release_Process.md):**
-  empaquetado con `jlink`, publicación de los zips de Linux y Windows y cómo lo
-  ejecuta el jugador.
+  empaquetado con `jlink`, publicación de los zips de Linux y Windows, itch.io
+  y la Snap Store, y cómo lo ejecuta el jugador.
 
 ---
 

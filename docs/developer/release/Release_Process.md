@@ -1,6 +1,6 @@
 # 🚀 Proceso de Release (Beyond Space Trader)
 
-Este documento describe cómo se publican los ejecutables del juego (Linux y Windows) a partir del empaquetado con `jlink` y GitHub Actions.
+Este documento describe cómo se publican los ejecutables del juego (Linux y Windows) a partir del empaquetado con `jlink` y GitHub Actions, y cómo se distribuyen además en **itch.io** y la **Snap Store**.
 
 ---
 
@@ -77,7 +77,63 @@ El workflow también se puede lanzar a mano desde la pestaña **Actions** (`work
 
 ---
 
-## 3. Cómo ejecuta el jugador el juego
+## 3. Publicación en itch.io
+
+En cada tag `v*`, después de subir los zips a la Release de GitHub, el workflow `release` publica también los mismos artefactos en itch.io con [butler](https://itch.io/docs/butler/) (`.github/workflows/release.yml`):
+
+- La máquina Linux sube `BeyondSpaceTrader-Linux.zip` al canal `linux` del proyecto `avaraujo/beyond-space-trader`.
+- La máquina Windows sube `BeyondSpaceTrader-Windows.zip` al canal `windows`.
+- La versión que verá el jugador es el propio nombre de la etiqueta (`github.ref_name`, por ejemplo `v0.1.0`).
+
+### Alta (solo el dueño)
+
+1. Crear el proyecto `beyond-space-trader` en itch.io (cuenta `avaraujo`) con los canales `linux` y `windows`.
+2. Generar una API key de butler en **Account settings → API keys** y guardarla como secreto **`BUTLER_API_KEY`** en el repositorio (Settings → Secrets and variables → Actions). El workflow la pasa a butler en la variable de entorno del mismo nombre.
+
+### Flujo
+
+- **Tag `v*`:** publicación en ambos canales de itch.io.
+- **Ejecución manual (`workflow_dispatch`):** compila y comprime, pero no publica (la condición exige `refs/tags/`).
+- Sin `BUTLER_API_KEY`, el paso de butler falla y el job acaba en rojo, pero la Release de GitHub (con sus zips) ya se ha subido en el paso anterior y **no** se pierde.
+
+---
+
+## 4. Publicación en la Snap Store
+
+El workflow `.github/workflows/snap.yml` construye el snap `beyond-space-trader` y lo publica en la Snap Store:
+
+- **Tag `v*`:** publica en el canal `stable`.
+- **Ejecución manual (`workflow_dispatch`):** publica en el canal `edge` (ideal para probar antes de una release).
+- **Pull request que toque `snap/**` o el propio workflow:** solo construye y sube el `.snap` como artefacto, sin publicar. Así el PR valida el empaquetado.
+- El job corre en `ubuntu-22.04` y usa `snapcraft pack --destructive-mode`; `version: git` necesita `fetch-depth: 0` para calcular la versión a partir de los tags.
+
+El snap:
+
+- `base: core22`, `confinement: strict` y sin `plugs`: el juego es totalmente offline.
+- Compila con `mvn -B -ntp clean package -DskipTests` y empaqueta `output/BeyondSpaceTrader/` (`lib/`, `ships/`, `LICENSE` y `NOTICE`).
+- Ejecuta el juego desde `$SNAP_USER_DATA/game`, una carpeta de usuario escribible: allí viven `data/` y `save/`, y el arte de `ships/` se copia una sola vez (`cp -n`, así se respetan las ediciones del jugador).
+- Pasa a Lanterna la ruta del `stty` que viaja dentro del snap (`-Dcom.googlecode.lanterna.terminal.UnixTerminal.sttyCommand="$SNAP/usr/bin/stty"`), porque bajo confinamiento estricto no puede usar `/bin/stty` del host.
+
+### Alta (solo el dueño)
+
+1. Con una cuenta de Ubuntu One, registrar el nombre: `snapcraft register beyond-space-trader`.
+2. Exportar las credenciales de publicación: `snapcraft export-login snapcraft-creds` (caduca; conviene reexportarlas si el login expira) y guardarlas como secreto **`SNAPCRAFT_STORE_CREDENTIALS`** en el repositorio.
+
+### Flujo
+
+- **Tag `v*`:** construye el snap y lo publica en `stable`.
+- **Ejecución manual:** construye y publica en `edge`.
+- Sin `SNAPCRAFT_STORE_CREDENTIALS`, el paso de publicación falla (el workflow solo construye en PRs, donde no hay secretos), pero el resto de publicaciones no se ve afectado.
+
+Una vez publicado, el jugador lo instala con:
+
+```bash
+sudo snap install beyond-space-trader
+```
+
+---
+
+## 5. Cómo ejecuta el jugador el juego
 
 Solo tiene que descargar el zip de su sistema, descomprimirlo y lanzar:
 

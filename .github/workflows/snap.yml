@@ -1,0 +1,47 @@
+name: snap
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'snap/**'
+      - '.github/workflows/snap.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # version: git needs the tags to compute the snap version.
+          fetch-depth: 0
+
+      - name: Install Snapcraft
+        run: sudo snap install snapcraft --classic
+
+      - name: Build snap
+        run: |
+          sudo snapcraft pack --destructive-mode
+          mv *.snap beyond-space-trader.snap
+
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: beyond-space-trader-snap
+          path: beyond-space-trader.snap
+
+      - name: Publish snap
+        if: github.event_name != 'pull_request'
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: beyond-space-trader.snap
+          release: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'edge' }}
