@@ -11,6 +11,8 @@
 
 <p align="left">
   <a href="https://github.com/antoniovazquezaraujo/beyond-space-trader/releases/latest"><img src="https://img.shields.io/github/v/release/antoniovazquezaraujo/beyond-space-trader?include_prereleases&style=flat-square" alt="Latest release"></a>
+  <a href="https://snapcraft.io/beyond-space-trader-tui"><img src="https://img.shields.io/badge/Snap%20Store-install-E95420?style=flat-square&logo=snapcraft&logoColor=white" alt="Snap Store"></a>
+  <a href="https://avaraujo.itch.io/beyond-space-trader-tui"><img src="https://img.shields.io/badge/itch.io-download-FA5C5C?style=flat-square&logo=itch.io&logoColor=white" alt="itch.io"></a>
   <a href="https://antoniovazquezaraujo.github.io/beyond-space-trader/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-2EA043?style=flat-square&logo=github" alt="Documentation"></a>
   <a href="https://github.com/antoniovazquezaraujo/beyond-space-trader/actions/workflows/build.yml"><img src="https://github.com/antoniovazquezaraujo/beyond-space-trader/actions/workflows/build.yml/badge.svg?branch=develop" alt="Build status (develop)"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square" alt="License: GPL v3"></a>
@@ -37,6 +39,14 @@ Utopia.
 # To play in Spanish (English is the fallback):
 ./bin/beyond-space-trader.sh --lang es
 ```
+
+### Other ways to install
+
+- **Snap Store (Linux):** `sudo snap install beyond-space-trader-tui`. The snap
+  updates itself and keeps its saves and the editable ship art in
+  `~/snap/beyond-space-trader-tui/current/game`.
+- **itch.io:** the same Linux and Windows packages are available at
+  <https://avaraujo.itch.io/beyond-space-trader-tui>.
 
 The game needs a terminal of at least 60×15 (100×30 or more is recommended;
 120×30 fits the encounter scene comfortably).
