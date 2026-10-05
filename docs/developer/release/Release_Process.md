@@ -92,8 +92,8 @@ En cada tag `v*`, después de subir los zips a la Release de GitHub, el workflow
 
 ### Flujo
 
-- **Tag `v*`:** publicación en ambos canales de itch.io.
-- **Ejecución manual (`workflow_dispatch`):** compila y comprime, pero no publica (la condición exige `refs/tags/`).
+- **Tag `v*`:** publicación en ambos canales de itch.io con la versión del tag.
+- **Ejecución manual (`workflow_dispatch`):** compila, comprime y **publica en itch.io** con la versión = SHA del commit (para probar la cadena sin tag); no crea Release en GitHub (ese paso sigue exigiendo tag).
 - Sin `BUTLER_API_KEY`, el paso de butler falla y el job acaba en rojo, pero la Release de GitHub (con sus zips) ya se ha subido en el paso anterior y **no** se pierde.
 
 ---
