@@ -1,0 +1,49 @@
+<!-- Source of snap/gui/beyond-space-trader-tui.png (the snap store icon).
+     Regenerate with:  rsvg-convert -w 512 -h 512 snap/icon.svg -o snap/gui/beyond-space-trader-tui.png -->
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="sky" cx="35%" cy="30%" r="90%">
+      <stop offset="0%" stop-color="#0b1226"/>
+      <stop offset="100%" stop-color="#02030a"/>
+    </radialGradient>
+    <radialGradient id="planet" cx="35%" cy="30%" r="85%">
+      <stop offset="0%" stop-color="#57c463"/>
+      <stop offset="70%" stop-color="#2f9140"/>
+      <stop offset="100%" stop-color="#1d5f2c"/>
+    </radialGradient>
+    <radialGradient id="moon" cx="35%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#e8706b"/>
+      <stop offset="100%" stop-color="#a03530"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <circle cx="60" cy="80" r="2.2" fill="#bfefff" opacity="0.9"/>
+  <circle cx="120" cy="40" r="1.6" fill="#bfefff" opacity="0.6"/>
+  <circle cx="200" cy="110" r="2.6" fill="#bfefff" opacity="0.8"/>
+  <circle cx="330" cy="60" r="1.8" fill="#bfefff" opacity="0.7"/>
+  <circle cx="430" cy="200" r="2.2" fill="#bfefff" opacity="0.8"/>
+  <circle cx="70" cy="200" r="1.5" fill="#bfefff" opacity="0.5"/>
+  <circle cx="30" cy="300" r="2.0" fill="#bfefff" opacity="0.7"/>
+  <circle cx="200" cy="330" r="1.6" fill="#bfefff" opacity="0.6"/>
+  <circle cx="300" cy="250" r="2.4" fill="#bfefff" opacity="0.9"/>
+  <circle cx="470" cy="320" r="1.8" fill="#bfefff" opacity="0.6"/>
+  <circle cx="250" cy="30" r="1.4" fill="#bfefff" opacity="0.5"/>
+  <circle cx="390" cy="140" r="1.5" fill="#bfefff" opacity="0.6"/>
+  <circle cx="150" cy="160" r="1.8" fill="#bfefff" opacity="0.5"/>
+  <circle cx="470" cy="30" r="2.0" fill="#bfefff" opacity="0.8"/>
+  <circle cx="40" cy="440" r="1.6" fill="#bfefff" opacity="0.6"/>
+  <circle cx="350" cy="450" r="2.0" fill="#bfefff" opacity="0.7"/>
+  <circle cx="430" cy="480" r="1.5" fill="#bfefff" opacity="0.5"/>
+  <circle cx="90" cy="120" r="1.3" fill="#bfefff" opacity="0.5"/>
+  <circle cx="280" cy="150" r="1.7" fill="#bfefff" opacity="0.6"/>
+  <circle cx="480" cy="420" r="2.2" fill="#bfefff" opacity="0.8"/>
+  <circle cx="120" cy="404" r="120" fill="url(#planet)"/>
+  <circle cx="428" cy="92" r="40" fill="url(#moon)"/>
+  <text x="248" y="180" text-anchor="middle" font-family="Noto Sans Mono, DejaVu Sans Mono, monospace" font-size="27" fill="#ffffff" xml:space="preserve">         _.-&quot;&quot;-.</text>
+  <text x="248" y="211" text-anchor="middle" font-family="Noto Sans Mono, DejaVu Sans Mono, monospace" font-size="27" fill="#ffffff" xml:space="preserve">     .-&#x27;  _--_  &#x27;-.</text>
+  <text x="248" y="242" text-anchor="middle" font-family="Noto Sans Mono, DejaVu Sans Mono, monospace" font-size="27" fill="#ffffff" xml:space="preserve">  .&#x27;   .&#x27;/  /&#x27;.   &#x27;.</text>
+  <text x="248" y="273" text-anchor="middle" font-family="Noto Sans Mono, DejaVu Sans Mono, monospace" font-size="27" fill="#ffffff" xml:space="preserve">/___/  ______  /___|</text>
+  <text x="248" y="304" text-anchor="middle" font-family="Noto Sans Mono, DejaVu Sans Mono, monospace" font-size="27" fill="#ffffff" xml:space="preserve">[___] [( )( )] [___]</text>
+  <text x="248" y="335" text-anchor="middle" font-family="Noto Sans Mono, DejaVu Sans Mono, monospace" font-size="27" fill="#ffffff" xml:space="preserve">    \_|______|_/</text>
+  <text x="256" y="474" text-anchor="middle" font-family="Noto Sans Mono, DejaVu Sans Mono, monospace" font-size="21" letter-spacing="3" fill="#7fe3f2" stroke="#02030a" stroke-width="4" paint-order="stroke">BEYOND SPACE TRADER</text>
+</svg>
