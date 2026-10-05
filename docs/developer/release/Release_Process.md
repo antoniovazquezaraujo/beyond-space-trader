@@ -113,7 +113,7 @@ El snap:
 - `base: core22`, `confinement: strict` y sin `plugs`: el juego es totalmente offline.
 - Compila con `mvn -B -ntp clean package -DskipTests` y empaqueta `output/BeyondSpaceTrader/` (`lib/`, `ships/`, `LICENSE` y `NOTICE`).
 - Ejecuta el juego desde `$SNAP_USER_DATA/game`, una carpeta de usuario escribible: allí viven `data/` y `save/`, y el arte de `ships/` se copia una sola vez (`cp -n`, así se respetan las ediciones del jugador).
-- Pasa a Lanterna la ruta del `stty` que viaja dentro del snap (`-Dcom.googlecode.lanterna.terminal.UnixTerminal.sttyCommand="$SNAP/usr/bin/stty"`), porque bajo confinamiento estricto no puede usar `/bin/stty` del host.
+- Pasa a Lanterna la ruta del `stty` que viaja dentro del snap (el wrapper usa `$SNAP/bin/stty` y, si no existe, `$SNAP/usr/bin/stty`), porque bajo confinamiento estricto no puede usar el `/bin/stty` del host.
 
 ### Alta (solo el dueño)
 

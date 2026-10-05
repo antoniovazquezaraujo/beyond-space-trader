@@ -54,10 +54,13 @@ parts:
       cp -n "$SNAP/ships/"* "$GAME_DIR/ships/" 2>/dev/null || true
       cd "$GAME_DIR"
 
-      # Lanterna shells out to stty to drive the terminal; the host /bin/stty is not
-      # reachable under strict confinement, so point it at the staged coreutils one.
+      # Lanterna shells out to stty to drive the terminal; the host one is not
+      # reachable under strict confinement, so use the staged coreutils copy
+      # (its location depends on the package layout: bin or usr/bin).
+      STTY="$SNAP/bin/stty"
+      [ -x "$STTY" ] || STTY="$SNAP/usr/bin/stty"
       exec "$SNAP/lib/runtime/bin/java" \
-        -Dcom.googlecode.lanterna.terminal.UnixTerminal.sttyCommand="$SNAP/usr/bin/stty" \
+        -Dcom.googlecode.lanterna.terminal.UnixTerminal.sttyCommand="$STTY" \
         -jar "$SNAP/lib/app/"*.jar "$@"
       EOF
       chmod 755 "$CRAFT_PART_INSTALL/bin/beyond-space-trader-tui"
