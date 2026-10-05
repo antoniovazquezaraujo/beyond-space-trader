@@ -1,0 +1,72 @@
+name: Bug report
+description: Something is not working as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in as much as you can.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release tag (see the Releases page) or the commit you built from.
+      placeholder: "v0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: How do you run the game?
+      options:
+        - Linux package (BeyondSpaceTrader-Linux.zip)
+        - Windows package (BeyondSpaceTrader-Windows.zip)
+        - From source (./run.sh or java -jar)
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and terminal
+      placeholder: "Ubuntu 24.04 / Windows Terminal / kitty / xterm"
+    validations:
+      required: true
+  - type: input
+    id: terminal-size
+    attributes:
+      label: Terminal size (optional)
+      description: Rows x columns; the game asks for 100x30.
+      placeholder: "100x30"
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or terminal captures (optional)
+      description: Paste logs or drag screenshots here.
+    validations:
+      required: false

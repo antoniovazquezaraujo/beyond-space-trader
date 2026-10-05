@@ -1,5 +1,5 @@
 ```
-___ ___ _____
+ ___ ___ _____
 | _ ) __|_   _|
 | _ \__ \ | |
 |___/___/ |_|
@@ -9,92 +9,87 @@ ___ ___ _____
 
 # Beyond Space Trader
 
-A Java port of the classic Palm OS game **Space Trader**, based on the C# port
-[Space Trader for Windows](https://sourceforge.net/projects/spacetraderwin/) and on the
-SourceForge Java port [SpaceTrader for Java](https://sourceforge.net/projects/spacetraderjava/).
-It is a terminal (TUI) application built with
-[Lanterna](https://github.com/mabe02/lanterna), structured around Model-View-Presenter.
-The old Swing/JWinForms front-end was removed in the Lanterna port and is preserved
-under the tag `swing-final`.
+<p align="left">
+  <a href="https://github.com/antoniovazquezaraujo/beyond-space-trader/releases/latest"><img src="https://img.shields.io/github/v/release/antoniovazquezaraujo/beyond-space-trader?include_prereleases&style=flat-square" alt="Latest release"></a>
+  <a href="https://antoniovazquezaraujo.github.io/beyond-space-trader/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-2EA043?style=flat-square&logo=github" alt="Documentation"></a>
+  <a href="https://github.com/antoniovazquezaraujo/beyond-space-trader/actions/workflows/build.yml"><img src="https://github.com/antoniovazquezaraujo/beyond-space-trader/actions/workflows/build.yml/badge.svg?branch=develop" alt="Build status (develop)"></a>
+  <a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square" alt="License: GPL v3"></a>
+  <img src="https://img.shields.io/badge/Java-17-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java 17">
+</p>
 
-This repository starts from the upstream snapshot `spacetraderjava-code-r69`
-(tag `upstream-r69`).
+A Java port of the classic Palm OS game **Space Trader**, played entirely in a
+terminal with a [Lanterna](https://github.com/mabe02/lanterna) UI and structured
+around Model-View-Presenter. Trade between star systems, upgrade your ship, take
+on quests, dodge pirates and police, and try to retire to your own moon in
+Utopia.
 
-## Status
+## 🎮 Download and play (no Java needed)
 
-Work in progress. The game builds and runs with the Lanterna text UI; the imported bugs
-are fixed and the model is decoupled from the views through Model-View-Presenter (view
-interfaces, view models and presenters with headless tests).
-
-Roadmap:
-
-- [x] Fix startup issues (singleton, look & feel, resource paths)
-- [x] Remove the debug cheat from the `Game` constructor
-- [x] Replace the NetBeans/Ant build with Maven and drop JNLP/WebStart
-- [x] Refactor towards Model-View-Presenter
-- [x] Port the UI to Lanterna and remove the Swing/JWinForms front-end
-- [ ] ASCII-art ship sprites (standard ships and custom ship designer)
-
-## Layout
-
-| Module | Contents |
-|---|---|
-| `BeyondSpaceTraderJava/` | The game. Main class: `org.gts.bst.lanterna.LanternaApp`. |
-
-It is a Maven project (`pom.xml` at the repository root). The old NetBeans/Ant build
-files and the Swing/JWinForms front-end were removed and remain available in git history
-(tags `upstream-r69` and `swing-final`).
-
-## Building and running
-
-Requires JDK 17 and Maven 3.9+.
+1. Open the [latest release](https://github.com/antoniovazquezaraujo/beyond-space-trader/releases/latest)
+   and download the zip for your system:
+   `BeyondSpaceTrader-Linux.zip` or `BeyondSpaceTrader-Windows.zip`.
+2. Unzip it anywhere: the package carries its own trimmed runtime.
+3. Run it:
+   - **Linux/macOS:** `./bin/beyond-space-trader.sh`
+   - **Windows:** `bin\beyond-space-trader.bat`
 
 ```bash
-./run.sh                                     # build and run the terminal UI
-./run-fixed-font.sh                          # run in a terminal with a fixed font (kitty/xfce4/alacritty)
-java -jar BeyondSpaceTraderJava/target/beyond-space-trader-0.1.0-SNAPSHOT.jar
-
-mvn package                                  # build the jar
-mvn -Pquality verify                         # tests and SpotBugs (the gate fails on findings)
+# To play in Spanish (English is the fallback):
+./bin/beyond-space-trader.sh --lang es
 ```
 
-The game needs a terminal of at least 60x15 (100x30 or bigger is recommended). The
-maps assume the usual monospace cell (about twice as tall as wide); if the galaxy
-looks stretched, change *Galaxy chart columns per sector* in Options (`F8`).
+The game needs a terminal of at least 60×15 (100×30 or more is recommended;
+120×30 fits the encounter scene comfortably).
 
-## Design
+## 📖 Documentation
 
-The Lanterna interface design (one window, panels, keyboard first) is described in
-[docs/ui-design.md](docs/ui-design.md).
+- **User Manual:** [English](docs/user/manual.md) · [Español](docs/user/manual_es.md)
+- **Cheat sheet:** [English](docs/user/cheatsheet.md) · [Español](docs/user/cheatsheet_es.md)
+- **Online documentation:** <https://antoniovazquezaraujo.github.io/beyond-space-trader/>
+- **Developer documentation:** [docs/developer/README.md](docs/developer/README.md)
+  (architecture, ship art, encounters, design and release process; the technical
+  guides are in English and the ADRs in Spanish).
 
-## Translations
+## 🛠️ Build from source
 
-The game texts live in
-[`BeyondSpaceTraderJava/src/main/resources/spacetrader/Strings.properties`](BeyondSpaceTraderJava/src/main/resources/spacetrader/Strings.properties).
-`^1`, `^2`... are placeholders filled at runtime and the table entries use indexed
-keys (`Name.0`, `Name.1`..., `Name.row.col` for the two-dimensional ones). To
-translate the game, copy the file to `Strings_<language>.properties` next to it
-(for example `Strings_es.properties`) and translate the values, keeping the keys and
-the placeholders. A **Spanish** translation ships with the game
-(`Strings_es.properties`); run `./run.sh --lang es` (or have `LANG=es_ES.UTF-8` in
-the environment). The panels and the alert dialogs wrap the longer translations, so
-they keep fitting in the screen. Drop the file in the resources directory and the game picks it up:
-it follows the system locale automatically (for example `LANG=es_ES.UTF-8`) and the
-`--lang` argument overrides it (`./run.sh --lang es`, `--lang es_ES`, `--lang=en`).
-Texts without a translation fall back to English.
+Requires **JDK 17** and **Maven 3.9+**.
 
-## Credits
+```bash
+mvn package                   # build the jar
+./run.sh                      # build and run the terminal UI
+./run.sh --lang es            # ... and start it in Spanish
+mvn -B -ntp -Pquality verify  # tests + SpotBugs (what CI runs)
+mvn clean package -DskipTests # self-contained package in output/BeyondSpaceTrader
+```
+
+`run-fixed-font.sh` is a development helper that starts the game in a terminal
+with a fixed monospace font (kitty, xfce4-terminal or alacritty), so the charts
+keep their proportions whatever the desktop font is.
+
+## 🧭 Status
+
+Work in progress, and playable: the whole UI runs on Lanterna, the model is
+decoupled from the views through presenters and the releases ship standalone
+packages for Linux and Windows. The roadmap lives in the
+[developer documentation](docs/developer/README.md).
+
+## 🧾 Provenance
+
+This repository starts from the upstream snapshot `spacetraderjava-code-r69`
+(tag `upstream-r69`). The old Swing/JWinForms front-end was removed in the
+Lanterna port and is preserved under the tag `swing-final`. See the
+[NOTICE](NOTICE) file for the full provenance chain:
 
 - Original game: **Space Trader** (Palm OS), by Pieter Spronck, with artwork by
   Alexander Lawrence.
 - Windows port: **Space Trader for Windows**, by Jay French, with additional
   coding by David Pierron; original coding by Pieter Spronck, Sam Anderson,
   Samuel Goldstein and Matt Lee.
-- Java port: **SpaceTrader for Java**, the upstream snapshot this repository
-  continues (see `NOTICE` for the full provenance chain).
+- Java port: **SpaceTrader for Java**, by Aviv Eyal and contributors (the
+  upstream snapshot this repository continues).
 
-## License
+## ⚖️ License
 
-GNU General Public License v3.0 or later (`GPL-3.0-or-later`).
-See [LICENSE](LICENSE) for the license text and [NOTICE](NOTICE) for the upstream
+GNU General Public License v3.0 or later (`GPL-3.0-or-later`). See
+[LICENSE](LICENSE) for the license text and [NOTICE](NOTICE) for the upstream
 copyright and provenance chain.

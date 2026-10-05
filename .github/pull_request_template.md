@@ -1,13 +1,14 @@
-## What
+## What & why
 
-<!-- One or two sentences describing the change. -->
+<!-- Short description of the change and the problem it solves. Link the issue: Closes #123 -->
 
-## Why
+## How it was tested
 
-<!-- Link the issue: Closes #… -->
+<!-- Commands run, scenarios tested; terminal captures for UI changes -->
 
 ## Checklist
 
-- [ ] `mvn -B verify` passes
+- [ ] `mvn -B -ntp -Pquality verify` passes
+- [ ] Follows the conventions in [CONTRIBUTING.md](../CONTRIBUTING.md)
 - [ ] One change per PR; no unrelated reformatting
-- [ ] README/NOTICE updated if needed
+- [ ] Player-visible changes update `docs/user/` in the same PR

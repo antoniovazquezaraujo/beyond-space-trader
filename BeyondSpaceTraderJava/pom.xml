@@ -50,6 +50,161 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>${maven-clean-plugin.version}</version>
+        <configuration>
+          <!-- mvn clean also removes the packaged application. -->
+          <filesets>
+            <fileset>
+              <directory>${maven.multiModuleProjectDirectory}/output</directory>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>jlink-runtime</id>
+            <phase>package</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>jlink</executable>
+              <arguments>
+                <argument>--add-modules</argument>
+                <!-- Modules of the shaded jar, computed running jdeps in
+                     multi-release 17 mode with print-module-deps. -->
+                <argument>java.base,java.desktop,java.logging</argument>
+                <argument>--output</argument>
+                <argument>${maven.multiModuleProjectDirectory}/output/BeyondSpaceTrader/lib/runtime</argument>
+                <argument>--strip-debug</argument>
+                <argument>--no-man-pages</argument>
+                <argument>--no-header-files</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>${maven-antrun-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>clean-output</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <!-- jlink refuses to write into an existing runtime. -->
+                <delete dir="${maven.multiModuleProjectDirectory}/output/BeyondSpaceTrader"/>
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>assemble-app</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <property name="bst.output" value="${maven.multiModuleProjectDirectory}/output/BeyondSpaceTrader"/>
+                <property name="bst.jar" value="${project.build.finalName}.jar"/>
+
+                <!-- The shaded jar goes into lib/app. -->
+                <mkdir dir="${bst.output}/lib/app"/>
+                <copy file="${project.build.directory}/${bst.jar}" tofile="${bst.output}/lib/app/${bst.jar}"/>
+
+                <!-- The game reads ships/chassis.txt and friends from its working
+                     directory, so they travel next to the launchers. -->
+                <copy todir="${bst.output}/ships">
+                  <fileset dir="${maven.multiModuleProjectDirectory}/ships"/>
+                </copy>
+
+                <!-- The GPL requires shipping the license (and the provenance
+                     notice) with the binaries. -->
+                <copy file="${maven.multiModuleProjectDirectory}/LICENSE" tofile="${bst.output}/LICENSE"/>
+                <copy file="${maven.multiModuleProjectDirectory}/NOTICE" tofile="${bst.output}/NOTICE"/>
+
+                <!-- Linux/macOS launcher (executable). -->
+                <mkdir dir="${bst.output}/bin"/>
+                <echo file="${bst.output}/bin/beyond-space-trader.sh" encoding="UTF-8">#!/bin/sh
+# Beyond Space Trader: run the app from its own folder so that the ships/ art
+# files next to it are found. Any argument is forwarded to the game (--lang es).
+cd "$(dirname "$0")/.." || exit 1
+exec lib/runtime/bin/java -jar lib/app/${bst.jar} "$@"
+</echo>
+                <chmod file="${bst.output}/bin/beyond-space-trader.sh" perm="755"/>
+
+                <!-- Windows launcher (java.exe, this is a console game). -->
+                <echo file="${bst.output}/bin/beyond-space-trader.bat" encoding="UTF-8">@echo off
+rem Beyond Space Trader: run the app from its own folder so that the ships\ art
+rem files next to it are found. Any argument is forwarded to the game.
+cd /d "%~dp0.."
+"lib\runtime\bin\java.exe" -jar "lib\app\${bst.jar}" %*
+</echo>
+
+                <echo file="${bst.output}/README.txt" encoding="UTF-8">Beyond Space Trader
+===================
+
+A Java port of Space Trader: a text-mode space trading game.
+
+How to run
+----------
+Linux/macOS:  ./bin/beyond-space-trader.sh
+Windows:      bin\beyond-space-trader.bat
+
+Arguments are forwarded to the game, for example the UI language:
+  ./bin/beyond-space-trader.sh --lang es
+
+No Java installation is needed: the package bundles its own runtime in
+lib/runtime. The launchers run the game from the package folder because the
+ship art is read from ships/ (chassis.txt, pieces.txt and ships.txt), which
+you can edit with any text editor.
+
+Licensed under the GNU GPL v3 or later: see LICENSE and NOTICE in this folder.
+Sources: https://github.com/antoniovazquezaraujo/beyond-space-trader
+
+---
+
+Beyond Space Trader (español)
+=============================
+
+Un port Java de Space Trader: un juego de comercio espacial en modo texto.
+
+Cómo ejecutarlo
+---------------
+Linux/macOS:  ./bin/beyond-space-trader.sh
+Windows:      bin\beyond-space-trader.bat
+
+Los argumentos se pasan al juego, por ejemplo el idioma de la interfaz:
+  ./bin/beyond-space-trader.sh --lang es
+
+No hace falta tener Java instalado: el paquete incluye su propio runtime en
+lib/runtime. Los lanzadores ejecutan el juego desde la carpeta del paquete
+porque el arte de las naves se lee de ships/ (chassis.txt, pieces.txt y
+ships.txt), que puedes editar con cualquier editor de texto.
+
+Licencia GNU GPL v3 o posterior: mira LICENSE y NOTICE en esta carpeta.
+Código fuente: https://github.com/antoniovazquezaraujo/beyond-space-trader
+</echo>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

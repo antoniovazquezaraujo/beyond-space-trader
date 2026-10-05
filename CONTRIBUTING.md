@@ -1,14 +1,27 @@
 # Contributing
 
-This project follows **GitHub Flow**:
+This project follows **GitHub Flow** around the `develop` branch:
 
-- `main` is always buildable; do not commit to it directly.
-- Create a short-lived branch per change, with a prefix:
+- `develop` is the **default and protected branch**: no direct pushes; every
+  change goes through a pull request.
+- `main` only receives releases. Publishing a release is a PR from `develop` to
+  `main` followed by a version tag; the full process is in
+  [docs/developer/release/Release_Process.md](docs/developer/release/Release_Process.md).
+- Create a short-lived branch **from `develop`** for each change, with a prefix:
   `feature/…`, `fix/…`, `refactor/…`, `docs/…`, `build/…`, `test/…`.
-- Open a pull request. Keep it small and focused on one change.
-- CI (`mvn -B verify`) must pass.
-- Merge with **squash** and let the branch be deleted.
+- Open a **pull request in English**. Keep it small and focused on one change.
+- CI (`mvn -B -ntp -Pquality verify`) must pass.
+- Merge with **squash** and delete the branch (local and remote) once
+  integrated.
 - Reference the issue being closed in the PR body (`Closes #12`).
+
+## Player-visible changes
+
+If a change is visible to players, update the public documentation in
+**`docs/user/`** (the [manual](docs/user/manual.md) and its
+[Spanish version](docs/user/manual_es.md), plus the cheat sheets) in the same
+pull request. The Pages workflow republishes `docs/user/` on every push to
+`develop`.
 
 ## Commit messages
 
@@ -24,4 +37,5 @@ The issue tracker is the backlog. The roadmap is tracked with milestones
 ## Building
 
 Requires JDK 17 and Maven. `mvn package` builds the jar; `./run.sh` builds it and
-runs the terminal UI. See the [README](README.md) for details.
+runs the terminal UI. See the [README](README.md) for details and the
+[developer documentation](docs/developer/README.md) for the architecture.

@@ -1,0 +1,52 @@
+name: snap
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'snap/**'
+      - '.github/workflows/snap.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # version: git needs the tags to compute the snap version.
+          fetch-depth: 0
+
+      - name: Install Snapcraft
+        run: sudo snap install snapcraft --classic
+
+      - name: Build snap
+        run: |
+          # A release tag names the snap after the version, without its leading v;
+          # on other refs `version: git` describes the nearest tag and commit.
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            sed -i "s/^version: git$/version: ${GITHUB_REF_NAME#v}/" snap/snapcraft.yaml
+          fi
+          sudo snapcraft pack --destructive-mode
+          mv *.snap beyond-space-trader-tui.snap
+
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: beyond-space-trader-tui-snap
+          path: beyond-space-trader-tui.snap
+
+      - name: Publish snap
+        if: github.event_name != 'pull_request'
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: beyond-space-trader-tui.snap
+          release: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'edge' }}

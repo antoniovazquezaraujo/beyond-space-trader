@@ -1,0 +1,45 @@
+<!-- Source of snap/gui/beyond-space-trader-tui.png (the snap store icon).
+     Regenerate with:  rsvg-convert -w 512 -h 512 snap/icon.svg -o snap/gui/beyond-space-trader-tui.png -->
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#05070d"/>
+  <text x="30" y="84" font-family="DejaVu Sans Mono, monospace" font-size="22" fill="#bfefff" opacity="0.95">✦</text>
+  <text x="90" y="146" font-family="DejaVu Sans Mono, monospace" font-size="26" fill="#9fe8ff" opacity="0.8">·</text>
+  <text x="268" y="62" font-family="DejaVu Sans Mono, monospace" font-size="22" fill="#9fe8ff" opacity="0.7">·</text>
+  <text x="330" y="56" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#ffffff" opacity="0.75">*</text>
+  <text x="482" y="230" font-family="DejaVu Sans Mono, monospace" font-size="26" fill="#9fe8ff" opacity="0.8">·</text>
+  <text x="462" y="330" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#bfefff" opacity="0.9">✦</text>
+  <text x="300" y="470" font-family="DejaVu Sans Mono, monospace" font-size="24" fill="#9fe8ff" opacity="0.7">·</text>
+  <text x="420" y="468" font-family="DejaVu Sans Mono, monospace" font-size="22" fill="#9fe8ff" opacity="0.8">·</text>
+  <text x="60" y="190" font-family="DejaVu Sans Mono, monospace" font-size="22" fill="#9fe8ff" opacity="0.6">·</text>
+  <text x="352" y="240" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#9fe8ff" opacity="0.55">·</text>
+  <text x="130" y="110" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#bfefff" opacity="0.7">✦</text>
+  <text x="30" y="330" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#9fe8ff" opacity="0.5">·</text>
+  <text x="386" y="100" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#d95f5a" text-anchor="start" xml:space="preserve"> ·⢀⣀⣄⣀</text>
+  <text x="386" y="119" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#d95f5a" text-anchor="start" xml:space="preserve">⢀⣾⣿⣿⣿⢿⣗⠄</text>
+  <text x="386" y="138" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#d95f5a" text-anchor="start" xml:space="preserve">⢼⣿⣿⣿⣿⣿⣗⠅⠄</text>
+  <text x="386" y="157" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#d95f5a" text-anchor="start" xml:space="preserve">⠘⣿⣿⣿⣿⣿⣗⠅</text>
+  <text x="386" y="176" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#d95f5a" text-anchor="start" xml:space="preserve"> ⠈⠙⠛⠟⠛⠁</text>
+  <text x="6" y="252" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">        ⢀⣀⣤⣴⣶⣶⣶⣷⣶⣶⣶⣤⣄⣀</text>
+  <text x="6" y="271" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">     ⢀⣤⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⢄</text>
+  <text x="6" y="290" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">   ⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢕⢕⢄</text>
+  <text x="6" y="309" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">  ⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢕⢕⣕⢅</text>
+  <text x="6" y="328" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve"> ⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣿⣿⣿⣿⠟⠛⢿⡇</text>
+  <text x="6" y="347" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">⢀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⣀⣼⡏⠅</text>
+  <text x="6" y="366" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢽⣿⣻⣿⠅⠅</text>
+  <text x="6" y="385" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">⢼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢕⢝⢟⢕⠅⠅⠄</text>
+  <text x="6" y="404" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢕⢕⣵⣵⡅⠅</text>
+  <text x="6" y="423" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢕⣿⡏⠉⣿⡇</text>
+  <text x="6" y="442" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve"> ⢹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⢙⣿⢕⢝⢿⢿⠏⠁</text>
+  <text x="6" y="461" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">  ⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢕⢕⢕⠕⠁</text>
+  <text x="6" y="480" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">   ⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢕⢕⠕⠁</text>
+  <text x="6" y="499" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">     ⠙⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠕⠁</text>
+  <text x="6" y="518" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">  ·     ⠙⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⠿⠟⠛⠁</text>
+  <text x="6" y="537" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#46a24f" text-anchor="start" xml:space="preserve">               ⠁</text>
+  <text x="248" y="178" font-family="DejaVu Sans Mono, monospace" font-size="26" fill="#f5f5f5" text-anchor="middle" xml:space="preserve">         _.-&quot;&quot;-.</text>
+  <text x="248" y="206" font-family="DejaVu Sans Mono, monospace" font-size="26" fill="#f5f5f5" text-anchor="middle" xml:space="preserve">     .-&#x27;  _--_  &#x27;-.</text>
+  <text x="248" y="234" font-family="DejaVu Sans Mono, monospace" font-size="26" fill="#f5f5f5" text-anchor="middle" xml:space="preserve">  .&#x27;   .&#x27;/  /&#x27;.   &#x27;.</text>
+  <text x="248" y="262" font-family="DejaVu Sans Mono, monospace" font-size="26" fill="#f5f5f5" text-anchor="middle" xml:space="preserve">/___/  ______  /___|</text>
+  <text x="248" y="290" font-family="DejaVu Sans Mono, monospace" font-size="26" fill="#f5f5f5" text-anchor="middle" xml:space="preserve">[___] [( )( )] [___]</text>
+  <text x="248" y="318" font-family="DejaVu Sans Mono, monospace" font-size="26" fill="#f5f5f5" text-anchor="middle" xml:space="preserve">    \_|______|_/</text>
+  <text x="256" y="46" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" font-size="22" letter-spacing="3" fill="#ffffff">BEYOND SPACE TRADER</text>
+</svg>

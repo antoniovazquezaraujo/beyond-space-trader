@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://antoniovazquezaraujo.github.io/beyond-space-trader/
+    about: Player manual and cheat sheet (English and Spanish).
+  - name: How to contribute
+    url: https://github.com/antoniovazquezaraujo/beyond-space-trader/blob/develop/CONTRIBUTING.md
+    about: Build, test and pull-request workflow.

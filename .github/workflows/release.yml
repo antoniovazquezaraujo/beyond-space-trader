@@ -1,0 +1,70 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: BeyondSpaceTrader-Linux.zip
+          - os: windows-latest
+            artifact_name: BeyondSpaceTrader-Windows.zip
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B -ntp clean package -DskipTests
+
+      - name: Compress Linux output
+        if: matrix.os == 'ubuntu-latest'
+        run: cd output && zip -r ../${{ matrix.artifact_name }} BeyondSpaceTrader
+
+      - name: Compress Windows output
+        if: matrix.os == 'windows-latest'
+        run: Compress-Archive -Path output\BeyondSpaceTrader -DestinationPath ${{ matrix.artifact_name }}
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v3
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ matrix.artifact_name }}
+          generate_release_notes: true
+
+      - name: Publish to itch.io (Linux)
+        if: (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && matrix.os == 'ubuntu-latest'
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          curl -L -o butler.zip https://github.com/itchio/butler/releases/latest/download/butler-linux-amd64.zip
+          unzip butler.zip
+          chmod +x linux-amd64/butler
+          ./linux-amd64/butler push ${{ matrix.artifact_name }} avaraujo/beyond-space-trader-tui:linux --userversion ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.sha }}
+
+      - name: Publish to itch.io (Windows)
+        if: (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && matrix.os == 'windows-latest'
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/itchio/butler/releases/latest/download/butler-windows-amd64.zip" -OutFile "butler.zip"
+          Expand-Archive -Path "butler.zip" -DestinationPath "."
+          .\windows-amd64\butler.exe push ${{ matrix.artifact_name }} avaraujo/beyond-space-trader-tui:windows --userversion ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.sha }}
