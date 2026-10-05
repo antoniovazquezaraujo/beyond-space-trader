@@ -19,6 +19,12 @@
   <a href="https://antoniovazquezaraujo.github.io/beyond-space-trader/">
     <img src="https://img.shields.io/badge/📖_Leer_la_Documentación-2EA043?style=for-the-badge&logo=markdown&logoColor=white" alt="Leer la Documentación">
   </a>
+  <a href="https://snapcraft.io/beyond-space-trader-tui">
+    <img src="https://img.shields.io/badge/🐧_Snap_Store-E95420?style=for-the-badge&logo=snapcraft&logoColor=white" alt="Snap Store">
+  </a>
+  <a href="https://avaraujo.itch.io/beyond-space-trader-tui">
+    <img src="https://img.shields.io/badge/🎮_itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white" alt="itch.io">
+  </a>
 </p>
 
 **Beyond Space Trader** es un remake en Java del clásico **Space Trader** de Palm
@@ -58,6 +64,14 @@ derecha y la carta estelar siempre en el centro.
 # ... y para jugar en español:
 ./bin/beyond-space-trader.sh --lang es
 ```
+
+**Otras formas de instalar:**
+
+- **Snap Store (Linux):** `sudo snap install beyond-space-trader-tui`. El snap
+  se actualiza solo; las partidas y el arte editable de las naves viven en
+  `~/snap/beyond-space-trader-tui/current/game`.
+- **itch.io:** los mismos paquetes de Linux y Windows están en
+  <https://avaraujo.itch.io/beyond-space-trader-tui>.
 
 Las instrucciones completas, los controles y la solución de problemas están en el
 **[Manual de Usuario](manual_es.md)** ([English](manual.md)).

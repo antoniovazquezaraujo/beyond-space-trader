@@ -66,6 +66,21 @@ bin\beyond-space-trader.bat --lang es           # Windows
 `--lang=es` form. The game uses the system language by default; texts without a
 translation fall back to English.
 
+### Other install options
+
+- **Snap Store (Linux):** the game is also published as a snap:
+
+  ```bash
+  sudo snap install beyond-space-trader-tui
+  ```
+
+  Snap installs update themselves. The snap runs the game from its own data
+  folder (`~/snap/beyond-space-trader-tui/current/game`), where `save/`, `data/`
+  and an editable copy of `ships/` live.
+
+- **itch.io:** the same Linux and Windows packages are available at
+  <https://avaraujo.itch.io/beyond-space-trader-tui>.
+
 ### 2.2 From source
 
 Requires **JDK 17** and **Maven 3.9+**:
