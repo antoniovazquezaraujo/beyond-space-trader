@@ -28,6 +28,11 @@ jobs:
 
       - name: Build snap
         run: |
+          # A release tag names the snap after the version, without its leading v;
+          # on other refs `version: git` describes the nearest tag and commit.
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            sed -i "s/^version: git$/version: ${GITHUB_REF_NAME#v}/" snap/snapcraft.yaml
+          fi
           sudo snapcraft pack --destructive-mode
           mv *.snap beyond-space-trader-tui.snap
 

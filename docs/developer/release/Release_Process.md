@@ -106,6 +106,7 @@ El workflow `.github/workflows/snap.yml` construye el snap `beyond-space-trader-
 - **Ejecución manual (`workflow_dispatch`):** publica en el canal `edge` (ideal para probar antes de una release).
 - **Pull request que toque `snap/**` o el propio workflow:** solo construye y sube el `.snap` como artefacto, sin publicar. Así el PR valida el empaquetado.
 - El job corre en `ubuntu-22.04` y usa `snapcraft pack --destructive-mode`; `version: git` necesita `fetch-depth: 0` para calcular la versión a partir de los tags.
+- **Versión del snap**: en un tag `v*` se publica como la versión del tag sin la `v` (`v0.1.0` → `0.1.0`); en el resto de builds, `version: git` describe el tag más cercano y el commit (p. ej. `swing-final+git101.a5f980e`, porque `swing-final` es el último tag de version *de verdad* que hay en la historia).
 
 El snap:
 
