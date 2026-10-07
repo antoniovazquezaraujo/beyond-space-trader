@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.NewsEvent;
@@ -356,6 +357,252 @@ class NewspaperTest {
     game.NewsAddEventsOnArrival();
 
     assertEquals(List.of(NewsEvent.DragonflyBaratas.CastToInt()), game.NewsEvents());
+  }
+
+  @Test
+  void theFacadeReplacesAndResetsTheEvents() {
+    Game game = newGame();
+    game.NewsAddEvent(NewsEvent.Dragonfly);
+    game.NewsAddEvent(NewsEvent.CaughtLittering);
+
+    game.NewsReplaceEvent(NewsEvent.CaughtLittering.CastToInt(), NewsEvent.Japori.CastToInt());
+    assertEquals(List.of(NewsEvent.Dragonfly.CastToInt(), NewsEvent.Japori.CastToInt()), game.NewsEvents());
+
+    game.NewsResetEvents();
+    assertTrue(game.NewsEvents().isEmpty());
+  }
+
+  @Test
+  void theFacadeReadsTheLatestEventFromTheLiveList() {
+    Game game = newGame();
+    game.NewsAddEvent(NewsEvent.Dragonfly);
+    game.NewsAddEvent(NewsEvent.CaughtLittering);
+
+    assertEquals(NewsEvent.CaughtLittering.CastToInt(), game.NewsLatestEvent());
+
+    game.NewsEvents().add(NewsEvent.Scarab.CastToInt());
+    assertEquals(NewsEvent.Scarab.CastToInt(), game.NewsLatestEvent());
+  }
+
+  @Test
+  void theFacadeAddsTheJarekAndWildRumorsOnlyWhenTheyAreOnBoard() {
+    Game game = newGame();
+    StarSystem system = game.Commander().CurrentSystem();
+    system.SpecialEventType(SpecialEventType.JarekGetsOut);
+
+    game.NewsAddEventsOnArrival();
+    assertTrue(game.NewsEvents().isEmpty());
+
+    board(game, CrewMemberId.Jarek);
+    game.NewsAddEventsOnArrival();
+    assertEquals(List.of(NewsEvent.JarekGetsOut.CastToInt()), game.NewsEvents());
+
+    game.NewsResetEvents();
+    system.SpecialEventType(SpecialEventType.WildGetsOut);
+    game.NewsAddEventsOnArrival();
+    assertTrue(game.NewsEvents().isEmpty());
+
+    board(game, CrewMemberId.Wild);
+    game.NewsAddEventsOnArrival();
+    assertEquals(List.of(NewsEvent.WildGetsOut.CastToInt()), game.NewsEvents());
+  }
+
+  @Test
+  void addsTheDragonflyMelinaAndRegulasRumors() {
+    Game game = newGame();
+    Newspaper newspaper = new Newspaper();
+    FakeQuests quests = new FakeQuests();
+    StarSystem system = systemWith(game, SpecialEventType.DragonflyMelina);
+
+    newspaper.addEventsOnArrival(system, quests);
+    assertTrue(newspaper.events().isEmpty());
+
+    quests.dragonfly = SpecialEvent.StatusDragonflyFlyMelina;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.DragonflyMelina.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    system.SpecialEventType(SpecialEventType.DragonflyRegulas);
+    newspaper.addEventsOnArrival(system, quests);
+    assertTrue(newspaper.events().isEmpty());
+
+    quests.dragonfly = SpecialEvent.StatusDragonflyFlyRegulas;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.DragonflyRegulas.CastToInt()), newspaper.events());
+  }
+
+  @Test
+  void addsTheExperimentFailedRumorAlways() {
+    Game game = newGame();
+    Newspaper newspaper = new Newspaper();
+
+    newspaper.addEventsOnArrival(systemWith(game, SpecialEventType.ExperimentFailed), new FakeQuests());
+
+    assertEquals(List.of(NewsEvent.ExperimentFailed.CastToInt()), newspaper.events());
+  }
+
+  @Test
+  void addsTheGemulonRumorAlways() {
+    Game game = newGame();
+    Newspaper newspaper = new Newspaper();
+
+    newspaper.addEventsOnArrival(systemWith(game, SpecialEventType.Gemulon), new FakeQuests());
+
+    assertEquals(List.of(NewsEvent.Gemulon.CastToInt()), newspaper.events());
+  }
+
+  @Test
+  void addsTheGemulonInvadedRumorWhenTheQuestIsDone() {
+    Game game = newGame();
+    StarSystem system = systemWith(game, SpecialEventType.GemulonRescued);
+    Newspaper newspaper = new Newspaper();
+    FakeQuests quests = new FakeQuests();
+
+    quests.gemulon = SpecialEvent.StatusGemulonDone;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.GemulonInvaded.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    quests.gemulon = SpecialEvent.StatusGemulonNotStarted;
+    newspaper.addEventsOnArrival(system, quests);
+    assertTrue(newspaper.events().isEmpty());
+  }
+
+  @Test
+  void addsTheJaporiRumorsOnlyWhileTheErrandIsPending() {
+    Game game = newGame();
+    Newspaper newspaper = new Newspaper();
+    FakeQuests quests = new FakeQuests();
+    StarSystem japoriSystem = systemWith(game, SpecialEventType.Japori);
+
+    quests.japori = SpecialEvent.StatusJaporiInTransit;
+    newspaper.addEventsOnArrival(japoriSystem, quests);
+    assertTrue(newspaper.events().isEmpty());
+
+    quests.japori = SpecialEvent.StatusJaporiNotStarted;
+    newspaper.addEventsOnArrival(japoriSystem, quests);
+    assertEquals(List.of(NewsEvent.Japori.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    StarSystem deliverySystem = systemWith(game, SpecialEventType.JaporiDelivery);
+    quests.japori = SpecialEvent.StatusJaporiNotStarted;
+    newspaper.addEventsOnArrival(deliverySystem, quests);
+    assertTrue(newspaper.events().isEmpty());
+
+    quests.japori = SpecialEvent.StatusJaporiInTransit;
+    newspaper.addEventsOnArrival(deliverySystem, quests);
+    assertEquals(List.of(NewsEvent.JaporiDelivery.CastToInt()), newspaper.events());
+  }
+
+  @Test
+  void addsThePrincessRumors() {
+    Game game = newGame();
+    Newspaper newspaper = new Newspaper();
+    FakeQuests quests = new FakeQuests();
+    StarSystem system = systemWith(game, SpecialEventType.Princess);
+
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.Princess.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    system.SpecialEventType(SpecialEventType.PrincessCentauri);
+    newspaper.addEventsOnArrival(system, quests);
+    assertTrue(newspaper.events().isEmpty());
+
+    quests.princess = SpecialEvent.StatusPrincessFlyCentauri;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.PrincessCentauri.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    system.SpecialEventType(SpecialEventType.PrincessInthara);
+    quests.princess = SpecialEvent.StatusPrincessFlyInthara;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.PrincessInthara.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    system.SpecialEventType(SpecialEventType.PrincessQonos);
+    quests.princess = SpecialEvent.StatusPrincessFlyQonos;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.PrincessQonos.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    quests.princess = SpecialEvent.StatusPrincessRescued;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.PrincessRescued.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    system.SpecialEventType(SpecialEventType.PrincessReturned);
+    quests.princess = SpecialEvent.StatusPrincessReturned;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.PrincessReturned.CastToInt()), newspaper.events());
+  }
+
+  @Test
+  void addsTheScarabRumors() {
+    Game game = newGame();
+    Newspaper newspaper = new Newspaper();
+    FakeQuests quests = new FakeQuests();
+    StarSystem system = systemWith(game, SpecialEventType.Scarab);
+
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.Scarab.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    system.SpecialEventType(SpecialEventType.ScarabDestroyed);
+    newspaper.addEventsOnArrival(system, quests);
+    assertTrue(newspaper.events().isEmpty());
+
+    quests.scarab = SpecialEvent.StatusScarabHunting;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.ScarabHarass.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    quests.scarab = SpecialEvent.StatusScarabDestroyed;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.ScarabDestroyed.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    quests.scarab = SpecialEvent.StatusScarabDone;
+    newspaper.addEventsOnArrival(system, quests);
+    assertEquals(List.of(NewsEvent.ScarabDestroyed.CastToInt()), newspaper.events());
+  }
+
+  @Test
+  void addsTheSculptureRumors() {
+    Game game = newGame();
+    Newspaper newspaper = new Newspaper();
+    FakeQuests quests = new FakeQuests();
+
+    newspaper.addEventsOnArrival(systemWith(game, SpecialEventType.Sculpture), quests);
+    assertEquals(List.of(NewsEvent.SculptureStolen.CastToInt()), newspaper.events());
+
+    newspaper.reset();
+    newspaper.addEventsOnArrival(systemWith(game, SpecialEventType.SculptureDelivered), quests);
+    assertEquals(List.of(NewsEvent.SculptureTracked.CastToInt()), newspaper.events());
+  }
+
+  @Test
+  void addsTheSpaceMonsterKilledRumorWhenTheMonsterIsGone() {
+    Game game = newGame();
+    StarSystem system = systemWith(game, SpecialEventType.SpaceMonsterKilled);
+    Newspaper newspaper = new Newspaper();
+    FakeQuests quests = new FakeQuests();
+
+    quests.spaceMonster = SpecialEvent.StatusSpaceMonsterDone;
+    newspaper.addEventsOnArrival(system, quests);
+
+    assertEquals(List.of(NewsEvent.SpaceMonsterKilled.CastToInt()), newspaper.events());
+  }
+
+  private StarSystem systemWith(Game game, SpecialEventType type) {
+    StarSystem system = game.Universe()[0];
+    system.SpecialEventType(type);
+    return system;
+  }
+
+  private void board(Game game, CrewMemberId id) {
+    CrewMember[] crew = game.Commander().getShip().Crew();
+    crew[crew.length - 1] = game.Mercenaries()[id.CastToInt()];
   }
 
   private Game newGame() {
