@@ -84,9 +84,14 @@ el modelo está desacoplado de las vistas.
 - [x] Sustituir el build de NetBeans/Ant por Maven y eliminar JNLP/WebStart
 - [x] Refactorizar hacia Model-View-Presenter
 - [x] Portar la UI a Lanterna y eliminar el front-end Swing/JWinForms
-- [x] Paquete autónomo con `jlink` y workflow de release (zips de Linux y Windows)
-- [ ] Renderizador de naves: dibujar las naves del juego a partir del arte de
-      `ships/` (el compositor y los formatos ya están)
+- [x] Paquete autónomo con `jlink`, releases en GitHub (zips de Linux y Windows), Snap Store e itch.io
+- [x] Renderizador de naves: las naves se dibujan con el arte editable de `ships/`
+      en las pantallas y en la escena de los encuentros
+- [x] Compositor de naves y raíles del editor (los 17 tipos con sus cascos y
+      piezas, validados en CI)
+- [ ] Descomponer `Game` por áreas (#46): Universe (#147), precios y comercio
+      (#148), noticias (#149), misiones y eventos (#150), viaje y llegada (#151)
+      y serialización (#152)
 
 ---
 
