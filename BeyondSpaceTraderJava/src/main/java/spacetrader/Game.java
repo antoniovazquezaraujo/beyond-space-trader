@@ -33,8 +33,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   private static Game game;
   private Commander cmdr;
   // Game Data
-  private StarSystem[] _universe;
-  private int[] _wormholes = new int[6];
+  private Universe _universe;
   private CrewMember[] _mercenaries = new CrewMember[Strings.CrewMemberNames.size()];
   private Ship _dragonfly = new Ship(ShipType.Dragonfly);
   private Ship _scarab = new Ship(ShipType.Scarab);
@@ -87,15 +86,10 @@ public final class Game extends STSerializableObject implements QuestStates {
     _parentWin = parentWin;
     _dialogs = dialogs;
     _difficulty = difficulty;
-    // Keep generating a new universe until all the special events and shipyards are placed.
-    do {
-      UniverseGenerator.Generated generated = UniverseGenerator.Generate(Strings.SystemNames.size(), _wormholes.length);
-      _universe = generated.systems();
-      _wormholes = generated.wormholes();
-    } while(!(UniverseGenerator.PlaceSpecialEvents(_universe, _wormholes) && UniverseGenerator.PlaceShipyards(_universe)));
+    _universe = Universe.generate();
     cmdr = NewGameSetup.InitializeCommander(name,
-        new CrewMember(CrewMemberId.Commander, pilot, fighter, trader, engineer, StarSystemId.NA), _universe, Mercenaries());
-    NewGameSetup.GenerateCrewMemberList(Mercenaries(), _universe.length, _difficulty);
+        new CrewMember(CrewMemberId.Commander, pilot, fighter, trader, engineer, StarSystemId.NA), _universe.systems(), Mercenaries());
+    NewGameSetup.GenerateCrewMemberList(Mercenaries(), _universe.systems().length, _difficulty);
     NewGameSetup.CreateShips(Dragonfly(), _scarab, _scorpion, _spaceMonster, Mercenaries());
     CalculatePrices(cmdr.CurrentSystem());
     Game.this.ResetVeryRareEncounters();
@@ -114,8 +108,8 @@ public final class Game extends STSerializableObject implements QuestStates {
     if(version.compareTo(Consts.CurrentVersion) > 0) {
       throw new FutureVersionException();
     }
-    _universe = (StarSystem[])ArrayListToArray(GetValueFromHash(hash, "_universe", ArrayList.class), "StarSystem");
-    _wormholes = GetValueFromHash(hash, "_wormholes", _wormholes, int[].class);
+    _universe = Universe.from((StarSystem[])ArrayListToArray(GetValueFromHash(hash, "_universe", ArrayList.class), "StarSystem"),
+        GetValueFromHash(hash, "_wormholes", new int[6], int[].class));
     _mercenaries = (CrewMember[])ArrayListToArray(GetValueFromHash(hash, "_mercenaries", ArrayList.class), "CrewMember");
     cmdr = new Commander(GetValueFromHash(hash, "_commander", Hashtable.class));
     _dragonfly = new Ship(GetValueFromHash(hash, "_dragonfly", _dragonfly.Serialize(), Hashtable.class));
@@ -173,9 +167,9 @@ public final class Game extends STSerializableObject implements QuestStates {
   public Hashtable Serialize() {
     Hashtable ht = super.Serialize();
     ht.add("_version", "2.00");
-    ht.add("_universe", ArrayToArrayList(_universe));
+    ht.add("_universe", ArrayToArrayList(_universe.systems()));
     ht.add("_commander", cmdr.Serialize());
-    ht.add("_wormholes", _wormholes);
+    ht.add("_wormholes", _universe.wormholes());
     ht.add("_mercenaries", ArrayToArrayList(_mercenaries));
     ht.add("_dragonfly", _dragonfly.Serialize());
     ht.add("_scarab", _scarab.Serialize());
@@ -385,21 +379,22 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   private void ArrivalUpdatePressuresAndQuantities() {
-    for(int i = 0; i < _universe.length; i++) {
+    StarSystem[] universe = _universe.systems();
+    for(int i = 0; i < universe.length; i++) {
       if(Functions.GetRandom(100) < 15) {
-        _universe[i].SystemPressure((SystemPressure.FromInt(_universe[i].SystemPressure() == SystemPressure.None
+        universe[i].SystemPressure((SystemPressure.FromInt(universe[i].SystemPressure() == SystemPressure.None
             ? Functions.GetRandom(SystemPressure.War.CastToInt(), SystemPressure.Employment.CastToInt() + 1) : SystemPressure.None.CastToInt())));
       }
-      if(_universe[i].CountDown() > 0) {
-        _universe[i].CountDown(_universe[i].CountDown() - 1);
-        if(_universe[i].CountDown() > CountDownStart()) {
-          _universe[i].CountDown(CountDownStart());
-        } else if(_universe[i].CountDown() <= 0) {
-          _universe[i].InitializeTradeItems();
+      if(universe[i].CountDown() > 0) {
+        universe[i].CountDown(universe[i].CountDown() - 1);
+        if(universe[i].CountDown() > CountDownStart()) {
+          universe[i].CountDown(CountDownStart());
+        } else if(universe[i].CountDown() <= 0) {
+          universe[i].InitializeTradeItems();
         } else {
           for(int j = 0; j < Consts.TradeItems.size(); j++) {
             if(WarpSystem().ItemTraded(Consts.TradeItems.get(j))) {
-              _universe[i].TradeItems()[j] = Math.max(0, _universe[i].TradeItems()[j] + Functions.GetRandom(-4, 5));
+              universe[i].TradeItems()[j] = Math.max(0, universe[i].TradeItems()[j] + Functions.GetRandom(-4, 5));
             }
           }
         }
@@ -486,19 +481,19 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public StarSystem SelectedSystem() {
-    return (_selectedSystemId == StarSystemId.NA ? null : _universe[_selectedSystemId.CastToInt()]);
+    return (_selectedSystemId == StarSystemId.NA ? null : _universe.systems()[_selectedSystemId.CastToInt()]);
   }
 
   public StarSystem TrackedSystem() {
-    return _trackedSystemId == StarSystemId.NA ? null : _universe[_trackedSystemId.CastToInt()];
+    return _trackedSystemId == StarSystemId.NA ? null : _universe.systems()[_trackedSystemId.CastToInt()];
   }
 
   public StarSystem WarpSystem() {
-    return _warpSystemId == StarSystemId.NA ? null : _universe[_warpSystemId.CastToInt()];
+    return _warpSystemId == StarSystemId.NA ? null : _universe.systems()[_warpSystemId.CastToInt()];
   }
 
   public StarSystem[] Universe() {
-    return _universe;
+    return _universe.systems();
   }
 
   public StarSystemId getTrackedSystemId() {
@@ -519,7 +514,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public String NewspaperText() {
-    return _newspaper.text(cmdr, _universe, _difficulty);
+    return _newspaper.text(cmdr, _universe.systems(), _difficulty);
   }
 
   @SuppressWarnings("fallthrough")
@@ -580,7 +575,7 @@ public final class Game extends STSerializableObject implements QuestStates {
     if(getQuestStatusExperiment() == SpecialEvent.StatusExperimentPerformed && getFabricRipProbability() > 0
         && (getFabricRipProbability() == Consts.FabricRipInitialProbability || Functions.GetRandom(100) < getFabricRipProbability())) {
       Dialogs().alert(AlertType.SpecialTimespaceFabricRip);
-      SelectedSystemId(StarSystemId.FromInt(Functions.GetRandom(_universe.length)));
+      SelectedSystemId(StarSystemId.FromInt(Functions.GetRandom(_universe.systems().length)));
     }
     boolean uneventful = true;
     encounter().setRaided(false);
@@ -753,7 +748,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public int[] Wormholes() {
-    return _wormholes;
+    return _universe.wormholes();
   }
 
   public void Arrested() {
@@ -860,10 +855,11 @@ public final class Game extends STSerializableObject implements QuestStates {
       Dialogs().alert(AlertType.TribblesKilled);
     }
     if(getQuestStatusJapori() == SpecialEvent.StatusJaporiInTransit) {
+      StarSystem[] universe = _universe.systems();
       int system;
-      for(system = 0; system < _universe.length && _universe[system].SpecialEventType() != SpecialEventType.Japori; system++) {
+      for(system = 0; system < universe.length && universe[system].SpecialEventType() != SpecialEventType.Japori; system++) {
       }
-      Dialogs().alert(AlertType.AntidoteDestroyed, _universe[system].Name());
+      Dialogs().alert(AlertType.AntidoteDestroyed, universe[system].Name());
       setQuestStatusJapori(SpecialEvent.StatusJaporiNotStarted);
     }
     if(cmdr.getShip().ArtifactOnBoard()) {
@@ -1160,7 +1156,7 @@ public final class Game extends STSerializableObject implements QuestStates {
       case WildGetsOut:
         // Zeethibal has a 10 in player's lowest score, an 8 in the next lowest score, and 5 elsewhere.
         CrewMember zeethibal = Mercenaries()[CrewMemberId.Zeethibal.CastToInt()];
-        zeethibal.CurrentSystem(_universe[StarSystemId.Kravat.CastToInt()]);
+        zeethibal.CurrentSystem(_universe.systems()[StarSystemId.Kravat.CastToInt()]);
         int lowest1 = cmdr.NthLowestSkill(1);
         int lowest2 = cmdr.NthLowestSkill(2);
         for(int i = 0; i < zeethibal.Skills().length; i++) {
@@ -1201,7 +1197,7 @@ public final class Game extends STSerializableObject implements QuestStates {
     if(getQuestStatusGemulon() > SpecialEvent.StatusGemulonNotStarted && getQuestStatusGemulon() < SpecialEvent.StatusGemulonTooLate) {
       setQuestStatusGemulon(Math.min(getQuestStatusGemulon() + num, SpecialEvent.StatusGemulonTooLate));
       if(getQuestStatusGemulon() == SpecialEvent.StatusGemulonTooLate) {
-        StarSystem gemulon = _universe[StarSystemId.Gemulon.CastToInt()];
+        StarSystem gemulon = _universe.systems()[StarSystemId.Gemulon.CastToInt()];
         gemulon.SpecialEventType(SpecialEventType.GemulonInvaded);
         gemulon.TechLevel(TechLevel.t0);
         gemulon.PoliticalSystemType(PoliticalSystemType.Anarchy);
@@ -1215,7 +1211,7 @@ public final class Game extends STSerializableObject implements QuestStates {
       setQuestStatusExperiment(Math.min(getQuestStatusExperiment() + num, SpecialEvent.StatusExperimentPerformed));
       if(getQuestStatusExperiment() == SpecialEvent.StatusExperimentPerformed) {
         setFabricRipProbability(Consts.FabricRipInitialProbability);
-        _universe[StarSystemId.Daled.CastToInt()].SpecialEventType(SpecialEventType.ExperimentFailed);
+        _universe.systems()[StarSystemId.Daled.CastToInt()].SpecialEventType(SpecialEventType.ExperimentFailed);
         Dialogs().alert(AlertType.SpecialExperimentPerformed);
         NewsAddEvent(NewsEvent.ExperimentPerformed);
       }
@@ -1326,8 +1322,9 @@ public final class Game extends STSerializableObject implements QuestStates {
   public void TargetWormhole(boolean b) {
     _targetWormhole = b;
     if(_targetWormhole) {
-      int wormIndex = Util.BruteSeek(_wormholes, _selectedSystemId.CastToInt());
-      _warpSystemId = StarSystemId.FromInt(_wormholes[(wormIndex + 1) % _wormholes.length]);
+      int[] wormholes = _universe.wormholes();
+      int wormIndex = Util.BruteSeek(wormholes, _selectedSystemId.CastToInt());
+      _warpSystemId = StarSystemId.FromInt(wormholes[(wormIndex + 1) % wormholes.length]);
     }
   }
 
@@ -1465,8 +1462,9 @@ public final class Game extends STSerializableObject implements QuestStates {
   public void setSelectedSystemByName(String value) {
     String nameToFind = value;
     boolean found = false;
-    for(int i = 0; i < _universe.length && !found; i++) {
-      String name = _universe[i].Name();
+    StarSystem[] universe = _universe.systems();
+    for(int i = 0; i < universe.length && !found; i++) {
+      String name = universe[i].Name();
       if(name.toLowerCase().indexOf(nameToFind.toLowerCase()) >= 0) {
         SelectedSystemId(StarSystemId.FromInt(i));
         found = true;

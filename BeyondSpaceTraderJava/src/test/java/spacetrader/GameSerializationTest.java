@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.NewsEvent;
@@ -123,6 +124,36 @@ class GameSerializationTest {
 
     assertEquals(List.of(NewsEvent.Japori.CastToInt(), NewsEvent.WildArrested.CastToInt()), loaded.NewsEvents());
     assertTrue(loaded.getPaidForNewspaper());
+  }
+
+  @Test
+  void serializesTheUniverseWithTheKeysAndTypesOfTheOldFormat() {
+    Game game = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+
+    Hashtable hash = game.Serialize();
+
+    Object systems = hash.get("_universe");
+    assertInstanceOf(ArrayList.class, systems);
+    assertEquals(game.Universe().length, ((ArrayList<?>)systems).size());
+    assertInstanceOf(Hashtable.class, ((ArrayList<?>)systems).get(0));
+    assertInstanceOf(int[].class, hash.get("_wormholes"));
+    assertEquals(6, ((int[])hash.get("_wormholes")).length);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void loadsTheUniverseFromASaveWrittenBeforeTheRefactor() throws Exception {
+    Game fresh = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+    Hashtable save = fresh.Serialize();
+    // Keys and types exactly as the old Game wrote them to the save file.
+    ArrayList<Hashtable> systems = (ArrayList<Hashtable>)save.get("_universe");
+    systems.get(0).add("_x", -1);
+    save.add("_wormholes", new int[] {3, 1, 4, 1, 5, 9});
+
+    Game loaded = new Game(writeAndReadBack(save), null, new TestDialogService());
+
+    assertEquals(-1, loaded.Universe()[0].X());
+    assertArrayEquals(new int[] {3, 1, 4, 1, 5, 9}, loaded.Wormholes());
   }
 
   private static Hashtable writeAndReadBack(Hashtable save) throws Exception {
