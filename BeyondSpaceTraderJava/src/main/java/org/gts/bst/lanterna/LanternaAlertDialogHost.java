@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.gts.bst.view.AlertButton;
 import org.gts.bst.view.AlertDialogHost;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 
 
 /**

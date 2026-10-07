@@ -1,5 +1,5 @@
 package spacetrader;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogService;
 import spacetrader.util.Hashtable;
 
 

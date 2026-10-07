@@ -17,7 +17,7 @@ import java.util.Locale;
 import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.PersonnelInfo;
 import org.gts.bst.view.PersonnelView;
 import org.gts.bst.view.PersonnelViewModel;

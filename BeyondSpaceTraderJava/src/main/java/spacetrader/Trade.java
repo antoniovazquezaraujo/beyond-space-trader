@@ -14,7 +14,7 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.cargo.TradeItem;
 import org.gts.bst.events.NewsEvent;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import spacetrader.enums.AlertType;
 
 

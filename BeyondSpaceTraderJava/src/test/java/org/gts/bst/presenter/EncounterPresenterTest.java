@@ -28,7 +28,7 @@ import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.view.Alerts;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;

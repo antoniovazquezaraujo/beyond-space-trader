@@ -1,7 +1,7 @@
 package spacetrader;
 import org.gts.bst.crew.CrewMemberId;
-import org.gts.bst.view.DialogResult;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogResult;
+import org.gts.bst.ports.DialogService;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.Equipment;
 import org.gts.bst.ship.equip.GadgetType;

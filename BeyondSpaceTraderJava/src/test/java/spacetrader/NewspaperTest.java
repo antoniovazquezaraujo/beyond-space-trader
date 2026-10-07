@@ -19,8 +19,8 @@ import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.NewsEvent;
 import org.gts.bst.events.SpecialEventType;
-import org.gts.bst.view.DialogService;
-import org.gts.bst.view.GameWindow;
+import org.gts.bst.ports.DialogService;
+import org.gts.bst.ports.GameWindow;
 import org.junit.jupiter.api.Test;
 import spacetrader.enums.StarSystemId;
 

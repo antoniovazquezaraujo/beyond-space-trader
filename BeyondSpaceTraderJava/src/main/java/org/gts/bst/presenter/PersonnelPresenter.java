@@ -11,7 +11,7 @@ package org.gts.bst.presenter;
 import java.util.ArrayList;
 import java.util.List;
 import org.gts.bst.crew.CrewMemberId;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.PersonnelInfo;
 import org.gts.bst.view.PersonnelView;
 import org.gts.bst.view.PersonnelViewModel;

@@ -11,6 +11,8 @@ package org.gts.bst.view;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import org.gts.bst.ports.DialogResult;
+import org.gts.bst.ports.DialogService;
 import spacetrader.Functions;
 import spacetrader.enums.AlertType;
 

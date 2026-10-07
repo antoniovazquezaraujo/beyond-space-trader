@@ -10,8 +10,8 @@ package spacetrader;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.gts.bst.view.DialogResult;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogResult;
+import org.gts.bst.ports.DialogService;
 import spacetrader.enums.AlertType;
 
 

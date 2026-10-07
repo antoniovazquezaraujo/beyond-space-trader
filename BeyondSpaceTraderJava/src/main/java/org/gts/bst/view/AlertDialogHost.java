@@ -9,6 +9,7 @@
 package org.gts.bst.view;
 
 import java.util.List;
+import org.gts.bst.ports.DialogResult;
 
 
 /**

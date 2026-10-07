@@ -25,7 +25,7 @@ import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
 import java.util.List;
 import org.gts.bst.view.AlertButton;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.junit.jupiter.api.Test;
 
 

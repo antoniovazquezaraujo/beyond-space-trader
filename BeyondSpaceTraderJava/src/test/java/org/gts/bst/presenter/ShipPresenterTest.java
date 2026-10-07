@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogService;
 import org.gts.bst.view.ShipView;
 import org.gts.bst.view.ShipViewModel;
 import org.junit.jupiter.api.BeforeAll;

@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.SpecialEventType;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogService;
 import org.gts.bst.view.QuestsView;
 import org.gts.bst.view.QuestsViewModel;
 import org.junit.jupiter.api.Test;

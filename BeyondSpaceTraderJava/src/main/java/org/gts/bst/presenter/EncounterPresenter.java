@@ -23,7 +23,7 @@ import org.gts.bst.view.AlertDefinition;
 import org.gts.bst.view.Alerts;
 import org.gts.bst.view.EncounterAction;
 import spacetrader.Strings;
-import org.gts.bst.view.EncounterDialogHost;
+import org.gts.bst.ports.EncounterDialogHost;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipCatalog;

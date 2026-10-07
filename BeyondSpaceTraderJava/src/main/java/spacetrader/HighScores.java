@@ -11,7 +11,7 @@ package spacetrader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogService;
 import spacetrader.util.Hashtable;
 
 

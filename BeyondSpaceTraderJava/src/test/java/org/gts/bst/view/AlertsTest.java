@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
+import org.gts.bst.ports.DialogResult;
 import org.junit.jupiter.api.Test;
 import spacetrader.enums.AlertType;
 

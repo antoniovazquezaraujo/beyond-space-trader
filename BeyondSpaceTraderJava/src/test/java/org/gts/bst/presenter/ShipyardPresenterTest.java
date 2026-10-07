@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.ShipyardDesignerViewModel;
 import org.gts.bst.view.ShipyardView;
 import org.junit.jupiter.api.BeforeAll;

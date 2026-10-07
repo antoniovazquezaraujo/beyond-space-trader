@@ -8,6 +8,8 @@
  */
 package org.gts.bst.view;
 
+import org.gts.bst.ports.DialogResult;
+
 
 /**
  * Title, message, buttons and results of a predefined alert, with no front-end
