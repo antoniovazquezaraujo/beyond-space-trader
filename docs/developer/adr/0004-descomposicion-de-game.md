@@ -46,7 +46,7 @@ paquete `spacetrader` que posee su estado y su lógica.**
 
 La primera extracción es **noticias** (#149): `Newspaper` posee `_newsEvents` y
 `_paidForNewspaper`, el texto y la cabecera del periódico y el switch de rumores
-de llegada. `GameArrival()` sigue llamando a los rumores, ahora al componente.
+de llegada. `Arrival()` sigue llamando a los rumores, ahora al componente.
 
 ## Consecuencias
 
