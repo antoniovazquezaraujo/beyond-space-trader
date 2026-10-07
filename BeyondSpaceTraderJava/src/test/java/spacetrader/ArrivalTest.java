@@ -146,6 +146,89 @@ class ArrivalTest {
     assertTrue(dialogs.alerts().contains(AlertType.TribblesMostDied));
   }
 
+  /**
+   * The escape pod runs in the middle of the arrival: the checks that follow
+   * must see the ship the pod left behind, not the one that melted down.
+   */
+  @Test
+  void theEscapePodsNewShipIsTheOneTheLaterChecksSee() {
+    Ship oldShip = cmdr.getShip();
+    oldShip.setEscapePod(true);
+    oldShip.setTribbles(100);
+    boolean[] messageCleared = {false};
+    Arrival.Consequences escapeToFlea = new Arrival.Consequences() {
+      @Override
+      public void escapeWithPod() {
+        cmdr.setShip(new Ship(ShipType.Flea));
+      }
+
+      @Override
+      public void destroyed() {
+        throw new AssertionError("the escape pod must not destroy the ship");
+      }
+
+      @Override
+      public void showNewspaper() {
+      }
+    };
+
+    arrival(new FakeNavigation(null), new FakeReactor(SpecialEvent.StatusReactorDate),
+        () -> messageCleared[0] = true, escapeToFlea).arrive(system(StarSystemId.Sol));
+
+    assertEquals(List.of(AlertType.ReactorMeltdown), dialogs.alerts(),
+        "the tribbles check must run after the escape and see the empty new ship");
+    assertEquals(0, cmdr.getShip().getTribbles());
+    assertEquals(100, oldShip.getTribbles(), "the tribbles of the escaped ship must not be touched");
+    assertFalse(messageCleared[0], "the empty new ship must not clear the tribble message");
+  }
+
+  @Test
+  void tribblesOnlyDieWhileTheReactorMissionIsInTransit() {
+    Ship ship = cmdr.getShip();
+    int[] notInTransit = {SpecialEvent.StatusReactorNotStarted, SpecialEvent.StatusReactorDelivered,
+        SpecialEvent.StatusReactorDone};
+    for(int status : notInTransit) {
+      ship.setTribbles(100);
+      dialogs.alerts().clear();
+
+      arrival(new FakeNavigation(null), new FakeReactor(status), () -> { },
+          new RecordingConsequences()).arrive(system(StarSystemId.Sol));
+
+      assertFalse(dialogs.alerts().contains(AlertType.TribblesAllDied), "status " + status);
+      assertFalse(dialogs.alerts().contains(AlertType.TribblesHalfDied), "status " + status);
+      assertTrue(ship.getTribbles() >= 100, "status " + status + " must not kill the tribbles");
+    }
+  }
+
+  @Test
+  void noReactorWarningsOutsideTheWarningDays() {
+    int[] quiet = {SpecialEvent.StatusReactorNotStarted, SpecialEvent.StatusReactorDelivered,
+        SpecialEvent.StatusReactorDone, SpecialEvent.StatusReactorDate - 1};
+    for(int status : quiet) {
+      dialogs.alerts().clear();
+      FakeReactor reactor = new FakeReactor(status);
+
+      arrival(new FakeNavigation(null), reactor, () -> { },
+          new RecordingConsequences()).arrive(system(StarSystemId.Sol));
+
+      assertFalse(dialogs.alerts().contains(AlertType.ReactorWarningFuel), "status " + status);
+      assertFalse(dialogs.alerts().contains(AlertType.ReactorWarningFuelGone), "status " + status);
+      assertFalse(dialogs.alerts().contains(AlertType.ReactorWarningTemp), "status " + status);
+      assertFalse(dialogs.alerts().contains(AlertType.ReactorMeltdown), "status " + status);
+      assertEquals(status, reactor.reactorStatus(), "a quiet status must not change");
+    }
+  }
+
+  @Test
+  void theTribbleMessageIsKeptWhenThereAreNoTribbles() {
+    boolean[] messageCleared = {false};
+
+    arrival(new FakeNavigation(null), new FakeReactor(NO_REACTOR), () -> messageCleared[0] = true,
+        new RecordingConsequences()).arrive(system(StarSystemId.Sol));
+
+    assertFalse(messageCleared[0], "without tribbles the arrival must not touch the message flag");
+  }
+
   @Test
   void aLargeDebtWarnsOnArrival() {
     cmdr.setDebt(Consts.DebtWarning);
@@ -154,6 +237,17 @@ class ArrivalTest {
         new RecordingConsequences()).arrive(system(StarSystemId.Sol));
 
     assertTrue(dialogs.alerts().contains(AlertType.DebtWarning));
+  }
+
+  @Test
+  void aDebtJustBelowTheWarningDoesNotWarn() {
+    cmdr.setDebt(Consts.DebtWarning - 1);
+    options.setRemindLoans(false);
+
+    arrival(new FakeNavigation(null), new FakeReactor(NO_REACTOR), () -> { },
+        new RecordingConsequences()).arrive(system(StarSystemId.Sol));
+
+    assertFalse(dialogs.alerts().contains(AlertType.DebtWarning));
   }
 
   @Test
@@ -205,6 +299,42 @@ class ArrivalTest {
       assertEquals(0, ship.Cargo()[i]);
       assertEquals(0, cmdr.PriceCargo()[i]);
     }
+  }
+
+  @Test
+  void theEggNeedsExactlyOneOfEachTradeItem() {
+    Ship ship = new Ship(ShipType.Firefly);
+    cmdr.setShip(ship);
+    for(int i = 0; i < ship.Cargo().length; i++) {
+      ship.Cargo()[i] = 1;
+      cmdr.PriceCargo()[i] = 5;
+    }
+    ship.Cargo()[0] = 2;
+    assertTrue(ship.FreeSlotsShield() > 0);
+
+    arrival(new FakeNavigation(null), new FakeReactor(NO_REACTOR), () -> { },
+        new RecordingConsequences()).arrive(system(StarSystemId.Og));
+
+    assertFalse(dialogs.alerts().contains(AlertType.Egg));
+    assertFalse(ship.HasShield(ShieldType.Lightning));
+    assertEquals(2, ship.Cargo()[0], "a non-egg cargo must be left alone");
+    assertEquals(5, cmdr.PriceCargo()[0], "a non-egg cargo must keep its price");
+  }
+
+  @Test
+  void theEggNeedsAFreeShieldSlot() {
+    // The starting Gnat has no shield slots, so the egg cannot install the shield.
+    Ship ship = cmdr.getShip();
+    for(int i = 0; i < ship.Cargo().length; i++) {
+      ship.Cargo()[i] = 1;
+    }
+    assertEquals(0, ship.FreeSlotsShield());
+
+    arrival(new FakeNavigation(null), new FakeReactor(NO_REACTOR), () -> { },
+        new RecordingConsequences()).arrive(system(StarSystemId.Og));
+
+    assertFalse(dialogs.alerts().contains(AlertType.Egg));
+    assertFalse(ship.HasShield(ShieldType.Lightning));
   }
 
   @Test
