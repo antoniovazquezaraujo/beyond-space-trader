@@ -45,6 +45,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   private boolean _tribbleMessage = false; // Is true if the Ship Yard on the current system informed you about the tribbles
   private boolean _arrivedViaWormhole = false; // flag to indicate whether player arrived on current planet via wormhole
   private final Newspaper _newspaper = new Newspaper();
+  private final Market _market = new Market();
   // Current Selections
   private Difficulty _difficulty = Difficulty.Normal; // Difficulty level
   private boolean _cheatEnabled = false;
@@ -56,8 +57,6 @@ public final class Game extends STSerializableObject implements QuestStates {
   private StarSystemId _warpSystemId = StarSystemId.NA; // Target system for warp
   private StarSystemId _trackedSystemId = StarSystemId.NA; // The short-range chart will display an arrow towards this system if the value is not null
   private boolean _targetWormhole = false; // Wormhole selected?
-  private int[] _priceCargoBuy = new int[10];
-  private int[] _priceCargoSell = new int[10];
   // Status of Quests
   private int _questStatusArtifact = 0; // 0 = not given yet, 1 = Artifact on board, 2 = Artifact no longer on board (either delivered or lost)
   private int _questStatusDragonfly = 0; // 0 = not available, 1 = Go to Baratas, 2 = Go to Melina, 3 = Go to Regulas, 4 = Go to Zalkon, 5 = Dragonfly destroyed, 6 = Got Shield
@@ -143,8 +142,8 @@ public final class Game extends STSerializableObject implements QuestStates {
     _warpSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_warpSystemId", _warpSystemId, Integer.class));
     _trackedSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_trackedSystemId", _trackedSystemId, Integer.class));
     _targetWormhole = GetValueFromHash(hash, "_targetWormhole", _targetWormhole);
-    _priceCargoBuy = GetValueFromHash(hash, "_priceCargoBuy", _priceCargoBuy, int[].class);
-    _priceCargoSell = GetValueFromHash(hash, "_priceCargoSell", _priceCargoSell, int[].class);
+    _market.buy(GetValueFromHash(hash, "_priceCargoBuy", _market.buy(), int[].class));
+    _market.sell(GetValueFromHash(hash, "_priceCargoSell", _market.sell(), int[].class));
     _questStatusArtifact = GetValueFromHash(hash, "_questStatusArtifact", _questStatusArtifact);
     _questStatusDragonfly = GetValueFromHash(hash, "_questStatusDragonfly", _questStatusDragonfly);
     _questStatusExperiment = GetValueFromHash(hash, "_questStatusExperiment", _questStatusExperiment);
@@ -202,8 +201,8 @@ public final class Game extends STSerializableObject implements QuestStates {
     ht.add("_warpSystemId", _warpSystemId.CastToInt());
     ht.add("_trackedSystemId", _trackedSystemId.CastToInt());
     ht.add("_targetWormhole", _targetWormhole);
-    ht.add("_priceCargoBuy", _priceCargoBuy);
-    ht.add("_priceCargoSell", _priceCargoSell);
+    ht.add("_priceCargoBuy", _market.buy());
+    ht.add("_priceCargoSell", _market.sell());
     ht.add("_questStatusArtifact", _questStatusArtifact);
     ht.add("_questStatusDragonfly", _questStatusDragonfly);
     ht.add("_questStatusExperiment", _questStatusExperiment);
@@ -409,8 +408,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   private void CalculatePrices(StarSystem system) {
-    _priceCargoSell = TradeCalculator.CalculateSellPrices(system, cmdr.getPoliceRecordScore());
-    RecalculateBuyPrices(system);
+    _market.calculate(system, cmdr.getPoliceRecordScore(), cmdr.getShip().Trader());
   }
 
 
@@ -747,11 +745,11 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public int[] PriceCargoBuy() {
-    return _priceCargoBuy;
+    return _market.buy();
   }
 
   public int[] PriceCargoSell() {
-    return _priceCargoSell;
+    return _market.sell();
   }
 
   public int[] Wormholes() {
@@ -1285,13 +1283,11 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public void RecalculateBuyPrices(StarSystem system) {
-    _priceCargoBuy = TradeCalculator.CalculateBuyPrices(system, _priceCargoSell, cmdr.getPoliceRecordScore(), cmdr.getShip().Trader());
+    _market.recalculateBuyPrices(system, cmdr.getPoliceRecordScore(), cmdr.getShip().Trader());
   }
 
   public void RecalculateSellPrices(StarSystem system) { // After erasure of police record, selling prices must be recalculated
-    for(int i = 0; i < Consts.TradeItems.size(); i++) {
-      _priceCargoSell[i] = _priceCargoSell[i] * 100 / 90;
-    }
+    _market.recalculateSellPrices();
   }
 
   public void ResetVeryRareEncounters() {

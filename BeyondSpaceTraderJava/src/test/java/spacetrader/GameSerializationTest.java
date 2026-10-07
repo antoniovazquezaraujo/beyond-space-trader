@@ -64,6 +64,34 @@ class GameSerializationTest {
   }
 
   @Test
+  void serializesThePricesWithTheKeysAndTypesOfTheOldFormat() {
+    Game game = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+    game.PriceCargoBuy()[0] = 123;
+    game.PriceCargoSell()[1] = 45;
+
+    Hashtable hash = game.Serialize();
+
+    assertInstanceOf(int[].class, hash.get("_priceCargoBuy"));
+    assertEquals(123, ((int[])hash.get("_priceCargoBuy"))[0]);
+    assertInstanceOf(int[].class, hash.get("_priceCargoSell"));
+    assertEquals(45, ((int[])hash.get("_priceCargoSell"))[1]);
+  }
+
+  @Test
+  void loadsThePricesFromASaveWrittenBeforeTheRefactor() throws Exception {
+    Game fresh = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+    Hashtable save = fresh.Serialize();
+    // Keys and types exactly as the old Game wrote them to the save file.
+    save.add("_priceCargoBuy", new int[] {11, 12, 13, 0, 0, 0, 0, 0, 0, 0});
+    save.add("_priceCargoSell", new int[] {1, 2, 3, 0, 0, 0, 0, 0, 0, 0});
+
+    Game loaded = new Game(writeAndReadBack(save), null, new TestDialogService());
+
+    assertArrayEquals(new int[] {11, 12, 13, 0, 0, 0, 0, 0, 0, 0}, loaded.PriceCargoBuy());
+    assertArrayEquals(new int[] {1, 2, 3, 0, 0, 0, 0, 0, 0, 0}, loaded.PriceCargoSell());
+  }
+
+  @Test
   void loadsTheNewsFromASaveWrittenBeforeTheRefactor() throws Exception {
     Game fresh = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
     Hashtable save = fresh.Serialize();
