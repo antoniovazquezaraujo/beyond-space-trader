@@ -11,6 +11,7 @@ package spacetrader;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -26,6 +27,7 @@ import org.gts.bst.events.VeryRareEncounter;
 import org.gts.bst.ship.equip.Equipment;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import spacetrader.enums.StarSystemId;
 import spacetrader.util.Hashtable;
 
 
@@ -138,6 +140,7 @@ class GameSerializationTest {
     assertInstanceOf(Hashtable.class, ((ArrayList<?>)systems).get(0));
     assertInstanceOf(int[].class, hash.get("_wormholes"));
     assertEquals(6, ((int[])hash.get("_wormholes")).length);
+    assertArrayEquals(game.Wormholes(), (int[])hash.get("_wormholes"));
   }
 
   @Test
@@ -154,6 +157,17 @@ class GameSerializationTest {
 
     assertEquals(-1, loaded.Universe()[0].X());
     assertArrayEquals(new int[] {3, 1, 4, 1, 5, 9}, loaded.Wormholes());
+
+    // The arrays of the loaded save are the live ones the game uses, not copies.
+    StarSystem[] loadedSystems = loaded.Universe();
+    int[] loadedWormholes = loaded.Wormholes();
+    loadedSystems[0].Visited(true);
+    loadedWormholes[0] = 42;
+    loaded.SelectedSystemId(StarSystemId.FromInt(0));
+    Hashtable reSaved = loaded.Serialize();
+    assertSame(loadedSystems[0], loaded.SelectedSystem(), "SelectedSystem must be the loaded live system");
+    assertEquals(Boolean.TRUE, ((Hashtable)((ArrayList<?>)reSaved.get("_universe")).get(0)).get("_visited"));
+    assertEquals(42, ((int[])reSaved.get("_wormholes"))[0]);
   }
 
   private static Hashtable writeAndReadBack(Hashtable save) throws Exception {

@@ -9,12 +9,17 @@
 package spacetrader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Field;
+import java.util.Random;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.SpecialEventType;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import spacetrader.enums.ShipyardId;
 import spacetrader.enums.StarSystemId;
@@ -22,6 +27,23 @@ import spacetrader.enums.TechLevel;
 
 
 class UniverseTest {
+  /**
+   * The first layout drawn with this seed has fewer Hi-Tech systems than
+   * shipyards, so {@link Universe#generate()} must discard it and retry. The
+   * seed makes the retry deterministic: without it the first layout fails only
+   * once in tens of thousands of draws.
+   */
+  private static final int RETRY_SEED = 6161;
+
+  /**
+   * The trade items of a system are initialized from the difficulty of the
+   * current game, so generation needs one even when it is called directly.
+   */
+  @BeforeAll
+  static void keepGenerationIndependentFromTheTestOrder() {
+    newGame();
+  }
+
   @Test
   void generatesEveryNamedSystemAndSixWormholes() {
     Universe universe = Universe.generate();
@@ -64,11 +86,15 @@ class UniverseTest {
   void systemsAndWormholesAreTheLiveArrays() {
     Universe universe = Universe.generate();
 
-    universe.systems()[0].Visited(true);
-    universe.wormholes()[0] = 3;
+    StarSystem[] systems = universe.systems();
+    int[] wormholes = universe.wormholes();
+    systems[0].Visited(true);
+    wormholes[0] = 3;
 
-    assertTrue(universe.systems()[0].Visited());
-    assertEquals(3, universe.wormholes()[0]);
+    assertSame(systems, universe.systems(), "the systems must not be copied");
+    assertSame(wormholes, universe.wormholes(), "the wormholes must not be copied");
+    assertTrue(systems[0].Visited());
+    assertEquals(3, wormholes[0]);
   }
 
   @Test
@@ -94,6 +120,52 @@ class UniverseTest {
     assertEquals(6, wormholes.length);
     assertSame(systems, game.Universe());
     assertSame(wormholes, game.Wormholes());
+
+    // The arrays the facade exposes are the ones the game itself uses.
+    game.SelectedSystemId(StarSystemId.FromInt(0));
+    assertSame(systems[0], game.SelectedSystem(), "the facade must expose the live systems");
+  }
+
+  @Test
+  void generationRetriesUntilTheShipyardsFit() throws Exception {
+    Random previous = replaceRandom(new Random(RETRY_SEED));
+    try {
+      // Arrange: the first layout of this seed cannot host all the shipyards.
+      UniverseGenerator.Generated firstDraw = UniverseGenerator.Generate(Strings.SystemNames.size(), 6);
+      UniverseGenerator.PlaceSpecialEvents(firstDraw.systems(), firstDraw.wormholes());
+      assertFalse(UniverseGenerator.PlaceShipyards(firstDraw.systems()),
+          "the seed must force the first layout to be rejected");
+
+      // Act: with the same seed, generation must retry with a fresh layout.
+      replaceRandom(new Random(RETRY_SEED));
+      Universe universe = Universe.generate();
+
+      // Assert: the returned universe is not the rejected one and fits the shipyards.
+      assertNotSame(firstDraw.systems()[0], universe.systems()[0], "generate must draw a fresh layout");
+      assertTrue(countHighTechSystems(universe) >= Consts.Shipyards.size(),
+          "not enough Hi-Tech systems after the retry");
+      int placed = 0;
+      for(StarSystem system : universe.systems()) {
+        if(system.ShipyardId() != ShipyardId.NA) {
+          placed++;
+        }
+      }
+      assertTrue(placed > 0, "no shipyard was placed after the retry");
+    } finally {
+      replaceRandom(previous);
+    }
+  }
+
+  /**
+   * Seeds the shared random source of {@link Functions} so generation is
+   * deterministic; returns the source to restore afterwards.
+   */
+  private static Random replaceRandom(Random random) throws ReflectiveOperationException {
+    Field rand = Functions.class.getDeclaredField("rand");
+    rand.setAccessible(true);
+    Random previous = (Random)rand.get(null);
+    rand.set(null, random);
+    return previous;
   }
 
   private static int countScarabEndpoints(Universe universe) {
