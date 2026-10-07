@@ -17,12 +17,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Path;
 import java.util.List;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.NewsEvent;
 import org.gts.bst.events.VeryRareEncounter;
 import org.gts.bst.ship.equip.Equipment;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import spacetrader.util.Hashtable;
 
 
@@ -86,6 +88,24 @@ class GameSerializationTest {
     save.add("_priceCargoSell", new int[] {1, 2, 3, 0, 0, 0, 0, 0, 0, 0});
 
     Game loaded = new Game(writeAndReadBack(save), null, new TestDialogService());
+
+    assertArrayEquals(new int[] {11, 12, 13, 0, 0, 0, 0, 0, 0, 0}, loaded.PriceCargoBuy());
+    assertArrayEquals(new int[] {1, 2, 3, 0, 0, 0, 0, 0, 0, 0}, loaded.PriceCargoSell());
+  }
+
+  @Test
+  void loadsThePricesFromAnOldSaveFile(@TempDir Path dir) {
+    TestDialogService dialogs = new TestDialogService();
+    Game fresh = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
+    Hashtable save = fresh.Serialize();
+    // Keys and types exactly as the old Game wrote them to the save file.
+    save.add("_priceCargoBuy", new int[] {11, 12, 13, 0, 0, 0, 0, 0, 0, 0});
+    save.add("_priceCargoSell", new int[] {1, 2, 3, 0, 0, 0, 0, 0, 0, 0});
+    String fileName = dir.resolve("old-save.bin").toString();
+
+    assertTrue(Functions.SaveFile(fileName, save, dialogs));
+
+    Game loaded = new Game((Hashtable)Functions.LoadFile(fileName, false, dialogs), null, dialogs);
 
     assertArrayEquals(new int[] {11, 12, 13, 0, 0, 0, 0, 0, 0, 0}, loaded.PriceCargoBuy());
     assertArrayEquals(new int[] {1, 2, 3, 0, 0, 0, 0, 0, 0, 0}, loaded.PriceCargoSell());

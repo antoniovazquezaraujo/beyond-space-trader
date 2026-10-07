@@ -10,6 +10,8 @@ package spacetrader;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
@@ -85,13 +87,57 @@ class MarketTest {
   }
 
   @Test
+  void theFacadeRecalculatesTheBuyPricesLikeTradeCalculator() {
+    Game game = newGame();
+    StarSystem system = systemTradingSomething(game);
+    int[] sellPrices = game.PriceCargoSell();
+    for(int i = 0; i < sellPrices.length; i++) {
+      sellPrices[i] = sellPrices[i] * 2 + 1;
+    }
+
+    game.RecalculateBuyPrices(system);
+
+    assertArrayEquals(
+        TradeCalculator.CalculateBuyPrices(system, sellPrices,
+            game.Commander().getPoliceRecordScore(), game.Commander().getShip().Trader()),
+        game.PriceCargoBuy());
+  }
+
+  @Test
   void raisesTheSellPricesAfterErasingThePoliceRecord() {
     Market market = new Market();
     market.sell(new int[] {90, 100, 0, 45, 10, 19, 200, 350, 0, 1000});
+    int[] sell = market.sell();
 
     market.recalculateSellPrices();
 
+    assertSame(sell, market.sell(), "the raise is done in place, as Game did");
     assertArrayEquals(new int[] {100, 111, 0, 50, 11, 21, 222, 388, 0, 1111}, market.sell());
+  }
+
+  @Test
+  void recalculatingTheBuyPricesReplacesTheLiveArray() {
+    Market market = new Market();
+    market.sell(new int[] {10, 250, 0, 350, 250, 0, 650, 900, 3500, 0});
+    int[] buy = market.buy();
+    int[] sell = market.sell();
+
+    market.recalculateBuyPrices(system(), VILLAIN_RECORD, TRADER_SKILL);
+
+    assertNotSame(buy, market.buy(), "the recalculation derives the buy prices, as Game did");
+    assertSame(sell, market.sell());
+  }
+
+  @Test
+  void calculatingReplacesBothLiveArrays() {
+    Market market = new Market();
+    int[] buy = market.buy();
+    int[] sell = market.sell();
+
+    market.calculate(system(), CLEAN_RECORD, TRADER_SKILL);
+
+    assertNotSame(buy, market.buy());
+    assertNotSame(sell, market.sell());
   }
 
   @Test
@@ -142,6 +188,21 @@ class MarketTest {
 
   private static StarSystem system() {
     return newGame().Commander().CurrentSystem();
+  }
+
+  /**
+   * The first system of the universe that trades at least one item, so the
+   * price assertions cannot pass vacuously.
+   */
+  private static StarSystem systemTradingSomething(Game game) {
+    for(StarSystem system : game.Universe()) {
+      for(int i = 0; i < Consts.TradeItems.size(); i++) {
+        if(system.ItemTraded(Consts.TradeItems.get(i))) {
+          return system;
+        }
+      }
+    }
+    throw new AssertionError("the universe must have a system trading something");
   }
 
   private static Game newGame() {
