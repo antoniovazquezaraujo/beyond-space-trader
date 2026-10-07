@@ -2,7 +2,6 @@ package spacetrader;
 import org.gts.bst.ports.DialogResult;
 import org.gts.bst.ports.GameWindow;
 import org.gts.bst.cargo.TradeItem;
-import org.gts.bst.cargo.TradeItemType;
 import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
@@ -23,7 +22,6 @@ import spacetrader.enums.OpponentType;
 import spacetrader.enums.PoliticalSystemType;
 import spacetrader.enums.SkillType;
 import spacetrader.enums.StarSystemId;
-import spacetrader.enums.SystemPressure;
 import spacetrader.enums.TechLevel;
 import java.util.ArrayList;
 import spacetrader.util.Hashtable;
@@ -221,185 +219,61 @@ public final class Game extends STSerializableObject implements QuestStates {
 
 
   private void Arrival() {
-    cmdr.CurrentSystem(WarpSystem());
-    cmdr.CurrentSystem().Visited(true);
-    setPaidForNewspaper(false);
-    if(TrackedSystem() == cmdr.CurrentSystem() && _options.getTrackAutoOff()) {
-      setTrackedSystemId(StarSystemId.NA);
-    }
-    ArrivalCheckReactor();
-    ArrivalCheckTribbles();
-    ArrivalCheckDebt();
-    ArrivalPerformRepairs();
-    ArrivalUpdatePressuresAndQuantities();
-    ArrivalCheckEasterEgg();
-    CalculatePrices(cmdr.CurrentSystem());
-    NewsAddEventsOnArrival();
-    if(_options.getNewsAutoShow()) {
-      ShowNewspaper();
-    }
+    new Arrival(cmdr, _universe, _market, _newspaper, _options, _difficulty, Dialogs(), this,
+        arrivalNavigation(), arrivalReactor(), () -> setTribbleMessage(false), arrivalConsequences()).arrive(WarpSystem());
   }
 
-  private void ArrivalCheckDebt() {
-    // Check for Large Debt - 06/30/01 SRA
-    if(cmdr.getDebt() >= Consts.DebtWarning) {
-      Dialogs().alert(AlertType.DebtWarning);
-    } else if(cmdr.getDebt() > 0 && _options.getRemindLoans() && cmdr.getDays() % 5 == 0) { // Debt Reminder
-      Dialogs().alert(AlertType.DebtReminder, Functions.Multiples(cmdr.getDebt(), Strings.MoneyUnit));
-    }
-  }
-
-  private void ArrivalCheckEasterEgg() {
-    /* This Easter Egg gives the commander a Lighting Shield */
-    if(cmdr.CurrentSystem().Id() == StarSystemId.Og) {
-      boolean egg = true;
-      for(int i = 0; i < cmdr.getShip().Cargo().length && egg; i++) {
-        if(cmdr.getShip().Cargo()[i] != 1) {
-          egg = false;
-        }
+  /** The tracking callbacks the arrival uses, bound to the game state. */
+  private Arrival.Navigation arrivalNavigation() {
+    return new Arrival.Navigation() {
+      @Override
+      public StarSystem trackedSystem() {
+        return TrackedSystem();
       }
-      if(egg && cmdr.getShip().FreeSlotsShield() > 0) {
-        Dialogs().alert(AlertType.Egg);
-        cmdr.getShip().AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
-        for(int i = 0; i < cmdr.getShip().Cargo().length; i++) {
-          cmdr.getShip().Cargo()[i] = 0;
-          cmdr.PriceCargo()[i] = 0;
-        }
+
+      @Override
+      public void clearTracked() {
+        setTrackedSystemId(StarSystemId.NA);
       }
-    }
+    };
   }
 
-  private void ArrivalCheckReactor() {
-    if(getQuestStatusReactor() == SpecialEvent.StatusReactorDate) {
-      Dialogs().alert(AlertType.ReactorMeltdown);
-      setQuestStatusReactor(SpecialEvent.StatusReactorNotStarted);
-      if(cmdr.getShip().getEscapePod()) {
+  /** The reactor mission state the arrival reads and writes; the missions component will own it (Ref #150). */
+  private Arrival.ReactorStatus arrivalReactor() {
+    return new Arrival.ReactorStatus() {
+      @Override
+      public int reactorStatus() {
+        return getQuestStatusReactor();
+      }
+
+      @Override
+      public void reactorStatus(int status) {
+        setQuestStatusReactor(status);
+      }
+    };
+  }
+
+  /**
+   * The consequences of the arrival that only the game can run. {@code destroyed()}
+   * throws the end-of-game exception in the middle of the arrival, as it always did.
+   */
+  private Arrival.Consequences arrivalConsequences() {
+    return new Arrival.Consequences() {
+      @Override
+      public void escapeWithPod() {
         EscapeWithPod();
-      } else {
-        Dialogs().alert(AlertType.ReactorDestroyed);
-        throw new GameEndException(this, GameEndType.Killed);
       }
-    } else {
-      // Reactor warnings:
-      if(getQuestStatusReactor() == SpecialEvent.StatusReactorFuelOk + 1) { // now they know the quest has a time constraint!
-        Dialogs().alert(AlertType.ReactorWarningFuel);
-      } else if(getQuestStatusReactor() == SpecialEvent.StatusReactorDate - 4) { // better deliver it soon!
-        Dialogs().alert(AlertType.ReactorWarningFuelGone);
-      } else if(getQuestStatusReactor() == SpecialEvent.StatusReactorDate - 2) { // last warning!
-        Dialogs().alert(AlertType.ReactorWarningTemp);
-      }
-    }
-  }
 
-  private void ArrivalCheckTribbles() {
-    Ship ship = cmdr.getShip();
-    if(ship.getTribbles() > 0) {
-      int previousTribbles = ship.getTribbles();
-      int narc = TradeItemType.Narcotics.CastToInt();
-      int food = TradeItemType.Food.CastToInt();
-      if(ship.ReactorOnBoard()) {
-        if(ship.getTribbles() < 20) {
-          ship.setTribbles(0);
-          Dialogs().alert(AlertType.TribblesAllDied);
-        } else {
-          ship.setTribbles(ship.getTribbles() / 2);
-          Dialogs().alert(AlertType.TribblesHalfDied);
-        }
-      } else if(ship.Cargo()[narc] > 0) {
-        int dead = Math.min(1 + Functions.GetRandom(3), ship.Cargo()[narc]);
-        cmdr.PriceCargo()[narc] = cmdr.PriceCargo()[narc] * (ship.Cargo()[narc] - dead) / ship.Cargo()[narc];
-        ship.Cargo()[narc] -= dead;
-        ship.Cargo()[TradeItemType.Furs.CastToInt()] += dead;
-        ship.setTribbles(ship.getTribbles() - Math.min(dead * (Functions.GetRandom(5) + 98), ship.getTribbles() - 1));
-        Dialogs().alert(AlertType.TribblesMostDied);
-      } else {
-        if(ship.Cargo()[food] > 0 && ship.getTribbles() < Consts.MaxTribbles) {
-          int eaten = ship.Cargo()[food] - Functions.GetRandom(ship.Cargo()[food]);
-          cmdr.PriceCargo()[food] -= cmdr.PriceCargo()[food] * eaten / ship.Cargo()[food];
-          ship.Cargo()[food] -= eaten;
-          ship.setTribbles(ship.getTribbles() + (eaten * 100));
-          Dialogs().alert(AlertType.TribblesAteFood);
-        }
-        if(ship.getTribbles() < Consts.MaxTribbles) {
-          ship.setTribbles(ship.getTribbles() + (1 + Functions.GetRandom(ship.Cargo()[food] > 0 ? ship.getTribbles() : ship.getTribbles() / 2)));
-        }
-        if(ship.getTribbles() > Consts.MaxTribbles) {
-          ship.setTribbles(Consts.MaxTribbles);
-        }
-        if((previousTribbles < 100 && ship.getTribbles() >= 100)
-            || (previousTribbles < 1000 && ship.getTribbles() >= 1000)
-            || (previousTribbles < 10000 && ship.getTribbles() >= 10000)
-            || (previousTribbles < 50000 && ship.getTribbles() >= 50000)
-            || (previousTribbles < Consts.MaxTribbles && ship.getTribbles() == Consts.MaxTribbles)) {
-          String qty = ship.getTribbles() == Consts.MaxTribbles ? Strings.TribbleDangerousNumber : Functions.FormatNumber(ship.getTribbles());
-          Dialogs().alert(AlertType.TribblesInspector, qty);
-        }
+      @Override
+      public void destroyed() {
+        throw new GameEndException(Game.this, GameEndType.Killed);
       }
-      setTribbleMessage(false);
-    }
-  }
 
-  private void ArrivalPerformRepairs() {
-    Ship ship = cmdr.getShip();
-    if(ship.getHull() < ship.HullStrength()) {
-      ship.setHull(ship.getHull() + Math.min(ship.HullStrength() - ship.getHull(), Functions.GetRandom(ship.Engineer())));
-    }
-    for(int i = 0; i < ship.Shields().length; ++i) {
-      if(ship.Shields()[i] != null) {
-        ship.Shields()[i].setCharge(ship.Shields()[i].Power());
+      @Override
+      public void showNewspaper() {
+        ShowNewspaper();
       }
-    }
-    boolean fuelOk = true;
-    int toAdd = ship.FuelTanks() - ship.getFuel();
-    if(_options.getAutoFuel() && toAdd > 0) {
-      if(cmdr.getCash() >= toAdd * ship.getFuelCost()) {
-        ship.setFuel(ship.getFuel() + toAdd);
-        cmdr.setCash(cmdr.getCash() - (toAdd * ship.getFuelCost()));
-      } else {
-        fuelOk = false;
-      }
-    }
-    boolean repairOk = true;
-    toAdd = ship.HullStrength() - ship.getHull();
-    if(_options.getAutoRepair() && toAdd > 0) {
-      if(cmdr.getCash() >= toAdd * ship.getRepairCost()) {
-        ship.setHull(ship.getHull() + toAdd);
-        cmdr.setCash(cmdr.getCash() - (toAdd * ship.getRepairCost()));
-      } else {
-        repairOk = false;
-      }
-    }
-    if(!fuelOk && !repairOk) {
-      Dialogs().alert(AlertType.ArrivalIFFuelRepairs);
-    } else if(!fuelOk) {
-      Dialogs().alert(AlertType.ArrivalIFFuel);
-    } else if(!repairOk) {
-      Dialogs().alert(AlertType.ArrivalIFRepairs);
-    }
-  }
-
-  private void ArrivalUpdatePressuresAndQuantities() {
-    StarSystem[] universe = _universe.systems();
-    for(int i = 0; i < universe.length; i++) {
-      if(Functions.GetRandom(100) < 15) {
-        universe[i].SystemPressure((SystemPressure.FromInt(universe[i].SystemPressure() == SystemPressure.None
-            ? Functions.GetRandom(SystemPressure.War.CastToInt(), SystemPressure.Employment.CastToInt() + 1) : SystemPressure.None.CastToInt())));
-      }
-      if(universe[i].CountDown() > 0) {
-        universe[i].CountDown(universe[i].CountDown() - 1);
-        if(universe[i].CountDown() > CountDownStart()) {
-          universe[i].CountDown(CountDownStart());
-        } else if(universe[i].CountDown() <= 0) {
-          universe[i].InitializeTradeItems();
-        } else {
-          for(int j = 0; j < Consts.TradeItems.size(); j++) {
-            if(WarpSystem().ItemTraded(Consts.TradeItems.get(j))) {
-              universe[i].TradeItems()[j] = Math.max(0, universe[i].TradeItems()[j] + Functions.GetRandom(-4, 5));
-            }
-          }
-        }
-      }
-    }
+    };
   }
 
   private void CalculatePrices(StarSystem system) {
@@ -412,6 +286,7 @@ public final class Game extends STSerializableObject implements QuestStates {
 
 
 
+  // Ref #229: the departure costs and days stay in Game, with the travel loop.
   private void NormalDeparture(int fuel) {
     cmdr.setCash(cmdr.getCash() - (MercenaryCosts() + InsuranceCosts() + WormholeCosts()));
     cmdr.getShip().setFuel(cmdr.getShip().getFuel() - fuel);
