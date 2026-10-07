@@ -1,5 +1,4 @@
 package spacetrader;
-import java.util.Arrays;
 import org.gts.bst.view.DialogResult;
 import org.gts.bst.view.GameWindow;
 import org.gts.bst.cargo.TradeItem;
@@ -22,17 +21,15 @@ import spacetrader.enums.AlertType;
 import spacetrader.enums.GameEndType;
 import spacetrader.enums.OpponentType;
 import spacetrader.enums.PoliticalSystemType;
-import spacetrader.enums.ShipyardId;
 import spacetrader.enums.SkillType;
 import spacetrader.enums.StarSystemId;
 import spacetrader.enums.SystemPressure;
 import spacetrader.enums.TechLevel;
 import java.util.ArrayList;
-import java.util.List;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
-public final class Game extends STSerializableObject {
+public final class Game extends STSerializableObject implements QuestStates {
   private static Game game;
   private Commander cmdr;
   // Game Data
@@ -47,8 +44,7 @@ public final class Game extends STSerializableObject {
   private int _clicks = 0; // Distance from target system, 0 = arrived
   private boolean _tribbleMessage = false; // Is true if the Ship Yard on the current system informed you about the tribbles
   private boolean _arrivedViaWormhole = false; // flag to indicate whether player arrived on current planet via wormhole
-  private boolean _paidForNewspaper = false; // once you buy a paper on a system, you don't have to pay again.
-  private ArrayList<Integer> _newsEvents = new ArrayList<>(30);
+  private final Newspaper _newspaper = new Newspaper();
   // Current Selections
   private Difficulty _difficulty = Difficulty.Normal; // Difficulty level
   private boolean _cheatEnabled = false;
@@ -134,9 +130,9 @@ public final class Game extends STSerializableObject {
     encounter().setInspected(GetValueFromHash(hash, "_inspected", encounter().getInspected()));
     _tribbleMessage = GetValueFromHash(hash, "_tribbleMessage", _tribbleMessage);
     _arrivedViaWormhole = GetValueFromHash(hash, "_arrivedViaWormhole", _arrivedViaWormhole);
-    _paidForNewspaper = GetValueFromHash(hash, "_paidForNewspaper", _paidForNewspaper);
+    _newspaper.paid(GetValueFromHash(hash, "_paidForNewspaper", _newspaper.paid()));
     encounter().setLitterWarning(GetValueFromHash(hash, "_litterWarning", encounter().getLitterWarning()));
-    _newsEvents = new ArrayList<>(Arrays.asList(GetValueFromHash(hash, "_newsEvents", _newsEvents.toArray(new Integer[0]))));
+    _newspaper.events(GetValueFromHash(hash, "_newsEvents", _newspaper.events().toArray(new Integer[0])));
     _difficulty = Difficulty.FromInt(GetValueFromHash(hash, "_difficulty", _difficulty, Integer.class));
     _cheatEnabled = GetValueFromHash(hash, "_cheatEnabled", _cheatEnabled);
     _autoSave = GetValueFromHash(hash, "_autoSave", _autoSave);
@@ -193,9 +189,9 @@ public final class Game extends STSerializableObject {
     ht.add("_inspected", encounter().getInspected());
     ht.add("_tribbleMessage", _tribbleMessage);
     ht.add("_arrivedViaWormhole", _arrivedViaWormhole);
-    ht.add("_paidForNewspaper", _paidForNewspaper);
+    ht.add("_paidForNewspaper", _newspaper.paid());
     ht.add("_litterWarning", encounter().getLitterWarning());
-    ht.add("_newsEvents", _newsEvents.toArray(new Integer[0]));
+    ht.add("_newsEvents", _newspaper.events().toArray(new Integer[0]));
     ht.add("_difficulty", _difficulty.CastToInt());
     ht.add("_cheatEnabled", _cheatEnabled);
     ht.add("_autoSave", _autoSave);
@@ -431,7 +427,7 @@ public final class Game extends STSerializableObject {
   }
 
   public ArrayList<Integer> NewsEvents() {
-    return _newsEvents;
+    return _newspaper.events();
   }
 
   public ArrayList<VeryRareEncounter> VeryRareEncounters() {
@@ -463,7 +459,7 @@ public final class Game extends STSerializableObject {
   }
 
   public int NewsLatestEvent() {
-    return _newsEvents.get(_newsEvents.size() - 1);
+    return _newspaper.latest();
   }
 
   public Ship Dragonfly() {
@@ -521,71 +517,11 @@ public final class Game extends STSerializableObject {
 
 
   public String NewspaperHead() {
-    List<String> heads = Strings.NewsMastheads.get(cmdr.CurrentSystem().PoliticalSystemType().CastToInt());
-    String head = heads.get(cmdr.CurrentSystem().Id().CastToInt() % heads.size());
-    return Functions.StringVars(head, cmdr.CurrentSystem().Name());
+    return _newspaper.head(cmdr);
   }
 
   public String NewspaperText() {
-    StarSystem curSys = cmdr.CurrentSystem();
-    ArrayList<String> items = new ArrayList<>();
-    // We're using the GetRandom2 function so that the same number is generated each time for the same "version" of the newspaper. -JAF
-    Functions.RandSeed(curSys.Id().CastToInt(), cmdr.getDays());
-    for(Integer event : _newsEvents) {
-      items.add(Functions.StringVars(Strings.NewsEvent.get(event), new String[]{
-            cmdr.Name(), cmdr.CurrentSystem().Name(), cmdr.getShip().Name()}));
-    }
-    if(curSys.SystemPressure() != SystemPressure.None) {
-      items.add(Strings.NewsPressureInternal.get(curSys.SystemPressure().CastToInt()));
-    }
-    if(cmdr.getPoliceRecordScore() <= Consts.PoliceRecordScoreVillain) {
-      String baseStr = Strings.NewsPoliceRecordPsychopath.get(Functions.GetRandom2(Strings.NewsPoliceRecordPsychopath.size()));
-      items.add(Functions.StringVars(baseStr, cmdr.Name(), curSys.Name()));
-    } else if(cmdr.getPoliceRecordScore() >= Consts.PoliceRecordScoreHero) {
-      String baseStr = Strings.NewsPoliceRecordHero.get(Functions.GetRandom2(Strings.NewsPoliceRecordHero.size()));
-      items.add(Functions.StringVars(baseStr, cmdr.Name(), curSys.Name()));
-    }
-    // and now, finally, useful news (if any); base probability of a story showing up is (50 / MAXTECHLEVEL) * Current Tech Level
-    // This is then modified by adding 10% for every level of play less than Impossible
-    boolean realNews = false;
-    for(int i = 0; i < _universe.length; i++) {
-      if(_universe[i].DestOk() && _universe[i] != curSys) {
-        // Special stories that always get shown: moon, millionaire, shipyard
-        if(_universe[i].SpecialEventType() != SpecialEventType.NA) {
-          if(_universe[i].SpecialEventType() == SpecialEventType.Moon) {
-            items.add(Functions.StringVars(Strings.NewsMoonForSale, _universe[i].Name()));
-          } else if(_universe[i].SpecialEventType() == SpecialEventType.TribbleBuyer) {
-            items.add(Functions.StringVars(Strings.NewsTribbleBuyer, _universe[i].Name()));
-          }
-        }
-        if(_universe[i].ShipyardId() != ShipyardId.NA) {
-          items.add(Functions.StringVars(Strings.NewsShipyard, _universe[i].Name()));
-        }
-        // And not-always-shown stories
-        if(_universe[i].SystemPressure() != SystemPressure.None
-            && Functions.GetRandom2(100) <= Consts.StoryProbability * curSys.TechLevel().ordinal() + 10 * (5 - _difficulty.CastToInt())) {
-          int index = Functions.GetRandom2(Strings.NewsPressureExternal.size());
-          String baseStr = Strings.NewsPressureExternal.get(index);
-          String pressure = Strings.NewsPressureExternalPressures.get(_universe[i].SystemPressure().CastToInt());
-          items.add(Functions.StringVars(baseStr, pressure, _universe[i].Name()));
-          realNews = true;
-        }
-      }
-    }
-    // if there's no useful news, we throw up at least one headline from our canned news list.
-    if(!realNews) {
-      List<String> headlines = Strings.NewsHeadlines.get(curSys.PoliticalSystemType().CastToInt());
-      boolean[] shown = new boolean[headlines.size()];
-      int toShow = Functions.GetRandom2(headlines.size());
-      for(int i = 0; i <= toShow; i++) {
-        int index = Functions.GetRandom2(headlines.size());
-        if(!shown[index]) {
-          items.add(headlines.get(index));
-          shown[index] = true;
-        }
-      }
-    }
-    return Util.StringsJoin(Strings.newline + Strings.newline, Functions.ArrayListtoStringArray(items));
+    return _newspaper.text(cmdr, _universe, _difficulty);
   }
 
   @SuppressWarnings("fallthrough")
@@ -628,7 +564,7 @@ public final class Game extends STSerializableObject {
 
 
   public boolean getPaidForNewspaper() {
-    return _paidForNewspaper;
+    return _newspaper.paid();
   }
 
 
@@ -752,6 +688,21 @@ public final class Game extends STSerializableObject {
 
   public int getQuestStatusWild() {
     return _questStatusWild;
+  }
+
+  @Override
+  public boolean artifactOnBoard() {
+    return cmdr.getShip().ArtifactOnBoard();
+  }
+
+  @Override
+  public boolean jarekOnBoard() {
+    return cmdr.getShip().JarekOnBoard();
+  }
+
+  @Override
+  public boolean wildOnBoard() {
+    return cmdr.getShip().WildOnBoard();
   }
 
   public int InsuranceCosts() {
@@ -1318,146 +1269,19 @@ public final class Game extends STSerializableObject {
   }
 
   public void NewsAddEvent(NewsEvent ne) {
-    _newsEvents.add(ne.CastToInt());
+    _newspaper.add(ne);
   }
 
   public void NewsAddEventsOnArrival() {
-    if(cmdr.CurrentSystem().SpecialEventType() != SpecialEventType.NA) {
-      switch(cmdr.CurrentSystem().SpecialEventType()) {
-        case ArtifactDelivery:
-          if(cmdr.getShip().ArtifactOnBoard()) {
-            NewsAddEvent(NewsEvent.ArtifactDelivery);
-          }
-          break;
-        case Dragonfly:
-          NewsAddEvent(NewsEvent.Dragonfly);
-          break;
-        case DragonflyBaratas:
-          if(getQuestStatusDragonfly() == SpecialEvent.StatusDragonflyFlyBaratas) {
-            NewsAddEvent(NewsEvent.DragonflyBaratas);
-          }
-          break;
-        case DragonflyDestroyed:
-          if(getQuestStatusDragonfly() == SpecialEvent.StatusDragonflyFlyZalkon) {
-            NewsAddEvent(NewsEvent.DragonflyZalkon);
-          } else if(getQuestStatusDragonfly() == SpecialEvent.StatusDragonflyDestroyed) {
-            NewsAddEvent(NewsEvent.DragonflyDestroyed);
-          }
-          break;
-        case DragonflyMelina:
-          if(getQuestStatusDragonfly() == SpecialEvent.StatusDragonflyFlyMelina) {
-            NewsAddEvent(NewsEvent.DragonflyMelina);
-          }
-          break;
-        case DragonflyRegulas:
-          if(getQuestStatusDragonfly() == SpecialEvent.StatusDragonflyFlyRegulas) {
-            NewsAddEvent(NewsEvent.DragonflyRegulas);
-          }
-          break;
-        case ExperimentFailed:
-          NewsAddEvent(NewsEvent.ExperimentFailed);
-          break;
-        case ExperimentStopped:
-          if(getQuestStatusExperiment() > SpecialEvent.StatusExperimentNotStarted
-              && getQuestStatusExperiment() < SpecialEvent.StatusExperimentPerformed) {
-            NewsAddEvent(NewsEvent.ExperimentStopped);
-          }
-          break;
-        case Gemulon:
-          NewsAddEvent(NewsEvent.Gemulon);
-          break;
-        case GemulonRescued:
-          if(getQuestStatusGemulon() > SpecialEvent.StatusGemulonNotStarted) {
-            if(getQuestStatusGemulon() < SpecialEvent.StatusGemulonTooLate) {
-              NewsAddEvent(NewsEvent.GemulonRescued);
-            } else {
-              NewsAddEvent(NewsEvent.GemulonInvaded);
-            }
-          }
-          break;
-        case Japori:
-          if(getQuestStatusJapori() == SpecialEvent.StatusJaporiNotStarted) {
-            NewsAddEvent(NewsEvent.Japori);
-          }
-          break;
-        case JaporiDelivery:
-          if(getQuestStatusJapori() == SpecialEvent.StatusJaporiInTransit) {
-            NewsAddEvent(NewsEvent.JaporiDelivery);
-          }
-          break;
-        case JarekGetsOut:
-          if(cmdr.getShip().JarekOnBoard()) {
-            NewsAddEvent(NewsEvent.JarekGetsOut);
-          }
-          break;
-        case Princess:
-          NewsAddEvent(NewsEvent.Princess);
-          break;
-        case PrincessCentauri:
-          if(getQuestStatusPrincess() == SpecialEvent.StatusPrincessFlyCentauri) {
-            NewsAddEvent(NewsEvent.PrincessCentauri);
-          }
-          break;
-        case PrincessInthara:
-          if(getQuestStatusPrincess() == SpecialEvent.StatusPrincessFlyInthara) {
-            NewsAddEvent(NewsEvent.PrincessInthara);
-          }
-          break;
-        case PrincessQonos:
-          if(getQuestStatusPrincess() == SpecialEvent.StatusPrincessFlyQonos) {
-            NewsAddEvent(NewsEvent.PrincessQonos);
-          } else if(getQuestStatusPrincess() == SpecialEvent.StatusPrincessRescued) {
-            NewsAddEvent(NewsEvent.PrincessRescued);
-          }
-          break;
-        case PrincessReturned:
-          if(getQuestStatusPrincess() == SpecialEvent.StatusPrincessReturned) {
-            NewsAddEvent(NewsEvent.PrincessReturned);
-          }
-          break;
-        case Scarab:
-          NewsAddEvent(NewsEvent.Scarab);
-          break;
-        case ScarabDestroyed:
-          if(getQuestStatusScarab() == SpecialEvent.StatusScarabHunting) {
-            NewsAddEvent(NewsEvent.ScarabHarass);
-          } else if(getQuestStatusScarab() >= SpecialEvent.StatusScarabDestroyed) {
-            NewsAddEvent(NewsEvent.ScarabDestroyed);
-          }
-          break;
-        case Sculpture:
-          NewsAddEvent(NewsEvent.SculptureStolen);
-          break;
-        case SculptureDelivered:
-          NewsAddEvent(NewsEvent.SculptureTracked);
-          break;
-        case SpaceMonsterKilled:
-          if(getQuestStatusSpaceMonster() == SpecialEvent.StatusSpaceMonsterAtAcamar) {
-            NewsAddEvent(NewsEvent.SpaceMonster);
-          } else if(getQuestStatusSpaceMonster() >= SpecialEvent.StatusSpaceMonsterDestroyed) {
-            NewsAddEvent(NewsEvent.SpaceMonsterKilled);
-          }
-          break;
-        case WildGetsOut:
-          if(cmdr.getShip().WildOnBoard()) {
-            NewsAddEvent(NewsEvent.WildGetsOut);
-          }
-          break;
-        default:
-          break;
-      }
-    }
+    _newspaper.addEventsOnArrival(cmdr.CurrentSystem(), this);
   }
 
   public void NewsReplaceEvent(int oldEvent, int newEvent) {
-    if(_newsEvents.indexOf(oldEvent) >= 0) {
-      _newsEvents.remove(oldEvent);
-    }
-    _newsEvents.add(newEvent);
+    _newspaper.replace(oldEvent, newEvent);
   }
 
   public void NewsResetEvents() {
-    _newsEvents.clear();
+    _newspaper.reset();
   }
 
   public void RecalculateBuyPrices(StarSystem system) {
@@ -1586,7 +1410,7 @@ public final class Game extends STSerializableObject {
 
 
   public void setPaidForNewspaper(boolean paidForNewspaper) {
-    _paidForNewspaper = paidForNewspaper;
+    _newspaper.paid(paidForNewspaper);
   }
 
   public void setQuestStatusArtifact(int questStatusArtifact) {
