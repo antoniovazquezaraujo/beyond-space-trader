@@ -11,8 +11,8 @@ package spacetrader;
 
 /**
  * Read-only view of the quest and special-crew states the arrival rumours ask
- * about. Game implements it for now, delegating in its getters; the missions
- * component will implement it when they are extracted.
+ * about. Game implements it, delegating the quest statuses in {@link Quests}
+ * and reading the on-board checks from the commander.
  */
 public interface QuestStates {
   int getQuestStatusDragonfly();

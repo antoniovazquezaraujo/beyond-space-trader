@@ -43,11 +43,12 @@ Presentador):
 
 ### Principios de diseño
 
-* **MVP estricto:** los presentadores orquestan el modelo y las vistas hablan con
-  ellos a través de interfaces (`*View`) y modelos de vista (`*ViewModel`). Todo
-  se prueba sin abrir una ventana.
+* **MVP en las pantallas:** los presentadores orquestan el modelo y las vistas
+  hablan con ellos a través de interfaces (`*View`) y modelos de vista
+  (`*ViewModel`). Todo se prueba sin abrir una ventana.
 * **El modelo no conoce la UI:** `spacetrader.*` es la lógica del juego (reglas,
-  comercio, encuentros, universo) y no depende de Lanterna.
+  comercio, encuentros, universo) y depende solo de puertos neutros
+  (`org.gts.bst.ports`); no conoce Lanterna ni las vistas.
 * **La UI vive en `org.gts.bst.*`:** las interfaces de vista y los view models en
   `org.gts.bst.view`; el renderizado Lanterna en `org.gts.bst.lanterna`.
 * **Una sola ventana, paneles dentro:** el mapa (carta local/galáctica) es el eje
@@ -89,9 +90,10 @@ el modelo está desacoplado de las vistas.
       en las pantallas y en la escena de los encuentros
 - [x] Compositor de naves y raíles del editor (los 17 tipos con sus cascos y
       piezas, validados en CI)
-- [ ] Descomponer `Game` por áreas (#46): Universe (#147), precios y comercio
-      (#148), noticias (#149), misiones y eventos (#150), viaje y llegada (#151)
-      y serialización (#152)
+- [x] Descomponer `Game` por áreas (#46): Universe (#147), precios y comercio
+      (#148), noticias (#149), misiones y eventos (#150), llegada (#151) y
+      serialización (#152); el bucle de viaje y el generador de encuentros quedan
+      como seguimiento (#229)
 
 ---
 

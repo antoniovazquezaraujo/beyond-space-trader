@@ -9,7 +9,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Random;
 import org.gts.bst.difficulty.Difficulty;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogService;
 import spacetrader.enums.AlertType;
 import spacetrader.util.SettingsFile;
 import spacetrader.util.Util;

@@ -16,7 +16,7 @@ import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.ship.equip.Shield;
 import org.gts.bst.ship.equip.Weapon;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.EquipmentInfoViewModel;
 import org.gts.bst.view.EquipmentView;
 import org.gts.bst.view.EquipmentViewModel;

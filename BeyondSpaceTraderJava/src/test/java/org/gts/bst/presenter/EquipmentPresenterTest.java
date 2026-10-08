@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.equip.EquipmentType;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.EquipmentInfoViewModel;
 import org.gts.bst.view.EquipmentView;
 import org.gts.bst.view.EquipmentViewModel;

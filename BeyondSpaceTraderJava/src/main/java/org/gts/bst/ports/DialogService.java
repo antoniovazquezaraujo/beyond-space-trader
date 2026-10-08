@@ -6,7 +6,7 @@
  * Trader for Windows, which is based on Space Trader by Pieter Spronck; see
  * the NOTICE file for the full provenance chain.
  */
-package org.gts.bst.view;
+package org.gts.bst.ports;
 
 import spacetrader.enums.AlertType;
 

@@ -19,10 +19,11 @@ import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.NewsEvent;
 import org.gts.bst.events.SpecialEventType;
-import org.gts.bst.view.DialogService;
-import org.gts.bst.view.GameWindow;
+import org.gts.bst.ports.DialogService;
+import org.gts.bst.ports.GameWindow;
 import org.junit.jupiter.api.Test;
 import spacetrader.enums.StarSystemId;
+import spacetrader.util.Hashtable;
 
 
 class NewspaperTest {
@@ -150,6 +151,22 @@ class NewspaperTest {
 
     assertEquals(game.NewspaperText(), text);
     assertTrue(text.contains(game.Commander().Name()));
+  }
+
+  @Test
+  void savedStateSurvivesAHashRoundTrip() {
+    Newspaper newspaper = new Newspaper();
+    newspaper.add(NewsEvent.WildArrested);
+    newspaper.add(NewsEvent.Japori);
+    newspaper.paid(true);
+    Hashtable save = new Hashtable();
+
+    newspaper.saveTo(save);
+    Newspaper loaded = new Newspaper();
+    loaded.loadFrom(save);
+
+    assertEquals(newspaper.events(), loaded.events());
+    assertTrue(loaded.paid());
   }
 
   @Test

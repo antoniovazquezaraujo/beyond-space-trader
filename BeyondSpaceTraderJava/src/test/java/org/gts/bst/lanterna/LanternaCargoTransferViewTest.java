@@ -20,7 +20,7 @@ import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.presenter.CargoTransferPresenter;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogService;
 import org.junit.jupiter.api.Test;
 import spacetrader.Game;
 

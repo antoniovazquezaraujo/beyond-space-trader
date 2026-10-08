@@ -14,7 +14,7 @@ import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.presenter.CargoTransferPresenter.Mode;
 import org.gts.bst.view.CargoTransferView;
 import org.gts.bst.view.CargoTransferViewModel;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.junit.jupiter.api.Test;

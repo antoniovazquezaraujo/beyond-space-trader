@@ -38,7 +38,7 @@ import org.gts.bst.cargo.CargoBuyOp;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.Alerts;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogService;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipArtFile;
