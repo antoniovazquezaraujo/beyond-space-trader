@@ -132,6 +132,20 @@ class GameSerializationTest {
   }
 
   @Test
+  void loadsTheTripChancesFromASaveWrittenBeforeTheRefactor() throws Exception {
+    Game fresh = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+    Hashtable save = fresh.Serialize();
+    // Keys and types exactly as the old Game wrote them to the save file.
+    save.add("_chanceOfTradeInOrbit", 42);
+    save.add("_chanceOfVeryRareEncounter", 37);
+
+    Game loaded = new Game(writeAndReadBack(save), null, new TestDialogService());
+
+    assertEquals(42, loaded.getChanceOfTradeInOrbit());
+    assertEquals(37, loaded.getChanceOfVeryRareEncounter());
+  }
+
+  @Test
   void serializesTheUniverseWithTheKeysAndTypesOfTheOldFormat() {
     Game game = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
 
