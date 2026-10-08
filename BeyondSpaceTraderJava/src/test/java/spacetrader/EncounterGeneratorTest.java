@@ -18,6 +18,7 @@ import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.EncounterType;
 import org.gts.bst.events.VeryRareEncounter;
 import org.gts.bst.ship.ShipType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import spacetrader.enums.StarSystemId;
@@ -30,9 +31,17 @@ import spacetrader.util.Hashtable;
  * narrow context.
  */
 class EncounterGeneratorTest {
+  private Game previousGame;
+
   @BeforeEach
   void withoutAGame() {
+    previousGame = Game.CurrentGame();
     Game.CurrentGame(null);
+  }
+
+  @AfterEach
+  void restoreTheGameGlobal() {
+    Game.CurrentGame(previousGame);
   }
 
   @Test
