@@ -8,6 +8,8 @@
  */
 package spacetrader;
 
+import spacetrader.util.Hashtable;
+
 
 /**
  * The market: the cargo prices of the current system, what the trader charges
@@ -37,6 +39,18 @@ public final class Market {
   /** Replaces the sell prices with the ones read from a saved game. */
   public void sell(int[] values) {
     _priceCargoSell = values;
+  }
+
+  /** Writes the market prices to a saved game. */
+  public void saveTo(Hashtable hash) {
+    hash.add("_priceCargoBuy", _priceCargoBuy);
+    hash.add("_priceCargoSell", _priceCargoSell);
+  }
+
+  /** Restores the market prices of a saved game from its hash, with the keys and types of the old format. */
+  public void loadFrom(Hashtable hash) {
+    _priceCargoBuy = STSerializableObject.GetValueFromHash(hash, "_priceCargoBuy", _priceCargoBuy, int[].class);
+    _priceCargoSell = STSerializableObject.GetValueFromHash(hash, "_priceCargoSell", _priceCargoSell, int[].class);
   }
 
   /** Calculates the sell prices of the system and derives the buy prices from them. */

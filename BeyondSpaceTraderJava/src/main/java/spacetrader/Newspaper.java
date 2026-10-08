@@ -16,6 +16,7 @@ import org.gts.bst.events.NewsEvent;
 import org.gts.bst.events.SpecialEventType;
 import spacetrader.enums.ShipyardId;
 import spacetrader.enums.SystemPressure;
+import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
 
@@ -65,6 +66,18 @@ public final class Newspaper {
 
   public void paid(boolean paidForNewspaper) {
     _paidForNewspaper = paidForNewspaper;
+  }
+
+  /** Writes the newspaper state to a saved game: the events and whether the paper is paid for. */
+  public void saveTo(Hashtable hash) {
+    hash.add("_paidForNewspaper", _paidForNewspaper);
+    hash.add("_newsEvents", _newsEvents.toArray(new Integer[0]));
+  }
+
+  /** Restores the newspaper state of a saved game from its hash, with the keys and types of the old format. */
+  public void loadFrom(Hashtable hash) {
+    paid(STSerializableObject.GetValueFromHash(hash, "_paidForNewspaper", _paidForNewspaper));
+    events(STSerializableObject.GetValueFromHash(hash, "_newsEvents", _newsEvents.toArray(new Integer[0])));
   }
 
   /** The masthead of the paper of the commander's current system. */

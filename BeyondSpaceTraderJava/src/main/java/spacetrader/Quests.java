@@ -21,6 +21,7 @@ import spacetrader.enums.AlertType;
 import spacetrader.enums.PoliticalSystemType;
 import spacetrader.enums.StarSystemId;
 import spacetrader.enums.TechLevel;
+import spacetrader.util.Hashtable;
 
 
 /**
@@ -191,6 +192,44 @@ public final class Quests implements Arrival.ReactorStatus {
 
   public void canSuperWarp(boolean canSuperWarp) {
     _canSuperWarp = canSuperWarp;
+  }
+
+  /** Writes the quest state to a saved game. */
+  public void saveTo(Hashtable hash) {
+    hash.add("_questStatusArtifact", _questStatusArtifact);
+    hash.add("_questStatusDragonfly", _questStatusDragonfly);
+    hash.add("_questStatusExperiment", _questStatusExperiment);
+    hash.add("_questStatusGemulon", _questStatusGemulon);
+    hash.add("_questStatusJapori", _questStatusJapori);
+    hash.add("_questStatusJarek", _questStatusJarek);
+    hash.add("_questStatusMoon", _questStatusMoon);
+    hash.add("_questStatusPrincess", _questStatusPrincess);
+    hash.add("_questStatusReactor", _questStatusReactor);
+    hash.add("_questStatusScarab", _questStatusScarab);
+    hash.add("_questStatusSculpture", _questStatusSculpture);
+    hash.add("_questStatusSpaceMonster", _questStatusSpaceMonster);
+    hash.add("_questStatusWild", _questStatusWild);
+    hash.add("_fabricRipProbability", _fabricRipProbability);
+    hash.add("_canSuperWarp", _canSuperWarp);
+  }
+
+  /** Restores the quest state of a saved game from its hash, with the keys and types of the old format. */
+  public void loadFrom(Hashtable hash) {
+    _questStatusArtifact = STSerializableObject.GetValueFromHash(hash, "_questStatusArtifact", _questStatusArtifact);
+    _questStatusDragonfly = STSerializableObject.GetValueFromHash(hash, "_questStatusDragonfly", _questStatusDragonfly);
+    _questStatusExperiment = STSerializableObject.GetValueFromHash(hash, "_questStatusExperiment", _questStatusExperiment);
+    _questStatusGemulon = STSerializableObject.GetValueFromHash(hash, "_questStatusGemulon", _questStatusGemulon);
+    _questStatusJapori = STSerializableObject.GetValueFromHash(hash, "_questStatusJapori", _questStatusJapori);
+    _questStatusJarek = STSerializableObject.GetValueFromHash(hash, "_questStatusJarek", _questStatusJarek);
+    _questStatusMoon = STSerializableObject.GetValueFromHash(hash, "_questStatusMoon", _questStatusMoon);
+    _questStatusPrincess = STSerializableObject.GetValueFromHash(hash, "_questStatusPrincess", _questStatusPrincess);
+    _questStatusReactor = STSerializableObject.GetValueFromHash(hash, "_questStatusReactor", _questStatusReactor);
+    _questStatusScarab = STSerializableObject.GetValueFromHash(hash, "_questStatusScarab", _questStatusScarab);
+    _questStatusSculpture = STSerializableObject.GetValueFromHash(hash, "_questStatusSculpture", _questStatusSculpture);
+    _questStatusSpaceMonster = STSerializableObject.GetValueFromHash(hash, "_questStatusSpaceMonster", _questStatusSpaceMonster);
+    _questStatusWild = STSerializableObject.GetValueFromHash(hash, "_questStatusWild", _questStatusWild);
+    _fabricRipProbability = STSerializableObject.GetValueFromHash(hash, "_fabricRipProbability", _fabricRipProbability);
+    _canSuperWarp = STSerializableObject.GetValueFromHash(hash, "_canSuperWarp", _canSuperWarp);
   }
 
   /**

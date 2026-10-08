@@ -89,8 +89,7 @@ public final class Game extends STSerializableObject implements QuestStates {
     if(version.compareTo(Consts.CurrentVersion) > 0) {
       throw new FutureVersionException();
     }
-    _universe = Universe.from((StarSystem[])ArrayListToArray(GetValueFromHash(hash, "_universe", ArrayList.class), "StarSystem"),
-        GetValueFromHash(hash, "_wormholes", new int[6], int[].class));
+    _universe = Universe.from(hash);
     _mercenaries = (CrewMember[])ArrayListToArray(GetValueFromHash(hash, "_mercenaries", ArrayList.class), "CrewMember");
     cmdr = new Commander(GetValueFromHash(hash, "_commander", Hashtable.class));
     _dragonfly = new Ship(GetValueFromHash(hash, "_dragonfly", _dragonfly.Serialize(), Hashtable.class));
@@ -104,9 +103,8 @@ public final class Game extends STSerializableObject implements QuestStates {
     encounter().setInspected(GetValueFromHash(hash, "_inspected", encounter().getInspected()));
     _tribbleMessage = GetValueFromHash(hash, "_tribbleMessage", _tribbleMessage);
     _arrivedViaWormhole = GetValueFromHash(hash, "_arrivedViaWormhole", _arrivedViaWormhole);
-    _newspaper.paid(GetValueFromHash(hash, "_paidForNewspaper", _newspaper.paid()));
+    _newspaper.loadFrom(hash);
     encounter().setLitterWarning(GetValueFromHash(hash, "_litterWarning", encounter().getLitterWarning()));
-    _newspaper.events(GetValueFromHash(hash, "_newsEvents", _newspaper.events().toArray(new Integer[0])));
     _difficulty = Difficulty.FromInt(GetValueFromHash(hash, "_difficulty", _difficulty, Integer.class));
     _cheatEnabled = GetValueFromHash(hash, "_cheatEnabled", _cheatEnabled);
     _autoSave = GetValueFromHash(hash, "_autoSave", _autoSave);
@@ -117,25 +115,10 @@ public final class Game extends STSerializableObject implements QuestStates {
     _warpSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_warpSystemId", _warpSystemId, Integer.class));
     _trackedSystemId = StarSystemId.FromInt(GetValueFromHash(hash, "_trackedSystemId", _trackedSystemId, Integer.class));
     _targetWormhole = GetValueFromHash(hash, "_targetWormhole", _targetWormhole);
-    _market.buy(GetValueFromHash(hash, "_priceCargoBuy", _market.buy(), int[].class));
-    _market.sell(GetValueFromHash(hash, "_priceCargoSell", _market.sell(), int[].class));
+    _market.loadFrom(hash);
     _quests = new Quests(cmdr, _universe, _market, _newspaper, _mercenaries, _spaceMonster, _difficulty, _dialogs, questConsequences());
-    _quests.questStatusArtifact(GetValueFromHash(hash, "_questStatusArtifact", _quests.questStatusArtifact()));
-    _quests.questStatusDragonfly(GetValueFromHash(hash, "_questStatusDragonfly", _quests.questStatusDragonfly()));
-    _quests.questStatusExperiment(GetValueFromHash(hash, "_questStatusExperiment", _quests.questStatusExperiment()));
-    _quests.questStatusGemulon(GetValueFromHash(hash, "_questStatusGemulon", _quests.questStatusGemulon()));
-    _quests.questStatusJapori(GetValueFromHash(hash, "_questStatusJapori", _quests.questStatusJapori()));
-    _quests.questStatusJarek(GetValueFromHash(hash, "_questStatusJarek", _quests.questStatusJarek()));
-    _quests.questStatusMoon(GetValueFromHash(hash, "_questStatusMoon", _quests.questStatusMoon()));
-    _quests.questStatusPrincess(GetValueFromHash(hash, "_questStatusPrincess", _quests.questStatusPrincess()));
-    _quests.reactorStatus(GetValueFromHash(hash, "_questStatusReactor", _quests.reactorStatus()));
-    _quests.questStatusScarab(GetValueFromHash(hash, "_questStatusScarab", _quests.questStatusScarab()));
-    _quests.questStatusSculpture(GetValueFromHash(hash, "_questStatusSculpture", _quests.questStatusSculpture()));
-    _quests.questStatusSpaceMonster(GetValueFromHash(hash, "_questStatusSpaceMonster", _quests.questStatusSpaceMonster()));
-    _quests.questStatusWild(GetValueFromHash(hash, "_questStatusWild", _quests.questStatusWild()));
-    _quests.fabricRipProbability(GetValueFromHash(hash, "_fabricRipProbability", _quests.fabricRipProbability()));
+    _quests.loadFrom(hash);
     encounter().setJustLootedMarie(GetValueFromHash(hash, "_justLootedMarie", encounter().getJustLootedMarie()));
-    _quests.canSuperWarp(GetValueFromHash(hash, "_canSuperWarp", _quests.canSuperWarp()));
     _chanceOfVeryRareEncounter = GetValueFromHash(hash, "_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
     Integer[] veryRareIds = GetValueFromHash(hash, "_veryRareEncounters", new Integer[0]);
     _veryRareEncounters = new ArrayList<>(veryRareIds.length);
@@ -149,9 +132,8 @@ public final class Game extends STSerializableObject implements QuestStates {
   public Hashtable Serialize() {
     Hashtable ht = super.Serialize();
     ht.add("_version", "2.00");
-    ht.add("_universe", ArrayToArrayList(_universe.systems()));
+    _universe.saveTo(ht);
     ht.add("_commander", cmdr.Serialize());
-    ht.add("_wormholes", _universe.wormholes());
     ht.add("_mercenaries", ArrayToArrayList(_mercenaries));
     ht.add("_dragonfly", _dragonfly.Serialize());
     ht.add("_scarab", _scarab.Serialize());
@@ -164,9 +146,8 @@ public final class Game extends STSerializableObject implements QuestStates {
     ht.add("_inspected", encounter().getInspected());
     ht.add("_tribbleMessage", _tribbleMessage);
     ht.add("_arrivedViaWormhole", _arrivedViaWormhole);
-    ht.add("_paidForNewspaper", _newspaper.paid());
+    _newspaper.saveTo(ht);
     ht.add("_litterWarning", encounter().getLitterWarning());
-    ht.add("_newsEvents", _newspaper.events().toArray(new Integer[0]));
     ht.add("_difficulty", _difficulty.CastToInt());
     ht.add("_cheatEnabled", _cheatEnabled);
     ht.add("_autoSave", _autoSave);
@@ -177,24 +158,9 @@ public final class Game extends STSerializableObject implements QuestStates {
     ht.add("_warpSystemId", _warpSystemId.CastToInt());
     ht.add("_trackedSystemId", _trackedSystemId.CastToInt());
     ht.add("_targetWormhole", _targetWormhole);
-    ht.add("_priceCargoBuy", _market.buy());
-    ht.add("_priceCargoSell", _market.sell());
-    ht.add("_questStatusArtifact", _quests.questStatusArtifact());
-    ht.add("_questStatusDragonfly", _quests.questStatusDragonfly());
-    ht.add("_questStatusExperiment", _quests.questStatusExperiment());
-    ht.add("_questStatusGemulon", _quests.questStatusGemulon());
-    ht.add("_questStatusJapori", _quests.questStatusJapori());
-    ht.add("_questStatusJarek", _quests.questStatusJarek());
-    ht.add("_questStatusMoon", _quests.questStatusMoon());
-    ht.add("_questStatusPrincess", _quests.questStatusPrincess());
-    ht.add("_questStatusReactor", _quests.reactorStatus());
-    ht.add("_questStatusScarab", _quests.questStatusScarab());
-    ht.add("_questStatusSculpture", _quests.questStatusSculpture());
-    ht.add("_questStatusSpaceMonster", _quests.questStatusSpaceMonster());
-    ht.add("_questStatusWild", _quests.questStatusWild());
-    ht.add("_fabricRipProbability", _quests.fabricRipProbability());
+    _market.saveTo(ht);
+    _quests.saveTo(ht);
     ht.add("_justLootedMarie", encounter().getJustLootedMarie());
-    ht.add("_canSuperWarp", _quests.canSuperWarp());
     ht.add("_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
     ht.add("_veryRareEncounters", ArrayListToIntArray(_veryRareEncounters));
     ht.add("_options", _options.Serialize());

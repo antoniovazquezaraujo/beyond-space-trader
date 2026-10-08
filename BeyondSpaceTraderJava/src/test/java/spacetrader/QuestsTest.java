@@ -18,6 +18,7 @@ import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.SpecialEventType;
 import org.junit.jupiter.api.Test;
 import spacetrader.enums.StarSystemId;
+import spacetrader.util.Hashtable;
 
 
 class QuestsTest {
@@ -90,6 +91,47 @@ class QuestsTest {
 
     assertEquals(0, quests.fabricRipProbability());
     assertFalse(quests.canSuperWarp());
+  }
+
+  @Test
+  void savedStateSurvivesAHashRoundTrip() {
+    Quests quests = newQuests();
+    quests.questStatusArtifact(1);
+    quests.questStatusDragonfly(2);
+    quests.questStatusExperiment(3);
+    quests.questStatusGemulon(4);
+    quests.questStatusJapori(5);
+    quests.questStatusJarek(6);
+    quests.questStatusMoon(7);
+    quests.questStatusPrincess(8);
+    quests.reactorStatus(9);
+    quests.questStatusScarab(10);
+    quests.questStatusSculpture(11);
+    quests.questStatusSpaceMonster(12);
+    quests.questStatusWild(13);
+    quests.fabricRipProbability(7);
+    quests.canSuperWarp(true);
+    Hashtable save = new Hashtable();
+
+    quests.saveTo(save);
+    Quests loaded = newQuests();
+    loaded.loadFrom(save);
+
+    assertEquals(1, loaded.questStatusArtifact());
+    assertEquals(2, loaded.questStatusDragonfly());
+    assertEquals(3, loaded.questStatusExperiment());
+    assertEquals(4, loaded.questStatusGemulon());
+    assertEquals(5, loaded.questStatusJapori());
+    assertEquals(6, loaded.questStatusJarek());
+    assertEquals(7, loaded.questStatusMoon());
+    assertEquals(8, loaded.questStatusPrincess());
+    assertEquals(9, loaded.reactorStatus());
+    assertEquals(10, loaded.questStatusScarab());
+    assertEquals(11, loaded.questStatusSculpture());
+    assertEquals(12, loaded.questStatusSpaceMonster());
+    assertEquals(13, loaded.questStatusWild());
+    assertEquals(7, loaded.fabricRipProbability());
+    assertTrue(loaded.canSuperWarp());
   }
 
   @Test

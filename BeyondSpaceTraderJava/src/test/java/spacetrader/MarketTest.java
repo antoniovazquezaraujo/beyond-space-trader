@@ -18,6 +18,7 @@ import java.lang.reflect.Field;
 import java.util.Random;
 import org.gts.bst.difficulty.Difficulty;
 import org.junit.jupiter.api.Test;
+import spacetrader.util.Hashtable;
 
 
 class MarketTest {
@@ -149,6 +150,21 @@ class MarketTest {
 
     assertEquals(42, market.buy()[0]);
     assertEquals(7, market.sell()[1]);
+  }
+
+  @Test
+  void savedPricesSurviveAHashRoundTrip() {
+    Market market = new Market();
+    market.buy(new int[] {11, 12, 13, 0, 0, 0, 0, 0, 0, 0});
+    market.sell(new int[] {1, 2, 3, 0, 0, 0, 0, 0, 0, 0});
+    Hashtable save = new Hashtable();
+
+    market.saveTo(save);
+    Market loaded = new Market();
+    loaded.loadFrom(save);
+
+    assertArrayEquals(new int[] {11, 12, 13, 0, 0, 0, 0, 0, 0, 0}, loaded.buy());
+    assertArrayEquals(new int[] {1, 2, 3, 0, 0, 0, 0, 0, 0, 0}, loaded.sell());
   }
 
   @Test

@@ -8,14 +8,17 @@
  */
 package spacetrader;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Random;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.SpecialEventType;
@@ -24,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import spacetrader.enums.ShipyardId;
 import spacetrader.enums.StarSystemId;
 import spacetrader.enums.TechLevel;
+import spacetrader.util.Hashtable;
 
 
 class UniverseTest {
@@ -107,6 +111,23 @@ class UniverseTest {
 
     assertSame(systems, restored.systems());
     assertSame(wormholes, restored.wormholes());
+  }
+
+  @Test
+  void aSavedUniverseSurvivesAHashRoundTrip() {
+    Universe generated = Universe.generate();
+    generated.systems()[0].Visited(true);
+    generated.wormholes()[0] = 3;
+    Hashtable save = new Hashtable();
+
+    generated.saveTo(save);
+    Universe loaded = Universe.from(save);
+
+    assertInstanceOf(ArrayList.class, save.get("_universe"));
+    assertInstanceOf(int[].class, save.get("_wormholes"));
+    assertEquals(generated.systems().length, loaded.systems().length);
+    assertTrue(loaded.systems()[0].Visited(), "the system state must survive the save");
+    assertArrayEquals(generated.wormholes(), loaded.wormholes());
   }
 
   @Test

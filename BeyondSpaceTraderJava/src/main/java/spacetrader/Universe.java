@@ -8,6 +8,9 @@
  */
 package spacetrader;
 
+import java.util.ArrayList;
+import spacetrader.util.Hashtable;
+
 
 /**
  * The universe of a game: the star systems of the galaxy and the wormhole map.
@@ -42,6 +45,21 @@ public final class Universe {
 
   /** Restores the universe of a saved game: the systems and the wormhole map as they were stored. */
   public static Universe from(StarSystem[] systems, int[] wormholes) {
+    return new Universe(systems, wormholes);
+  }
+
+  /** Writes the universe to a saved game: the systems and the wormhole map. */
+  public void saveTo(Hashtable hash) {
+    hash.add("_universe", STSerializableObject.ArrayToArrayList(_systems));
+    hash.add("_wormholes", _wormholes);
+  }
+
+  /** Restores the universe of a saved game from its hash, with the keys of the old format. */
+  @SuppressWarnings("unchecked")
+  public static Universe from(Hashtable hash) {
+    StarSystem[] systems = (StarSystem[])STSerializableObject.ArrayListToArray(
+        STSerializableObject.GetValueFromHash(hash, "_universe", ArrayList.class), "StarSystem");
+    int[] wormholes = STSerializableObject.GetValueFromHash(hash, "_wormholes", new int[WORMHOLE_COUNT], int[].class);
     return new Universe(systems, wormholes);
   }
 
