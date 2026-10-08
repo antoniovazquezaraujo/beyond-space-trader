@@ -101,8 +101,8 @@ el modelo está desacoplado de las vistas.
 Requiere **JDK 17** y **Maven 3.9+**.
 
 ```bash
-mvn package                    # compila el jar
-./run.sh                       # compila y arranca la interfaz de terminal
+mvn clean package -DskipTests  # compila el paquete autónomo (output/BeyondSpaceTrader)
+./run.sh                       # arranca lo compilado (no compila)
 ./run.sh --lang es             # ... y arranca en español
 mvn verify                     # tests
 mvn -B -ntp -Pquality verify   # lo que corre la CI: tests + SpotBugs

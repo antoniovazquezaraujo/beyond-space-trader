@@ -18,8 +18,8 @@ GPL v3 license. Repo: `github.com/antoniovazquezaraujo/beyond-space-trader`.
 ## Commands
 
 ```sh
-mvn package                   # build and produce the jar
-./run.sh                      # build and start the TUI
+mvn clean package -DskipTests # build the self-contained package
+./run.sh                      # run what is built (no build)
 mvn verify                    # tests
 mvn -B -ntp -Pquality verify  # what CI runs (tests + SpotBugs)
 ```
@@ -66,6 +66,10 @@ in Spanish; follow their format.
 - Keep PRs **small and focused** on one change; write them in English. CI
   (`mvn -B -ntp -Pquality verify`) must be green.
 - Merge with **squash** and delete the branch (local and remote) once integrated.
+- **Merges into `develop` wait for the maintainer**: the agents open the PR with
+  CI green and stop there; only the maintainer approves or merges it. Work that
+  must not reach `develop` yet lives on an integration branch (e.g.
+  `refactor/game-decomposition`) and lands as a single PR when it is complete.
 - `main` only receives releases (a PR from `develop` plus a tag); see
   `docs/developer/release/Release_Process.md`.
 - Write commits in the imperative mood, with a Conventional Commits prefix when it helps
