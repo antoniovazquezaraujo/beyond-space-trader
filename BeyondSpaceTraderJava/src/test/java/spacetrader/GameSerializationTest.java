@@ -10,8 +10,10 @@ package spacetrader;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -21,6 +23,7 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.events.NewsEvent;
 import org.gts.bst.events.VeryRareEncounter;
@@ -262,6 +265,67 @@ class GameSerializationTest {
     assertEquals(SpecialEvent.StatusWildDone, loaded.getQuestStatusWild());
     assertEquals(7, loaded.getFabricRipProbability());
     assertTrue(loaded.getCanSuperWarp());
+  }
+
+  @Test
+  void loadsAnOldSaveWithoutTheComponentKeysWithTheLegacyDefaults() throws Exception {
+    Game fresh = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+    Hashtable save = fresh.Serialize();
+    // Keys and defaults exactly as the old Game read them when they were missing.
+    for(String key : List.of("_wormholes", "_priceCargoBuy", "_priceCargoSell", "_paidForNewspaper", "_newsEvents",
+        "_questStatusArtifact", "_questStatusDragonfly", "_questStatusExperiment", "_questStatusGemulon",
+        "_questStatusJapori", "_questStatusJarek", "_questStatusMoon", "_questStatusPrincess", "_questStatusReactor",
+        "_questStatusScarab", "_questStatusSculpture", "_questStatusSpaceMonster", "_questStatusWild",
+        "_fabricRipProbability", "_canSuperWarp")) {
+      save.remove(key);
+    }
+
+    Game loaded = new Game(writeAndReadBack(save), null, new TestDialogService());
+
+    assertArrayEquals(new int[6], loaded.Wormholes());
+    assertArrayEquals(new int[Consts.TradeItems.size()], loaded.PriceCargoBuy());
+    assertArrayEquals(new int[Consts.TradeItems.size()], loaded.PriceCargoSell());
+    assertFalse(loaded.getPaidForNewspaper());
+    assertEquals(List.of(), loaded.NewsEvents());
+    assertEquals(0, loaded.getQuestStatusArtifact());
+    assertEquals(0, loaded.getQuestStatusDragonfly());
+    assertEquals(0, loaded.getQuestStatusExperiment());
+    assertEquals(0, loaded.getQuestStatusGemulon());
+    assertEquals(0, loaded.getQuestStatusJapori());
+    assertEquals(0, loaded.getQuestStatusJarek());
+    assertEquals(0, loaded.getQuestStatusMoon());
+    assertEquals(0, loaded.getQuestStatusPrincess());
+    assertEquals(0, loaded.getQuestStatusReactor());
+    assertEquals(0, loaded.getQuestStatusScarab());
+    assertEquals(0, loaded.getQuestStatusSculpture());
+    assertEquals(0, loaded.getQuestStatusSpaceMonster());
+    assertEquals(0, loaded.getQuestStatusWild());
+    assertEquals(0, loaded.getFabricRipProbability());
+    assertFalse(loaded.getCanSuperWarp());
+  }
+
+  @Test
+  void loadingAGameRegistersItsOwnCommanderInItsOwnMercenaries() {
+    Game game = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+
+    Game loaded = new Game(game.Serialize(), null, new TestDialogService());
+
+    assertSame(loaded, Game.CurrentGame());
+    assertSame(loaded.Commander(), loaded.Mercenaries()[CrewMemberId.Commander.CastToInt()],
+        "the loaded commander must be registered in the crew of the loaded game");
+    assertSame(game.Commander(), game.Mercenaries()[CrewMemberId.Commander.CastToInt()],
+        "loading must not rewrite the crew of the running game");
+  }
+
+  @Test
+  void aFutureVersionSaveIsRejectedBeforeReadingItsState() throws Exception {
+    Game fresh = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+    Hashtable save = fresh.Serialize();
+    save.add("_version", "99.00");
+    save.add("_universe", "not-a-star-system-list");
+
+    assertThrows(FutureVersionException.class,
+        () -> new Game(writeAndReadBack(save), null, new TestDialogService()));
   }
 
   private static Hashtable writeAndReadBack(Hashtable save) throws Exception {
