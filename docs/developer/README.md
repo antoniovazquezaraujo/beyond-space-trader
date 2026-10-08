@@ -91,9 +91,8 @@ el modelo está desacoplado de las vistas.
 - [x] Compositor de naves y raíles del editor (los 17 tipos con sus cascos y
       piezas, validados en CI)
 - [x] Descomponer `Game` por áreas (#46): Universe (#147), precios y comercio
-      (#148), noticias (#149), misiones y eventos (#150), llegada (#151) y
-      serialización (#152); el bucle de viaje y el generador de encuentros quedan
-      como seguimiento (#229)
+      (#148), noticias (#149), misiones y eventos (#150), llegada (#151),
+      serialización (#152) y viaje/encuentros (#229)
 
 ---
 
