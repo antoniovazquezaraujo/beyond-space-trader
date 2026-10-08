@@ -41,6 +41,7 @@ The issue tracker is the backlog. The roadmap is tracked with milestones
 
 ## Building
 
-Requires JDK 17 and Maven. `mvn package` builds the jar; `./run.sh` builds it and
-runs the terminal UI. See the [README](README.md) for details and the
+Requires JDK 17 and Maven. `mvn clean package -DskipTests` builds the
+self-contained package in `output/BeyondSpaceTrader`; `./run.sh` runs what is
+built (it does not build). See the [README](README.md) for details and the
 [developer documentation](docs/developer/README.md) for the architecture.

@@ -87,14 +87,14 @@ caen al inglés.
 Requiere **JDK 17** y **Maven 3.9+**:
 
 ```bash
-./run.sh              # compila y arranca la interfaz de terminal
-./run.sh --lang es    # ... en español
-mvn package           # compila el jar
-mvn -Pquality verify  # tests y análisis estático
+mvn clean package -DskipTests  # compila el paquete autónomo
+./run.sh                       # arranca lo compilado (no compila)
+./run.sh --lang es             # ... en español
+mvn -Pquality verify           # tests y análisis estático
 ```
 
-`run-fixed-font.sh` es un **ayudante de desarrollo**: compila el juego y lo
-arranca en kitty, xfce4-terminal o alacritty con una fuente monoespaciada fija
+`run-fixed-font.sh` es un **ayudante de desarrollo**: arranca el juego que hayas
+compilado en kitty, xfce4-terminal o alacritty con una fuente monoespaciada fija
 (DejaVu Sans Mono 12), para que los mapas conserven sus proporciones sea cual sea
 la fuente del escritorio. No hace falta para jugar a los paquetes publicados.
 
