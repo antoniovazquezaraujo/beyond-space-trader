@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
-public final class Game extends STSerializableObject implements QuestStates {
+public final class Game extends STSerializableObject implements QuestStates, EncounterContext {
   private static Game game;
   private Commander cmdr;
   // Game Data
