@@ -18,8 +18,8 @@ GPL v3 license. Repo: `github.com/antoniovazquezaraujo/beyond-space-trader`.
 ## Commands
 
 ```sh
-mvn package                   # build and produce the jar
-./run.sh                      # build and start the TUI
+mvn clean package -DskipTests # build the self-contained package
+./run.sh                      # run what is built (no build)
 mvn verify                    # tests
 mvn -B -ntp -Pquality verify  # what CI runs (tests + SpotBugs)
 ```

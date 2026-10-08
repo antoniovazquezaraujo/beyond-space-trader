@@ -86,14 +86,14 @@ translation fall back to English.
 Requires **JDK 17** and **Maven 3.9+**:
 
 ```bash
-./run.sh              # build and run the terminal UI
-./run.sh --lang es    # ... in Spanish
-mvn package           # build the jar
-mvn -Pquality verify  # tests and static analysis
+mvn clean package -DskipTests  # build the self-contained package
+./run.sh                       # run what is built (it does not build)
+./run.sh --lang es             # ... in Spanish
+mvn -Pquality verify           # tests and static analysis
 ```
 
-`run-fixed-font.sh` is a **development helper**: it builds the game and starts it
-in kitty, xfce4-terminal or alacritty with a fixed monospace font (DejaVu Sans
+`run-fixed-font.sh` is a **development helper**: it starts the game you built in
+kitty, xfce4-terminal or alacritty with a fixed monospace font (DejaVu Sans
 Mono 12), so the charts keep their proportions whatever the desktop font is. It
 is not needed to play the released packages.
 

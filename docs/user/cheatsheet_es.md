@@ -13,7 +13,7 @@ Una página con las teclas y los paneles del juego. Los detalles están en el
 | Linux/macOS | `./bin/beyond-space-trader.sh` |
 | Windows | `bin\beyond-space-trader.bat` |
 | En español | añade `--lang es` |
-| Desde el código | `./run.sh` (requiere JDK 17 y Maven) |
+| Desde el código | compila con `mvn clean package -DskipTests` y arranca con `./run.sh` |
 
 ## El mapa
 

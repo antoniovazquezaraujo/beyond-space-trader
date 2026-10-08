@@ -65,16 +65,17 @@ The game needs a terminal of at least 60×15 (100×30 or more is recommended;
 Requires **JDK 17** and **Maven 3.9+**.
 
 ```bash
-mvn package                   # build the jar
-./run.sh                      # build and run the terminal UI
+mvn clean package -DskipTests # build the self-contained package in output/BeyondSpaceTrader
+./run.sh                      # run what is built (it does not build)
 ./run.sh --lang es            # ... and start it in Spanish
 mvn -B -ntp -Pquality verify  # tests + SpotBugs (what CI runs)
-mvn clean package -DskipTests # self-contained package in output/BeyondSpaceTrader
 ```
 
-`run-fixed-font.sh` is a development helper that starts the game in a terminal
-with a fixed monospace font (kitty, xfce4-terminal or alacritty), so the charts
-keep their proportions whatever the desktop font is.
+`run.sh` only runs the game: it prefers the package in `output/BeyondSpaceTrader`
+(its own Java runtime and ship art) and falls back to the jar. `run-fixed-font.sh`
+and `run-composer.sh` work the same way; the first one starts the game in a
+terminal with a fixed monospace font (kitty, xfce4-terminal or alacritty), so
+the charts keep their proportions whatever the desktop font is.
 
 ## 🧭 Status
 
