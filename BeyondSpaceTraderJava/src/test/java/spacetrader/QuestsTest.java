@@ -13,8 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
+import org.gts.bst.events.SpecialEventType;
 import org.junit.jupiter.api.Test;
+import spacetrader.enums.StarSystemId;
 
 
 class QuestsTest {
@@ -136,6 +139,29 @@ class QuestsTest {
     assertEquals(SpecialEvent.StatusWildDone, loaded.getQuestStatusWild());
     assertEquals(3, loaded.getFabricRipProbability());
     assertTrue(loaded.getCanSuperWarp());
+  }
+
+  @Test
+  void aLoadedGameRunsItsQuestLogicOverTheLoadedObjects() {
+    Game game = newGame();
+    game.Commander().setPoliceRecordScore(Consts.PoliceRecordScoreClean + 30);
+    game.SpaceMonster().setHull(100);
+    game.Commander().CurrentSystem().SpecialEventType(SpecialEventType.WildGetsOut);
+    game.setQuestStatusWild(SpecialEvent.StatusWildStarted);
+
+    Game loaded = new Game(game.Serialize(), null, new TestDialogService());
+
+    loaded.IncDays(9);
+    assertEquals(9, loaded.Commander().getDays());
+    assertEquals(Consts.PoliceRecordScoreClean + 27, loaded.Commander().getPoliceRecordScore(),
+        "the loaded commander must drift towards neutral");
+    assertEquals(155, loaded.SpaceMonster().getHull(),
+        "the loaded space monster must keep regenerating");
+
+    loaded.HandleSpecialEvent();
+    assertEquals(SpecialEvent.StatusWildDone, loaded.getQuestStatusWild());
+    assertEquals(StarSystemId.Kravat, loaded.Mercenaries()[CrewMemberId.Zeethibal.CastToInt()].getCurrentSystemId(),
+        "the loaded quest component must write over the loaded mercenaries");
   }
 
   private static Game newGame() {

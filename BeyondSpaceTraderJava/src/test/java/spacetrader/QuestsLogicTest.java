@@ -8,6 +8,7 @@
  */
 package spacetrader;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import spacetrader.enums.AlertType;
 import spacetrader.enums.GameEndType;
 import spacetrader.enums.PoliticalSystemType;
+import spacetrader.enums.SkillType;
 import spacetrader.enums.StarSystemId;
 import spacetrader.enums.TechLevel;
 
@@ -165,6 +167,78 @@ class QuestsLogicTest {
     assertEquals(SpecialEventType.SculptureHiddenBays, system.SpecialEventType(), "the chain must stay in the system");
   }
 
+  @Test
+  void theScarabHullUpgradeRaisesTheHullAndKeepsTheChainInTheSystem() {
+    StarSystem system = eventSystem(SpecialEventType.ScarabUpgradeHull);
+    int hull = cmdr.getShip().getHull();
+    int hullStrength = cmdr.getShip().HullStrength();
+
+    quests.handleSpecialEvent();
+
+    assertTrue(cmdr.getShip().getHullUpgraded(), "the upgrade must be marked on the ship");
+    assertEquals(hull + Consts.HullUpgrade, cmdr.getShip().getHull());
+    assertEquals(hullStrength + Consts.HullUpgrade, cmdr.getShip().HullStrength(),
+        "the upgraded hull raises the ship's maximum strength");
+    assertEquals(SpecialEvent.StatusScarabDone, quests.questStatusScarab());
+    assertEquals(SpecialEventType.ScarabUpgradeHull, system.SpecialEventType(), "the offer must stay in the system");
+    assertTrue(dialogs.alerts().contains(AlertType.ShipHullUpgraded));
+  }
+
+  @Test
+  void theMoonEventStaysUntilTheRetirementCallbackRuns() {
+    StarSystem system = eventSystem(SpecialEventType.MoonRetirement);
+    quests.questStatusMoon(SpecialEvent.StatusMoonBought);
+    Quests withFailingRetirement = new Quests(cmdr, universe, market, newspaper, game.Mercenaries(),
+        game.SpaceMonster(), game.Difficulty(), dialogs, () -> {
+          throw new IllegalStateException("game over");
+        });
+
+    assertThrows(IllegalStateException.class, withFailingRetirement::handleSpecialEvent);
+
+    assertEquals(SpecialEventType.MoonRetirement, system.SpecialEventType(),
+        "the event must not be erased before the retirement callback runs");
+    assertEquals(SpecialEvent.StatusMoonDone, withFailingRetirement.questStatusMoon());
+  }
+
+  @Test
+  void theRetirementDoesNotFallThroughIntoThePrincessMission() {
+    StarSystem system = eventSystem(SpecialEventType.MoonRetirement);
+    quests.questStatusMoon(SpecialEvent.StatusMoonBought);
+    quests.questStatusPrincess(SpecialEvent.StatusPrincessFlyQonos);
+
+    quests.handleSpecialEvent();
+
+    assertTrue(retired, "the component must retire through the game callback");
+    assertEquals(SpecialEventType.NA, system.SpecialEventType(), "the event must be consumed");
+    assertEquals(SpecialEvent.StatusPrincessFlyQonos, quests.questStatusPrincess(),
+        "the defensive break must keep the switch from falling into the Princess case");
+  }
+
+  @Test
+  void wildGetsOutMovesZeethibalToKravatWithTheRewrittenSkills() {
+    StarSystem system = eventSystem(SpecialEventType.WildGetsOut);
+    hire(CrewMemberId.Wild);
+    int[] commanderSkills = cmdr.Skills();
+    commanderSkills[SkillType.Pilot.CastToInt()] = 2;
+    commanderSkills[SkillType.Fighter.CastToInt()] = 7;
+    commanderSkills[SkillType.Trader.CastToInt()] = 1;
+    commanderSkills[SkillType.Engineer.CastToInt()] = 9;
+    cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreVillain);
+    market.sell()[0] = 90;
+    CrewMember zeethibal = game.Mercenaries()[CrewMemberId.Zeethibal.CastToInt()];
+
+    quests.handleSpecialEvent();
+
+    assertEquals(StarSystemId.Kravat, zeethibal.getCurrentSystemId(), "Zeethibal must wait in Kravat");
+    assertArrayEquals(new int[] {8, 5, 10, 5}, zeethibal.Skills(),
+        "10 in the commander's lowest skill, 8 in the second lowest and 5 elsewhere");
+    assertEquals(SpecialEvent.StatusWildDone, quests.questStatusWild());
+    assertEquals(Consts.PoliceRecordScoreClean, cmdr.getPoliceRecordScore());
+    assertFalse(cmdr.getShip().WildOnBoard(), "Wild must leave the ship");
+    assertEquals(100, market.sell()[0], "the sell prices must be recalculated after the erasure");
+    assertEquals(SpecialEventType.NA, system.SpecialEventType());
+  }
+
   // IncDays: the drift, the regeneration and the mission timers.
 
   @Test
@@ -288,6 +362,8 @@ class QuestsLogicTest {
     assertEquals(GameEndType.BoughtMoon, game.getEndStatus(),
         "the retirement callback must throw the end-of-game exception");
     assertEquals(SpecialEvent.StatusMoonDone, game.getQuestStatusMoon());
+    assertEquals(SpecialEventType.MoonRetirement, cmdr.CurrentSystem().SpecialEventType(),
+        "the game must not erase the moon event before the retirement callback throws");
   }
 
   @Test
@@ -295,6 +371,31 @@ class QuestsLogicTest {
     game.IncDays(3);
 
     assertEquals(3, game.Commander().getDays());
+  }
+
+  @Test
+  void gameIncDaysAdvancesTheReactorTimerWhileTheReactorIsOnBoard() {
+    game.setQuestStatusReactor(SpecialEvent.StatusReactorFuelOk);
+
+    game.IncDays(3);
+
+    assertEquals(SpecialEvent.StatusReactorFuelOk + 3, game.getQuestStatusReactor());
+  }
+
+  @Test
+  void gameIncDaysStopsTheReactorTimerAtItsDate() {
+    game.setQuestStatusReactor(SpecialEvent.StatusReactorDate - 1);
+
+    game.IncDays(5);
+
+    assertEquals(SpecialEvent.StatusReactorDate, game.getQuestStatusReactor());
+  }
+
+  @Test
+  void gameIncDaysLeavesTheReactorTimerAloneWithoutTheReactor() {
+    game.IncDays(3);
+
+    assertEquals(SpecialEvent.StatusReactorNotStarted, game.getQuestStatusReactor());
   }
 
   private StarSystem eventSystem(SpecialEventType type) {
