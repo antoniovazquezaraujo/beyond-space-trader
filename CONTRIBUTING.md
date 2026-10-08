@@ -13,6 +13,11 @@ This project follows **GitHub Flow** around the `develop` branch:
 - CI (`mvn -B -ntp -Pquality verify`) must pass.
 - Merge with **squash** and delete the branch (local and remote) once
   integrated.
+- **Merging into `develop` is the maintainer's call**: open the PR, leave CI
+  green and wait for the review; agents and bots never merge into `develop` on
+  their own. Big refactors can live on an **integration branch** (for example
+  `refactor/game-decomposition`): its pieces merge there and the whole branch
+  lands on `develop` as one reviewed PR.
 - Reference the issue being closed in the PR body (`Closes #12`).
 
 ## Player-visible changes
