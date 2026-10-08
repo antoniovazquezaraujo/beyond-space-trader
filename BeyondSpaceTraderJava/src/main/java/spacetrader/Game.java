@@ -12,17 +12,14 @@ import org.gts.bst.events.VeryRareEncounter;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.ship.equip.GadgetType;
-import org.gts.bst.ship.equip.ShieldType;
 import org.gts.bst.ship.equip.WeaponType;
 import org.gts.bst.ports.DialogService;
 import org.gts.bst.ports.EncounterDialogHost;
 import spacetrader.enums.AlertType;
 import spacetrader.enums.GameEndType;
 import spacetrader.enums.OpponentType;
-import spacetrader.enums.PoliticalSystemType;
 import spacetrader.enums.SkillType;
 import spacetrader.enums.StarSystemId;
-import spacetrader.enums.TechLevel;
 import java.util.ArrayList;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
@@ -43,7 +40,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   private boolean _arrivedViaWormhole = false; // flag to indicate whether player arrived on current planet via wormhole
   private final Newspaper _newspaper = new Newspaper();
   private final Market _market = new Market();
-  private final Quests _quests = new Quests();
+  private final Quests _quests;
   // Current Selections
   private Difficulty _difficulty = Difficulty.Normal; // Difficulty level
   private boolean _cheatEnabled = false;
@@ -74,6 +71,7 @@ public final class Game extends STSerializableObject implements QuestStates {
         new CrewMember(CrewMemberId.Commander, pilot, fighter, trader, engineer, StarSystemId.NA), _universe.systems(), Mercenaries());
     NewGameSetup.GenerateCrewMemberList(Mercenaries(), _universe.systems().length, _difficulty);
     NewGameSetup.CreateShips(Dragonfly(), _scarab, _scorpion, _spaceMonster, Mercenaries());
+    _quests = new Quests(cmdr, _universe, _market, _newspaper, _mercenaries, _spaceMonster, _difficulty, _dialogs, questConsequences());
     CalculatePrices(cmdr.CurrentSystem());
     Game.this.ResetVeryRareEncounters();
     if(_difficulty.CastToInt() < Difficulty.Normal.CastToInt()) {
@@ -121,6 +119,7 @@ public final class Game extends STSerializableObject implements QuestStates {
     _targetWormhole = GetValueFromHash(hash, "_targetWormhole", _targetWormhole);
     _market.buy(GetValueFromHash(hash, "_priceCargoBuy", _market.buy(), int[].class));
     _market.sell(GetValueFromHash(hash, "_priceCargoSell", _market.sell(), int[].class));
+    _quests = new Quests(cmdr, _universe, _market, _newspaper, _mercenaries, _spaceMonster, _difficulty, _dialogs, questConsequences());
     _quests.questStatusArtifact(GetValueFromHash(hash, "_questStatusArtifact", _quests.questStatusArtifact()));
     _quests.questStatusDragonfly(GetValueFromHash(hash, "_questStatusDragonfly", _quests.questStatusDragonfly()));
     _quests.questStatusExperiment(GetValueFromHash(hash, "_questStatusExperiment", _quests.questStatusExperiment()));
@@ -247,6 +246,20 @@ public final class Game extends STSerializableObject implements QuestStates {
       @Override
       public void showNewspaper() {
         ShowNewspaper();
+      }
+    };
+  }
+
+  /**
+   * The consequences of the special events that only the game can run.
+   * {@code retired()} throws the end-of-game exception in the middle of the
+   * event, as it always did.
+   */
+  private Quests.Consequences questConsequences() {
+    return new Quests.Consequences() {
+      @Override
+      public void retired() {
+        throw new GameEndException(Game.this, GameEndType.BoughtMoon);
       }
     };
   }
@@ -746,370 +759,11 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public void HandleSpecialEvent() {
-    StarSystem curSys = cmdr.CurrentSystem();
-    Ship ship = cmdr.getShip();
-    boolean remove = true;
-    switch(curSys.SpecialEventType()) {
-      case Artifact:
-        setQuestStatusArtifact(SpecialEvent.StatusArtifactOnBoard);
-        break;
-      case ArtifactDelivery:
-        setQuestStatusArtifact(SpecialEvent.StatusArtifactDone);
-        break;
-      case CargoForSale:
-        Dialogs().alert(AlertType.SpecialSealedCanisters);
-        int tradeItem = Functions.GetRandom(Consts.TradeItems.size());
-        ship.Cargo()[tradeItem] += 3;
-        cmdr.PriceCargo()[tradeItem] += cmdr.CurrentSystem().SpecialEvent().Price();
-        break;
-      case Dragonfly:
-      case DragonflyBaratas:
-      case DragonflyMelina:
-      case DragonflyRegulas:
-        setQuestStatusDragonfly(getQuestStatusDragonfly() + 1);
-        break;
-      case DragonflyDestroyed:
-        curSys.SpecialEventType(SpecialEventType.DragonflyShield);
-        remove = false;
-        break;
-      case DragonflyShield:
-        if(ship.FreeSlotsShield() == 0) {
-          Dialogs().alert(AlertType.EquipmentNotEnoughSlots);
-          remove = false;
-        } else {
-          Dialogs().alert(AlertType.EquipmentLightningShield);
-          ship.AddEquipment(Consts.Shields.get(ShieldType.Lightning.id));
-          setQuestStatusDragonfly(SpecialEvent.StatusDragonflyDone);
-        }
-        break;
-      case EraseRecord:
-        Dialogs().alert(AlertType.SpecialCleanRecord);
-        cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreClean);
-        RecalculateSellPrices(curSys);
-        break;
-      case Experiment:
-        setQuestStatusExperiment(SpecialEvent.StatusExperimentStarted);
-        break;
-      case ExperimentFailed:
-        // The failure is narrative only: it changes neither the ship nor the quest,
-        // so the event is kept in the system for the player to reread its story.
-        remove = false;
-        break;
-      case ExperimentStopped:
-        setQuestStatusExperiment(SpecialEvent.StatusExperimentCancelled);
-        setCanSuperWarp(true);
-        break;
-      case Gemulon:
-        setQuestStatusGemulon(SpecialEvent.StatusGemulonStarted);
-        break;
-      case GemulonFuel:
-        if(ship.FreeSlotsGadget() == 0) {
-          Dialogs().alert(AlertType.EquipmentNotEnoughSlots);
-          remove = false;
-        } else {
-          Dialogs().alert(AlertType.EquipmentFuelCompactor);
-          ship.AddEquipment(Consts.Gadgets.get(GadgetType.FuelCompactor.asInteger()));
-          setQuestStatusGemulon(SpecialEvent.StatusGemulonDone);
-        }
-        break;
-      case GemulonRescued:
-        curSys.SpecialEventType(SpecialEventType.GemulonFuel);
-        setQuestStatusGemulon(SpecialEvent.StatusGemulonFuel);
-        remove = false;
-        break;
-      case GemulonInvaded:
-        // Like ExperimentFailed, the invasion report is narrative only: the event is
-        // kept so its bad news can be read again instead of vanishing.
-        remove = false;
-        break;
-      case Japori:
-        // The japori quest should not be removed since you can fail and start it over again.
-        remove = false;
-        if(ship.FreeCargoBays() < 10) {
-          Dialogs().alert(AlertType.CargoNoEmptyBays);
-        } else {
-          Dialogs().alert(AlertType.AntidoteOnBoard);
-          setQuestStatusJapori(SpecialEvent.StatusJaporiInTransit);
-        }
-        break;
-      case JaporiDelivery:
-        setQuestStatusJapori(SpecialEvent.StatusJaporiDone);
-        cmdr.IncreaseRandomSkill();
-        cmdr.IncreaseRandomSkill();
-        break;
-      case Jarek:
-        if(ship.FreeCrewQuarters() == 0) {
-          Dialogs().alert(AlertType.SpecialNoQuarters);
-          remove = false;
-        } else {
-          CrewMember jarek = Mercenaries()[CrewMemberId.Jarek.CastToInt()];
-          Dialogs().alert(AlertType.SpecialPassengerOnBoard, jarek.Name());
-          ship.Hire(jarek);
-          setQuestStatusJarek(SpecialEvent.StatusJarekStarted);
-        }
-        break;
-      case JarekGetsOut:
-        setQuestStatusJarek(SpecialEvent.StatusJarekDone);
-        ship.Fire(CrewMemberId.Jarek);
-        break;
-      case Lottery:
-        break;
-      case Moon:
-        Dialogs().alert(AlertType.SpecialMoonBought);
-        setQuestStatusMoon(SpecialEvent.StatusMoonBought);
-        break;
-      case MoonRetirement:
-        setQuestStatusMoon(SpecialEvent.StatusMoonDone);
-        throw new GameEndException(this, GameEndType.BoughtMoon);
-      case Princess:
-        curSys.SpecialEventType(SpecialEventType.PrincessReturned);
-        remove = false;
-        setQuestStatusPrincess(getQuestStatusPrincess() + 1);
-        break;
-      case PrincessCentauri:
-      case PrincessInthara:
-        setQuestStatusPrincess(getQuestStatusPrincess() + 1);
-        break;
-      case PrincessQonos:
-        if(ship.FreeCrewQuarters() == 0) {
-          Dialogs().alert(AlertType.SpecialNoQuarters);
-          remove = false;
-        } else {
-          CrewMember princess = Mercenaries()[CrewMemberId.Princess.CastToInt()];
-          Dialogs().alert(AlertType.SpecialPassengerOnBoard, princess.Name());
-          ship.Hire(princess);
-        }
-        break;
-      case PrincessQuantum:
-        if(ship.FreeSlotsWeapon() == 0) {
-          Dialogs().alert(AlertType.EquipmentNotEnoughSlots);
-          remove = false;
-        } else {
-          Dialogs().alert(AlertType.EquipmentQuantumDisruptor);
-          ship.AddEquipment(Consts.WeapObjs.get(WeaponType.QuantumDistruptor.id));
-          setQuestStatusPrincess(SpecialEvent.StatusPrincessDone);
-        }
-        break;
-      case PrincessReturned:
-        ship.Fire(CrewMemberId.Princess);
-        curSys.SpecialEventType(SpecialEventType.PrincessQuantum);
-        setQuestStatusPrincess(SpecialEvent.StatusPrincessReturned);
-        remove = false;
-        break;
-      case Reactor:
-        if(ship.FreeCargoBays() < 15) {
-          Dialogs().alert(AlertType.CargoNoEmptyBays);
-          remove = false;
-        } else {
-          if(ship.WildOnBoard()) {
-            if(Dialogs().alert(AlertType.WildWontStayAboardReactor, curSys.Name()) == DialogResult.OK) {
-              Dialogs().alert(AlertType.WildLeavesShip, curSys.Name());
-              setQuestStatusWild(SpecialEvent.StatusWildNotStarted);
-            } else {
-              remove = false;
-            }
-          }
-          if(remove) {
-            Dialogs().alert(AlertType.ReactorOnBoard);
-            setQuestStatusReactor(SpecialEvent.StatusReactorFuelOk);
-          }
-        }
-        break;
-      case ReactorDelivered:
-        curSys.SpecialEventType(SpecialEventType.ReactorLaser);
-        setQuestStatusReactor(SpecialEvent.StatusReactorDelivered);
-        remove = false;
-        break;
-      case ReactorLaser:
-        if(ship.FreeSlotsWeapon() == 0) {
-          Dialogs().alert(AlertType.EquipmentNotEnoughSlots);
-          remove = false;
-        } else {
-          Dialogs().alert(AlertType.EquipmentMorgansLaser);
-          ship.AddEquipment(Consts.WeapObjs.get(WeaponType.MorgansLaser.id));
-          setQuestStatusReactor(SpecialEvent.StatusReactorDone);
-        }
-        break;
-      case Scarab:
-        setQuestStatusScarab(SpecialEvent.StatusScarabHunting);
-        break;
-      case ScarabDestroyed:
-        setQuestStatusScarab(SpecialEvent.StatusScarabDestroyed);
-        curSys.SpecialEventType(SpecialEventType.ScarabUpgradeHull);
-        remove = false;
-        break;
-      case ScarabUpgradeHull:
-        Dialogs().alert(AlertType.ShipHullUpgraded);
-        ship.setHullUpgraded(true);
-        ship.setHull(ship.getHull() + Consts.HullUpgrade);
-        setQuestStatusScarab(SpecialEvent.StatusScarabDone);
-        remove = false;
-        break;
-      case Sculpture:
-        setQuestStatusSculpture(SpecialEvent.StatusSculptureInTransit);
-        break;
-      case SculptureDelivered:
-        setQuestStatusSculpture(SpecialEvent.StatusSculptureDelivered);
-        curSys.SpecialEventType(SpecialEventType.SculptureHiddenBays);
-        remove = false;
-        break;
-      case SculptureHiddenBays:
-        setQuestStatusSculpture(SpecialEvent.StatusSculptureDone);
-        if(ship.FreeSlotsGadget() == 0) {
-          Dialogs().alert(AlertType.EquipmentNotEnoughSlots);
-          remove = false;
-        } else {
-          Dialogs().alert(AlertType.EquipmentHiddenCompartments);
-          ship.AddEquipment(Consts.Gadgets.get(GadgetType.HiddenCargoBays.asInteger()));
-          setQuestStatusSculpture(SpecialEvent.StatusSculptureDone);
-        }
-        break;
-      case Skill:
-        Dialogs().alert(AlertType.SpecialSkillIncrease);
-        cmdr.IncreaseRandomSkill();
-        break;
-      case SpaceMonster:
-        setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterAtAcamar);
-        break;
-      case SpaceMonsterKilled:
-        setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterDone);
-        break;
-      case Tribble:
-        Dialogs().alert(AlertType.TribblesOwn);
-        ship.setTribbles(1);
-        break;
-      case TribbleBuyer:
-        Dialogs().alert(AlertType.TribblesGone);
-        cmdr.setCash(cmdr.getCash() + (ship.getTribbles() / 2));
-        ship.setTribbles(0);
-        break;
-      case Wild:
-        if(ship.FreeCrewQuarters() == 0) {
-          Dialogs().alert(AlertType.SpecialNoQuarters);
-          remove = false;
-        } else if(!ship.HasWeapon(WeaponType.BeamLaser, false)) {
-          Dialogs().alert(AlertType.WildWontBoardLaser);
-          remove = false;
-        } else if(ship.ReactorOnBoard()) {
-          Dialogs().alert(AlertType.WildWontBoardReactor);
-          remove = false;
-        } else {
-          CrewMember wild = Mercenaries()[CrewMemberId.Wild.CastToInt()];
-          Dialogs().alert(AlertType.SpecialPassengerOnBoard, wild.Name());
-          ship.Hire(wild);
-          setQuestStatusWild(SpecialEvent.StatusWildStarted);
-          if(ship.SculptureOnBoard()) {
-            Dialogs().alert(AlertType.WildSculpture);
-          }
-        }
-        break;
-      case WildGetsOut:
-        // Zeethibal has a 10 in player's lowest score, an 8 in the next lowest score, and 5 elsewhere.
-        CrewMember zeethibal = Mercenaries()[CrewMemberId.Zeethibal.CastToInt()];
-        zeethibal.CurrentSystem(_universe.systems()[StarSystemId.Kravat.CastToInt()]);
-        int lowest1 = cmdr.NthLowestSkill(1);
-        int lowest2 = cmdr.NthLowestSkill(2);
-        for(int i = 0; i < zeethibal.Skills().length; i++) {
-          zeethibal.Skills()[i] = (i == lowest1 ? 10 : (i == lowest2 ? 8 : 5));
-        }
-        setQuestStatusWild(SpecialEvent.StatusWildDone);
-        cmdr.setPoliceRecordScore(Consts.PoliceRecordScoreClean);
-        ship.Fire(CrewMemberId.Wild);
-        RecalculateSellPrices(curSys);
-        break;
-      default:
-        break;
-    }
-    if(curSys.SpecialEvent().Price() != 0) {
-      cmdr.setCash(cmdr.getCash() - curSys.SpecialEvent().Price());
-    }
-    if(remove) {
-      curSys.SpecialEventType(SpecialEventType.NA);
-    }
+    _quests.handleSpecialEvent();
   }
 
   public void IncDays(int num) {
-    cmdr.setDays(cmdr.getDays() + num);
-    if(cmdr.getInsurance()) {
-      cmdr.NoClaim(cmdr.NoClaim() + num);
-    }
-    // Police Record will gravitate towards neutral (0).
-    if(cmdr.getPoliceRecordScore() > Consts.PoliceRecordScoreClean) {
-      cmdr.setPoliceRecordScore(Math.max(Consts.PoliceRecordScoreClean, cmdr.getPoliceRecordScore() - num / 3));
-    } else if(cmdr.getPoliceRecordScore() < Consts.PoliceRecordScoreDubious) {
-      cmdr.setPoliceRecordScore(Math.min(Consts.PoliceRecordScoreDubious, cmdr.getPoliceRecordScore()
-          + num / (_difficulty.CastToInt() <= Difficulty.Normal.CastToInt() ? 1 : _difficulty.CastToInt())));
-    }
-    // The Space Monster's strength increases 5% per day until it is back to full strength.
-    if(_spaceMonster.getHull() < _spaceMonster.HullStrength()) {
-      _spaceMonster.setHull(Math.min(_spaceMonster.HullStrength(), (int)(_spaceMonster.getHull() * Math.pow(1.05, num))));
-    }
-    if(getQuestStatusGemulon() > SpecialEvent.StatusGemulonNotStarted && getQuestStatusGemulon() < SpecialEvent.StatusGemulonTooLate) {
-      setQuestStatusGemulon(Math.min(getQuestStatusGemulon() + num, SpecialEvent.StatusGemulonTooLate));
-      if(getQuestStatusGemulon() == SpecialEvent.StatusGemulonTooLate) {
-        StarSystem gemulon = _universe.systems()[StarSystemId.Gemulon.CastToInt()];
-        gemulon.SpecialEventType(SpecialEventType.GemulonInvaded);
-        gemulon.TechLevel(TechLevel.t0);
-        gemulon.PoliticalSystemType(PoliticalSystemType.Anarchy);
-      }
-    }
-    if(cmdr.getShip().ReactorOnBoard()) {
-      setQuestStatusReactor(Math.min(getQuestStatusReactor() + num, SpecialEvent.StatusReactorDate));
-    }
-    if(getQuestStatusExperiment() > SpecialEvent.StatusExperimentNotStarted
-        && getQuestStatusExperiment() < SpecialEvent.StatusExperimentPerformed) {
-      setQuestStatusExperiment(Math.min(getQuestStatusExperiment() + num, SpecialEvent.StatusExperimentPerformed));
-      if(getQuestStatusExperiment() == SpecialEvent.StatusExperimentPerformed) {
-        setFabricRipProbability(Consts.FabricRipInitialProbability);
-        _universe.systems()[StarSystemId.Daled.CastToInt()].SpecialEventType(SpecialEventType.ExperimentFailed);
-        Dialogs().alert(AlertType.SpecialExperimentPerformed);
-        NewsAddEvent(NewsEvent.ExperimentPerformed);
-      }
-    } else if(getQuestStatusExperiment() == SpecialEvent.StatusExperimentPerformed && getFabricRipProbability() > 0) {
-      setFabricRipProbability(getFabricRipProbability() - num);
-    }
-    if(cmdr.getShip().JarekOnBoard()) {
-      if(getQuestStatusJarek() == SpecialEvent.StatusJarekImpatient / 2) {
-        Dialogs().alert(AlertType.SpecialPassengerConcernedJarek);
-      } else if(getQuestStatusJarek() == SpecialEvent.StatusJarekImpatient - 1) {
-        Dialogs().alert(AlertType.SpecialPassengerImpatientJarek);
-        Mercenaries()[CrewMemberId.Jarek.CastToInt()].Pilot(0);
-        Mercenaries()[CrewMemberId.Jarek.CastToInt()].Fighter(0);
-        Mercenaries()[CrewMemberId.Jarek.CastToInt()].Trader(0);
-        Mercenaries()[CrewMemberId.Jarek.CastToInt()].Engineer(0);
-      }
-      if(getQuestStatusJarek() < SpecialEvent.StatusJarekImpatient) {
-        setQuestStatusJarek(getQuestStatusJarek() + 1);
-      }
-    }
-    if(cmdr.getShip().PrincessOnBoard()) {
-      if(getQuestStatusPrincess() == (SpecialEvent.StatusPrincessImpatient + SpecialEvent.StatusPrincessRescued) / 2) {
-        Dialogs().alert(AlertType.SpecialPassengerConcernedPrincess);
-      } else if(getQuestStatusPrincess() == SpecialEvent.StatusPrincessImpatient - 1) {
-        Dialogs().alert(AlertType.SpecialPassengerImpatientPrincess);
-        Mercenaries()[CrewMemberId.Princess.CastToInt()].Pilot(0);
-        Mercenaries()[CrewMemberId.Princess.CastToInt()].Fighter(0);
-        Mercenaries()[CrewMemberId.Princess.CastToInt()].Trader(0);
-        Mercenaries()[CrewMemberId.Princess.CastToInt()].Engineer(0);
-      }
-      if(getQuestStatusPrincess() < SpecialEvent.StatusPrincessImpatient) {
-        setQuestStatusPrincess(getQuestStatusPrincess() + 1);
-      }
-    }
-    if(cmdr.getShip().WildOnBoard()) {
-      if(getQuestStatusWild() == SpecialEvent.StatusWildImpatient / 2) {
-        Dialogs().alert(AlertType.SpecialPassengerConcernedWild);
-      } else if(getQuestStatusWild() == SpecialEvent.StatusWildImpatient - 1) {
-        Dialogs().alert(AlertType.SpecialPassengerImpatientWild);
-        Mercenaries()[CrewMemberId.Wild.CastToInt()].Pilot(0);
-        Mercenaries()[CrewMemberId.Wild.CastToInt()].Fighter(0);
-        Mercenaries()[CrewMemberId.Wild.CastToInt()].Trader(0);
-        Mercenaries()[CrewMemberId.Wild.CastToInt()].Engineer(0);
-      }
-      if(getQuestStatusWild() < SpecialEvent.StatusWildImpatient) {
-        setQuestStatusWild(getQuestStatusWild() + 1);
-      }
-    }
+    _quests.incDays(num);
   }
 
   public void NewsAddEvent(NewsEvent ne) {

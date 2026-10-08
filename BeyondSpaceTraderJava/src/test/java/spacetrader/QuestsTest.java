@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 class QuestsTest {
   @Test
   void startsAtZero() {
-    Quests quests = new Quests();
+    Quests quests = newQuests();
 
     assertEquals(0, quests.questStatusArtifact());
     assertEquals(0, quests.questStatusDragonfly());
@@ -41,7 +41,7 @@ class QuestsTest {
 
   @Test
   void writesAndReadsEveryQuestStatus() {
-    Quests quests = new Quests();
+    Quests quests = newQuests();
 
     quests.questStatusArtifact(1);
     quests.questStatusDragonfly(2);
@@ -74,7 +74,7 @@ class QuestsTest {
 
   @Test
   void writesAndReadsTheFabricRipAndTheSingularity() {
-    Quests quests = new Quests();
+    Quests quests = newQuests();
 
     quests.fabricRipProbability(Consts.FabricRipInitialProbability);
     quests.canSuperWarp(true);
@@ -91,9 +91,10 @@ class QuestsTest {
 
   @Test
   void isTheReactorStatusTheArrivalReadsAndWrites() {
-    assertInstanceOf(Arrival.ReactorStatus.class, new Quests());
+    Quests quests = newQuests();
+    assertInstanceOf(Arrival.ReactorStatus.class, quests);
 
-    Arrival.ReactorStatus reactor = new Quests();
+    Arrival.ReactorStatus reactor = quests;
     reactor.reactorStatus(SpecialEvent.StatusReactorFuelOk);
 
     assertEquals(SpecialEvent.StatusReactorFuelOk, reactor.reactorStatus());
@@ -139,5 +140,16 @@ class QuestsTest {
 
   private static Game newGame() {
     return new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+  }
+
+  /**
+   * A quest component over the objects of a real game: the missions need a
+   * generated universe and a commander behind them, but the component itself
+   * never sees the game.
+   */
+  private static Quests newQuests() {
+    Game game = newGame();
+    return new Quests(game.Commander(), Universe.from(game.Universe(), game.Wormholes()), new Market(), new Newspaper(),
+        game.Mercenaries(), game.SpaceMonster(), game.Difficulty(), game.Dialogs(), () -> { });
   }
 }
