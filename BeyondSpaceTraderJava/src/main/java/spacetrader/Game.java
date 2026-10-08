@@ -43,6 +43,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   private boolean _arrivedViaWormhole = false; // flag to indicate whether player arrived on current planet via wormhole
   private final Newspaper _newspaper = new Newspaper();
   private final Market _market = new Market();
+  private final Quests _quests = new Quests();
   // Current Selections
   private Difficulty _difficulty = Difficulty.Normal; // Difficulty level
   private boolean _cheatEnabled = false;
@@ -54,22 +55,6 @@ public final class Game extends STSerializableObject implements QuestStates {
   private StarSystemId _warpSystemId = StarSystemId.NA; // Target system for warp
   private StarSystemId _trackedSystemId = StarSystemId.NA; // The short-range chart will display an arrow towards this system if the value is not null
   private boolean _targetWormhole = false; // Wormhole selected?
-  // Status of Quests
-  private int _questStatusArtifact = 0; // 0 = not given yet, 1 = Artifact on board, 2 = Artifact no longer on board (either delivered or lost)
-  private int _questStatusDragonfly = 0; // 0 = not available, 1 = Go to Baratas, 2 = Go to Melina, 3 = Go to Regulas, 4 = Go to Zalkon, 5 = Dragonfly destroyed, 6 = Got Shield
-  private int _questStatusExperiment = 0; // 0 = not given yet, 1-11 = days from start; 12 = performed, 13 = cancelled
-  private int _questStatusGemulon = 0; // 0 = not given yet, 1-7 = days from start, 8 = too late, 9 = in time, 10 = done
-  private int _questStatusJapori = 0; // 0 = no disease, 1 = Go to Japori (always at least 10 medicine cannisters), 2 = Assignment finished or canceled
-  private int _questStatusJarek = 0; // 0 = not delivered, 1-11 = on board, 12 = delivered
-  private int _questStatusMoon = 0; // 0 = not bought, 1 = bought, 2 = claimed
-  private int _questStatusPrincess = 0; // 0 = not available, 1 = Go to Centauri, 2 = Go to Inthara, 3 = Go to Qonos, 4 = Princess Rescued, 5-14 = On Board, 15 = Princess Returned, 16 = Got Quantum Disruptor
-  private int _questStatusReactor = 0; // 0 = not encountered, 1-20 = days of mission (bays of fuel left = 10 - (ReactorStatus / 2), 21 = delivered, 22 = Done
-  private int _questStatusScarab = 0; // 0 = not given yet, 1 = not destroyed, 2 = destroyed - upgrade not performed, 3 = destroyed - hull upgrade performed
-  private int _questStatusSculpture = 0; // 0 = not given yet, 1 = on board, 2 = delivered, 3 = done
-  private int _questStatusSpaceMonster = 0; // 0 = not available, 1 = Space monster is in Acamar system, 2 = Space monster is destroyed, 3 = Claimed reward
-  private int _questStatusWild = 0; // 0 = not delivered, 1-11 = on board, 12 = delivered
-  private int _fabricRipProbability = 0; // if Experiment = 12, this is the probability of being warped to a random planet.
-  private boolean _canSuperWarp = false; // Do you have the Portable Singularity on board?
   private int _chanceOfVeryRareEncounter = 5;
   private ArrayList<VeryRareEncounter> _veryRareEncounters = new ArrayList<>(6); // Array of Very Rare encounters not done yet.
   // Options
@@ -136,22 +121,22 @@ public final class Game extends STSerializableObject implements QuestStates {
     _targetWormhole = GetValueFromHash(hash, "_targetWormhole", _targetWormhole);
     _market.buy(GetValueFromHash(hash, "_priceCargoBuy", _market.buy(), int[].class));
     _market.sell(GetValueFromHash(hash, "_priceCargoSell", _market.sell(), int[].class));
-    _questStatusArtifact = GetValueFromHash(hash, "_questStatusArtifact", _questStatusArtifact);
-    _questStatusDragonfly = GetValueFromHash(hash, "_questStatusDragonfly", _questStatusDragonfly);
-    _questStatusExperiment = GetValueFromHash(hash, "_questStatusExperiment", _questStatusExperiment);
-    _questStatusGemulon = GetValueFromHash(hash, "_questStatusGemulon", _questStatusGemulon);
-    _questStatusJapori = GetValueFromHash(hash, "_questStatusJapori", _questStatusJapori);
-    _questStatusJarek = GetValueFromHash(hash, "_questStatusJarek", _questStatusJarek);
-    _questStatusMoon = GetValueFromHash(hash, "_questStatusMoon", _questStatusMoon);
-    _questStatusPrincess = GetValueFromHash(hash, "_questStatusPrincess", _questStatusPrincess);
-    _questStatusReactor = GetValueFromHash(hash, "_questStatusReactor", _questStatusReactor);
-    _questStatusScarab = GetValueFromHash(hash, "_questStatusScarab", _questStatusScarab);
-    _questStatusSculpture = GetValueFromHash(hash, "_questStatusSculpture", _questStatusSculpture);
-    _questStatusSpaceMonster = GetValueFromHash(hash, "_questStatusSpaceMonster", _questStatusSpaceMonster);
-    _questStatusWild = GetValueFromHash(hash, "_questStatusWild", _questStatusWild);
-    _fabricRipProbability = GetValueFromHash(hash, "_fabricRipProbability", _fabricRipProbability);
+    _quests.questStatusArtifact(GetValueFromHash(hash, "_questStatusArtifact", _quests.questStatusArtifact()));
+    _quests.questStatusDragonfly(GetValueFromHash(hash, "_questStatusDragonfly", _quests.questStatusDragonfly()));
+    _quests.questStatusExperiment(GetValueFromHash(hash, "_questStatusExperiment", _quests.questStatusExperiment()));
+    _quests.questStatusGemulon(GetValueFromHash(hash, "_questStatusGemulon", _quests.questStatusGemulon()));
+    _quests.questStatusJapori(GetValueFromHash(hash, "_questStatusJapori", _quests.questStatusJapori()));
+    _quests.questStatusJarek(GetValueFromHash(hash, "_questStatusJarek", _quests.questStatusJarek()));
+    _quests.questStatusMoon(GetValueFromHash(hash, "_questStatusMoon", _quests.questStatusMoon()));
+    _quests.questStatusPrincess(GetValueFromHash(hash, "_questStatusPrincess", _quests.questStatusPrincess()));
+    _quests.reactorStatus(GetValueFromHash(hash, "_questStatusReactor", _quests.reactorStatus()));
+    _quests.questStatusScarab(GetValueFromHash(hash, "_questStatusScarab", _quests.questStatusScarab()));
+    _quests.questStatusSculpture(GetValueFromHash(hash, "_questStatusSculpture", _quests.questStatusSculpture()));
+    _quests.questStatusSpaceMonster(GetValueFromHash(hash, "_questStatusSpaceMonster", _quests.questStatusSpaceMonster()));
+    _quests.questStatusWild(GetValueFromHash(hash, "_questStatusWild", _quests.questStatusWild()));
+    _quests.fabricRipProbability(GetValueFromHash(hash, "_fabricRipProbability", _quests.fabricRipProbability()));
     encounter().setJustLootedMarie(GetValueFromHash(hash, "_justLootedMarie", encounter().getJustLootedMarie()));
-    _canSuperWarp = GetValueFromHash(hash, "_canSuperWarp", _canSuperWarp);
+    _quests.canSuperWarp(GetValueFromHash(hash, "_canSuperWarp", _quests.canSuperWarp()));
     _chanceOfVeryRareEncounter = GetValueFromHash(hash, "_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
     Integer[] veryRareIds = GetValueFromHash(hash, "_veryRareEncounters", new Integer[0]);
     _veryRareEncounters = new ArrayList<>(veryRareIds.length);
@@ -195,22 +180,22 @@ public final class Game extends STSerializableObject implements QuestStates {
     ht.add("_targetWormhole", _targetWormhole);
     ht.add("_priceCargoBuy", _market.buy());
     ht.add("_priceCargoSell", _market.sell());
-    ht.add("_questStatusArtifact", _questStatusArtifact);
-    ht.add("_questStatusDragonfly", _questStatusDragonfly);
-    ht.add("_questStatusExperiment", _questStatusExperiment);
-    ht.add("_questStatusGemulon", _questStatusGemulon);
-    ht.add("_questStatusJapori", _questStatusJapori);
-    ht.add("_questStatusJarek", _questStatusJarek);
-    ht.add("_questStatusMoon", _questStatusMoon);
-    ht.add("_questStatusPrincess", _questStatusPrincess);
-    ht.add("_questStatusReactor", _questStatusReactor);
-    ht.add("_questStatusScarab", _questStatusScarab);
-    ht.add("_questStatusSculpture", _questStatusSculpture);
-    ht.add("_questStatusSpaceMonster", _questStatusSpaceMonster);
-    ht.add("_questStatusWild", _questStatusWild);
-    ht.add("_fabricRipProbability", _fabricRipProbability);
+    ht.add("_questStatusArtifact", _quests.questStatusArtifact());
+    ht.add("_questStatusDragonfly", _quests.questStatusDragonfly());
+    ht.add("_questStatusExperiment", _quests.questStatusExperiment());
+    ht.add("_questStatusGemulon", _quests.questStatusGemulon());
+    ht.add("_questStatusJapori", _quests.questStatusJapori());
+    ht.add("_questStatusJarek", _quests.questStatusJarek());
+    ht.add("_questStatusMoon", _quests.questStatusMoon());
+    ht.add("_questStatusPrincess", _quests.questStatusPrincess());
+    ht.add("_questStatusReactor", _quests.reactorStatus());
+    ht.add("_questStatusScarab", _quests.questStatusScarab());
+    ht.add("_questStatusSculpture", _quests.questStatusSculpture());
+    ht.add("_questStatusSpaceMonster", _quests.questStatusSpaceMonster());
+    ht.add("_questStatusWild", _quests.questStatusWild());
+    ht.add("_fabricRipProbability", _quests.fabricRipProbability());
     ht.add("_justLootedMarie", encounter().getJustLootedMarie());
-    ht.add("_canSuperWarp", _canSuperWarp);
+    ht.add("_canSuperWarp", _quests.canSuperWarp());
     ht.add("_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
     ht.add("_veryRareEncounters", ArrayListToIntArray(_veryRareEncounters));
     ht.add("_options", _options.Serialize());
@@ -238,19 +223,9 @@ public final class Game extends STSerializableObject implements QuestStates {
     };
   }
 
-  /** The reactor mission state the arrival reads and writes; the missions component will own it (Ref #150). */
+  /** The reactor mission state the arrival reads and writes, owned by the quests. */
   private Arrival.ReactorStatus arrivalReactor() {
-    return new Arrival.ReactorStatus() {
-      @Override
-      public int reactorStatus() {
-        return getQuestStatusReactor();
-      }
-
-      @Override
-      public void reactorStatus(int status) {
-        setQuestStatusReactor(status);
-      }
-    };
+    return _quests;
   }
 
   /**
@@ -407,7 +382,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public boolean getCanSuperWarp() {
-    return _canSuperWarp;
+    return _quests.canSuperWarp();
   }
 
   public boolean getCheatEnabled() {
@@ -503,59 +478,59 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public int getFabricRipProbability() {
-    return _fabricRipProbability;
+    return _quests.fabricRipProbability();
   }
 
   public int getQuestStatusArtifact() {
-    return _questStatusArtifact;
+    return _quests.questStatusArtifact();
   }
 
   public int getQuestStatusDragonfly() {
-    return _questStatusDragonfly;
+    return _quests.questStatusDragonfly();
   }
 
   public int getQuestStatusExperiment() {
-    return _questStatusExperiment;
+    return _quests.questStatusExperiment();
   }
 
   public int getQuestStatusGemulon() {
-    return _questStatusGemulon;
+    return _quests.questStatusGemulon();
   }
 
   public int getQuestStatusJapori() {
-    return _questStatusJapori;
+    return _quests.questStatusJapori();
   }
 
   public int getQuestStatusJarek() {
-    return _questStatusJarek;
+    return _quests.questStatusJarek();
   }
 
   public int getQuestStatusMoon() {
-    return _questStatusMoon;
+    return _quests.questStatusMoon();
   }
 
   public int getQuestStatusPrincess() {
-    return _questStatusPrincess;
+    return _quests.questStatusPrincess();
   }
 
   public int getQuestStatusReactor() {
-    return _questStatusReactor;
+    return _quests.reactorStatus();
   }
 
   public int getQuestStatusScarab() {
-    return _questStatusScarab;
+    return _quests.questStatusScarab();
   }
 
   public int getQuestStatusSculpture() {
-    return _questStatusSculpture;
+    return _quests.questStatusSculpture();
   }
 
   public int getQuestStatusSpaceMonster() {
-    return _questStatusSpaceMonster;
+    return _quests.questStatusSpaceMonster();
   }
 
   public int getQuestStatusWild() {
-    return _questStatusWild;
+    return _quests.questStatusWild();
   }
 
   @Override
@@ -1251,7 +1226,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public void setCanSuperWarp(boolean canSuperWarp) {
-    _canSuperWarp = canSuperWarp;
+    _quests.canSuperWarp(canSuperWarp);
   }
 
   public void setClicks(int clicks) {
@@ -1270,7 +1245,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public void setFabricRipProbability(int fabricRipProbability) {
-    _fabricRipProbability = fabricRipProbability;
+    _quests.fabricRipProbability(fabricRipProbability);
   }
 
 
@@ -1282,55 +1257,55 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public void setQuestStatusArtifact(int questStatusArtifact) {
-    _questStatusArtifact = questStatusArtifact;
+    _quests.questStatusArtifact(questStatusArtifact);
   }
 
   public void setQuestStatusDragonfly(int questStatusDragonfly) {
-    _questStatusDragonfly = questStatusDragonfly;
+    _quests.questStatusDragonfly(questStatusDragonfly);
   }
 
   public void setQuestStatusExperiment(int questStatusExperiment) {
-    _questStatusExperiment = questStatusExperiment;
+    _quests.questStatusExperiment(questStatusExperiment);
   }
 
   public void setQuestStatusGemulon(int questStatusGemulon) {
-    _questStatusGemulon = questStatusGemulon;
+    _quests.questStatusGemulon(questStatusGemulon);
   }
 
   public void setQuestStatusJapori(int questStatusJapori) {
-    _questStatusJapori = questStatusJapori;
+    _quests.questStatusJapori(questStatusJapori);
   }
 
   public void setQuestStatusJarek(int questStatusJarek) {
-    _questStatusJarek = questStatusJarek;
+    _quests.questStatusJarek(questStatusJarek);
   }
 
   public void setQuestStatusMoon(int questStatusMoon) {
-    _questStatusMoon = questStatusMoon;
+    _quests.questStatusMoon(questStatusMoon);
   }
 
   public void setQuestStatusPrincess(int questStatusPrincess) {
-    _questStatusPrincess = questStatusPrincess;
+    _quests.questStatusPrincess(questStatusPrincess);
   }
 
   public void setQuestStatusReactor(int questStatusReactor) {
-    _questStatusReactor = questStatusReactor;
+    _quests.reactorStatus(questStatusReactor);
   }
 
   public void setQuestStatusScarab(int questStatusScarab) {
-    _questStatusScarab = questStatusScarab;
+    _quests.questStatusScarab(questStatusScarab);
   }
 
   public void setQuestStatusSculpture(int questStatusSculpture) {
-    _questStatusSculpture = questStatusSculpture;
+    _quests.questStatusSculpture(questStatusSculpture);
   }
 
   public void setQuestStatusSpaceMonster(int questStatusSpaceMonster) {
-    _questStatusSpaceMonster = questStatusSpaceMonster;
+    _quests.questStatusSpaceMonster(questStatusSpaceMonster);
   }
 
   public void setQuestStatusWild(int questStatusWild) {
-    _questStatusWild = questStatusWild;
+    _quests.questStatusWild(questStatusWild);
   }
 
 

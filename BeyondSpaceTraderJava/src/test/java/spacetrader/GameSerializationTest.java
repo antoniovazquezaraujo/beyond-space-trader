@@ -170,6 +170,100 @@ class GameSerializationTest {
     assertEquals(42, ((int[])reSaved.get("_wormholes"))[0]);
   }
 
+  @Test
+  void serializesTheQuestsWithTheKeysAndTypesOfTheOldFormat() {
+    Game game = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+    game.setQuestStatusArtifact(SpecialEvent.StatusArtifactOnBoard);
+    game.setQuestStatusDragonfly(SpecialEvent.StatusDragonflyFlyBaratas);
+    game.setQuestStatusExperiment(SpecialEvent.StatusExperimentStarted);
+    game.setQuestStatusGemulon(SpecialEvent.StatusGemulonStarted);
+    game.setQuestStatusJapori(SpecialEvent.StatusJaporiInTransit);
+    game.setQuestStatusJarek(SpecialEvent.StatusJarekStarted);
+    game.setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+    game.setQuestStatusPrincess(SpecialEvent.StatusPrincessRescued);
+    game.setQuestStatusReactor(SpecialEvent.StatusReactorFuelOk);
+    game.setQuestStatusScarab(SpecialEvent.StatusScarabHunting);
+    game.setQuestStatusSculpture(SpecialEvent.StatusSculptureInTransit);
+    game.setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterAtAcamar);
+    game.setQuestStatusWild(SpecialEvent.StatusWildStarted);
+    game.setFabricRipProbability(7);
+    game.setCanSuperWarp(true);
+
+    Hashtable hash = game.Serialize();
+
+    // Keys and types exactly as the old Game wrote them to the save file.
+    assertInstanceOf(Integer.class, hash.get("_questStatusArtifact"));
+    assertEquals(SpecialEvent.StatusArtifactOnBoard, hash.get("_questStatusArtifact"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusDragonfly"));
+    assertEquals(SpecialEvent.StatusDragonflyFlyBaratas, hash.get("_questStatusDragonfly"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusExperiment"));
+    assertEquals(SpecialEvent.StatusExperimentStarted, hash.get("_questStatusExperiment"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusGemulon"));
+    assertEquals(SpecialEvent.StatusGemulonStarted, hash.get("_questStatusGemulon"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusJapori"));
+    assertEquals(SpecialEvent.StatusJaporiInTransit, hash.get("_questStatusJapori"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusJarek"));
+    assertEquals(SpecialEvent.StatusJarekStarted, hash.get("_questStatusJarek"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusMoon"));
+    assertEquals(SpecialEvent.StatusMoonBought, hash.get("_questStatusMoon"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusPrincess"));
+    assertEquals(SpecialEvent.StatusPrincessRescued, hash.get("_questStatusPrincess"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusReactor"));
+    assertEquals(SpecialEvent.StatusReactorFuelOk, hash.get("_questStatusReactor"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusScarab"));
+    assertEquals(SpecialEvent.StatusScarabHunting, hash.get("_questStatusScarab"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusSculpture"));
+    assertEquals(SpecialEvent.StatusSculptureInTransit, hash.get("_questStatusSculpture"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusSpaceMonster"));
+    assertEquals(SpecialEvent.StatusSpaceMonsterAtAcamar, hash.get("_questStatusSpaceMonster"));
+    assertInstanceOf(Integer.class, hash.get("_questStatusWild"));
+    assertEquals(SpecialEvent.StatusWildStarted, hash.get("_questStatusWild"));
+    assertInstanceOf(Integer.class, hash.get("_fabricRipProbability"));
+    assertEquals(7, hash.get("_fabricRipProbability"));
+    assertInstanceOf(Boolean.class, hash.get("_canSuperWarp"));
+    assertEquals(Boolean.TRUE, hash.get("_canSuperWarp"));
+  }
+
+  @Test
+  void loadsTheQuestsFromASaveWrittenBeforeTheRefactor() throws Exception {
+    Game fresh = new Game("Test", Difficulty.Normal, 4, 4, 4, 4, null, new TestDialogService());
+    Hashtable save = fresh.Serialize();
+    // Keys and types exactly as the old Game wrote them to the save file.
+    save.add("_questStatusArtifact", SpecialEvent.StatusArtifactDone);
+    save.add("_questStatusDragonfly", SpecialEvent.StatusDragonflyDone);
+    save.add("_questStatusExperiment", SpecialEvent.StatusExperimentCancelled);
+    save.add("_questStatusGemulon", SpecialEvent.StatusGemulonDone);
+    save.add("_questStatusJapori", SpecialEvent.StatusJaporiDone);
+    save.add("_questStatusJarek", SpecialEvent.StatusJarekDone);
+    save.add("_questStatusMoon", SpecialEvent.StatusMoonDone);
+    save.add("_questStatusPrincess", SpecialEvent.StatusPrincessDone);
+    save.add("_questStatusReactor", SpecialEvent.StatusReactorDone);
+    save.add("_questStatusScarab", SpecialEvent.StatusScarabDone);
+    save.add("_questStatusSculpture", SpecialEvent.StatusSculptureDone);
+    save.add("_questStatusSpaceMonster", SpecialEvent.StatusSpaceMonsterDone);
+    save.add("_questStatusWild", SpecialEvent.StatusWildDone);
+    save.add("_fabricRipProbability", 7);
+    save.add("_canSuperWarp", true);
+
+    Game loaded = new Game(writeAndReadBack(save), null, new TestDialogService());
+
+    assertEquals(SpecialEvent.StatusArtifactDone, loaded.getQuestStatusArtifact());
+    assertEquals(SpecialEvent.StatusDragonflyDone, loaded.getQuestStatusDragonfly());
+    assertEquals(SpecialEvent.StatusExperimentCancelled, loaded.getQuestStatusExperiment());
+    assertEquals(SpecialEvent.StatusGemulonDone, loaded.getQuestStatusGemulon());
+    assertEquals(SpecialEvent.StatusJaporiDone, loaded.getQuestStatusJapori());
+    assertEquals(SpecialEvent.StatusJarekDone, loaded.getQuestStatusJarek());
+    assertEquals(SpecialEvent.StatusMoonDone, loaded.getQuestStatusMoon());
+    assertEquals(SpecialEvent.StatusPrincessDone, loaded.getQuestStatusPrincess());
+    assertEquals(SpecialEvent.StatusReactorDone, loaded.getQuestStatusReactor());
+    assertEquals(SpecialEvent.StatusScarabDone, loaded.getQuestStatusScarab());
+    assertEquals(SpecialEvent.StatusSculptureDone, loaded.getQuestStatusSculpture());
+    assertEquals(SpecialEvent.StatusSpaceMonsterDone, loaded.getQuestStatusSpaceMonster());
+    assertEquals(SpecialEvent.StatusWildDone, loaded.getQuestStatusWild());
+    assertEquals(7, loaded.getFabricRipProbability());
+    assertTrue(loaded.getCanSuperWarp());
+  }
+
   private static Hashtable writeAndReadBack(Hashtable save) throws Exception {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     try(ObjectOutputStream out = new ObjectOutputStream(bytes)) {
