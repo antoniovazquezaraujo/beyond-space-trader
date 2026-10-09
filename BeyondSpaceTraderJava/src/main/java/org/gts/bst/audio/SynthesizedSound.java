@@ -64,15 +64,30 @@ public final class SynthesizedSound implements SoundService {
     player.start();
   }
 
+  /** Opens the line of a format; the tests replace it to run with no device. */
+  @FunctionalInterface
+  interface LineOpener {
+    SourceDataLine open(AudioFormat format) throws LineUnavailableException;
+  }
+
   /**
    * A service over the default audio device, or {@link SoundService#NONE} when
    * there is none. {@code enabled} is read on every call, so the player can turn
    * the sound off (and on) without rebuilding the service.
    */
   public static SoundService create(BooleanSupplier enabled) {
-    AudioFormat format = new AudioFormat(SAMPLE_RATE, BITS, CHANNELS, true, false);
+    return create(enabled,
+        format -> (SourceDataLine)AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format)));
+  }
+
+  /**
+   * The same, with the line source injected: the tests exercise the fallback and
+   * the mute gate with this, without opening a real audio device.
+   */
+  static SoundService create(BooleanSupplier enabled, LineOpener opener) {
+    AudioFormat format = format();
     try {
-      SourceDataLine line = (SourceDataLine)AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format));
+      SourceDataLine line = opener.open(format);
       line.open(format);
       line.start();
       SynthesizedSound sound = new SynthesizedSound(enabled == null ? () -> true : enabled, line);
