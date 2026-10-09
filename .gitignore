@@ -29,6 +29,3 @@ Thumbs.db
 # Runtime directories created next to the working directory
 data/
 custom/
-
-# Raw sound downloads (tools/convert-sounds.sh writes the final WAVs to sounds/)
-sounds/raw/

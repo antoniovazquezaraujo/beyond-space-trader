@@ -9,13 +9,18 @@
 #
 # Examples:
 #
-#   tools/convert-sounds.sh sounds/raw/explosion.flac combat/explosion 1
-#   tools/convert-sounds.sh sounds/raw/trader.mp3 ambient/trade
-#   tools/convert-sounds.sh sounds/raw/laser.wav combat/laser-pulse 2
+#   tools/convert-sounds.sh ~/Downloads/explosion.flac combat/explosion 1
+#   tools/convert-sounds.sh ~/Downloads/trader.mp3 ambient/trade
+#   tools/convert-sounds.sh ~/Downloads/laser.wav combat/laser-pulse 2
 #
-# The result lands in sounds/<key>-<variant>.wav (variant 1 by default), the
-# canonical format of the engine. Keep the raw downloads in sounds/raw/ (git
-# ignores that folder) and commit only the converted WAVs.
+# The result lands in the resources of the game:
+#
+#   BeyondSpaceTraderJava/src/main/resources/sounds/<key>-<variant>.wav
+#
+# (variant 1 by default). The samples travel inside the jar: after converting,
+# rebuild the package. The raw download can live anywhere; nothing raw is kept
+# in the repository. The keys and the credits of each WAV are documented in
+# docs/developer/sounds.md.
 set -euo pipefail
 
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then
@@ -31,7 +36,7 @@ fi
 raw="$1"
 key="$2"
 variant="${3:-1}"
-out="sounds/${key}-${variant}.wav"
+out="BeyondSpaceTraderJava/src/main/resources/sounds/${key}-${variant}.wav"
 
 if [ ! -f "$raw" ]; then
   echo "no such file: $raw" >&2
@@ -50,4 +55,4 @@ afade=t=in:st=0:d=0.005,areverse,afade=t=in:st=0:d=0.015,areverse,\
 loudnorm=I=-18:TP=-2:LRA=7" \
   -ac 1 -ar 44100 -c:a pcm_s16le "$out"
 
-echo "wrote $out (16-bit mono 44.1 kHz)"
+echo "wrote $out (16-bit mono 44.1 kHz); rebuild the package to hear it"

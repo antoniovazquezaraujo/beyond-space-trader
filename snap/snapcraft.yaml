@@ -43,7 +43,6 @@ parts:
       mkdir -p "$CRAFT_PART_INSTALL/bin"
       cp -r output/BeyondSpaceTrader/lib \
             output/BeyondSpaceTrader/ships \
-            output/BeyondSpaceTrader/sounds \
             output/BeyondSpaceTrader/LICENSE \
             output/BeyondSpaceTrader/NOTICE \
             "$CRAFT_PART_INSTALL/"
@@ -58,10 +57,6 @@ parts:
       GAME_DIR="${SNAP_USER_DATA}/game"
       mkdir -p "$GAME_DIR/ships"
       cp -n "$SNAP/ships/"* "$GAME_DIR/ships/" 2>/dev/null || true
-      # The sounds travel too, with their subfolders, so the player can drop
-      # their own WAVs there; cp -n keeps their editions and additions.
-      mkdir -p "$GAME_DIR/sounds"
-      cp -rn "$SNAP/sounds/." "$GAME_DIR/sounds/" 2>/dev/null || true
       cd "$GAME_DIR"
 
       # Lanterna shells out to stty to drive the terminal; the host one is not
