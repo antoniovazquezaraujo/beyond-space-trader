@@ -28,11 +28,16 @@ abrir una línea de audio.
    es un `default` que cae en `LASER`: da al rival fácil un tono propio sin
    ampliar el enum.
 2. **El sintetizador, en `org.gts.bst.audio`.** `SynthesizedSound` genera el PCM
-   con `javax.sound.sampled` (16 bits, mono, 44,1 kHz): ondas cuadradas,
-   barridos, ruido y envolventes cortas, todos los efectos por debajo de 700 ms
-   y con amplitud moderada. Cada efecto se renderiza **una vez en el arranque**;
-   un hilo demonio con cola limitada los reproduce en segundo plano (si la cola
-   se llena, el efecto se descarta: nunca se bloquea la partida).
+   con `javax.sound.sampled` (16 bits, mono, 44,1 kHz) con el timbre del *beeper*
+   del ZX Spectrum: la onda se tritura a **1 bit** (cada muestra en el nivel
+   máximo, positivo o negativo, con amplitud maestra alta ~0,85 y recorte suave
+   para no saturar), las notas son de pulso (duty ajustable), los barridos son
+   **arpegios por escalones** (sin suavizar) y el ruido se **conmuta a golpes**
+   para golpes y explosiones. Los bordes llevan una rampa de uno o dos
+   milisegundos (el chasquido de DC) y el resto es duro; todos los efectos por
+   debajo de 700 ms. Cada efecto se renderiza **una vez en el arranque**; un
+   hilo demonio con cola limitada los reproduce en segundo plano (si la cola se
+   llena, el efecto se descarta: nunca se bloquea la partida).
    `create(BooleanSupplier)` devuelve `SoundService.NONE` cuando no hay
    dispositivo (`LineUnavailableException` o `IllegalArgumentException`).
    `pcm(SoundEffect)` genera las muestras sin abrir línea: es la puerta que usan
@@ -52,9 +57,10 @@ abrir una línea de audio.
      piloto es flojo), `HIT` en cada impacto, `EXPLOSION` cuando una nave queda
      destruida;
    - huida y salto: `WARP`.
-5. **Las pruebas.** `pcm` se comprueba sin dispositivo (cada efecto suena, dura
-   lo razonable y no satura), `SoundService.NONE` es un no-op y el cableado se
-   prueba con un `SoundService` grabador. Ningún test abre una línea de audio.
+5. **Las pruebas.** `pcm` se comprueba sin dispositivo (cada efecto suena, es de
+   1 bit, dura lo razonable y no satura), `SoundService.NONE` es un no-op y el
+   cableado se prueba con un `SoundService` grabador. Ningún test abre una línea
+   de audio.
 
 ## Consecuencias
 
