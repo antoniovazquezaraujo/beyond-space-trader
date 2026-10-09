@@ -5,7 +5,7 @@
 - **Referencias**: ADR 0005 (`0005-puertos-del-modelo.md`), ADR 0006
   (`0006-sonido-sintetizado.md`, sustituido), `org/gts/bst/ports/SoundService.java`,
   `org/gts/bst/audio/` (`SampledSound`, `SampleLibrary`, `SampleMixer`),
-  `sounds/README.md` y `tools/convert-sounds.sh`
+  `docs/developer/sounds.md` y `tools/convert-sounds.sh`
 
 ## Contexto
 
@@ -13,8 +13,8 @@ El ADR 0006 apostó por **sintetizar** los efectos en código para no distribuir
 ficheros de audio, y se llegó a implementar un beeper de 1 bit. El autor lo oyó
 y lo descartó: quiere **sonidos reales**, descargados de bancos como Freesound,
 con la misma idea que los samples de LeTrain. La fase A es el motor de muestras,
-la carpeta `sounds/` y el ambiente por pantalla; la fase B traerá los motores de
-las naves, los cañones por tipo y la música.
+los samples empaquetados y el ambiente por pantalla; la fase B traerá los motores
+de las naves, los cañones por tipo y la música.
 
 Se mantienen del ADR 0006 las decisiones que no dependen del timbre: el puerto
 neutro, la reproducción asíncrona que nunca bloquea, el fallback a silencio sin
@@ -22,16 +22,17 @@ dispositivo y el mute del jugador. Lo que cambia es de dónde sale el sonido.
 
 ## Decisión
 
-1. **Los samples viven en `sounds/`**, en la raíz del repositorio (como `ships/`),
-   y se leen **en caliente**: dejar un WAV nuevo solo pide reiniciar, nunca
-   recompilar. Las rutas se resuelven con los mismos candidatos que
-   `ShipArtFile.resolve` (`sounds/`, `../sounds/`, `BeyondSpaceTraderJava/sounds/`).
-   El cargador convierte cada fichero a **16 bits, 44,1 kHz, mono** con
+1. **Los samples viajan dentro del jar**, como resources del módulo
+   (`BeyondSpaceTraderJava/src/main/resources/sounds/<clave>-<n>.wav`); el
+   jugador no gestiona ninguna carpeta. El cargador los lee del classpath
+   (`/sounds/...`) y **sondea las variantes** `-1`, `-2`... hasta la primera que
+   falta (tope 9), porque dentro de un jar no se pueden listar carpetas. Cada
+   fichero se convierte a **16 bits, 44,1 kHz, mono** con
    `AudioSystem.getAudioInputStream(formatoCanónico, ...)`; lo que no se puede
    convertir se ignora con un aviso en consola. Las claves son rutas
-   (`combat/hit`, `ambient/trade`) y pueden tener **variantes**
-   `-<n>.wav`; el resolutor las agrupa por prefijo y elige una **al azar en cada
-   reproducción**. Clave ausente = silencio, nunca un error.
+   (`combat/hit`, `ambient/trade`) y, cuando tienen varias variantes, se elige
+   una **al azar en cada reproducción**. Clave ausente = silencio, nunca un
+   error.
 2. **El puerto crece con `default`s** para no romper `NONE` ni los fakes: además
    de `play(SoundEffect)` y `playRivalLaser`, `playWeapon(WeaponType)`,
    `engine(ShipType, boolean)`, `engineStop(boolean)`, `ambience(AmbienceKey)` y
@@ -50,34 +51,37 @@ dispositivo y el mute del jugador. Lo que cambia es de dónde sale el sonido.
    pedir la misma clave no hace nada, y el cambio hace crossfade. El motor de
    muestras mapea las claves de la fase A (`SoundEffect` → `ui/...`, `alerts/...`,
    `combat/...`, `travel/...`) y el cableado existente no cambia.
-5. **Empaquetado**: el `pom.xml` copia `sounds/` al paquete `output/`, el snap
-   estricto la copia a la carpeta del jugador con `cp -n` (como `ships/`, para
-   que pueda cambiar sus sonidos) y `tools/convert-sounds.sh` prepara una
-   descarga (recorta silencios, aplica fades, normaliza y convierte con `ffmpeg`).
-   Las descargas crudas viven en `sounds/raw/`, ignorada por git; la autoría y la
-   licencia de cada WAV se anotan en `sounds/README.md`.
+5. **Autoría y empaquetado**: `tools/convert-sounds.sh` prepara una descarga
+   (recorta silencios, aplica fades, normaliza y convierte con `ffmpeg`) y la
+   escribe en los resources del módulo; el jar la lleva tal cual, igual que los
+   zips de release y el snap (que conserva el plug `audio-playback` y
+   `libasound2`). Las claves y la licencia de cada WAV se anotan en
+   `docs/developer/sounds.md`.
 6. **`SynthesizedSound` se elimina** con sus tests; el patrón de fábrica y el
    seam de `LineOpener` se mantienen en el motor de muestras.
 
 ## Consecuencias
 
-- El sonido deja de ser código y pasa a ser **contenido editable**: el autor
-  puede probar, cambiar y añadir WAVs sin tocar Java.
+- El sonido es **contenido de autoría**: el autor convierte los WAV con
+  `tools/convert-sounds.sh` y viajan en el jar; el jugador no instala ni gestiona
+  ficheros, y cambiar un sonido pide recompilar el paquete.
 - Todo es opcional: sin ficheros el juego arranca en silencio y ningún test
   abre un dispositivo (el `LineOpener` inyectable cubre el fallback y el mute).
 - La fase B (motores por nave, cañones por tipo, música por tensión) ya tiene su
   sitio: los métodos del puerto, las claves documentadas y los canales del
   mezclador están listos, pero **no se cablean todavía**.
-- El snap crece un poco (los WAV del autor), y el paquete `jlink` no cambia:
-  `javax.sound` ya viajaba en `java.desktop`.
+- El jar crece con los WAV del autor; el paquete `jlink` no cambia (`javax.sound`
+  ya viajaba en `java.desktop`) y el snap tampoco (el jar lo lleva dentro).
 
 ## Alternativas descartadas
 
 - **Seguir sintetizando en código (ADR 0006).** Se implementó el beeper de 1 bit
   y el autor lo descartó al oírlo: el chiptune sintético no era el sonido que
   quería.
-- **Embeber los WAV en el jar.** El jugador no podría cambiarlos y cada ajuste
-  pediría recompilar.
+- **La carpeta externa `sounds/` junto a los lanzadores.** Se implementó primero
+  (resolución de rutas, copia en el paquete y en el snap, `sounds/raw/` ignorada)
+  y el autor la descartó: los sonidos deben viajar en el jar y el jugador no
+  tiene que gestionar ficheros.
 - **Cargar todo el catálogo al arranque.** Con muchos samples castiga el
   arranque; el resolutor carga cada clave la primera vez que suena.
 - **Un motor externo (OpenAL, LWJGL).** `javax.sound` basta para PCM y el

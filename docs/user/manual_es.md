@@ -76,12 +76,10 @@ bin\beyond-space-trader.bat --no-sound          # Windows
 ```
 
 El sonido viene activado; la opción *Efectos de sonido* (`F8`) lo apaga y lo
-enciende dentro del juego. El juego reproduce ficheros WAV de la **carpeta
-`sounds/`** (junto a los lanzadores): menús, avisos, combate, salto y el ambiente
-de cada pantalla. Todos los ficheros son opcionales, así que el juego suena
-menos si falta alguno; deja un WAV en la carpeta y sonará en el siguiente
-arranque, sin compilar nada. La carpeta incluye un `README.md` con las claves (y
-los créditos de cada audio).
+enciende dentro del juego. El juego reproduce samples WAV incluidos en el
+paquete: menús, avisos, combate, salto y el ambiente de cada pantalla. Los
+sonidos viajan dentro del programa, así que no hay nada que instalar ni
+gestionar.
 
 ### Otras formas de instalar
 
@@ -391,7 +389,7 @@ valores actuales como predeterminados y `L` los recupera:
 | Seguir atacando a la nave que huye | Sigue disparando a una nave que huye |
 | Intentar inutilizar a los oponentes cuando sea posible | Usa el disparo para inutilizar en vez de destruir |
 | Columnas por sector en el mapa galáctico | 1, 2 o 3 columnas por sector, para ajustarlo a tu fuente |
-| Efectos de sonido | Reproduce los WAV de la carpeta `sounds/` (todos opcionales); también `--mute` al arrancar |
+| Efectos de sonido | Reproduce los sonidos incluidos en el juego; también `--mute` al arrancar |
 
 El **menú (`F10`)** contiene las acciones del programa: récords (`F3`),
 opciones (`F8`), guardar (`F5`), cargar (`F9`), partida nueva (`F2`), acerca de y

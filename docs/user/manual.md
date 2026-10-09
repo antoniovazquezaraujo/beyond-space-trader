@@ -75,12 +75,9 @@ bin\beyond-space-trader.bat --no-sound          # Windows
 ```
 
 Sound effects are on by default; the *Sound effects* option (`F8`) turns them
-off and on inside the game. The game plays WAV files from the **`sounds/`
-folder** (next to the launchers): menus, alerts, combat, warp and the ambience
-of each screen. Every file is optional, so the game simply runs quieter when one
-is missing; drop a WAV in and it plays at the next start, with no compilation.
-The folder ships with a `README.md` that lists the keys (and the credits of each
-audio file).
+off and on inside the game. The game plays WAV samples bundled with the
+package: menus, alerts, combat, warp and the ambience of each screen. The
+samples travel inside the program, so there is nothing to install or manage.
 
 ### Other install options
 
@@ -377,7 +374,7 @@ as defaults and `L` loads them back:
 | Continue attacking fleeing ship | Keeps firing at a ship that flees |
 | Attempt to disable opponents when possible | Uses the shot to disable instead of destroy |
 | Galaxy chart columns per sector | 1, 2 or 3 columns per sector, to fit your font |
-| Sound effects | Plays the WAV samples of the `sounds/` folder (all optional); also `--mute` at startup |
+| Sound effects | Plays the sounds bundled with the game; also `--mute` at startup |
 
 The **menu (`F10`)** holds the program actions: high scores (`F3`), options
 (`F8`), save (`F5`), load (`F9`), new game (`F2`), about and quit. `Quit` (and
