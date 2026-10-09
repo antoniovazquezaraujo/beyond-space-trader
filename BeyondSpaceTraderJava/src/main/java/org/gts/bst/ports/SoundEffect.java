@@ -29,5 +29,7 @@ public enum SoundEffect {
   /** A ship is destroyed. */
   EXPLOSION,
   /** The ship warps away. */
-  WARP
+  WARP,
+  /** The ship gets away from an encounter (the map warp keeps {@link #WARP}). */
+  ESCAPE
 }

@@ -28,8 +28,8 @@ import java.util.function.BooleanSupplier;
  * deterministic.
  */
 final class SampleMixer {
-  /** The crossfade of a loop when it replaces another one, in seconds. */
-  private static final double FADE_SECONDS = 0.25;
+  /** The crossfade (and default fade) of a loop, in seconds. */
+  private static final double LOOP_FADE_SECONDS = 0.3;
   /** A one-shot fades in and out this fast, so no voice ever clicks. */
   private static final double SHOT_FADE_IN_SECONDS = 0.004;
   private static final double SHOT_FADE_OUT_SECONDS = 0.012;
@@ -67,7 +67,11 @@ final class SampleMixer {
   }
 
   void stopAmbience() {
-    stopLoop(ambience);
+    stopAmbience(LOOP_FADE_SECONDS);
+  }
+
+  void stopAmbience(double fadeSeconds) {
+    stopLoop(ambience, fadeSeconds);
     ambience = null;
   }
 
@@ -77,7 +81,11 @@ final class SampleMixer {
   }
 
   void stopMusic() {
-    stopLoop(music);
+    stopMusic(LOOP_FADE_SECONDS);
+  }
+
+  void stopMusic(double fadeSeconds) {
+    stopLoop(music, fadeSeconds);
     music = null;
   }
 
@@ -88,8 +96,13 @@ final class SampleMixer {
   }
 
   void stopEngine(boolean player) {
+    stopEngine(player, LOOP_FADE_SECONDS);
+  }
+
+  /** Stops an engine with a fade of its own: short on destruction, long on a march. */
+  void stopEngine(boolean player, double fadeSeconds) {
     int slot = player ? 0 : 1;
-    stopLoop(engines[slot]);
+    stopLoop(engines[slot], fadeSeconds);
     engines[slot] = null;
   }
 
@@ -125,8 +138,13 @@ final class SampleMixer {
   }
 
   private static void stopLoop(Voice voice) {
+    stopLoop(voice, LOOP_FADE_SECONDS);
+  }
+
+  private static void stopLoop(Voice voice, double fadeSeconds) {
     if(voice != null) {
       voice.target = 0f;
+      voice.fadeOut(fadeSeconds);
     }
   }
 
@@ -149,6 +167,7 @@ final class SampleMixer {
     private int position;
     private float gain;
     private float target;
+    private float fadeStep;
 
     Voice(float[] data, SoundChannel channel, boolean loop, float level) {
       this.data = data;
@@ -157,6 +176,15 @@ final class SampleMixer {
       this.level = level;
       this.gain = level;
       this.target = level;
+      this.fadeStep = fadeStep(LOOP_FADE_SECONDS);
+    }
+
+    void fadeOut(double seconds) {
+      fadeStep = fadeStep(seconds);
+    }
+
+    private static float fadeStep(double seconds) {
+      return (float)(1.0 / (Math.max(0.02, seconds) * SampleLibrary.SAMPLE_RATE));
     }
 
     float gainAt(int fadeIn, int fadeOut) {
@@ -173,11 +201,10 @@ final class SampleMixer {
       if(loop && position >= data.length) {
         position = 0;
       }
-      float step = (float)(1.0 / (FADE_SECONDS * SampleLibrary.SAMPLE_RATE));
       if(target > gain) {
-        gain = Math.min(target, gain + step);
+        gain = Math.min(target, gain + fadeStep);
       } else if(target < gain) {
-        gain = Math.max(target, gain - step);
+        gain = Math.max(target, gain - fadeStep);
       }
     }
 

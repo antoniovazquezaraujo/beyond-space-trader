@@ -8,6 +8,7 @@
  */
 package org.gts.bst.audio;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.function.BooleanSupplier;
 import javax.sound.sampled.AudioFormat;
@@ -21,6 +22,7 @@ import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ports.SoundService;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.WeaponType;
+import spacetrader.Consts;
 
 
 /**
@@ -45,6 +47,8 @@ public final class SampledSound implements SoundService {
   public static final float SAMPLE_RATE = SampleLibrary.SAMPLE_RATE;
   /** The frames of every writing block (about 23 ms at 44.1 kHz). */
   private static final int FRAMES = 1024;
+  /** The music fades to nothing fast when the scene closes. */
+  private static final double MUSIC_STOP_FADE_SECONDS = 0.15;
 
   private final BooleanSupplier enabled;
   private final SourceDataLine line;
@@ -123,8 +127,15 @@ public final class SampledSound implements SoundService {
     if(type == null) {
       return;
     }
-    // The loops start even with the sound off: turning it on resumes them.
-    float[] sample = library.sample(engineKey(type));
+    // The loops start even with the sound off: turning it on resumes them. The
+    // sample falls back from the type to its size and then to the shared one.
+    float[] sample = null;
+    for(String key : engineKeys(type)) {
+      sample = library.sample(key);
+      if(sample != null) {
+        break;
+      }
+    }
     if(sample == null) {
       mixer.stopEngine(player);
     } else {
@@ -135,6 +146,11 @@ public final class SampledSound implements SoundService {
   @Override
   public void engineStop(boolean player) {
     mixer.stopEngine(player);
+  }
+
+  @Override
+  public void engineStop(boolean player, double fadeSeconds) {
+    mixer.stopEngine(player, fadeSeconds);
   }
 
   @Override
@@ -158,9 +174,14 @@ public final class SampledSound implements SoundService {
       return;
     }
     currentMusic = theme;
-    float[] sample = theme == MusicTheme.NONE ? null : library.sample(musicKey(theme));
+    if(theme == MusicTheme.NONE) {
+      // The scene is closing: the music goes away quickly.
+      mixer.stopMusic(MUSIC_STOP_FADE_SECONDS);
+      return;
+    }
+    float[] sample = library.sample(musicKey(theme));
     if(sample == null) {
-      mixer.stopMusic();
+      mixer.stopMusic(MUSIC_STOP_FADE_SECONDS);
     } else {
       mixer.startMusic(sample);
     }
@@ -195,6 +216,8 @@ public final class SampledSound implements SoundService {
         return "combat/explosion";
       case WARP:
         return "travel/warp";
+      case ESCAPE:
+        return "travel/escape";
       default:
         return "";
     }
@@ -228,8 +251,15 @@ public final class SampledSound implements SoundService {
     return "music/" + theme.name().toLowerCase(Locale.ROOT);
   }
 
-  private static String engineKey(ShipType type) {
-    return "ships/" + type.name().toLowerCase(Locale.ROOT);
+  /**
+   * The engine samples of a ship, in order: its own type, its size
+   * (tiny/small/medium/large/huge/gargantuan) and the shared default. The first
+   * one that exists wins; when none does, the engine is silence.
+   */
+  static List<String> engineKeys(ShipType type) {
+    return List.of("ships/" + type.name().toLowerCase(Locale.ROOT),
+        "ships/" + Consts.ShipSpecs.get(type.CastToInt()).getSize().name().toLowerCase(Locale.ROOT),
+        "ships/default");
   }
 
   /** Warms up the playback thread (called by the factory, never from the constructor). */

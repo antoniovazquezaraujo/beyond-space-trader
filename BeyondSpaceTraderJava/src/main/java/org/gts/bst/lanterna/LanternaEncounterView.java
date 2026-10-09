@@ -27,8 +27,10 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
+import org.gts.bst.ports.MusicTheme;
 import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ports.SoundService;
+import org.gts.bst.ship.equip.WeaponType;
 import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.Functions;
@@ -61,6 +63,8 @@ public final class LanternaEncounterView implements EncounterView {
   private static final int TICK_MILLIS = 1000;
   private static final int FRAME_MILLIS = 110;
   private static final int CLOSE_MILLIS = 2200;
+  /** The engines and the music fade out fast when the scene closes. */
+  private static final double CLOSE_FADE_SECONDS = 0.12;
   private static final int TEXT_WIDTH = 110;
   private static final Map<Character, EncounterAction> KEYS = Map.ofEntries(
       Map.entry('a', EncounterAction.Attack),
@@ -188,9 +192,19 @@ public final class LanternaEncounterView implements EncounterView {
     // We got away: the camera follows us, so we stay in the scene; the other
     // ship, the one behind us, is the one that leaves the scene. The ship turns
     // away with the escape (also when the flee key asked for it, with no dash).
-    sound.play(SoundEffect.WARP);
+    sound.play(SoundEffect.ESCAPE);
     content.faceAway();
     content.opponentLeaves(!content.exitedRight());
+  }
+
+  @Override
+  public void music(MusicTheme theme) {
+    sound.music(theme);
+  }
+
+  @Override
+  public void weapons(Supplier<WeaponType> you, Supplier<WeaponType> opponent) {
+    content.weapons(you, opponent);
   }
 
   @Override
@@ -315,6 +329,10 @@ public final class LanternaEncounterView implements EncounterView {
       stars.cancel();
       stars = null;
     }
+    // The scene is over: the engines fade fast with the music.
+    sound.engineStop(true, CLOSE_FADE_SECONDS);
+    sound.engineStop(false, CLOSE_FADE_SECONDS);
+    sound.music(MusicTheme.NONE);
     if(onClose != null) {
       onClose.run();
     }

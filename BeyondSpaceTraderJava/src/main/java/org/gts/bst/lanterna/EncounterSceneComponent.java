@@ -27,6 +27,7 @@ import org.gts.bst.view.ShipPicture;
 import org.gts.bst.view.ShipSites;
 import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ports.SoundService;
+import org.gts.bst.ship.equip.WeaponType;
 import spacetrader.Commander;
 import spacetrader.Strings;
 import org.gts.bst.view.Starfield;
@@ -101,6 +102,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private static final int LEGEND_COLUMNS = 24;
   /** Rivals below this pilot skill are the easy ones: their laser gets a lower tone. */
   private static final int EASY_PILOT = 5;
+  /** The engine of a destroyed ship fades with the explosion (quick). */
+  private static final double ENGINE_DESTROY_FADE = 0.15;
+  /** The engine of a ship that marches out fades while it leaves. */
+  private static final double ENGINE_MARCH_FADE = 0.4;
   /**
    * The order of the key bar: the actions of the enum, but the interrupt at the
    * end. The interrupt is a control of the automatic fight, not a decision of the
@@ -135,6 +140,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   private final KeyHandler keyHandler;
   private final SoundService sound;
+  private Supplier<WeaponType> youWeapon = () -> null;
+  private Supplier<WeaponType> opponentWeapon = () -> null;
   private final List<String> log = new ArrayList<>();
   private final List<String> alerts = new ArrayList<>();
   private final List<Beam> beams = new ArrayList<>();
@@ -199,6 +206,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     this.sound = sound;
   }
 
+  /** The strongest weapon of each ship, so a shot plays the sample of the right one. */
+  public void weapons(Supplier<WeaponType> you, Supplier<WeaponType> opponent) {
+    this.youWeapon = you == null ? () -> null : you;
+    this.opponentWeapon = opponent == null ? () -> null : opponent;
+  }
+
   /**
    * The current commander for the header: its live values (hull, shields, ...)
    * are read on every paint, so the fight is always up to date. With no supplier,
@@ -237,6 +250,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(before == null) {
       // The encounter opens with the empty sky: both ships come in from the edges.
       enterFrames = ENTER_FRAMES;
+      // The engines start with the entry animation and stay constant while the
+      // ships are in the scene (they do not follow the manoeuvres).
+      sound.engine(model.youType(), true);
+      sound.engine(model.opponentType(), false);
     }
     if(before != null && before.round() != model.round() && screenWidth > 0) {
       play(before, model);
@@ -472,6 +489,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       if(opponentX() + opponentWidth < 0) {
         // Its way takes it out of the scene: it is gone, minding its business.
         opponentGone = true;
+        sound.engineStop(false, ENGINE_MARCH_FADE);
         if(onOpponentGone != null) {
           // The crossing is over: the encounter ends by itself.
           onOpponentGone.run();
@@ -743,10 +761,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private void play(EncounterViewModel before, EncounterViewModel after) {
     boolean down = after.opponentHull().value() <= 0;
     if(after.youHull().value() <= 0 && before.youHull().value() > 0) {
-      // Our own ship broke up this round.
+      // Our own ship broke up this round: the engine fades with the explosion.
+      sound.engineStop(true, ENGINE_DESTROY_FADE);
       sound.play(SoundEffect.EXPLOSION);
     }
     if(down && before.opponentHull().value() > 0) {
+      sound.engineStop(false, ENGINE_DESTROY_FADE);
       sound.play(SoundEffect.EXPLOSION);
       for(int i = 0; i < 4; i++) {
         flashes.add(new Flash(opponentX() + opponentWidth / 2 - 2 + i, opponentMiddleY() - 1 + i % 2,
@@ -764,7 +784,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       int toX = after.youHit() ? targetX : screenWidth - 1;
       int toY = after.youHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
       beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.GREEN_BRIGHT, BEAM_FRAMES));
-      sound.play(SoundEffect.LASER);
+      playerShot();
       if(after.youHit()) {
         impact(opponentX(), targetY, after.youDamage(), true);
       }
@@ -927,6 +947,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(model != null && !opponentGone && !opponentLeaving) {
       opponentLeaving = true;
       opponentLeavesRight = toTheRight;
+      // The engine fades while the ship goes away through the edge.
+      sound.engineStop(false, ENGINE_MARCH_FADE);
       invalidate();
     }
   }
@@ -956,9 +978,29 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     int toX = pendingOppHit ? targetX : 0;
     int toY = pendingOppHit ? targetY : aimedY(nose, row, targetX, targetY, toX);
     beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
-    sound.playRivalLaser(model != null && model.opponentPilot() < EASY_PILOT);
+    opponentShot();
     if(pendingOppHit) {
       impact(yourX(), targetY, pendingOppDamage, false);
+    }
+  }
+
+  /** Our shot: the sample of our strongest weapon, or the generic laser when unknown. */
+  private void playerShot() {
+    WeaponType weapon = youWeapon.get();
+    if(weapon == null) {
+      sound.play(SoundEffect.LASER);
+    } else {
+      sound.playWeapon(weapon);
+    }
+  }
+
+  /** The rival's reply: its strongest weapon, or the generic tone with the easy variant. */
+  private void opponentShot() {
+    WeaponType weapon = opponentWeapon.get();
+    if(weapon == null) {
+      sound.playRivalLaser(model != null && model.opponentPilot() < EASY_PILOT);
+    } else {
+      sound.playWeapon(weapon);
     }
   }
 

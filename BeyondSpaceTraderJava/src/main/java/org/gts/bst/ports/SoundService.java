@@ -68,8 +68,23 @@ public interface SoundService {
   default void engine(ShipType type, boolean player) {
   }
 
-  /** Stops the engine loop of a ship (fades it out). */
+  /**
+   * Stops the engine loop of a ship (fades it out with the default time).
+   *
+   * @param player true for the player ship, false for the rival
+   */
   default void engineStop(boolean player) {
+  }
+
+  /**
+   * The same, with the fade asked for: the destruction mixes it with the
+   * explosion (short) and the march out is heard while the ship leaves (longer).
+   *
+   * @param player true for the player ship, false for the rival
+   * @param fadeSeconds the fade-out time, in seconds
+   */
+  default void engineStop(boolean player, double fadeSeconds) {
+    engineStop(player);
   }
 
   /**
