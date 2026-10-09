@@ -1532,6 +1532,7 @@ public final class LanternaMainWindow
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_DEPARTURE).getPath(), game.Serialize(), game.Dialogs());
       }
       game.Warp(true);
+      sound.play(SoundEffect.WARP);
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_ARRIVAL).getPath(), game.Serialize(), game.Dialogs());
       }

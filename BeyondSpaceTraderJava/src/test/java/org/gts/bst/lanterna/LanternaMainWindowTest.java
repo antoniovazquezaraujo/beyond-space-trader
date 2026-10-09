@@ -3321,6 +3321,48 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theSingularityJumpPlaysTheWarpSound() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(),
+          (type, messageArgs) -> DialogResult.Yes);
+      holder[0].setAutoSave(false);
+      holder[0].setCanSuperWarp(true);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      StarSystem far = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != current && !system.DestOk()) {
+          far = system;
+          break;
+        }
+      }
+      assertNotNull(far, "the galaxy must have a system out of range");
+      holder[0].SelectedSystemId(far.Id());
+      sound.clear();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('g', false, false));
+      gui.updateScreen();
+
+      assertSame(far, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertEquals(List.of(SoundEffect.WARP), sound.played(), "the jump of the singularity plays the warp sound");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void showsTheTargetPriceOfTheSelectedItemInTheTradePanel() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
