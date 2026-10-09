@@ -212,6 +212,43 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void ourOwnShipBlowsUpWhenItIsDestroyed() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false, sound);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      sound.clear();
+
+      // Our hull reaches zero: our own ship blows up while the rival keeps flying.
+      content.model(lost(you, opponent, 1));
+      gui.updateScreen();
+      assertEquals(List.of(SoundEffect.EXPLOSION), sound.played(), "our own ship blows up too");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theLaserOfAnEasyRivalGetsTheLowTone() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
@@ -2541,6 +2578,17 @@ class LanternaEncounterViewTest {
         false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
         "Pirate", new EncounterViewModel.Bar(0, 100), new EncounterViewModel.Bar(0, 100),
         "The pirate is destroyed.", "Choose an action.",
+        ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+        false, 5, false, round, "");
+  }
+
+  /** A round that leaves our own ship destroyed (the game is over). */
+  private static EncounterViewModel lost(ShipPicture you, ShipPicture opponent, int round) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
+        false, 0, "Flea", new EncounterViewModel.Bar(0, 100), new EncounterViewModel.Bar(0, 100),
+        "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+        "Our ship is destroyed.", "Choose an action.",
         ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
         false, 5, false, round, "");
   }

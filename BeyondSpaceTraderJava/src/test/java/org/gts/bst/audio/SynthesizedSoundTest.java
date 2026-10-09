@@ -49,6 +49,28 @@ class SynthesizedSoundTest {
         "the synthesis is deterministic, so the tests and the playback agree");
   }
 
+  /**
+   * The envelope fades every effect in and out: the buffers start and end near
+   * silence. Without it the samples jump at the edges and the effects click.
+   */
+  @Test
+  void everyEffectFadesInAndOutFromSilence() {
+    for(SoundEffect effect : SoundEffect.values()) {
+      byte[] pcm = SynthesizedSound.pcm(effect);
+      int samples = pcm.length / BYTES_PER_SAMPLE;
+      int peak = 0;
+      for(int i = 0; i < samples; i++) {
+        peak = Math.max(peak, Math.abs(sample(pcm, i)));
+      }
+      int first = sample(pcm, 0);
+      int last = sample(pcm, samples - 1);
+      assertTrue(Math.abs(first) <= peak / 5,
+          effect + " fades in from silence (first sample " + first + " of peak " + peak + ")");
+      assertTrue(Math.abs(last) <= peak / 5,
+          effect + " fades out to silence (last sample " + last + " of peak " + peak + ")");
+    }
+  }
+
   @Test
   void theWarpSweepsUpwards() {
     byte[] pcm = SynthesizedSound.pcm(SoundEffect.WARP);

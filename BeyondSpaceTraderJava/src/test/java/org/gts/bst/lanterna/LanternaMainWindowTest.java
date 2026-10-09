@@ -2149,6 +2149,11 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
       assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played());
       sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "moving up sounds too");
+      // Back to the second entry (Options) before activating it.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      sound.clear();
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played(), "the menu entry activates with its sound");
       gui.updateScreen();
@@ -2158,6 +2163,9 @@ class LanternaMainWindowTest {
       sound.clear();
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
       assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played());
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "moving up sounds too");
       sound.clear();
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played());
@@ -2169,10 +2177,69 @@ class LanternaMainWindowTest {
       sound.clear();
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
       assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played());
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "moving up sounds too");
     } finally {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void thePanelsAndTheQuestListPlayTheirMoveSounds() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // The ship list, the equipment and the personnel panels sound when they move.
+      assertListMovesWithSound(gui, window, sound, 's');
+      assertListMovesWithSound(gui, window, sound, 'e');
+      assertListMovesWithSound(gui, window, sound, 'p');
+
+      // The quests panel has entries and moves and activates with the pair.
+      holder[0].setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterAtAcamar);
+      holder[0].setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "the quest list moves with the sound");
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "and up too");
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played(), "a destination activates with the select");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** Opens a list panel, moves down and up, and checks that each step sounds. */
+  private static void assertListMovesWithSound(MultiWindowTextGUI gui, LanternaMainWindow window,
+      TestSoundService sound, char panelKey) throws IOException {
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(panelKey, false, false));
+    gui.updateScreen();
+    sound.clear();
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+    assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "the panel " + panelKey + " sounds moving down");
+    sound.clear();
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+    assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "the panel " + panelKey + " sounds moving up");
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+    gui.updateScreen();
   }
 
   @Test
