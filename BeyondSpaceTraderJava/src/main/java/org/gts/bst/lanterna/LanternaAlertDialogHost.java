@@ -24,6 +24,8 @@ import java.util.List;
 import org.gts.bst.view.AlertButton;
 import org.gts.bst.view.AlertDialogHost;
 import org.gts.bst.ports.DialogResult;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 
 
 /**
@@ -32,9 +34,15 @@ import org.gts.bst.ports.DialogResult;
  */
 public final class LanternaAlertDialogHost implements AlertDialogHost {
   private final WindowBasedTextGUI gui;
+  private final SoundService sound;
 
   public LanternaAlertDialogHost(WindowBasedTextGUI gui) {
+    this(gui, SoundService.NONE);
+  }
+
+  public LanternaAlertDialogHost(WindowBasedTextGUI gui, SoundService sound) {
     this.gui = gui;
+    this.sound = sound;
   }
 
   @Override
@@ -42,6 +50,9 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
     if(buttons.isEmpty()) {
       return DialogResult.None;
     }
+    // A dialog with one button tells something (ALERT); a question waits for an
+    // answer (WARNING). The quiet alerts never get here: they go to the log.
+    sound.play(buttons.size() > 1 ? SoundEffect.WARNING : SoundEffect.ALERT);
     DialogResult[] chosen = {buttons.get(0).result()};
     List<Button> row = new ArrayList<>();
     BasicWindow dialog = new BasicWindow(title) {

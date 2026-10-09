@@ -51,6 +51,8 @@ import org.gts.bst.view.HighScoresView;
 import org.gts.bst.view.HighScoresViewModel;
 import org.gts.bst.view.DockViewModel;
 import org.gts.bst.ports.GameWindow;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
 import org.gts.bst.view.MainWindow;
@@ -107,6 +109,7 @@ public final class LanternaMainWindow
 
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
+  private final SoundService sound;
   private final BasicWindow window = new BasicWindow();
   private final MainTextComponent content;
   private MainPresenter presenter;
@@ -124,8 +127,13 @@ public final class LanternaMainWindow
   private Runnable loadGameAction;
 
   public LanternaMainWindow(Supplier<Game> gameSupplier, WindowBasedTextGUI gui) {
+    this(gameSupplier, gui, SoundService.NONE);
+  }
+
+  public LanternaMainWindow(Supplier<Game> gameSupplier, WindowBasedTextGUI gui, SoundService sound) {
     this.gameSupplier = gameSupplier;
     this.gui = gui;
+    this.sound = sound;
     this.content = new MainTextComponent(gameSupplier, this::handleKey);
     window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
     window.setComponent(content);
@@ -271,7 +279,7 @@ public final class LanternaMainWindow
     }
     EncounterPresenter[] presenter = new EncounterPresenter[1];
     LanternaEncounterView view = new LanternaEncounterView(gui,
-        action -> dispatch(presenter[0], action), () -> presenter[0].tick(), this::showCargoTransfer);
+        action -> dispatch(presenter[0], action), () -> presenter[0].tick(), this::showCargoTransfer, sound);
     view.header(game::Commander);
     encounterView = view;
     view.onClose(() -> encounterView = null);
@@ -807,9 +815,11 @@ public final class LanternaMainWindow
       }
       int delta = key.getKeyType() == KeyType.ArrowUp ? -1 : 1;
       content.optionsIndex(Math.floorMod(content.optionsIndex() + delta, count));
+      sound.play(SoundEffect.MENU_MOVE);
       return true;
     }
     if(key.getKeyType() == KeyType.Enter) {
+      sound.play(SoundEffect.MENU_SELECT);
       toggleOption(game, content.optionsIndex());
       return true;
     }
@@ -851,6 +861,7 @@ public final class LanternaMainWindow
     lines.add(optionLine(Strings.OptionAutoSave, game.getAutoSave()));
     lines.add(Functions.StringVars(Strings.OptionsValue, Strings.OptionGalaxyColumns,
         "" + options.getGalaxyColumns()));
+    lines.add(optionLine(Strings.OptionSound, options.getSound()));
     return lines;
   }
 
@@ -919,6 +930,9 @@ public final class LanternaMainWindow
       case 17:
         options.setGalaxyColumns(options.getGalaxyColumns() >= 3 ? 1 : options.getGalaxyColumns() + 1);
         break;
+      case 18:
+        options.setSound(!options.getSound());
+        break;
       default:
         break;
     }
@@ -948,9 +962,11 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         selectShipListEntry(content.shipListIndex() - 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         selectShipListEntry(content.shipListIndex() + 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Character:
         if(Character.toLowerCase(key.getCharacter()) != 'b') {
@@ -986,9 +1002,11 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         selectEquipmentEntry(content.equipmentIndex() - 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         selectEquipmentEntry(content.equipmentIndex() + 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
@@ -1098,9 +1116,11 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         selectPersonnelEntry(content.personnelIndex() - 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         selectPersonnelEntry(content.personnelIndex() + 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Character:
         if(Character.toLowerCase(key.getCharacter()) != 'h') {
@@ -1219,9 +1239,11 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveItemSelection(-1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         content.moveItemSelection(1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
@@ -1568,6 +1590,7 @@ public final class LanternaMainWindow
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_DEPARTURE).getPath(), game.Serialize(), game.Dialogs());
       }
       game.Warp(false);
+      sound.play(SoundEffect.WARP);
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_ARRIVAL).getPath(), game.Serialize(), game.Dialogs());
       }
@@ -1583,11 +1606,14 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveMenuSelection(-1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         content.moveMenuSelection(1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Enter:
+        sound.play(SoundEffect.MENU_SELECT);
         activateMenuEntry();
         return true;
       case Escape:
@@ -1707,11 +1733,14 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveQuestSelection(-1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         content.moveQuestSelection(1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Enter:
+        sound.play(SoundEffect.MENU_SELECT);
         selectQuestTarget();
         content.closePanel();
         return true;

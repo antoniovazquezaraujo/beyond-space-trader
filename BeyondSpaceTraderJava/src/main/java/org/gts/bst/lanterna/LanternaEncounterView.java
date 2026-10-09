@@ -27,6 +27,8 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.Functions;
@@ -93,6 +95,7 @@ public final class LanternaEncounterView implements EncounterView {
   private final Commands commands;
   private final Runnable tick;
   private final CargoHost cargoHost;
+  private final SoundService sound;
   private final BasicWindow window = new BasicWindow(Strings.EncounterTitle);
   private final EncounterSceneComponent content;
   private EncounterViewModel model;
@@ -106,11 +109,17 @@ public final class LanternaEncounterView implements EncounterView {
   private boolean alertSpeech;
 
   public LanternaEncounterView(WindowBasedTextGUI gui, Commands commands, Runnable tick, CargoHost cargoHost) {
+    this(gui, commands, tick, cargoHost, SoundService.NONE);
+  }
+
+  public LanternaEncounterView(WindowBasedTextGUI gui, Commands commands, Runnable tick, CargoHost cargoHost,
+      SoundService sound) {
     this.gui = gui;
     this.commands = commands;
     this.tick = tick;
     this.cargoHost = cargoHost;
-    this.content = new EncounterSceneComponent(this::handleKey);
+    this.sound = sound;
+    this.content = new EncounterSceneComponent(this::handleKey, sound);
     window.setHints(Set.of(Window.Hint.MODAL, Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
     content.onExit(() -> {
       if(awaitingLeave) {
@@ -179,6 +188,7 @@ public final class LanternaEncounterView implements EncounterView {
     // We got away: the camera follows us, so we stay in the scene; the other
     // ship, the one behind us, is the one that leaves the scene. The ship turns
     // away with the escape (also when the flee key asked for it, with no dash).
+    sound.play(SoundEffect.WARP);
     content.faceAway();
     content.opponentLeaves(!content.exitedRight());
   }

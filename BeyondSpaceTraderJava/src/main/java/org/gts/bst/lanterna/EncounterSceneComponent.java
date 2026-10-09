@@ -25,6 +25,8 @@ import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipPicture;
 import org.gts.bst.view.ShipSites;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 import spacetrader.Commander;
 import spacetrader.Strings;
 import org.gts.bst.view.Starfield;
@@ -97,6 +99,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** Cells the ship that ignores us crosses on every frame: it just goes on. */
   private static final int IGNORE_SPEED = 3;
   private static final int LEGEND_COLUMNS = 24;
+  /** Rivals below this pilot skill are the easy ones: their laser gets a lower tone. */
+  private static final int EASY_PILOT = 5;
   /**
    * The order of the key bar: the actions of the enum, but the interrupt at the
    * end. The interrupt is a control of the automatic fight, not a decision of the
@@ -130,6 +134,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   }
 
   private final KeyHandler keyHandler;
+  private final SoundService sound;
   private final List<String> log = new ArrayList<>();
   private final List<String> alerts = new ArrayList<>();
   private final List<Beam> beams = new ArrayList<>();
@@ -185,7 +190,13 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private int screenWidth;
 
   public EncounterSceneComponent(KeyHandler keyHandler) {
+    this(keyHandler, SoundService.NONE);
+  }
+
+  /** With a sound service, the scene plays the shots, the hits and the explosions. */
+  public EncounterSceneComponent(KeyHandler keyHandler, SoundService sound) {
     this.keyHandler = keyHandler;
+    this.sound = sound;
   }
 
   /**
@@ -731,7 +742,12 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   /** Plays a round with the game already resolved: beams, smoke and explosions. */
   private void play(EncounterViewModel before, EncounterViewModel after) {
     boolean down = after.opponentHull().value() <= 0;
+    if(after.youHull().value() <= 0 && before.youHull().value() > 0) {
+      // Our own ship broke up this round.
+      sound.play(SoundEffect.EXPLOSION);
+    }
     if(down && before.opponentHull().value() > 0) {
+      sound.play(SoundEffect.EXPLOSION);
       for(int i = 0; i < 4; i++) {
         flashes.add(new Flash(opponentX() + opponentWidth / 2 - 2 + i, opponentMiddleY() - 1 + i % 2,
             String.valueOf(BURST), i % 2 == 0 ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.RED_BRIGHT,
@@ -748,6 +764,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       int toX = after.youHit() ? targetX : screenWidth - 1;
       int toY = after.youHit() ? targetY : aimedY(nose, row, targetX, targetY, toX);
       beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.GREEN_BRIGHT, BEAM_FRAMES));
+      sound.play(SoundEffect.LASER);
       if(after.youHit()) {
         impact(opponentX(), targetY, after.youDamage(), true);
       }
@@ -939,6 +956,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     int toX = pendingOppHit ? targetX : 0;
     int toY = pendingOppHit ? targetY : aimedY(nose, row, targetX, targetY, toX);
     beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
+    sound.playRivalLaser(model != null && model.opponentPilot() < EASY_PILOT);
     if(pendingOppHit) {
       impact(yourX(), targetY, pendingOppDamage, false);
     }
@@ -957,6 +975,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
    * crack: the ship breaks up for a moment and the pieces fly out in every direction.
    */
   private void impact(int shipLeft, int row, int damage, boolean onOpponent) {
+    sound.play(SoundEffect.HIT);
     boolean shield = onOpponent ? model.opponentShield().value() > 0 : model.youShield().value() > 0;
     int x = shipLeft + (onOpponent ? opponentWidth : youWidth) / 2;
     if(shield) {

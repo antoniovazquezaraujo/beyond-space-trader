@@ -20,10 +20,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import org.gts.bst.audio.SynthesizedSound;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.ports.DialogResult;
 import org.gts.bst.ports.DialogService;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.view.LanternaDialogService;
 import spacetrader.Consts;
 import spacetrader.Functions;
@@ -56,9 +58,14 @@ public final class LanternaApp {
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
-      LanternaDialogService dialogs = new LanternaDialogService(new LanternaAlertDialogHost(gui));
       Game[] game = new Game[1];
-      LanternaMainWindow window = new LanternaMainWindow(() -> game[0], gui);
+      // The synthesised effects live as long as the program; the sound option
+      // (F8) turns them off and on, and --mute silences the whole run.
+      SoundService sound = soundMuted(args)
+          ? SoundService.NONE
+          : SynthesizedSound.create(() -> game[0] != null && game[0].Options().getSound());
+      LanternaDialogService dialogs = new LanternaDialogService(new LanternaAlertDialogHost(gui, sound));
+      LanternaMainWindow window = new LanternaMainWindow(() -> game[0], gui, sound);
       window.setGameActions(
           () -> newGame(gui, window, dialogs, game),
           () -> saveGame(gui, dialogs, game[0], window),
@@ -95,6 +102,20 @@ public final class LanternaApp {
       }
     }
     return null;
+  }
+
+  /**
+   * True when the command line asks for a silent run ({@code --mute} or
+   * {@code --no-sound}). The switch lasts the whole program: the sound option of
+   * the game ({@code F8}) still changes the saved preference, but no effect plays.
+   */
+  static boolean soundMuted(String[] args) {
+    for(String arg : args) {
+      if("--mute".equals(arg) || "--no-sound".equals(arg)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private static void createDirectories() {

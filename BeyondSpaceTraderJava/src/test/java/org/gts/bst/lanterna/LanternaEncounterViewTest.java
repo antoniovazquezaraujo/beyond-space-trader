@@ -39,6 +39,9 @@ import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.Alerts;
 import org.gts.bst.ports.DialogService;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
+import org.gts.bst.testing.TestSoundService;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipArtFile;
@@ -151,6 +154,121 @@ class LanternaEncounterViewTest {
       executed.clear();
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       assertEquals(List.of(EncounterAction.Trade), executed, "the intro key deals with the trader");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theFightPlaysItsCombatSounds() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false, sound);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      // The first paint sets the width of the scene and the ships come in: only
+      // then does a round play.
+      content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      sound.clear();
+
+      // Our shot is born with a laser; landing on the rival, it plays the hit.
+      content.model(fight(you, opponent, 1, true, true, false, 7, 0));
+      assertEquals(List.of(SoundEffect.LASER, SoundEffect.HIT), sound.played());
+
+      // The rival answers a moment later, with its own laser.
+      sound.clear();
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      assertEquals(List.of(SoundEffect.LASER), sound.played());
+
+      // The destroyed rival blows up.
+      sound.clear();
+      content.model(destroyed(you, opponent, 2));
+      gui.updateScreen();
+      assertEquals(List.of(SoundEffect.EXPLOSION), sound.played());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theLaserOfAnEasyRivalGetsTheLowTone() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      RivalLaserTone sound = new RivalLaserTone();
+      EncounterSceneComponent content = new EncounterSceneComponent(key -> false, sound);
+      content.setPreferredSize(new TerminalSize(80, 24));
+      BasicWindow window = new BasicWindow();
+      window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+      window.setComponent(content);
+      gui.addWindow(window);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      content.model(pirateRound(you, opponent, 0, 1));
+      gui.updateScreen();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+
+      // A poor pilot is an easy rival: its reply gets the low tone.
+      content.model(pirateRound(you, opponent, 1, 1));
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      assertEquals(List.of(true), sound.easy, "a poor pilot is an easy opponent");
+
+      // A good pilot answers with the normal tone.
+      sound.easy.clear();
+      content.model(pirateRound(you, opponent, 2, 9));
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      assertEquals(List.of(false), sound.easy, "a good pilot gets the normal tone");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theEscapePlaysTheWarpSound() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { }, sound);
+
+      view.escaped();
+
+      assertEquals(List.of(SoundEffect.WARP), sound.played(), "getting away plays the warp");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -2414,6 +2532,42 @@ class LanternaEncounterViewTest {
         "The pirate attacks.", "Choose an action.",
         ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
         false, 5, fleeing, round, "");
+  }
+
+  /** A round that leaves the rival destroyed. */
+  private static EncounterViewModel destroyed(ShipPicture you, ShipPicture opponent, int round) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
+        false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+        "Pirate", new EncounterViewModel.Bar(0, 100), new EncounterViewModel.Bar(0, 100),
+        "The pirate is destroyed.", "Choose an action.",
+        ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+        false, 5, false, round, "");
+  }
+
+  /** A round of a pirate whose reply is due, with a given pilot skill. */
+  private static EncounterViewModel pirateRound(ShipPicture you, ShipPicture opponent, int round, int pilot) {
+    return new EncounterViewModel(
+        EnumSet.of(EncounterAction.Attack, EncounterAction.Flee, EncounterAction.Surrender),
+        false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+        "Pirate", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+        "The pirate attacks.", "Choose an action.",
+        ShipType.Flea, ShipType.Scorpion, false, true, 0, 3, you, opponent, false, false,
+        false, pilot, false, round, "");
+  }
+
+  /** A sound service that only cares about the tone of the rival lasers. */
+  private static final class RivalLaserTone implements SoundService {
+    private final List<Boolean> easy = new ArrayList<>();
+
+    @Override
+    public void play(SoundEffect effect) {
+    }
+
+    @Override
+    public void playRivalLaser(boolean easy) {
+      this.easy.add(easy);
+    }
   }
 
   @Test
