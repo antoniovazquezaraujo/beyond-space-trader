@@ -28,6 +28,13 @@ import org.gts.bst.ports.SoundService;
  * every effect is rendered once at startup and a daemon thread drains a small
  * queue onto the {@link SourceDataLine}, so {@link #play} never blocks the game.
  *
+ * <p>The timbre is the beeper of a ZX Spectrum: the wave is crushed to one bit
+ * (every sample at the full level, positive or negative), the notes are pulse
+ * waves, the sweeps are arpeggios by steps and the noise is switched on and off
+ * in bursts. The only softness is a ramp of a millisecond or two at the edges
+ * (the DC click) and a soft clip that keeps the high master level from
+ * saturating; everything between the edges is hard and square.
+ *
  * <p>{@link #create} returns {@link SoundService#NONE} when the machine has no
  * usable audio line (headless servers, containers), and {@link #pcm} renders an
  * effect without touching any device, which is what the tests use.
@@ -37,10 +44,17 @@ public final class SynthesizedSound implements SoundService {
   public static final float SAMPLE_RATE = 44100f;
   private static final int BITS = 16;
   private static final int CHANNELS = 1;
-  /** Peaks of the rendered effects, as a fraction of full scale: short and gentle. */
-  private static final double AMPLITUDE = 0.45;
+  /** The full level of the one-bit output, as a fraction of full scale. */
+  private static final double AMPLITUDE = 0.85;
+  /** The attack ramp that keeps the DC click away; the beeper edges are hard. */
+  private static final double ATTACK_SECONDS = 0.0015;
+  /** A little longer at the end, so the buffer falls to silence without a pop. */
+  private static final double RELEASE_SECONDS = 0.004;
   /** The playback queue drops effects when the game fires faster than they play. */
   private static final int QUEUE_SIZE = 8;
+  /** The vibrato of the laser: an unsmoothed jump of this ratio every few ms. */
+  private static final double LASER_VIBRATO = 1.08;
+  private static final double VIBRATO_SECONDS = 0.007;
 
   private final BooleanSupplier enabled;
   private final SourceDataLine line;
@@ -106,30 +120,43 @@ public final class SynthesizedSound implements SoundService {
   public static byte[] pcm(SoundEffect effect) {
     switch(effect) {
       case MENU_MOVE:
-        return toPcm(beep(1600, 0.055, true, 6));
+        // A short high blip: a thin pulse, gone at once.
+        return toPcm(shaped(pulse(2000, 0.25, 0.05)));
       case MENU_SELECT:
-        return toPcm(concat(beep(900, 0.05, true, 3), gap(0.012), beep(1350, 0.085, true, 3)));
+        // Two quick notes going up: 660 then 990.
+        return toPcm(shaped(concat(pulse(660, 0.5, 0.055), rest(0.01), pulse(990, 0.5, 0.09))));
       case ALERT:
-        return toPcm(concat(beep(660, 0.07, true, 2), gap(0.05), beep(660, 0.07, true, 2), gap(0.05),
-            beep(990, 0.12, true, 2)));
+        // Three high pulses, one after the other.
+        return toPcm(shaped(concat(pulse(1200, 0.25, 0.055), rest(0.04), pulse(1200, 0.25, 0.055),
+            rest(0.04), pulse(1200, 0.25, 0.055))));
       case WARNING:
-        return toPcm(concat(beep(520, 0.12, true, 1.5), gap(0.06), beep(370, 0.22, true, 1.5)));
+        // A grave/acute alternation: low, high, low.
+        return toPcm(shaped(concat(pulse(330, 0.5, 0.09), pulse(660, 0.5, 0.09), pulse(330, 0.5, 0.12))));
       case LASER:
         return laserPcm(false);
       case HIT:
-        return toPcm(noiseBurst(0.16, 0x51ED270BL, 7, 0.45));
+        // Short, strong gated noise: two bursts and a tail.
+        return toPcm(shaped(concat(noise(0x51ED270BL, 0.05), rest(0.012), noise(0x2545F491L, 0.04),
+            rest(0.012), noise(0x9E3779B9L, 0.03))));
       case EXPLOSION:
-        return toPcm(rumble(0.6, 0x1BADB002L));
+        // Gated noise that thins out as it fades (bursts shorter, silences longer).
+        return toPcm(shaped(gatedExplosion(0x1BADB002L, 10)));
       case WARP:
-        return toPcm(glidingTone(180, 1500, 0.62, 0.02));
+        // A climb by steps, alternating the timbre of the pulses.
+        return toPcm(shaped(arpeggio(
+            new double[] {220, 277, 330, 392, 440, 523, 659, 784, 988, 1319, 1568},
+            0.055, 0.5, 0.25)));
       default:
         return new byte[0];
     }
   }
 
-  /** The laser of the rival: the same sweep, lower and longer for an easy opponent. */
+  /** The laser of the rival: the same stepped pew, lower and longer for an easy opponent. */
   static byte[] laserPcm(boolean low) {
-    return toPcm(sweep(low ? 750 : 1500, low ? 110 : 230, low ? 0.28 : 0.22, 2.5));
+    double[] steps = low
+        ? new double[] {900, 760, 640, 540, 450, 380, 320, 270}
+        : new double[] {1800, 1520, 1280, 1080, 900, 760, 640, 540};
+    return toPcm(shaped(steppedLaser(steps, low ? 0.034 : 0.028)));
   }
 
   @Override
@@ -172,98 +199,98 @@ public final class SynthesizedSound implements SoundService {
     return new AudioFormat(SAMPLE_RATE, BITS, CHANNELS, true, false);
   }
 
-  /** A fixed note of {@code seconds}, with a fast decay and its attack and release. */
-  private static double[] beep(double frequency, double seconds, boolean square, double decay) {
+  /** A pulse (duty 0..1) held for a time: the raw voice of the beeper. */
+  private static double[] pulse(double frequency, double duty, double seconds) {
     int total = sampleCount(seconds);
     double[] out = new double[total];
-    double phase = 0;
+    double period = SAMPLE_RATE / frequency;
+    double on = period * duty;
     for(int i = 0; i < total; i++) {
-      double t = i / (double)total;
-      phase += 2 * Math.PI * frequency / SAMPLE_RATE;
-      double wave = square ? (Math.sin(phase) >= 0 ? 1 : -1) : Math.sin(phase);
-      out[i] = wave * Math.exp(-decay * t) * envelope(i, total, 0.05, 0.4);
+      out[i] = i % period < on ? 1 : -1;
     }
     return out;
   }
 
-  /** A square note that glides from {@code from} to {@code to} (the shot, the hit). */
-  private static double[] sweep(double from, double to, double seconds, double decay) {
-    int total = sampleCount(seconds);
-    double[] out = new double[total];
-    double phase = 0;
-    for(int i = 0; i < total; i++) {
-      double t = i / (double)total;
-      double frequency = from + (to - from) * t;
-      phase += 2 * Math.PI * frequency / SAMPLE_RATE;
-      out[i] = (Math.sin(phase) >= 0 ? 1 : -1) * Math.exp(-decay * t) * envelope(i, total, 0.02, 0.35);
+  /** An arpeggio: pulse steps one after the other, alternating two duties. */
+  private static double[] arpeggio(double[] frequencies, double secondsEach, double dutyEven, double dutyOdd) {
+    double[][] cells = new double[frequencies.length][];
+    for(int i = 0; i < frequencies.length; i++) {
+      cells[i] = pulse(frequencies[i], i % 2 == 0 ? dutyEven : dutyOdd, secondsEach);
+    }
+    return concat(cells);
+  }
+
+  /**
+   * A "pew" by steps with an unsmoothed vibrato: the frequency jumps between the
+   * step and a slightly higher one every few milliseconds, never glides.
+   */
+  private static double[] steppedLaser(double[] steps, double secondsEach) {
+    int perStep = sampleCount(secondsEach);
+    int vibrato = Math.max(1, sampleCount(VIBRATO_SECONDS));
+    double[] out = new double[perStep * steps.length];
+    for(int i = 0; i < out.length; i++) {
+      int step = Math.min(steps.length - 1, i / perStep);
+      double frequency = steps[step] * ((i / vibrato) % 2 == 0 ? 1 : LASER_VIBRATO);
+      double period = SAMPLE_RATE / frequency;
+      out[i] = i % period < period / 2 ? 1 : -1;
     }
     return out;
   }
 
-  /** A sine sweep that climbs, with a soft vibrato: the warp. */
-  private static double[] glidingTone(double from, double to, double seconds, double vibrato) {
-    int total = sampleCount(seconds);
-    double[] out = new double[total];
-    double phase = 0;
-    for(int i = 0; i < total; i++) {
-      double t = i / (double)total;
-      double frequency = (from + (to - from) * t) * (1 + vibrato * Math.sin(2 * Math.PI * 6 * t));
-      phase += 2 * Math.PI * frequency / SAMPLE_RATE;
-      out[i] = Math.sin(phase) * envelope(i, total, 0.05, 0.3);
-    }
-    return out;
-  }
-
-  /** A filtered white-noise burst with a sharp attack: the hit. */
-  private static double[] noiseBurst(double seconds, long seed, double decay, double smoothing) {
+  /** One-bit white noise: the hard hiss of the beeper. */
+  private static double[] noise(long seed, double seconds) {
     int total = sampleCount(seconds);
     double[] out = new double[total];
     long state = seed == 0 ? 1 : seed;
-    double low = 0;
     for(int i = 0; i < total; i++) {
       state ^= state << 13;
       state ^= state >>> 7;
       state ^= state << 17;
-      double white = state / (double)Long.MAX_VALUE;
-      low += smoothing * (white - low);
-      double t = i / (double)total;
-      out[i] = low * Math.exp(-decay * t) * envelope(i, total, 0.005, 0.5);
+      out[i] = state < 0 ? -1 : 1;
     }
     return out;
   }
 
-  /** The low rumble of an explosion: brown noise with a long decay. */
-  private static double[] rumble(double seconds, long seed) {
-    int total = sampleCount(seconds);
-    double[] out = new double[total];
-    long state = seed == 0 ? 1 : seed;
-    double low = 0;
-    for(int i = 0; i < total; i++) {
-      state ^= state << 13;
-      state ^= state >>> 7;
-      state ^= state << 17;
-      double white = state / (double)Long.MAX_VALUE;
-      low += 0.08 * (white - low);
-      double t = i / (double)total;
-      out[i] = (low * 4 + white * 0.2) * Math.exp(-4 * t) * envelope(i, total, 0.01, 0.5);
+  /**
+   * The explosion: noise switched on and off, with the bursts shorter and the
+   * silences longer as it decays, like a beeper cutting in and out.
+   */
+  private static double[] gatedExplosion(long seed, int bursts) {
+    double[] out = new double[0];
+    for(int i = 0; i < bursts; i++) {
+      out = concat(out, noise(seed + i, 0.05 - 0.003 * i));
+      if(i < bursts - 1) {
+        out = concat(out, rest(0.01 + 0.005 * i));
+      }
+    }
+    return out;
+  }
+
+  /** Silence of a length: the gaps between the blips. */
+  private static double[] rest(double seconds) {
+    return new double[sampleCount(seconds)];
+  }
+
+  /**
+   * The hard envelope of the beeper: a ramp of a millisecond or two keeps the DC
+   * click away, but everything between the edges keeps the full one-bit level,
+   * so the blips and the clicks stay sharp.
+   */
+  private static double[] shaped(double[] wave) {
+    int attack = sampleCount(ATTACK_SECONDS);
+    int release = sampleCount(RELEASE_SECONDS);
+    double[] out = wave.clone();
+    for(int i = 0; i < attack && i < out.length; i++) {
+      out[i] *= i / (double)attack;
+    }
+    for(int i = 0; i < release && i < out.length; i++) {
+      out[out.length - 1 - i] *= i / (double)release;
     }
     return out;
   }
 
   private static int sampleCount(double seconds) {
     return Math.max(1, (int)Math.round(SAMPLE_RATE * seconds));
-  }
-
-  /** A linear attack and release over the buffer, as fractions of its length. */
-  private static double envelope(int index, int total, double attack, double release) {
-    double t = index / (double)total;
-    double gain = Math.min(1, t / attack);
-    gain = Math.min(gain, Math.max(0, (1 - t) / release));
-    return Math.max(0, gain);
-  }
-
-  private static double[] gap(double seconds) {
-    return new double[sampleCount(seconds)];
   }
 
   private static double[] concat(double[]... parts) {
@@ -280,23 +307,21 @@ public final class SynthesizedSound implements SoundService {
     return out;
   }
 
-  /**
-   * Scales the waveform to the moderate amplitude of the effects and turns it into
-   * 16-bit signed little-endian samples.
-   */
+  /** The waveform as 16-bit little-endian PCM, through the soft clip of the master level. */
   private static byte[] toPcm(double[] samples) {
-    double peak = 0;
-    for(double sample : samples) {
-      peak = Math.max(peak, Math.abs(sample));
-    }
-    double scale = peak == 0 ? 0 : AMPLITUDE / peak;
     byte[] bytes = new byte[samples.length * 2];
     for(int i = 0; i < samples.length; i++) {
-      double value = Math.max(-1, Math.min(1, samples[i] * scale));
+      double value = softClip(samples[i]);
       int sample = (int)Math.round(value * Short.MAX_VALUE);
       bytes[2 * i] = (byte)(sample & 0xFF);
       bytes[2 * i + 1] = (byte)((sample >> 8) & 0xFF);
     }
     return bytes;
+  }
+
+  /** A cubic soft clip: full at the one-bit edges, gentle with the ramp values. */
+  private static double softClip(double value) {
+    double limited = Math.max(-1, Math.min(1, value));
+    return AMPLITUDE * (1.5 * limited - 0.5 * limited * limited * limited);
   }
 }
