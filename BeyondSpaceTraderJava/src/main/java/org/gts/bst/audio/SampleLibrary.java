@@ -9,17 +9,14 @@
 package org.gts.bst.audio;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Stream;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -27,43 +24,38 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 
 /**
- * The samples of the game, read from the {@code sounds/} folder (see ADR 0007):
- * the first WAV that matches a key, converted to 16-bit 44.1 kHz mono, or
- * silence when nothing matches. A key can have variants (the files ending in
- * {@code -<n>.wav}, as in {@code combat/hit-1.wav}) and one of them is chosen at
+ * The samples of the game, bundled in the jar as classpath resources (see ADR
+ * 0007): {@code /sounds/<key>-<n>.wav}, converted to 16-bit 44.1 kHz mono, or
+ * silence when nothing matches. A key can have several numbered variants
+ * ({@code combat/hit-1.wav}, {@code -2}, ...) and one of them is chosen at
  * random every time the key is asked for.
  *
- * <p>The files are read from disk on the first use and kept in memory; dropping
- * a WAV into {@code sounds/} needs no recompilation, only a restart (or asking
- * for a key that was not cached yet). Everything is optional: a missing key is
- * not an error, it is silence.
+ * <p>The variants are probed on the classpath ({@code -1} first, then {@code -2}
+ * and so on, up to {@link #MAX_VARIANTS}) instead of listing folders, so the
+ * loader also works inside the jar. Everything is optional: a missing key is not
+ * an error, it is silence.
  */
 final class SampleLibrary {
   /** The rate of the canonical format of the mixer. */
   static final float SAMPLE_RATE = 44100f;
+  /** The variants of a key are probed from 1 to this number. */
+  static final int MAX_VARIANTS = 9;
+  /** The classpath folder of the samples, inside the jar. */
+  static final String RESOURCE_ROOT = "/sounds/";
   private static final AudioFormat CANONICAL = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
 
-  private final List<Path> directories;
   private final Map<String, List<float[]>> cache = new HashMap<>();
   private final Set<String> missing = new HashSet<>();
-
-  SampleLibrary(List<Path> directories) {
-    this.directories = List.copyOf(directories);
-  }
-
-  /** The folders next to the working directory, as {@code ShipArtFile} does. */
-  static List<Path> defaultDirectories() {
-    return List.of(Path.of("sounds"), Path.of("../sounds"), Path.of("BeyondSpaceTraderJava/sounds"));
-  }
 
   static AudioFormat canonicalFormat() {
     return CANONICAL;
   }
 
   /**
-   * The samples of a key (one variant at random), or {@code null} when no file
-   * matches: the callers treat null as silence. The variants are loaded once
-   * and the choice is made on every call, so two shots do not sound the same.
+   * The samples of a key (one variant at random), or {@code null} when no
+   * resource matches: the callers treat null as silence. The variants are loaded
+   * once and the choice is made on every call, so two shots do not sound the
+   * same.
    */
   synchronized float[] sample(String key) {
     if(key == null || missing.contains(key)) {
@@ -81,65 +73,30 @@ final class SampleLibrary {
     return variants.get(ThreadLocalRandom.current().nextInt(variants.size()));
   }
 
-  /** True for a file that is the key itself or one of its numbered variants. */
-  static boolean matches(String key, String fileName) {
-    if(!fileName.toLowerCase(Locale.ROOT).endsWith(".wav")) {
-      return false;
-    }
-    String stem = fileName.substring(0, fileName.length() - 4);
-    if(stem.equals(key)) {
-      return true;
-    }
-    String prefix = key + "-";
-    if(!stem.startsWith(prefix)) {
-      return false;
-    }
-    String suffix = stem.substring(prefix.length());
-    return !suffix.isEmpty() && suffix.chars().allMatch(Character::isDigit);
-  }
-
+  /** Probes {@code key-1.wav}, {@code key-2.wav}... while they appear. */
   private List<float[]> load(String key) {
-    List<Path> matches = new ArrayList<>();
-    for(Path directory : directories) {
-      addVariants(directory, key, matches);
-    }
-    List<float[]> variants = new ArrayList<>(matches.size());
-    for(Path file : matches) {
-      float[] samples = read(file);
-      if(samples != null) {
-        variants.add(samples);
+    List<float[]> variants = new ArrayList<>();
+    for(int variant = 1; variant <= MAX_VARIANTS; variant++) {
+      float[] samples = read(RESOURCE_ROOT + key + "-" + variant + ".wav");
+      if(samples == null) {
+        // The variants are numbered without gaps: the first one that is missing
+        // ends the run.
+        break;
       }
+      variants.add(samples);
     }
     return variants;
   }
 
-  private static void addVariants(Path directory, String key, List<Path> matches) {
-    int slash = key.lastIndexOf('/');
-    Path folder = slash < 0 ? directory : directory.resolve(key.substring(0, slash));
-    String base = slash < 0 ? key : key.substring(slash + 1);
-    if(!Files.isDirectory(folder)) {
-      return;
-    }
-    try(Stream<Path> files = Files.list(folder)) {
-      files.filter(Files::isRegularFile)
-          .sorted()
-          .forEach(file -> {
-            Path name = file.getFileName();
-            if(name != null && matches(base, name.toString())) {
-              matches.add(file);
-            }
-          });
-    } catch(IOException e) {
-      warn("cannot list " + folder + " (" + e.getMessage() + ")");
-    }
-  }
-
-  /** Reads a WAV and converts it to the canonical format; null when it cannot. */
-  private static float[] read(Path file) {
-    try {
-      AudioInputStream source = AudioSystem.getAudioInputStream(file.toFile());
-      try(AudioInputStream pcm = source.getFormat().matches(CANONICAL)
-          ? source : AudioSystem.getAudioInputStream(CANONICAL, source)) {
+  /** Reads a WAV resource and converts it to the canonical format; null when missing or broken. */
+  private static float[] read(String resource) {
+    try(InputStream stream = SampleLibrary.class.getResourceAsStream(resource)) {
+      if(stream == null) {
+        return null;
+      }
+      try(AudioInputStream fileIn = AudioSystem.getAudioInputStream(stream)) {
+        AudioInputStream pcm = fileIn.getFormat().matches(CANONICAL)
+            ? fileIn : AudioSystem.getAudioInputStream(CANONICAL, fileIn);
         byte[] bytes = pcm.readAllBytes();
         float[] samples = new float[bytes.length / 2];
         for(int i = 0; i < samples.length; i++) {
@@ -149,7 +106,7 @@ final class SampleLibrary {
         return samples;
       }
     } catch(UnsupportedAudioFileException | IOException | IllegalArgumentException e) {
-      warn("cannot load " + file + " (" + e.getMessage() + ")");
+      warn("cannot load " + resource + " (" + e.getMessage() + ")");
       return null;
     }
   }

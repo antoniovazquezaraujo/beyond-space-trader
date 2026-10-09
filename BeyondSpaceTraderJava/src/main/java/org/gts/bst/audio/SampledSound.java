@@ -69,12 +69,12 @@ public final class SampledSound implements SoundService {
   public static SoundService create(BooleanSupplier enabled) {
     return create(enabled,
         format -> (SourceDataLine)AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format)),
-        new SampleLibrary(SampleLibrary.defaultDirectories()));
+        new SampleLibrary());
   }
 
   /** The same, with the line source injected: the tests exercise the fallback. */
   static SoundService create(BooleanSupplier enabled, LineOpener opener) {
-    return create(enabled, opener, new SampleLibrary(SampleLibrary.defaultDirectories()));
+    return create(enabled, opener, new SampleLibrary());
   }
 
   /** The same, with the line and the sample folders injected (tests). */
