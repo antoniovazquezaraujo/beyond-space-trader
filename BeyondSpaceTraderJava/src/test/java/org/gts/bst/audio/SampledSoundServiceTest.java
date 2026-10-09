@@ -12,43 +12,31 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.lang.reflect.Proxy;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ports.SoundService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 
 /**
  * The playback side of {@link SampledSound}, without a device: the factory
  * fallback and the mute gate are exercised over a recording line, never over a
- * real audio line (the suite runs headless).
+ * real audio line (the suite runs headless). The sample is the fixture
+ * {@code src/test/resources/sounds/combat/laser-pulse-1.wav}.
  */
 class SampledSoundServiceTest {
   private static final long WAIT_MILLIS = 5000;
 
   @Test
-  void theFactoryFallsBackWithoutALineAndPlaysThroughTheInjectedOne(@TempDir Path dir)
-      throws IOException, InterruptedException {
-    Path file = dir.resolve("combat/laser-pulse.wav");
-    Files.createDirectories(file.getParent());
-    writeWav(file, 0.5f, 4410);
-    SampleLibrary library = new SampleLibrary(List.of(dir));
+  void theFactoryFallsBackWithoutALineAndPlaysThroughTheInjectedOne() throws InterruptedException {
+    SampleLibrary library = new SampleLibrary();
 
     assertSame(SoundService.NONE, SampledSound.create(() -> true, format -> {
       throw new LineUnavailableException("the device is busy");
@@ -57,7 +45,7 @@ class SampledSoundServiceTest {
       throw new IllegalArgumentException("no line matches the format");
     }, library), "IllegalArgumentException falls back to silence");
 
-    // The laser sample reaches the line as sound.
+    // The laser fixture reaches the line as sound.
     RecordingLine line = new RecordingLine();
     SoundService sound = SampledSound.create(() -> true, line::open, library);
     sound.play(SoundEffect.LASER);
@@ -73,19 +61,6 @@ class SampledSoundServiceTest {
     enabled[0] = true;
     gated.play(SoundEffect.LASER);
     assertTrue(muted.sounded.await(WAIT_MILLIS, TimeUnit.MILLISECONDS), "and it sounds again when enabled");
-  }
-
-  private static void writeWav(Path file, float value, int samples) throws IOException {
-    byte[] bytes = new byte[samples * 2];
-    int sample = Math.round(value * Short.MAX_VALUE);
-    for(int i = 0; i < samples; i++) {
-      bytes[2 * i] = (byte)(sample & 0xFF);
-      bytes[2 * i + 1] = (byte)((sample >> 8) & 0xFF);
-    }
-    try(AudioInputStream in = new AudioInputStream(new ByteArrayInputStream(bytes),
-        SampleLibrary.canonicalFormat(), samples)) {
-      AudioSystem.write(in, AudioFileFormat.Type.WAVE, file.toFile());
-    }
   }
 
   private static boolean hasSound(byte[] block) {
