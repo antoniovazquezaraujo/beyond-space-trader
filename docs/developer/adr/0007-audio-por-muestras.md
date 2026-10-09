@@ -51,13 +51,27 @@ dispositivo y el mute del jugador. Lo que cambia es de dónde sale el sonido.
    pedir la misma clave no hace nada, y el cambio hace crossfade. El motor de
    muestras mapea las claves de la fase A (`SoundEffect` → `ui/...`, `alerts/...`,
    `combat/...`, `travel/...`) y el cableado existente no cambia.
-5. **Autoría y empaquetado**: `tools/convert-sounds.sh` prepara una descarga
+5. **Fase B: motores, cañones y música.** La escena de encuentros engancha el
+   ciclo de vida de los bucles: el motor de cada nave es **constante** mientras
+   está en escena y arranca con su animación de entrada (~0,3 s de fade); una
+   nave parada, rendida o inutilizada pero presente lo mantiene; al destruirse
+   se funde en ~0,15 s con la explosión; al marcharse (huir, escapar, cruzar y
+   salir) se funde en ~0,4 s mientras se aleja; al cerrar la escena, motores y
+   música hacen un fade rápido (~0,12 s). El sample del motor cae del tipo a la
+   talla (`ships/tiny|small|medium|large|huge|gargantuan`) y de ahí a
+   `ships/default`; si no hay ninguno, silencio. El disparo suena con el **arma
+   más potente a bordo** de quien dispara (Morgan's > Military > Beam > Pulse >
+   Quantum > Photon). La música se **re-evalúa en cada parte** según la tensión
+   (piratas, policía y cazas de misión → `TENSE`; comerciantes y encuentros
+   raros → `CALM`), con crossfade cuando cambia y `NONE` al cerrar; huir con
+   éxito usa `travel/escape` (el salto del mapa conserva `travel/warp`).
+6. **Autoría y empaquetado**: `tools/convert-sounds.sh` prepara una descarga
    (recorta silencios, aplica fades, normaliza y convierte con `ffmpeg`) y la
    escribe en los resources del módulo; el jar la lleva tal cual, igual que los
    zips de release y el snap (que conserva el plug `audio-playback` y
    `libasound2`). Las claves y la licencia de cada WAV se anotan en
    `docs/developer/sounds.md`.
-6. **`SynthesizedSound` se elimina** con sus tests; el patrón de fábrica y el
+7. **`SynthesizedSound` se elimina** con sus tests; el patrón de fábrica y el
    seam de `LineOpener` se mantienen en el motor de muestras.
 
 ## Consecuencias
@@ -67,9 +81,9 @@ dispositivo y el mute del jugador. Lo que cambia es de dónde sale el sonido.
   ficheros, y cambiar un sonido pide recompilar el paquete.
 - Todo es opcional: sin ficheros el juego arranca en silencio y ningún test
   abre un dispositivo (el `LineOpener` inyectable cubre el fallback y el mute).
-- La fase B (motores por nave, cañones por tipo, música por tensión) ya tiene su
-  sitio: los métodos del puerto, las claves documentadas y los canales del
-  mezclador están listos, pero **no se cablean todavía**.
+- La fase B (motores por nave, cañones por la mejor arma a bordo y música por
+  tensión) queda cableada en la escena de encuentros; los volúmenes por canal
+  siguen pendientes de exponerse en el panel de opciones.
 - El jar crece con los WAV del autor; el paquete `jlink` no cambia (`javax.sound`
   ya viajaba en `java.desktop`) y el snap tampoco (el jar lo lleva dentro).
 

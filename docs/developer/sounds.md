@@ -41,14 +41,49 @@ identical. The numbered variants must have no gaps, and the plain
 | `combat/hit` | A shot landing on a ship |
 | `combat/explosion` | A ship being destroyed |
 | `travel/warp` | Warping to another system |
-| `travel/escape` | Getting away from an encounter (reserved for phase B) |
+| `travel/escape` | Getting away from an encounter |
 | `ships/<shiptype>` | The engine loop of a ship (`ships/flea`, `ships/gnat`...), a loop |
 | `ambient/<screen>` | The ambience of a screen, a loop: `ambient/title`, `ambient/navigation`, `ambient/trade`, `ambient/bank`, `ambient/quests`, `ambient/personnel`, `ambient/commander`, `ambient/ship`, `ambient/shiplist`, `ambient/equipment`, `ambient/options`, `ambient/highscores`, `ambient/designer`, `ambient/news`, `ambient/about`, `ambient/menu` |
-| `music/calm`, `music/tense` | The music moods (reserved for phase B), loops |
+| `music/calm`, `music/tense` | The music mood of the encounter, a loop |
 
 The ship types are the names of `ShipType` in lowercase (`flea`, `gnat`,
 `firefly`, `mosquito`, `bumblebee`, `beetle`, `hornet`, `grasshopper`,
 `termite`, `wasp`, `dragonfly`, `mantis`, `scarab`, `scorpion`, ...).
+
+## Engines, shots and music (phase B)
+
+The encounter scene drives the loops with the life of the ships: the engine is
+**constant** while the ship is in the scene (it does not follow the manoeuvres).
+
+| Moment | What sounds |
+| --- | --- |
+| The ship enters the scene | Its engine loop starts with a ~0.3 s fade in |
+| The ship is stopped, surrendered or disabled (but present) | The engine goes on: the ship is still there |
+| The ship is destroyed | Its engine fades out in ~0.15 s, mixed with `combat/explosion` |
+| The ship marches out (flees, escapes, crosses and leaves) | Its engine fades out in ~0.4 s while it goes |
+| The scene closes | Both engines fade fast (~0.12 s) and the music goes away |
+
+The engine sample falls back from the ship type to its size and then to the
+shared default: `ships/<shiptype>` → `ships/tiny`, `ships/small`,
+`ships/medium`, `ships/large`, `ships/huge` or `ships/gargantuan` (the sizes of
+`Consts.ShipSpecs`) → `ships/default` → silence.
+
+A shot plays the **strongest weapon on board** of the ship that fires (Morgan's >
+Military > Beam > Pulse > Quantum > Photon): `combat/laser-morgan`,
+`combat/laser-military`, `combat/laser-beam`, `combat/laser-pulse`,
+`combat/laser-quantum` or `combat/laser-photon`.
+
+The music follows the tension, re-evaluated on every part of the encounter:
+
+| Mood | Encounters | Key |
+| --- | --- | --- |
+| Tense | Pirates, police and the mission hunters (Dragonfly, Scarab, Scorpion, space monster, famous captains attacking); a trader that turns violent | `music/tense` |
+| Calm | Traders (buy, sell, ignore, flee) and the rare encounters (captains, bottles, Marie Celeste, the ignoring mission ships) | `music/calm` |
+
+When the situation changes (the trader attacks, the police shows up) the music
+crossfades to the mood that plays; when the scene closes it fades to nothing.
+Getting away from an encounter plays `travel/escape` (the map warp keeps
+`travel/warp`).
 
 ## Adding a sound
 
