@@ -133,6 +133,14 @@
                   <fileset dir="${maven.multiModuleProjectDirectory}/ships"/>
                 </copy>
 
+                <!-- The WAV samples travel too (all of them optional): the engine
+                     reads sounds/ from the working directory on startup. -->
+                <copy todir="${bst.output}/sounds">
+                  <fileset dir="${maven.multiModuleProjectDirectory}/sounds">
+                    <exclude name="raw/**"/>
+                  </fileset>
+                </copy>
+
                 <!-- The GPL requires shipping the license (and the provenance
                      notice) with the binaries. -->
                 <copy file="${maven.multiModuleProjectDirectory}/LICENSE" tofile="${bst.output}/LICENSE"/>
