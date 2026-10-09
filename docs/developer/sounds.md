@@ -118,7 +118,9 @@ tools/convert-sounds.sh --loop ~/Downloads/calm.ogg music/calm 1
 ```
 
 `--seconds N` keeps only the first `N` seconds of the source (optional; without
-it the whole file goes in). The loop keys are `ships/<shiptype>` (engines),
+it the whole file goes in). The cut lands at an arbitrary point, so it can
+break the seam even with no fades: use it to shorten a longer source and always
+check the seam afterwards. The loop keys are `ships/<shiptype>` (engines),
 `ambient/<screen>` and `music/calm`, `music/tense`.
 
 - **Engines**: aim for **2 to 4 seconds**. Short enough to keep the jar small,
