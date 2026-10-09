@@ -4,7 +4,6 @@ import org.gts.bst.ports.GameWindow;
 import org.gts.bst.cargo.TradeItem;
 import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
-import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
 import org.gts.bst.events.NewsEvent;
 import org.gts.bst.events.SpecialEventType;
@@ -12,7 +11,6 @@ import org.gts.bst.events.VeryRareEncounter;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.ship.equip.GadgetType;
-import org.gts.bst.ship.equip.WeaponType;
 import org.gts.bst.ports.DialogService;
 import org.gts.bst.ports.EncounterDialogHost;
 import spacetrader.enums.AlertType;
@@ -24,7 +22,7 @@ import java.util.ArrayList;
 import spacetrader.util.Hashtable;
 import spacetrader.util.Util;
 
-public final class Game extends STSerializableObject implements QuestStates {
+public final class Game extends STSerializableObject implements QuestStates, EncounterContext {
   private static Game game;
   private Commander cmdr;
   // Game Data
@@ -35,12 +33,11 @@ public final class Game extends STSerializableObject implements QuestStates {
   private Ship _scorpion = new Ship(ShipType.Scorpion);
   private Ship _spaceMonster = new Ship(ShipType.SpaceMonster);
   private int _chanceOfTradeInOrbit = 100;
-  private int _clicks = 0; // Distance from target system, 0 = arrived
   private boolean _tribbleMessage = false; // Is true if the Ship Yard on the current system informed you about the tribbles
-  private boolean _arrivedViaWormhole = false; // flag to indicate whether player arrived on current planet via wormhole
   private final Newspaper _newspaper = new Newspaper();
   private final Market _market = new Market();
   private final Quests _quests;
+  private final Voyage _voyage;
   // Current Selections
   private Difficulty _difficulty = Difficulty.Normal; // Difficulty level
   private boolean _cheatEnabled = false;
@@ -72,6 +69,8 @@ public final class Game extends STSerializableObject implements QuestStates {
     NewGameSetup.GenerateCrewMemberList(Mercenaries(), _universe.systems().length, _difficulty);
     NewGameSetup.CreateShips(Dragonfly(), _scarab, _scorpion, _spaceMonster, Mercenaries());
     _quests = new Quests(cmdr, _universe, _market, _newspaper, _mercenaries, _spaceMonster, _difficulty, _dialogs, questConsequences());
+    _voyage = new Voyage(cmdr, _universe, _market, _newspaper, _quests, encounter(), this, _difficulty, _parentWin, _dialogs,
+        voyageNavigation(), departureCosts(), this::IncDays, voyageConsequences());
     CalculatePrices(cmdr.CurrentSystem());
     Game.this.ResetVeryRareEncounters();
     if(_difficulty.CastToInt() < Difficulty.Normal.CastToInt()) {
@@ -98,11 +97,9 @@ public final class Game extends STSerializableObject implements QuestStates {
     _spaceMonster = new Ship(GetValueFromHash(hash, "_spaceMonster", _spaceMonster.Serialize(), Hashtable.class));
     encounter().setOpponent(new Ship(GetValueFromHash(hash, "_opponent", encounter().getOpponent().Serialize(), Hashtable.class)));
     _chanceOfTradeInOrbit = GetValueFromHash(hash, "_chanceOfTradeInOrbit", _chanceOfTradeInOrbit);
-    _clicks = GetValueFromHash(hash, "_clicks", _clicks);
     encounter().setRaided(GetValueFromHash(hash, "_raided", encounter().getRaided()));
     encounter().setInspected(GetValueFromHash(hash, "_inspected", encounter().getInspected()));
     _tribbleMessage = GetValueFromHash(hash, "_tribbleMessage", _tribbleMessage);
-    _arrivedViaWormhole = GetValueFromHash(hash, "_arrivedViaWormhole", _arrivedViaWormhole);
     _newspaper.loadFrom(hash);
     encounter().setLitterWarning(GetValueFromHash(hash, "_litterWarning", encounter().getLitterWarning()));
     _difficulty = Difficulty.FromInt(GetValueFromHash(hash, "_difficulty", _difficulty, Integer.class));
@@ -118,6 +115,9 @@ public final class Game extends STSerializableObject implements QuestStates {
     _market.loadFrom(hash);
     _quests = new Quests(cmdr, _universe, _market, _newspaper, _mercenaries, _spaceMonster, _difficulty, _dialogs, questConsequences());
     _quests.loadFrom(hash);
+    _voyage = new Voyage(cmdr, _universe, _market, _newspaper, _quests, encounter(), this, _difficulty, _parentWin, _dialogs,
+        voyageNavigation(), departureCosts(), this::IncDays, voyageConsequences());
+    _voyage.loadFrom(hash);
     encounter().setJustLootedMarie(GetValueFromHash(hash, "_justLootedMarie", encounter().getJustLootedMarie()));
     _chanceOfVeryRareEncounter = GetValueFromHash(hash, "_chanceOfVeryRareEncounter", _chanceOfVeryRareEncounter);
     Integer[] veryRareIds = GetValueFromHash(hash, "_veryRareEncounters", new Integer[0]);
@@ -141,11 +141,10 @@ public final class Game extends STSerializableObject implements QuestStates {
     ht.add("_spaceMonster", _spaceMonster.Serialize());
     ht.add("_opponent", encounter().getOpponent().Serialize());
     ht.add("_chanceOfTradeInOrbit", _chanceOfTradeInOrbit);
-    ht.add("_clicks", _clicks);
+    _voyage.saveTo(ht);
     ht.add("_raided", encounter().getRaided());
     ht.add("_inspected", encounter().getInspected());
     ht.add("_tribbleMessage", _tribbleMessage);
-    ht.add("_arrivedViaWormhole", _arrivedViaWormhole);
     _newspaper.saveTo(ht);
     ht.add("_litterWarning", encounter().getLitterWarning());
     ht.add("_difficulty", _difficulty.CastToInt());
@@ -230,6 +229,69 @@ public final class Game extends STSerializableObject implements QuestStates {
     };
   }
 
+  /** The navigation the voyage uses, bound to the game's warp selection. */
+  private Voyage.Navigation voyageNavigation() {
+    return new Voyage.Navigation() {
+      @Override
+      public StarSystem warpSystem() {
+        return WarpSystem();
+      }
+
+      @Override
+      public void selectSystemForRip(StarSystemId systemId) {
+        SelectedSystemId(systemId);
+      }
+    };
+  }
+
+  /** The departure costs the voyage charges, owned by the game's accounting. */
+  private Voyage.DepartureCosts departureCosts() {
+    return new Voyage.DepartureCosts() {
+      @Override
+      public int mercenaryCosts() {
+        return MercenaryCosts();
+      }
+
+      @Override
+      public int insuranceCosts() {
+        return InsuranceCosts();
+      }
+
+      @Override
+      public int wormholeCosts() {
+        return WormholeCosts();
+      }
+    };
+  }
+
+  /**
+   * The consequences of the trip that only the game can run. {@code destroyed()}
+   * throws the end-of-game exception in the middle of the trip, as it always did.
+   */
+  private Voyage.Consequences voyageConsequences() {
+    return new Voyage.Consequences() {
+      @Override
+      public void arrested() {
+        Arrested();
+      }
+
+      @Override
+      public void escapeWithPod() {
+        EscapeWithPod();
+      }
+
+      @Override
+      public void destroyed() {
+        throw new GameEndException(Game.this, GameEndType.Killed);
+      }
+
+      @Override
+      public void arrival() {
+        Arrival();
+      }
+    };
+  }
+
   private void CalculatePrices(StarSystem system) {
     _market.calculate(system, cmdr.getPoliceRecordScore(), cmdr.getShip().Trader());
   }
@@ -239,14 +301,6 @@ public final class Game extends STSerializableObject implements QuestStates {
 
 
 
-
-  // Ref #229: the departure costs and days stay in Game, with the travel loop.
-  private void NormalDeparture(int fuel) {
-    cmdr.setCash(cmdr.getCash() - (MercenaryCosts() + InsuranceCosts() + WormholeCosts()));
-    cmdr.getShip().setFuel(cmdr.getShip().getFuel() - fuel);
-    cmdr.PayInterest();
-    IncDays(1);
-  }
 
   public ArrayList<Integer> NewsEvents() {
     return _newspaper.events();
@@ -353,7 +407,7 @@ public final class Game extends STSerializableObject implements QuestStates {
 
 
   public boolean getArrivedViaWormhole() {
-    return _arrivedViaWormhole;
+    return _voyage.getArrivedViaWormhole();
   }
 
   public boolean getAutoSave() {
@@ -398,45 +452,14 @@ public final class Game extends STSerializableObject implements QuestStates {
     return _targetWormhole;
   }
 
+  /** Runs the trip of the voyage component; true when an encounter occurred. */
   public boolean Travel() {
-    // Returns true if an encounter occurred.
-    // if timespace is ripped, we may switch the warp system here.
-    if(getQuestStatusExperiment() == SpecialEvent.StatusExperimentPerformed && getFabricRipProbability() > 0
-        && (getFabricRipProbability() == Consts.FabricRipInitialProbability || Functions.GetRandom(100) < getFabricRipProbability())) {
-      Dialogs().alert(AlertType.SpecialTimespaceFabricRip);
-      SelectedSystemId(StarSystemId.FromInt(Functions.GetRandom(_universe.systems().length)));
-    }
-    boolean uneventful = true;
-    encounter().setRaided(false);
-    encounter().setInspected(false);
-    encounter().setLitterWarning(false);
-    setClicks(Consts.StartClicks);
-    while(getClicks() > 0) {
-      cmdr.getShip().PerformRepairs();
-      if(new EncounterGenerator(this).determine()) {
-        uneventful = false;
-        EncounterResult result = getParentWindow().showEncounter();
-        getParentWindow().UpdateStatusBar();
-        switch(result) {
-          case Arrested:
-            setClicks(0);
-            Arrested();
-            break;
-          case EscapePod:
-            setClicks(0);
-            EscapeWithPod();
-            break;
-          case Killed:
-            throw new GameEndException(this, GameEndType.Killed);
-        }
-      }
-      setClicks(getClicks() - 1);
-    }
-    return !uneventful;
+    return _voyage.travel();
   }
 
+  /** The countdown the destination starts after a departure. */
   public int CountDownStart() {
-    return _difficulty.CastToInt() + 3;
+    return _voyage.countDownStart();
   }
 
   public int CurrentCosts() {
@@ -453,7 +476,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public int getClicks() {
-    return _clicks;
+    return _voyage.getClicks();
   }
 
   public int getFabricRipProbability() {
@@ -798,47 +821,13 @@ public final class Game extends STSerializableObject implements QuestStates {
     }
   }
 
+  /** Warps to the selected system through the voyage component. */
   public void Warp(boolean viaSingularity) {
-    if(cmdr.getDebt() > Consts.DebtTooLarge) {
-      Dialogs().alert(AlertType.DebtTooLargeGrounded);
-    } else if(cmdr.getCash() < MercenaryCosts()) {
-      Dialogs().alert(AlertType.LeavingIFMercenaries);
-    } else if(cmdr.getCash() < MercenaryCosts() + InsuranceCosts()) {
-      Dialogs().alert(AlertType.LeavingIFInsurance);
-    } else if(cmdr.getCash() < MercenaryCosts() + InsuranceCosts() + WormholeCosts()) {
-      Dialogs().alert(AlertType.LeavingIFWormholeTax);
-    } else {
-      boolean wildOk = true;
-      // if Wild is aboard, make sure ship is armed!
-      if(cmdr.getShip().WildOnBoard() && !cmdr.getShip().HasWeapon(WeaponType.BeamLaser, false)) {
-        if(Dialogs().alert(AlertType.WildWontStayAboardLaser, cmdr.CurrentSystem().Name()) == DialogResult.Cancel) {
-          wildOk = false;
-        } else {
-          Dialogs().alert(AlertType.WildLeavesShip, cmdr.CurrentSystem().Name());
-          setQuestStatusWild(SpecialEvent.StatusWildNotStarted);
-        }
-      }
-      if(wildOk) {
-        setArrivedViaWormhole(Functions.WormholeExists(cmdr.CurrentSystem(), WarpSystem()));
-        if(viaSingularity) {
-          NewsAddEvent(NewsEvent.ExperimentArrival);
-        } else {
-          NormalDeparture(viaSingularity || getArrivedViaWormhole() ? 0 : Functions.Distance(cmdr.CurrentSystem(), WarpSystem()));
-        }
-        cmdr.CurrentSystem().CountDown(CountDownStart());
-        NewsResetEvents();
-        CalculatePrices(WarpSystem());
-        // Clicks will be -1 if we were arrested or used the escape pod.
-        if(!Travel()) {
-          Dialogs().alert(AlertType.TravelUneventfulTrip);
-        }
-        Arrival();
-      }
-    }
+    _voyage.warp(viaSingularity);
   }
 
   public void setArrivedViaWormhole(boolean arrivedViaWormhole) {
-    _arrivedViaWormhole = arrivedViaWormhole;
+    _voyage.setArrivedViaWormhole(arrivedViaWormhole);
   }
 
   public void setAutoSave(boolean autoSave) {
@@ -850,7 +839,7 @@ public final class Game extends STSerializableObject implements QuestStates {
   }
 
   public void setClicks(int clicks) {
-    _clicks = clicks;
+    _voyage.setClicks(clicks);
   }
 
 
