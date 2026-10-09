@@ -8,6 +8,7 @@
  */
 package org.gts.bst.audio;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -90,21 +91,24 @@ final class SampleLibrary {
 
   /** Reads a WAV resource and converts it to the canonical format; null when missing or broken. */
   private static float[] read(String resource) {
-    try(InputStream stream = SampleLibrary.class.getResourceAsStream(resource)) {
-      if(stream == null) {
-        return null;
+    InputStream raw = SampleLibrary.class.getResourceAsStream(resource);
+    if(raw == null) {
+      return null;
+    }
+    // Inside the jar the resource stream (JarURLInputStream) does not support
+    // mark/reset and the audio system needs it; on a directory classpath the
+    // stream is already buffered. Wrap it when needed, keeping the close order.
+    try(InputStream stream = raw.markSupported() ? raw : new BufferedInputStream(raw);
+        AudioInputStream fileIn = AudioSystem.getAudioInputStream(stream)) {
+      AudioInputStream pcm = fileIn.getFormat().matches(CANONICAL)
+          ? fileIn : AudioSystem.getAudioInputStream(CANONICAL, fileIn);
+      byte[] bytes = pcm.readAllBytes();
+      float[] samples = new float[bytes.length / 2];
+      for(int i = 0; i < samples.length; i++) {
+        short value = (short)((bytes[2 * i] & 0xFF) | (bytes[2 * i + 1] << 8));
+        samples[i] = value / 32768f;
       }
-      try(AudioInputStream fileIn = AudioSystem.getAudioInputStream(stream)) {
-        AudioInputStream pcm = fileIn.getFormat().matches(CANONICAL)
-            ? fileIn : AudioSystem.getAudioInputStream(CANONICAL, fileIn);
-        byte[] bytes = pcm.readAllBytes();
-        float[] samples = new float[bytes.length / 2];
-        for(int i = 0; i < samples.length; i++) {
-          short value = (short)((bytes[2 * i] & 0xFF) | (bytes[2 * i + 1] << 8));
-          samples[i] = value / 32768f;
-        }
-        return samples;
-      }
+      return samples;
     } catch(UnsupportedAudioFileException | IOException | IllegalArgumentException e) {
       warn("cannot load " + resource + " (" + e.getMessage() + ")");
       return null;
