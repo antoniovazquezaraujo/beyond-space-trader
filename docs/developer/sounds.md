@@ -104,6 +104,43 @@ The script needs `ffmpeg` and leaves the raw download where it is: nothing raw
 is kept in the repository. After converting, rebuild the package
 (`mvn clean package -DskipTests`) so the jar carries the new WAV.
 
+## Loops (engines, ambience and music)
+
+The **loop** keys need a different treatment: the one-shot conversion trims the
+silence and fades the edges, which would cut the tail of the loop and click on
+every repetition. Use `--loop`, which only converts the format and normalizes
+with a linear gain (the start and the end keep the same level):
+
+```bash
+tools/convert-sounds.sh --loop --seconds 3 ~/Downloads/engine.flac ships/gnat
+tools/convert-sounds.sh --loop ~/Downloads/trade-ambience.ogg ambient/trade 1
+tools/convert-sounds.sh --loop ~/Downloads/calm.ogg music/calm 1
+```
+
+`--seconds N` keeps only the first `N` seconds of the source (optional; without
+it the whole file goes in). The loop keys are `ships/<shiptype>` (engines),
+`ambient/<screen>` and `music/calm`, `music/tense`.
+
+- **Engines**: aim for **2 to 4 seconds**. Short enough to keep the jar small,
+  long enough that the repetition does not feel like a stutter. Look for
+  sources marked *loop* or *seamless* (an engine hum recorded in a loop).
+- **Ambience and music**: they can be longer (tens of seconds); the same rules
+  apply: no fades and a seam that matches.
+- **Check the seam by ear**: play the converted WAV in a loop (`ffplay -loop 0
+  file.wav`, or any player with repeat) and listen for a click or a gap where
+  the end meets the start. If it clicks, try a better source or trim it at a
+  zero crossing with a wave editor; the converter cannot fix a bad seam.
+
+The engine sample falls back in this order, so a missing type borrows from its
+size and then from the shared default (silence when none exists):
+
+| Order | Key |
+| --- | --- |
+| 1 | `ships/<shiptype>` (`ships/gnat`, `ships/flea`, ...) |
+| 2 | `ships/tiny`, `ships/small`, `ships/medium`, `ships/large`, `ships/huge`, `ships/gargantuan` (the size of `Consts.ShipSpecs`) |
+| 3 | `ships/default` |
+| 4 | silence |
+
 ## Credits and licences
 
 Fill a row for every WAV you add: **audio files are usually not free**, and the
