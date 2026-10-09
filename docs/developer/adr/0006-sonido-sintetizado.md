@@ -1,6 +1,6 @@
 # ADR 0006 — Efectos de sonido sintetizados: el puerto `SoundService`
 
-- **Estado**: aceptado
+- **Estado**: sustituido por [ADR 0007](0007-audio-por-muestras.md)
 - **Fecha**: 2026-10-09
 - **Referencias**: ADR 0005 (`0005-puertos-del-modelo.md`),
   `org/gts/bst/ports/SoundService.java`, `org/gts/bst/ports/SoundEffect.java`,
