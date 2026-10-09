@@ -56,13 +56,14 @@ class SampleMixerTest {
     mixer.render(first, first.length);
     assertEquals(0.55f, first[40000], 1e-3f, "the first ambience is fully on");
 
-    // The new loop fades in while the old one fades out (0.25 s): midday both
-    // are at half gain, so the opposites cancel; at the end only the new one is.
+    // The new loop fades in while the old one fades out (0.3 s): at half of the
+    // fade both are at half gain, so the opposites cancel; at the end only the
+    // new one is left.
     mixer.startAmbience(constant(-1f, 2 * 44100));
     float[] change = new float[44100];
     mixer.render(change, change.length);
     assertEquals(0.55f, change[0], 0.02f, "the old ambience still sounds at the start");
-    assertEquals(0f, change[5512], 0.02f, "the crossfade crosses at half");
+    assertEquals(0f, change[6615], 0.02f, "the crossfade crosses at half");
     assertEquals(-0.55f, change[40000], 1e-3f, "and the new one is alone at the end");
   }
 

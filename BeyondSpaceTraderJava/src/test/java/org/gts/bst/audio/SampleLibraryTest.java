@@ -14,7 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import org.gts.bst.ship.ShipType;
 import org.junit.jupiter.api.Test;
 
 
@@ -62,5 +64,27 @@ class SampleLibraryTest {
       peak = Math.max(peak, Math.abs(value));
     }
     assertEquals(0.5f, peak, WAV_TOLERANCE, "the values survive the conversion");
+  }
+
+  @Test
+  void theEngineFallbackGoesFromTypeToSizeToDefault() {
+    SampleLibrary library = new SampleLibrary();
+
+    // Gnat (small): its own type sample exists and wins.
+    List<String> gnat = SampledSound.engineKeys(ShipType.Gnat);
+    assertEquals(List.of("ships/gnat", "ships/small", "ships/default"), gnat);
+    assertNotNull(library.sample(gnat.get(0)), "the type sample wins when it exists");
+
+    // Bumblebee (medium) has no type fixture: the size one answers.
+    List<String> bumblebee = SampledSound.engineKeys(ShipType.Bumblebee);
+    assertEquals("ships/bumblebee", bumblebee.get(0));
+    assertNull(library.sample(bumblebee.get(0)), "no sample of the type");
+    assertNotNull(library.sample(bumblebee.get(1)), "the size sample answers");
+
+    // Scorpion (large) has neither: the shared default closes the chain.
+    List<String> scorpion = SampledSound.engineKeys(ShipType.Scorpion);
+    assertNull(library.sample(scorpion.get(0)));
+    assertNull(library.sample(scorpion.get(1)));
+    assertNotNull(library.sample(scorpion.get(2)), "the default sample answers last");
   }
 }

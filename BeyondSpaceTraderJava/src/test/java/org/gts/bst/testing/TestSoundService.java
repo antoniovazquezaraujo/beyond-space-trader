@@ -23,10 +23,16 @@ import org.gts.bst.ship.equip.WeaponType;
  * what would have sounded without opening any audio device.
  */
 public final class TestSoundService implements SoundService {
+  /** A ship engine starting: its type and the side. */
+  public record Engine(ShipType type, boolean player) {
+  }
+
   private final List<SoundEffect> effects = new ArrayList<>();
   private final List<AmbienceKey> ambiences = new ArrayList<>();
   private final List<WeaponType> weapons = new ArrayList<>();
   private final List<MusicTheme> music = new ArrayList<>();
+  private final List<Engine> engines = new ArrayList<>();
+  private final List<Boolean> engineStops = new ArrayList<>();
 
   @Override
   public void play(SoundEffect effect) {
@@ -68,6 +74,16 @@ public final class TestSoundService implements SoundService {
     return music;
   }
 
+  /** The engines started so far, in order. */
+  public List<Engine> engines() {
+    return engines;
+  }
+
+  /** The sides whose engines were stopped, in order. */
+  public List<Boolean> engineStops() {
+    return engineStops;
+  }
+
   /** The last ambience asked for, or null when none was. */
   public AmbienceKey lastAmbience() {
     return ambiences.isEmpty() ? null : ambiences.get(ambiences.size() - 1);
@@ -79,14 +95,17 @@ public final class TestSoundService implements SoundService {
     ambiences.clear();
     weapons.clear();
     music.clear();
+    engines.clear();
+    engineStops.clear();
   }
 
-  // The engine loops are not recorded: nothing in phase A asks for them.
   @Override
   public void engine(ShipType type, boolean player) {
+    engines.add(new Engine(type, player));
   }
 
   @Override
   public void engineStop(boolean player) {
+    engineStops.add(player);
   }
 }

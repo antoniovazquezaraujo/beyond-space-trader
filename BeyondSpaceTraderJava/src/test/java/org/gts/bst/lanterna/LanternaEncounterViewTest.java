@@ -39,8 +39,10 @@ import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.Alerts;
 import org.gts.bst.ports.DialogService;
+import org.gts.bst.ports.MusicTheme;
 import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ports.SoundService;
+import org.gts.bst.ship.equip.WeaponType;
 import org.gts.bst.testing.TestSoundService;
 import org.gts.bst.view.EncounterAction;
 import org.gts.bst.view.EncounterViewModel;
@@ -295,7 +297,7 @@ class LanternaEncounterViewTest {
   }
 
   @Test
-  void theEscapePlaysTheWarpSound() throws IOException {
+  void theEscapePlaysItsOwnSound() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
     try {
@@ -305,11 +307,115 @@ class LanternaEncounterViewTest {
 
       view.escaped();
 
-      assertEquals(List.of(SoundEffect.WARP), sound.played(), "getting away plays the warp");
+      assertEquals(List.of(SoundEffect.ESCAPE), sound.played(), "getting away plays the escape sound");
     } finally {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void theSceneStartsAndStopsTheEnginesWithTheirLifecycle() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { }, sound);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+
+      assertEquals(List.of(new TestSoundService.Engine(ShipType.Flea, true),
+          new TestSoundService.Engine(ShipType.Scorpion, false)), sound.engines(),
+          "both engines start with the entry animation");
+
+      // The destroyed rival stops its engine with the explosion.
+      sound.clear();
+      content.model(destroyed(you, opponent, 1));
+      gui.updateScreen();
+      assertEquals(List.of(Boolean.FALSE), sound.engineStops(), "the destroyed ship stops its engine");
+      assertTrue(sound.played().contains(SoundEffect.EXPLOSION), sound.played().toString());
+
+      // The close fades everything: both engines and the music.
+      sound.clear();
+      view.close();
+      assertEquals(List.of(Boolean.TRUE, Boolean.FALSE), sound.engineStops(), "the close stops both engines");
+      assertEquals(List.of(MusicTheme.NONE), sound.musicThemes(), "and the music goes away");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theShotsPlayTheStrongestWeaponOfEachShip() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { }, sound);
+      view.weapons(() -> WeaponType.MorgansLaser, () -> WeaponType.BeamLaser);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      sound.clear();
+
+      // Our shot: the strongest weapon on board.
+      content.model(fight(you, opponent, 1, true, false, false, 0, 0));
+      assertEquals(List.of(WeaponType.MorgansLaser), sound.weapons(), "our shot plays our best weapon");
+
+      // The reply of the rival, a moment later, with its own best weapon.
+      sound.clear();
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      assertEquals(List.of(WeaponType.BeamLaser), sound.weapons(), "the reply plays its best weapon");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theShipThatMarchesOutStopsItsEngine() throws IOException {
+    TestSoundService sound = new TestSoundService();
+    EncounterSceneComponent content = new EncounterSceneComponent(key -> false, sound);
+    ShipPicture you = new ShipCatalog(List.of(),
+        ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+        .picture(ShipType.Flea, List.of(), 0);
+    ShipPicture opponent = new ShipCatalog(List.of(),
+        ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+        .picture(ShipType.Scorpion, List.of(), 0);
+    content.model(fight(you, opponent, 0, false, false, false, 0, 0));
+    sound.clear();
+
+    content.opponentLeaves(true);
+
+    assertEquals(List.of(Boolean.FALSE), sound.engineStops(), "the ship that marches out stops its engine");
   }
 
   @Test
