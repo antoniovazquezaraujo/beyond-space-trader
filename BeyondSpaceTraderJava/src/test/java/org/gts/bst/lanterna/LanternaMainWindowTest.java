@@ -41,6 +41,7 @@ import org.gts.bst.events.EncounterType;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.testing.TestSoundService;
 import org.gts.bst.view.Alerts;
+import org.gts.bst.ports.AmbienceKey;
 import org.gts.bst.ports.DialogResult;
 import org.gts.bst.ports.DialogService;
 import org.gts.bst.ports.GameWindow;
@@ -2317,6 +2318,84 @@ class LanternaMainWindowTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void everyPanelAsksForItsAmbience() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      window.showTitleScreen();
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      assertEquals(AmbienceKey.TITLE, sound.lastAmbience(), "the title screen has its own ambience");
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('x', false, false));
+      assertEquals(AmbienceKey.NAVIGATION, sound.lastAmbience(), "any key enters the navigation");
+
+      // Every panel asks for its key, and closing it comes back to navigation.
+      assertPanelAmbience(window, sound, new KeyStroke('c', false, false), AmbienceKey.TRADE,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('b', false, false), AmbienceKey.BANK,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('q', false, false), AmbienceKey.QUESTS,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('p', false, false), AmbienceKey.PERSONNEL,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('n', false, false), AmbienceKey.NEWS,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('s', false, false), AmbienceKey.SHIPLIST,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('e', false, false), AmbienceKey.EQUIPMENT,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('i', false, false), AmbienceKey.COMMANDER,
+          new KeyStroke(' ', false, false));
+      assertPanelAmbience(window, sound, new KeyStroke('v', false, false), AmbienceKey.SHIP,
+          new KeyStroke(' ', false, false));
+      assertPanelAmbience(window, sound, new KeyStroke('a', false, false), AmbienceKey.ABOUT,
+          new KeyStroke(' ', false, false));
+      assertPanelAmbience(window, sound, new KeyStroke(KeyType.F3), AmbienceKey.HIGHSCORES,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke(KeyType.F8), AmbienceKey.OPTIONS,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke(KeyType.F10), AmbienceKey.MENU,
+          new KeyStroke(KeyType.Escape));
+
+      // The designer needs a shipyard in the current system.
+      StarSystem shipyard = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system.Shipyard() != null) {
+          shipyard = system;
+          break;
+        }
+      }
+      assertNotNull(shipyard, "the universe must have shipyards");
+      holder[0].Commander().CurrentSystem(shipyard);
+      presenter.updateAll();
+      gui.updateScreen();
+      assertPanelAmbience(window, sound, new KeyStroke('d', false, false), AmbienceKey.DESIGNER,
+          new KeyStroke(KeyType.Escape));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** Opens a panel with a key, checks its ambience, and closes it with another. */
+  private static void assertPanelAmbience(LanternaMainWindow window, TestSoundService sound, KeyStroke open,
+      AmbienceKey expected, KeyStroke close) {
+    window.asWindow().getFocusedInteractable().handleInput(open);
+    assertEquals(expected, sound.lastAmbience(), "opening asks for " + expected);
+    window.asWindow().getFocusedInteractable().handleInput(close);
+    assertEquals(AmbienceKey.NAVIGATION, sound.lastAmbience(), "closing comes back to navigation");
   }
 
   @Test
