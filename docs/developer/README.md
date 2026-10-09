@@ -51,6 +51,12 @@ Presentador):
   (`org.gts.bst.ports`); no conoce Lanterna ni las vistas.
 * **La UI vive en `org.gts.bst.*`:** las interfaces de vista y los view models en
   `org.gts.bst.view`; el renderizado Lanterna en `org.gts.bst.lanterna`.
+* **El sonido también es un puerto:** los efectos se piden con
+  `org.gts.bst.ports.SoundService` (`SoundEffect`); el sintetizador
+  `org.gts.bst.audio.SynthesizedSound` los genera en código (sin ficheros) y los
+  reproduce en segundo plano. Sin dispositivo de audio el juego arranca en
+  silencio (`SoundService.NONE`), y el jugador puede apagarlo en `F8` o con
+  `--mute`. Ver [ADR 0006](adr/0006-sonido-sintetizado.md).
 * **Una sola ventana, paneles dentro:** el mapa (carta local/galáctica) es el eje
   de la pantalla y el panel contextual cambia con la actividad (comercio, banco,
   astillero, misiones, periódico, encuentro...).

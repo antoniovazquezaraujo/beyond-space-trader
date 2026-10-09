@@ -11,3 +11,4 @@ cambia, se añade un ADR nuevo que la sustituye y se marca el viejo como
 - [0003 — El encuentro como escena: el juego arbitra, la escena cuenta](0003-el-encuentro-como-escena.md)
 - [0004 — Descomposición de Game: fachada y componentes](0004-descomposicion-de-game.md)
 - [0005 — Los puertos del modelo: `org.gts.bst.ports`](0005-puertos-del-modelo.md)
+- [0006 — Efectos de sonido sintetizados: el puerto `SoundService`](0006-sonido-sintetizado.md)

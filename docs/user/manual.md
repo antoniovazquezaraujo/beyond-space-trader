@@ -66,6 +66,17 @@ bin\beyond-space-trader.bat --lang es           # Windows
 `--lang=es` form. The game uses the system language by default; texts without a
 translation fall back to English.
 
+The sound effects can be turned off for the whole run with `--mute` (or
+`--no-sound`), for a quiet terminal session:
+
+```bash
+./bin/beyond-space-trader.sh --mute             # Linux/macOS
+bin\beyond-space-trader.bat --no-sound          # Windows
+```
+
+Sound effects are on by default; the *Sound effects* option (`F8`) turns them
+off and on inside the game.
+
 ### Other install options
 
 - **Snap Store (Linux):** the game is also published as a snap:
@@ -361,6 +372,7 @@ as defaults and `L` loads them back:
 | Continue attacking fleeing ship | Keeps firing at a ship that flees |
 | Attempt to disable opponents when possible | Uses the shot to disable instead of destroy |
 | Galaxy chart columns per sector | 1, 2 or 3 columns per sector, to fit your font |
+| Sound effects | Plays the synthesised menu, combat and warp sounds; also `--mute` at startup |
 
 The **menu (`F10`)** holds the program actions: high scores (`F3`), options
 (`F8`), save (`F5`), load (`F9`), new game (`F2`), about and quit. `Quit` (and

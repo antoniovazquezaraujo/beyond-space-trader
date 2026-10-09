@@ -13,6 +13,7 @@ Una página con las teclas y los paneles del juego. Los detalles están en el
 | Linux/macOS | `./bin/beyond-space-trader.sh` |
 | Windows | `bin\beyond-space-trader.bat` |
 | En español | añade `--lang es` |
+| Sin sonido | añade `--mute` (o `--no-sound`) |
 | Desde el código | compila con `mvn clean package -DskipTests` y arranca con `./run.sh` |
 
 ## El mapa
@@ -46,7 +47,7 @@ Una página con las teclas y los paneles del juego. Los detalles están en el
 | `D` Diseño de nave | `←`/`→` cambiar · `R` nombre · `C` construir · `V` guardar |
 | `O` Cápsula de escape | 2.000 cr, pide confirmación |
 | `F2` / `F5` / `F9` | Partida nueva / guardar / cargar |
-| `F3` / `F8` / `F10` | Récords / opciones / menú |
+| `F3` / `F8` / `F10` | Récords / opciones (sonido sí/no) / menú |
 | `A` Acerca de | Origen, autores y licencia |
 | Cualquier panel | `Esc` lo cierra (`Espacio` en los de solo lectura) |
 | Listas | `↑`/`↓` y también `n`/`p`, `j`/`k` |
