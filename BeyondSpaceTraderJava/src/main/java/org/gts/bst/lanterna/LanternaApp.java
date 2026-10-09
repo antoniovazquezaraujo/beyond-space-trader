@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import org.gts.bst.audio.SynthesizedSound;
+import org.gts.bst.audio.SampledSound;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.presenter.MainPresenter;
 import org.gts.bst.ports.DialogResult;
@@ -59,11 +59,12 @@ public final class LanternaApp {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
       Game[] game = new Game[1];
-      // The synthesised effects live as long as the program; the sound option
-      // (F8) turns them off and on, and --mute silences the whole run.
+      // The sample engine lives as long as the program; the sound option (F8)
+      // turns it off and on, and --mute silences the whole run. The WAVs come
+      // from the sounds/ folder and every one of them is optional.
       SoundService sound = soundMuted(args)
           ? SoundService.NONE
-          : SynthesizedSound.create(() -> game[0] != null && game[0].Options().getSound());
+          : SampledSound.create(() -> game[0] != null && game[0].Options().getSound());
       LanternaDialogService dialogs = new LanternaDialogService(new LanternaAlertDialogHost(gui, sound));
       LanternaMainWindow window = new LanternaMainWindow(() -> game[0], gui, sound);
       window.setGameActions(

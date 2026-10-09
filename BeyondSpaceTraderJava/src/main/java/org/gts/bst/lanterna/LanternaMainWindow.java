@@ -50,6 +50,7 @@ import org.gts.bst.view.EquipmentViewModel;
 import org.gts.bst.view.HighScoresView;
 import org.gts.bst.view.HighScoresViewModel;
 import org.gts.bst.view.DockViewModel;
+import org.gts.bst.ports.AmbienceKey;
 import org.gts.bst.ports.GameWindow;
 import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ports.SoundService;
@@ -173,6 +174,56 @@ public final class LanternaMainWindow
       presenter.updateAll();
     }
     content.invalidate();
+    updateAmbience();
+  }
+
+  /**
+   * Asks for the ambience of what the screen shows now. The mixer ignores the
+   * keys it is already playing, so this can run after every key; when a panel
+   * opens or closes, the ambience crossfades to the new one.
+   */
+  private void updateAmbience() {
+    if(content.titleScreen()) {
+      sound.ambience(AmbienceKey.TITLE);
+    } else if(content.menuVisible()) {
+      sound.ambience(AmbienceKey.MENU);
+    } else {
+      sound.ambience(panelAmbience(content.panel()));
+    }
+  }
+
+  /** The ambience of a context panel: the navigation one for the map. */
+  static AmbienceKey panelAmbience(MainPanel panel) {
+    switch(panel) {
+      case Trade:
+        return AmbienceKey.TRADE;
+      case Bank:
+        return AmbienceKey.BANK;
+      case Quests:
+        return AmbienceKey.QUESTS;
+      case Personnel:
+        return AmbienceKey.PERSONNEL;
+      case Commander:
+        return AmbienceKey.COMMANDER;
+      case Ship:
+        return AmbienceKey.SHIP;
+      case ShipList:
+        return AmbienceKey.SHIPLIST;
+      case Equipment:
+        return AmbienceKey.EQUIPMENT;
+      case Options:
+        return AmbienceKey.OPTIONS;
+      case HighScores:
+        return AmbienceKey.HIGHSCORES;
+      case Designer:
+        return AmbienceKey.DESIGNER;
+      case News:
+        return AmbienceKey.NEWS;
+      case About:
+        return AmbienceKey.ABOUT;
+      default:
+        return AmbienceKey.NAVIGATION;
+    }
   }
 
   public void log(String message) {
@@ -379,6 +430,13 @@ public final class LanternaMainWindow
   }
 
   private boolean handleKey(KeyStroke key) {
+    boolean handled = handleKeyInternal(key);
+    // The key may have opened or closed a panel: the ambience follows the screen.
+    updateAmbience();
+    return handled;
+  }
+
+  private boolean handleKeyInternal(KeyStroke key) {
     if(content.titleScreen()) {
       // Any key enters the program from the title screen, and the menu keys do their
       // job at once: F2 there starts a game instead of being swallowed.
@@ -1210,6 +1268,7 @@ public final class LanternaMainWindow
   /** Shows the title screen (the splash, or the banner when it does not fit) until a key is pressed. */
   public void showTitleScreen() {
     content.titleScreen(true);
+    updateAmbience();
   }
 
   private void openAbout() {
