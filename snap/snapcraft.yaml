@@ -18,6 +18,9 @@ confinement: strict
 apps:
   beyond-space-trader-tui:
     command: bin/beyond-space-trader-tui
+    plugs:
+      # javax.sound plays the synthesised effects through the host audio server.
+      - audio-playback
 
 parts:
   beyond-space-trader-tui:
@@ -29,6 +32,8 @@ parts:
     stage-packages:
       # stty and the basic file tools used by the launcher.
       - coreutils
+      # ALSA: javax.sound needs it to reach the audio device of the host.
+      - libasound2
     override-build: |
       cd "$CRAFT_PART_SRC"
       export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64

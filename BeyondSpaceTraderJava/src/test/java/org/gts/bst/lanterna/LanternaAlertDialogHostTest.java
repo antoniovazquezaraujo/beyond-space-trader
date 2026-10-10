@@ -23,10 +23,15 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import org.gts.bst.testing.TestSoundService;
 import org.gts.bst.view.AlertButton;
 import org.gts.bst.ports.DialogResult;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.view.LanternaDialogService;
 import org.junit.jupiter.api.Test;
+import spacetrader.enums.AlertType;
 
 
 class LanternaAlertDialogHostTest {
@@ -149,6 +154,65 @@ class LanternaAlertDialogHostTest {
       dialog.handleInput(new KeyStroke(KeyType.Escape));
       worker.join(5000);
       assertEquals(DialogResult.OK, answer[0]);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aMessagePlaysTheAlertAndAQuestionTheWarning() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      LanternaAlertDialogHost host = new LanternaAlertDialogHost(gui, sound);
+
+      // One button: a message to read, an ALERT.
+      Thread message = new Thread(() -> host.show("Title", "Message",
+          List.of(new AlertButton("Ok", DialogResult.OK))));
+      message.setDaemon(true);
+      message.start();
+      Window dialog = waitForDialog(gui);
+      assertEquals(List.of(SoundEffect.ALERT), sound.played(), "a one-button dialog plays the alert");
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      message.join(5000);
+      assertFalse(message.isAlive(), "the message closes with ENTER");
+
+      // Two buttons: a question, a WARNING.
+      sound.clear();
+      Thread question = new Thread(() -> host.show("Title", "Question",
+          List.of(new AlertButton("Yes", DialogResult.Yes), new AlertButton("No", DialogResult.No))));
+      question.setDaemon(true);
+      question.start();
+      Window questionDialog = waitForDialog(gui);
+      assertEquals(List.of(SoundEffect.WARNING), sound.played(), "a two-button dialog plays the warning");
+      questionDialog.handleInput(new KeyStroke(KeyType.Escape));
+      question.join(5000);
+      assertFalse(question.isAlive(), "the question closes with ESCAPE");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theQuietOutcomesGoToTheSinkWithoutSoundOrDialog() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      LanternaDialogService service = new LanternaDialogService(new LanternaAlertDialogHost(gui, sound));
+      List<String> log = new ArrayList<>();
+      service.quietTo((type, line) -> log.add(line));
+
+      service.alert(AlertType.EncounterEscaped);
+
+      assertEquals(List.of(), sound.played(), "an outcome logged quietly plays no sound");
+      assertEquals(1, log.size(), "and it goes to the quiet sink");
+      assertEquals(List.of(), gui.getWindows(), "with no dialog at all");
     } finally {
       screen.stopScreen();
       screen.close();

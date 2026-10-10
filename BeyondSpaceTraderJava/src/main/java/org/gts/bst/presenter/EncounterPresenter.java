@@ -18,7 +18,10 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
+import org.gts.bst.ports.MusicTheme;
 import org.gts.bst.ship.ShipType;
+import org.gts.bst.ship.equip.Weapon;
+import org.gts.bst.ship.equip.WeaponType;
 import org.gts.bst.view.AlertDefinition;
 import org.gts.bst.view.Alerts;
 import org.gts.bst.view.EncounterAction;
@@ -57,7 +60,8 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   public void start() {
     game.encounter().EncounterBegin();
-    view.render(model(game.encounter().EncounterTextInitial(), game.encounter().EncounterActionInitial()));
+    view.weapons(() -> strongest(cmdrship), () -> strongest(game.encounter().getOpponent()));
+    render();
   }
 
   public EncounterResult result() {
@@ -273,7 +277,84 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void update() {
+    render();
+  }
+
+  /** Renders a part: the tension picks the music and the rest is the model. */
+  private void render() {
+    view.music(music(game.encounter().getEncounterType()));
     view.render(model(game.encounter().EncounterText(), game.encounter().EncounterAction()));
+  }
+
+  /**
+   * The music of an encounter: tension for the pirates, the police and the
+   * mission hunters; calm for the traders and the rare encounters (captains,
+   * bottles, Marie Celeste). Re-evaluated on every part, so a trader that turns
+   * violent (or the police showing up) crossfades to tension.
+   */
+  static MusicTheme music(EncounterType type) {
+    switch(type) {
+      case PirateAttack:
+      case PirateIgnore:
+      case PirateFlee:
+      case PirateSurrender:
+      case PirateDisabled:
+      case PoliceAttack:
+      case PoliceIgnore:
+      case PoliceFlee:
+      case PoliceSurrender:
+      case PoliceDisabled:
+      case PoliceInspect:
+      case MarieCelestePolice:
+      case DragonflyAttack:
+      case FamousCaptainAttack:
+      case ScorpionAttack:
+      case SpaceMonsterAttack:
+      case ScarabAttack:
+      case TraderAttack:
+        return MusicTheme.TENSE;
+      default:
+        return MusicTheme.CALM;
+    }
+  }
+
+  /** The weapon that sounds when a ship fires: the strongest one on board. */
+  static WeaponType strongest(Ship ship) {
+    return strongest(ship.Weapons());
+  }
+
+  static WeaponType strongest(Weapon[] weapons) {
+    WeaponType best = null;
+    for(Weapon weapon : weapons) {
+      if(weapon == null) {
+        continue;
+      }
+      WeaponType type = weapon.Type();
+      if(best == null || rank(type) < rank(best)) {
+        best = type;
+      }
+    }
+    return best;
+  }
+
+  /** The loudest shot first: Morgan's, Military, Beam, Pulse, Quantum, Photon. */
+  private static int rank(WeaponType type) {
+    switch(type) {
+      case MorgansLaser:
+        return 0;
+      case MilitaryLaser:
+        return 1;
+      case BeamLaser:
+        return 2;
+      case PulseLaser:
+        return 3;
+      case QuantumDistruptor:
+        return 4;
+      case PhotonDisruptor:
+        return 5;
+      default:
+        return 6;
+    }
   }
 
   private void exit(EncounterResult result) {

@@ -103,10 +103,11 @@ public final class ShipRenderer {
     return ofKind;
   }
 
-  /** The art of an item: the piece with that name, or null when it has no art yet. */
+  /** The art of an item: the piece with its canonical name, or null when it has no art yet. */
   private static ShipArtFile pieceNamed(List<ShipArtFile> pieces, String item) {
+    String canonical = ShipArtNames.canonical(item);
     for(ShipArtFile piece : pieces) {
-      if(piece.name().equalsIgnoreCase(item)) {
+      if(piece.name().equalsIgnoreCase(canonical)) {
         return piece;
       }
     }

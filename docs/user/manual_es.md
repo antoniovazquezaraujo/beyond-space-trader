@@ -67,6 +67,20 @@ bin\beyond-space-trader.bat --lang es           # Windows
 `--lang=es`. Por defecto se usa el idioma del sistema; los textos sin traducción
 caen al inglés.
 
+Los efectos de sonido se pueden apagar durante toda la partida con `--mute` (o
+`--no-sound`), para una sesión de terminal silenciosa:
+
+```bash
+./bin/beyond-space-trader.sh --mute             # Linux/macOS
+bin\beyond-space-trader.bat --no-sound          # Windows
+```
+
+El sonido viene activado; la opción *Efectos de sonido* (`F8`) lo apaga y lo
+enciende dentro del juego. El juego reproduce samples WAV incluidos en el
+paquete: menús, avisos, combate, salto y el ambiente de cada pantalla. Los
+sonidos viajan dentro del programa, así que no hay nada que instalar ni
+gestionar.
+
 ### Otras formas de instalar
 
 - **Snap Store (Linux):** el juego también se publica como snap:
@@ -375,6 +389,7 @@ valores actuales como predeterminados y `L` los recupera:
 | Seguir atacando a la nave que huye | Sigue disparando a una nave que huye |
 | Intentar inutilizar a los oponentes cuando sea posible | Usa el disparo para inutilizar en vez de destruir |
 | Columnas por sector en el mapa galáctico | 1, 2 o 3 columnas por sector, para ajustarlo a tu fuente |
+| Efectos de sonido | Reproduce los sonidos incluidos en el juego; también `--mute` al arrancar |
 
 El **menú (`F10`)** contiene las acciones del programa: récords (`F3`),
 opciones (`F8`), guardar (`F5`), cargar (`F9`), partida nueva (`F2`), acerca de y

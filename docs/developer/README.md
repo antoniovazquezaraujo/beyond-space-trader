@@ -51,6 +51,13 @@ Presentador):
   (`org.gts.bst.ports`); no conoce Lanterna ni las vistas.
 * **La UI vive en `org.gts.bst.*`:** las interfaces de vista y los view models en
   `org.gts.bst.view`; el renderizado Lanterna en `org.gts.bst.lanterna`.
+* **El sonido también es un puerto:** los sonidos se piden con
+  `org.gts.bst.ports.SoundService` (`SoundEffect`, `AmbienceKey`, `MusicTheme`)
+  y salen de los WAV empaquetados en el jar (`src/main/resources/sounds/`,
+  todos opcionales), mezclados por `org.gts.bst.audio.SampledSound`. Sin
+  dispositivo de audio el juego arranca en silencio (`SoundService.NONE`), y el
+  jugador puede apagarlo en `F8` o con `--mute`. Ver
+  [ADR 0007](adr/0007-audio-por-muestras.md) y [sounds.md](sounds.md).
 * **Una sola ventana, paneles dentro:** el mapa (carta local/galáctica) es el eje
   de la pantalla y el panel contextual cambia con la actividad (comercio, banco,
   astillero, misiones, periódico, encuentro...).
@@ -67,6 +74,8 @@ Presentador):
   piezas y naves), los glifos y colores, y los editores (compositor).
 * **[Encuentros (`encounters.md`)](encounters.md):** todo lo que puede pasar en un
   encuentro, acción por acción y regla por regla.
+* **[Sonido (`sounds.md`)](sounds.md):** los samples dentro del jar, sus claves y
+  variantes, el formato canónico y el conversor.
 * **[Decisiones de arquitectura (`adr/`)](adr/README.md):** los ADR numerados
   (`0001`…) que fijan las decisiones de diseño; no se reescriben, se sustituyen.
 * **[Proceso de release (`release/Release_Process.md`)](release/Release_Process.md):**

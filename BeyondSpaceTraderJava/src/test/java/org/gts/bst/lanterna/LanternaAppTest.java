@@ -9,6 +9,8 @@
 package org.gts.bst.lanterna;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -22,5 +24,15 @@ class LanternaAppTest {
     assertEquals(3, LanternaApp.skillPoints("3", 9));
     assertEquals(9, LanternaApp.skillPoints("10", 9), "an amount over the maximum is capped");
     assertEquals(0, LanternaApp.skillPoints("-4", 9), "and a negative one is zero");
+  }
+
+  @Test
+  void theMuteArgumentsAreParsed() {
+    assertFalse(LanternaApp.soundMuted(new String[0]), "the sound is on by default");
+    assertFalse(LanternaApp.soundMuted(new String[] {"--lang", "es"}));
+    assertTrue(LanternaApp.soundMuted(new String[] {"--mute"}));
+    assertTrue(LanternaApp.soundMuted(new String[] {"--no-sound"}));
+    assertTrue(LanternaApp.soundMuted(new String[] {"--lang=es", "--mute"}),
+        "the mute flag combines with the other arguments");
   }
 }

@@ -13,6 +13,7 @@ One page with the keys and panels of the game. The details are in the
 | Linux/macOS | `./bin/beyond-space-trader.sh` |
 | Windows | `bin\beyond-space-trader.bat` |
 | In Spanish | add `--lang es` |
+| Mute the sound | add `--mute` (or `--no-sound`) |
 | From source | build with `mvn clean package -DskipTests`, run with `./run.sh` |
 
 ## The map
@@ -46,7 +47,7 @@ One page with the keys and panels of the game. The details are in the
 | `D` Ship designer | `←`/`→` change · `R` name · `C` construct · `V` save |
 | `O` Escape pod | 2,000 cr, asks first |
 | `F2` / `F5` / `F9` | New game / save / load |
-| `F3` / `F8` / `F10` | High scores / options / menu |
+| `F3` / `F8` / `F10` | High scores / options (sound on/off) / menu |
 | `A` About | Origin, authors and license |
 | Any panel | `Esc` closes it (`SPACE` in the read-only ones) |
 | Lists | `↑`/`↓` and also `n`/`p`, `j`/`k` |

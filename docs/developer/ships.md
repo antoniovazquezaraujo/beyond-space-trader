@@ -35,7 +35,11 @@ blink=true                   ← optional; only true or false (false by default)
 - **`[name]`** opens a part and closes the previous one.
 - **The `[name]` of a piece is the English name of the game item** it draws
   (`[Pulse Laser]`, `[Energy Shield]`, `[Engine]`): that is how the game finds the
-  piece for each thing. **In a piece**, `key=` says which site letter it fills
+  piece for each thing. The equipment names the player reads are localised, so
+  the lookups go through **`ShipArtNames.canonical(...)`**, which translates the
+  localised name back to that English canonical one (`"Láser de Pulso"` →
+  `"Pulse Laser"`, and `"5 Extra Cargo Bays"` → `"Extra Cargo Bays"`, because the
+  art has no amount). **In a piece**, `key=` says which site letter it fills
   (`key=M`).
 - **In a chassis**, `size=` declares its size (`tiny`, `small`, `medium`, `large`,
   `huge` or `any`; empty means unknown). The ship editor warns when it does not
