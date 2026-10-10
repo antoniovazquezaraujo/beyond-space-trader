@@ -38,6 +38,7 @@ import org.gts.bst.cargo.CargoBuyOp;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.Alerts;
+import org.gts.bst.ports.Alarm;
 import org.gts.bst.ports.DialogService;
 import org.gts.bst.ports.MusicTheme;
 import org.gts.bst.ports.SoundEffect;
@@ -353,6 +354,134 @@ class LanternaEncounterViewTest {
       view.close();
       assertEquals(List.of(Boolean.TRUE, Boolean.FALSE), sound.engineStops(), "the close stops both engines");
       assertEquals(List.of(MusicTheme.NONE), sound.musicThemes(), "and the music goes away");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theAlarmsStartWithTheEnemyFireAndTheFirstHit() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { }, sound);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      sound.clear();
+
+      // The rival fires and hits us: the shot starts the attack alarm and the
+      // hit starts the danger one, over the attack.
+      content.model(fight(you, opponent, 1, false, false, true, 0, 5));
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      assertEquals(List.of(new TestSoundService.AlarmCall(Alarm.ATTACK, true),
+          new TestSoundService.AlarmCall(Alarm.DANGER, true)), sound.alarms(),
+          "the reply starts attack and the hit starts danger over it");
+
+      // Another exchange does not restart them.
+      sound.clear();
+      content.model(fight(you, opponent, 2, false, false, true, 0, 5));
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      assertTrue(sound.alarms().isEmpty(), "the alarms are not restarted: " + sound.alarms());
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theAlarmsStopWhenTheEnemyIsDestroyed() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { }, sound);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      // The fight is on: the reply started the alarms.
+      content.model(fight(you, opponent, 1, false, false, true, 0, 5));
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      sound.clear();
+
+      content.model(destroyed(you, opponent, 2));
+      gui.updateScreen();
+
+      assertEquals(List.of(new TestSoundService.AlarmCall(Alarm.ATTACK, false),
+          new TestSoundService.AlarmCall(Alarm.DANGER, false)), sound.alarms(),
+          "the destroyed ship ends the fight: both alarms stop");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void closingTheSceneStopsTheAlarms() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
+      LanternaEncounterView view = new LanternaEncounterView(gui, action -> { }, () -> { }, plunder -> { }, sound);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(fight(you, opponent, 0, false, false, false, 0, 0));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view.asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      // The fight is on.
+      content.model(fight(you, opponent, 1, false, false, true, 0, 5));
+      for(int i = 0; i < 5; i++) {
+        content.tick();
+      }
+      sound.clear();
+
+      view.close();
+
+      assertEquals(List.of(new TestSoundService.AlarmCall(Alarm.ATTACK, false),
+          new TestSoundService.AlarmCall(Alarm.DANGER, false)), sound.alarms(),
+          "nothing rings after the scene closes");
     } finally {
       screen.stopScreen();
       screen.close();

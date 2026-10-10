@@ -31,6 +31,7 @@ import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.ship.equip.Weapon;
 import org.gts.bst.ship.equip.WeaponType;
 import org.gts.bst.ports.MusicTheme;
+import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.view.Alerts;
 import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.EncounterAction;
@@ -710,10 +711,29 @@ class EncounterPresenterTest {
     assertNull(EncounterPresenter.strongest(new Weapon[] {null}), "no weapons means no sample");
   }
 
+  @Test
+  void thePoliceAlarmSoundsOnceWhenThePoliceArrives() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.start();
+    assertTrue(view.effects.isEmpty(), "a trader does not ring the police alarm");
+
+    // The encounter turns police (the Marie Celeste police shows up).
+    game.encounter().setEncounterType(EncounterType.MarieCelestePolice);
+    presenter.update();
+    presenter.update();
+
+    assertEquals(List.of(SoundEffect.POLICE), view.effects, "the police alarm sounds once per encounter");
+  }
+
   private static class FakeView implements EncounterView {
     private final List<String> logs = new ArrayList<>();
     private final List<String> speechAndWaits = new ArrayList<>();
     private final List<MusicTheme> musicThemes = new ArrayList<>();
+    private final List<SoundEffect> effects = new ArrayList<>();
     private EncounterViewModel model;
     private boolean closed;
     private boolean loggedAfterClose;
@@ -736,6 +756,11 @@ class EncounterPresenterTest {
     @Override
     public void music(MusicTheme theme) {
       musicThemes.add(theme);
+    }
+
+    @Override
+    public void effect(SoundEffect effect) {
+      effects.add(effect);
     }
 
     @Override

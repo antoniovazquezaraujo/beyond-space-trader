@@ -10,6 +10,7 @@ package org.gts.bst.testing;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.gts.bst.ports.Alarm;
 import org.gts.bst.ports.AmbienceKey;
 import org.gts.bst.ports.MusicTheme;
 import org.gts.bst.ports.SoundEffect;
@@ -27,12 +28,17 @@ public final class TestSoundService implements SoundService {
   public record Engine(ShipType type, boolean player) {
   }
 
+  /** An alarm loop starting or stopping. */
+  public record AlarmCall(Alarm alarm, boolean on) {
+  }
+
   private final List<SoundEffect> effects = new ArrayList<>();
   private final List<AmbienceKey> ambiences = new ArrayList<>();
   private final List<WeaponType> weapons = new ArrayList<>();
   private final List<MusicTheme> music = new ArrayList<>();
   private final List<Engine> engines = new ArrayList<>();
   private final List<Boolean> engineStops = new ArrayList<>();
+  private final List<AlarmCall> alarms = new ArrayList<>();
 
   @Override
   public void play(SoundEffect effect) {
@@ -84,6 +90,11 @@ public final class TestSoundService implements SoundService {
     return engineStops;
   }
 
+  /** The alarms started or stopped so far, in order. */
+  public List<AlarmCall> alarms() {
+    return alarms;
+  }
+
   /** The last ambience asked for, or null when none was. */
   public AmbienceKey lastAmbience() {
     return ambiences.isEmpty() ? null : ambiences.get(ambiences.size() - 1);
@@ -97,6 +108,7 @@ public final class TestSoundService implements SoundService {
     music.clear();
     engines.clear();
     engineStops.clear();
+    alarms.clear();
   }
 
   @Override
@@ -107,5 +119,10 @@ public final class TestSoundService implements SoundService {
   @Override
   public void engineStop(boolean player) {
     engineStops.add(player);
+  }
+
+  @Override
+  public void alarm(Alarm alarm, boolean on) {
+    alarms.add(new AlarmCall(alarm, on));
   }
 }

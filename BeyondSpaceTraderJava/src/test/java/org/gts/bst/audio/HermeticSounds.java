@@ -21,6 +21,9 @@ import java.util.Set;
 final class HermeticSounds {
   /** The fixtures of the test resources, exactly the paths the tests use. */
   private static final Set<String> FIXTURES = Set.of(
+      "/sounds/alerts/attack-1.wav",
+      "/sounds/alerts/danger-1.wav",
+      "/sounds/alerts/police-1.wav",
       "/sounds/combat/hit-1.wav",
       "/sounds/combat/hit-2.wav",
       "/sounds/combat/laser-pulse-1.wav",

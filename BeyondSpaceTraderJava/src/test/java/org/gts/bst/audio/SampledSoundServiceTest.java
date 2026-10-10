@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
+import org.gts.bst.ports.Alarm;
 import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ports.SoundService;
 import org.junit.jupiter.api.Test;
@@ -89,6 +90,26 @@ class SampledSoundServiceTest {
     assertNotSame(SoundService.NONE, sound, "the default open is better than silence");
     assertEquals(List.of(SampledSound.LINE_BUFFER_BYTES, RecordingLine.DEFAULT_OPEN), line.opens(),
         "a rejected size is followed by the default open");
+  }
+
+  @Test
+  void theAlarmLoopsUseTheirSamples() throws InterruptedException {
+    RecordingLine attack = new RecordingLine();
+    SoundService attackSound = SampledSound.create(() -> true, attack::open, HermeticSounds.library());
+
+    attackSound.alarm(Alarm.ATTACK, true);
+
+    assertTrue(attack.sounded.await(WAIT_MILLIS, TimeUnit.MILLISECONDS), "the attack alarm reaches the line");
+    assertTrue(hasSound(attack.firstNonSilent()), "and it is not silence");
+
+    RecordingLine danger = new RecordingLine();
+    SoundService dangerSound = SampledSound.create(() -> true, danger::open, HermeticSounds.library());
+    dangerSound.alarm(Alarm.DANGER, true);
+    assertTrue(danger.sounded.await(WAIT_MILLIS, TimeUnit.MILLISECONDS), "the danger alarm reaches the line");
+
+    assertEquals("alerts/attack", SampledSound.alarmKey(Alarm.ATTACK));
+    assertEquals("alerts/danger", SampledSound.alarmKey(Alarm.DANGER));
+    assertEquals("alerts/police", SampledSound.keyOf(SoundEffect.POLICE));
   }
 
   private static boolean hasSound(byte[] block) {

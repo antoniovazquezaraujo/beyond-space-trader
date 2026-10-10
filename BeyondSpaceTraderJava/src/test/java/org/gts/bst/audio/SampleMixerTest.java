@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
+import org.gts.bst.ports.Alarm;
 import org.junit.jupiter.api.Test;
 
 
@@ -84,6 +85,40 @@ class SampleMixerTest {
     mixer.render(stopping, stopping.length);
     assertEquals(0.5f, stopping[0], 1e-3f, "the loop starts fading from its full gain");
     assertEquals(0f, stopping[stopping.length - 1], 1e-3f, "and it is gone at the end of the fade");
+  }
+
+  /** The two alarm loops overlap and can be stopped; a missing sample is no voice. */
+  @Test
+  void theTwoAlarmsOverlapAndCanBeStopped() {
+    SampleMixer mixer = new SampleMixer(() -> true);
+    mixer.startAlarm(Alarm.ATTACK, constant(1f, 44100));
+
+    float[] attack = new float[44100];
+    mixer.render(attack, attack.length);
+    assertEquals(0.6f, attack[40000], 1e-3f, "the attack alarm sounds at its channel volume");
+
+    mixer.startAlarm(Alarm.DANGER, constant(1f, 44100));
+    float[] both = new float[44100];
+    mixer.render(both, both.length);
+    assertEquals(1.2f, both[40000], 1e-3f, "the danger alarm plays over the attack one");
+
+    mixer.stopAlarm(Alarm.DANGER);
+    float[] withoutDanger = new float[44100];
+    mixer.render(withoutDanger, withoutDanger.length);
+    assertEquals(1.2f, withoutDanger[0], 0.02f, "the danger alarm starts fading");
+    assertEquals(0.6f, withoutDanger[withoutDanger.length - 1], 1e-3f, "and it is gone at the end");
+
+    mixer.stopAlarm(Alarm.ATTACK);
+    float[] stopped = new float[44100];
+    mixer.render(stopped, stopped.length);
+    assertEquals(0f, stopped[stopped.length - 1], 1e-3f, "stopping the attack leaves silence");
+
+    mixer.startAlarm(Alarm.ATTACK, null);
+    float[] noSample = new float[1000];
+    mixer.render(noSample, noSample.length);
+    for(float value : noSample) {
+      assertEquals(0f, value, 1e-6f, "a missing sample adds no voice");
+    }
   }
 
   /** A smoke test of the lock: the game asks while the playback thread renders. */
