@@ -29,29 +29,79 @@ random on every playback**, so repeated shots and impacts do not sound
 identical. The numbered variants must have no gaps, and the plain
 `<key>.wav` without a number is **not** loaded.
 
-## Keys
+## The files, one by one
 
-| Key | When it plays |
+The practical map: what to record and where. Every example ends in `-1.wav`;
+the numbered variants are explained above.
+
+### One-shot effects (not loops)
+
+| File (inside `sounds/`) | What it is |
 | --- | --- |
-| `ui/menu-move` | Moving the cursor in a menu or a list |
-| `ui/menu-select` | Accepting an entry (the F10 menu, a toggle) |
-| `alerts/alert` | A dialog with a single button |
-| `alerts/warning` | A dialog that asks a question (two buttons) |
-| `alerts/police` | The police shows up in an encounter (once per encounter) |
-| `alerts/attack` | The rival fires: loop while the fight lasts |
-| `alerts/danger` | The first hit on your ship: loop, over the attack one |
-| `combat/laser-pulse`, `-beam`, `-military`, `-morgan`, `-photon`, `-quantum` | Each weapon type firing |
-| `combat/hit` | A shot landing on a ship |
-| `combat/explosion` | A ship being destroyed |
-| `travel/warp` | Warping to another system |
-| `travel/escape` | Getting away from an encounter |
-| `ships/<shiptype>` | The engine loop of a ship (`ships/flea`, `ships/gnat`...), a loop |
-| `ambient/<screen>` | The ambience of a screen, a loop: `ambient/title`, `ambient/navigation`, `ambient/trade`, `ambient/bank`, `ambient/quests`, `ambient/personnel`, `ambient/commander`, `ambient/ship`, `ambient/shiplist`, `ambient/equipment`, `ambient/options`, `ambient/highscores`, `ambient/designer`, `ambient/news`, `ambient/about`, `ambient/menu` |
-| `music/calm`, `music/tense` | The music mood of the encounter, a loop |
+| `ui/menu-move-1.wav` | Moving the cursor in a menu or a list |
+| `ui/menu-select-1.wav` | Accepting an entry (the F10 menu, a toggle) |
+| `alerts/alert-1.wav` | A dialog with a single button |
+| `alerts/warning-1.wav` | A dialog that asks a question (two buttons) |
+| `alerts/police-1.wav` | The police shows up in an encounter (once per encounter) |
+| `combat/laser-pulse-1.wav` | A Pulse laser firing |
+| `combat/laser-beam-1.wav` | A Beam laser firing |
+| `combat/laser-military-1.wav` | A Military laser firing |
+| `combat/laser-morgan-1.wav` | A Morgan's laser firing |
+| `combat/laser-photon-1.wav` | A Photon disruptor firing |
+| `combat/laser-quantum-1.wav` | A Quantum disruptor firing |
+| `combat/hit-1.wav` | A shot landing on a ship (variants `-2`, `-3`... welcome) |
+| `combat/explosion-1.wav` | A ship being destroyed (variants welcome) |
+| `travel/warp-1.wav` | Warping to another system |
+| `travel/escape-1.wav` | Getting away from an encounter |
 
-The ship types are the names of `ShipType` in lowercase (`flea`, `gnat`,
-`firefly`, `mosquito`, `bumblebee`, `beetle`, `hornet`, `grasshopper`,
-`termite`, `wasp`, `dragonfly`, `mantis`, `scarab`, `scorpion`, ...).
+### Loops
+
+| File (inside `sounds/`) | What it is |
+| --- | --- |
+| `ships/<shiptype>-1.wav` | The engine of a ship (see the engines below) |
+| `alerts/attack-1.wav` | The rival fires: the alarm loops while the fight lasts |
+| `alerts/danger-1.wav` | The first hit on your ship: loops over the attack one |
+| `ambient/title-1.wav` | The ambience of the title screen |
+| `ambient/navigation-1.wav` | The ambience of the star map (navigation) |
+| `ambient/trade-1.wav` | The ambience of the trade exchange (market) |
+| `ambient/bank-1.wav` | The ambience of the bank |
+| `ambient/quests-1.wav` | The ambience of the quests screen |
+| `ambient/personnel-1.wav` | The ambience of the personnel screen (hiring) |
+| `ambient/commander-1.wav` | The ambience of the commander profile |
+| `ambient/ship-1.wav` | The ambience of your ship screen |
+| `ambient/shiplist-1.wav` | The ambience of the ship list |
+| `ambient/equipment-1.wav` | The ambience of the equipment screen |
+| `ambient/options-1.wav` | The ambience of the options screen |
+| `ambient/highscores-1.wav` | The ambience of the high scores |
+| `ambient/designer-1.wav` | The ambience of the ship designer |
+| `ambient/news-1.wav` | The ambience of the newspaper |
+| `ambient/about-1.wav` | The ambience of the about/credits screen |
+| `ambient/menu-1.wav` | The ambience of the menu |
+| `music/calm-1.wav` | Calm music (traders and the rare encounters) |
+| `music/tense-1.wav` | Tense music (pirates, police, the mission hunters) |
+
+### Engines: the types and their sizes
+
+A ship with no loop of its own borrows the loop of its size and then the
+shared default, so four or five size loops are enough to start.
+
+| Size file | Ships of that size |
+| --- | --- |
+| `ships/tiny-1.wav` | flea |
+| `ships/small-1.wav` | gnat, firefly, mosquito, bottle, dragonfly |
+| `ships/medium-1.wav` | bumblebee, beetle, mantis |
+| `ships/large-1.wav` | hornet, grasshopper, scarab |
+| `ships/huge-1.wav` | termite, wasp, spacemonster, custom, scorpion |
+| `ships/gargantuan-1.wav` | none yet (the size exists, no ship uses it) |
+| `ships/default-1.wav` | Any type without a loop of its own |
+
+The per-type files, if you want to polish them later: `ships/flea-1.wav`,
+`ships/gnat-1.wav`, `ships/firefly-1.wav`, `ships/mosquito-1.wav`,
+`ships/bumblebee-1.wav`, `ships/beetle-1.wav`, `ships/hornet-1.wav`,
+`ships/grasshopper-1.wav`, `ships/termite-1.wav`, `ships/wasp-1.wav`,
+`ships/spacemonster-1.wav`, `ships/dragonfly-1.wav`, `ships/mantis-1.wav`,
+`ships/scarab-1.wav`, `ships/bottle-1.wav`, `ships/custom-1.wav` and
+`ships/scorpion-1.wav`.
 
 ## Engines, shots and music (phase B)
 
