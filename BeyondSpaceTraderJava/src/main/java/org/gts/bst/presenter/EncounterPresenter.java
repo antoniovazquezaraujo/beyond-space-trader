@@ -64,7 +64,9 @@ public class EncounterPresenter implements EncounterDialogHost {
   public void start() {
     game.encounter().EncounterBegin();
     view.weapons(() -> strongest(cmdrship), () -> strongest(game.encounter().getOpponent()));
-    render();
+    // The first part keeps the initial texts (the trader hello, the police
+    // demand): the show goes on to the in-course ones from the first round.
+    render(game.encounter().EncounterTextInitial(), game.encounter().EncounterActionInitial());
   }
 
   public EncounterResult result() {
@@ -280,14 +282,14 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void update() {
-    render();
+    render(game.encounter().EncounterText(), game.encounter().EncounterAction());
   }
 
-  /** Renders a part: the tension picks the music and the rest is the model. */
-  private void render() {
+  /** Renders a part: the police alarm and the tension are common to all of them. */
+  private void render(String text, String action) {
     playPoliceAlert();
     view.music(music(game.encounter().getEncounterType()));
-    view.render(model(game.encounter().EncounterText(), game.encounter().EncounterAction()));
+    view.render(model(text, action));
   }
 
   /** The police alarm, once per encounter (also when the police shows up later). */
