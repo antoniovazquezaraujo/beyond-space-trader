@@ -64,7 +64,13 @@ dispositivo y el mute del jugador. Lo que cambia es de dónde sale el sonido.
    Quantum > Photon). La música se **re-evalúa en cada parte** según la tensión
    (piratas, policía y cazas de misión → `TENSE`; comerciantes y encuentros
    raros → `CALM`), con crossfade cuando cambia y `NONE` al cerrar; huir con
-   éxito usa `travel/escape` (el salto del mapa conserva `travel/warp`).
+   éxito usa `travel/escape` (el salto del mapa conserva `travel/warp`). Las
+   **alarmas condicionales** siguen el mismo ciclo: `alerts/police` suena una
+   vez cuando aparece la policía (también si el encuentro se vuelve policial a
+   mitad), `alerts/attack` arranca con el primer disparo del rival y
+   `alerts/danger` con el primer impacto recibido (superpuesta a la anterior);
+   ambas se apagan con el combate (destrucción, inutilización, huida, pantalla
+   de resultado, escape o cierre de la escena).
 6. **Autoría y empaquetado**: `tools/convert-sounds.sh` prepara una descarga
    (recorta silencios, aplica fades, normaliza y convierte con `ffmpeg`) y la
    escribe en los resources del módulo; el jar la lleva tal cual, igual que los

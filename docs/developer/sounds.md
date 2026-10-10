@@ -37,6 +37,9 @@ identical. The numbered variants must have no gaps, and the plain
 | `ui/menu-select` | Accepting an entry (the F10 menu, a toggle) |
 | `alerts/alert` | A dialog with a single button |
 | `alerts/warning` | A dialog that asks a question (two buttons) |
+| `alerts/police` | The police shows up in an encounter (once per encounter) |
+| `alerts/attack` | The rival fires: loop while the fight lasts |
+| `alerts/danger` | The first hit on your ship: loop, over the attack one |
 | `combat/laser-pulse`, `-beam`, `-military`, `-morgan`, `-photon`, `-quantum` | Each weapon type firing |
 | `combat/hit` | A shot landing on a ship |
 | `combat/explosion` | A ship being destroyed |
@@ -84,6 +87,22 @@ When the situation changes (the trader attacks, the police shows up) the music
 crossfades to the mood that plays; when the scene closes it fades to nothing.
 Getting away from an encounter plays `travel/escape` (the map warp keeps
 `travel/warp`).
+
+### Alarms (conditional loops)
+
+Three alerts react to the encounter, all optional like the rest:
+
+| Key | When | How |
+| --- | --- | --- |
+| `alerts/police` | The police shows up | One-shot, once per encounter (also when it turns police halfway, as in the Marie Celeste) |
+| `alerts/attack` | The rival fires for the first time | Loop until the fight ends |
+| `alerts/danger` | Your ship takes its first hit (shield or hull) | Loop, **over** the attack one |
+
+The fight ends when the enemy is destroyed or disabled, when it flees or
+crosses away, when the result screen waits for the player (a surrender, a
+loot), when you get away, or when the scene closes: the alarm loops fade out
+with a short crossfade. A key without a sample is silence, and the two loops
+share their own channel in the mixer (`ALERTS`, 0.6 by default).
 
 ## Adding a sound
 
