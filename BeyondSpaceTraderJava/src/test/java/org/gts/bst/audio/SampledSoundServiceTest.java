@@ -8,12 +8,16 @@
  */
 package org.gts.bst.audio;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -63,6 +67,30 @@ class SampledSoundServiceTest {
     assertTrue(muted.sounded.await(WAIT_MILLIS, TimeUnit.MILLISECONDS), "and it sounds again when enabled");
   }
 
+  @Test
+  void theLineOpensWithABoundedBuffer() {
+    RecordingLine line = new RecordingLine();
+
+    SoundService sound = SampledSound.create(() -> true, line::open, HermeticSounds.library());
+
+    assertNotSame(SoundService.NONE, sound, "the device exists");
+    assertEquals(List.of(SampledSound.LINE_BUFFER_BYTES), line.opens(),
+        "the line opens with the bounded buffer, not the slow device default");
+    assertTrue(SampledSound.LINE_BUFFER_BYTES <= 16384, "the latency stays bounded");
+  }
+
+  @Test
+  void aRejectedBufferSizeFallsBackToTheDeviceDefault() {
+    RecordingLine line = new RecordingLine();
+    line.rejectSizedOpen = true;
+
+    SoundService sound = SampledSound.create(() -> true, line::open, HermeticSounds.library());
+
+    assertNotSame(SoundService.NONE, sound, "the default open is better than silence");
+    assertEquals(List.of(SampledSound.LINE_BUFFER_BYTES, RecordingLine.DEFAULT_OPEN), line.opens(),
+        "a rejected size is followed by the default open");
+  }
+
   private static boolean hasSound(byte[] block) {
     if(block == null) {
       return false;
@@ -76,17 +104,35 @@ class SampledSoundServiceTest {
   }
 
   /**
-   * A {@link SourceDataLine} proxy that records the first non-silent block and
-   * counts it down: no device, no native library. Every write sleeps a moment,
-   * as a real line does, so the playback thread is paced.
+   * A {@link SourceDataLine} proxy that records the first non-silent block, the
+   * size of every {@code open} and counts the first sound down: no device, no
+   * native library. Every write sleeps a moment, as a real line does, so the
+   * playback thread is paced. Setting {@link #rejectSizedOpen} makes the sized
+   * open fail, as some devices do.
    */
   private static final class RecordingLine {
+    /** The marker of an {@code open(format)} with the device default size. */
+    static final int DEFAULT_OPEN = -1;
+
     private final AtomicReference<byte[]> first = new AtomicReference<>();
     private final CountDownLatch sounded = new CountDownLatch(1);
+    private final List<Integer> opens = new ArrayList<>();
+    private boolean rejectSizedOpen;
 
     SourceDataLine open(AudioFormat format) {
       return (SourceDataLine)Proxy.newProxyInstance(SampledSoundServiceTest.class.getClassLoader(),
           new Class<?>[] {SourceDataLine.class}, (proxy, method, args) -> {
+            if("open".equals(method.getName())) {
+              if(args != null && args.length == 2) {
+                opens.add((int)args[1]);
+                if(rejectSizedOpen) {
+                  throw new IllegalArgumentException("the device rejects the buffer size");
+                }
+              } else {
+                opens.add(DEFAULT_OPEN);
+              }
+              return null;
+            }
             if("write".equals(method.getName()) && args != null && args.length == 3) {
               byte[] block = Arrays.copyOf((byte[])args[0], (int)args[2]);
               if(hasSound(block) && first.compareAndSet(null, block)) {
@@ -97,6 +143,11 @@ class SampledSoundServiceTest {
             }
             return primitiveDefault(method.getReturnType());
           });
+    }
+
+    /** The sizes of the opens, in order; {@link #DEFAULT_OPEN} for the default one. */
+    List<Integer> opens() {
+      return opens;
     }
 
     byte[] firstNonSilent() {

@@ -9,8 +9,11 @@
 package org.gts.bst.audio;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 
@@ -81,5 +84,34 @@ class SampleMixerTest {
     mixer.render(stopping, stopping.length);
     assertEquals(0.5f, stopping[0], 1e-3f, "the loop starts fading from its full gain");
     assertEquals(0f, stopping[stopping.length - 1], 1e-3f, "and it is gone at the end of the fade");
+  }
+
+  /** A smoke test of the lock: the game asks while the playback thread renders. */
+  @Test
+  void theMixerTakesAsksOfAnotherThreadWhileRendering() throws InterruptedException {
+    SampleMixer mixer = new SampleMixer(() -> true);
+    AtomicReference<Throwable> failure = new AtomicReference<>();
+    Thread player = new Thread(() -> {
+      try {
+        for(int i = 0; i < 500; i++) {
+          mixer.play(constant(0.5f, 64), 1f);
+          mixer.setVolume(SoundChannel.EFFECTS, i % 2 == 0 ? 0.8f : 0.5f);
+          mixer.startEngine(constant(0.4f, 64), i % 2 == 0);
+          mixer.stopEngine(i % 2 == 0);
+        }
+      } catch(Throwable t) {
+        failure.set(t);
+      }
+    }, "test-player");
+    player.start();
+
+    float[] out = new float[256];
+    for(int i = 0; i < 2000; i++) {
+      mixer.render(out, out.length);
+    }
+    player.join(5000);
+
+    assertFalse(player.isAlive(), "the asking thread finishes");
+    assertNull(failure.get(), "no concurrent modification escapes: " + failure.get());
   }
 }
