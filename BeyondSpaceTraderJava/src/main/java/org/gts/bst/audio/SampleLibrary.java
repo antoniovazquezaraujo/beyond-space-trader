@@ -37,6 +37,15 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  * an error, it is silence.
  */
 final class SampleLibrary {
+  /** Opens a classpath resource ({@code /sounds/...}); null when it does not exist. */
+  @FunctionalInterface
+  interface ResourceOpener {
+    InputStream open(String resource);
+  }
+
+  /** The opener of the real game: the classpath of the running program. */
+  private static final ResourceOpener CLASSPATH = SampleLibrary.class::getResourceAsStream;
+
   /** The rate of the canonical format of the mixer. */
   static final float SAMPLE_RATE = 44100f;
   /** The variants of a key are probed from 1 to this number. */
@@ -45,8 +54,22 @@ final class SampleLibrary {
   static final String RESOURCE_ROOT = "/sounds/";
   private static final AudioFormat CANONICAL = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
 
+  private final ResourceOpener opener;
   private final Map<String, List<float[]>> cache = new HashMap<>();
   private final Set<String> missing = new HashSet<>();
+
+  SampleLibrary() {
+    this(CLASSPATH);
+  }
+
+  /**
+   * With the resource opener injected: the tests use it to serve only their own
+   * fixtures, so they do not depend on the samples the player (or the author)
+   * has in the resources of the main source set.
+   */
+  SampleLibrary(ResourceOpener opener) {
+    this.opener = opener;
+  }
 
   static AudioFormat canonicalFormat() {
     return CANONICAL;
@@ -90,8 +113,8 @@ final class SampleLibrary {
   }
 
   /** Reads a WAV resource and converts it to the canonical format; null when missing or broken. */
-  private static float[] read(String resource) {
-    InputStream raw = SampleLibrary.class.getResourceAsStream(resource);
+  private float[] read(String resource) {
+    InputStream raw = opener.open(resource);
     if(raw == null) {
       return null;
     }
