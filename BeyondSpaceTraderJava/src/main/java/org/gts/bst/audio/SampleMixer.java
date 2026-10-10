@@ -26,6 +26,10 @@ import java.util.function.BooleanSupplier;
  * <p>It has no thread and no device: {@link SampledSound} calls {@link #render}
  * from its playback thread, and the tests call it directly, so the mixing is
  * deterministic.
+ *
+ * <p>The game asks for sounds from its own thread while the playback thread
+ * renders, so every method takes the same lock; the mixing is CPU only and the
+ * blocking line write stays in {@link SampledSound}, outside the lock.
  */
 final class SampleMixer {
   /** The crossfade (and default fade) of a loop, in seconds. */
@@ -50,57 +54,57 @@ final class SampleMixer {
     volumes.put(SoundChannel.ENGINES, 0.5f);
   }
 
-  void setVolume(SoundChannel channel, float volume) {
+  synchronized void setVolume(SoundChannel channel, float volume) {
     volumes.put(channel, Math.max(0f, Math.min(1f, volume)));
   }
 
   /** Starts a one-shot (an effect) at the given gain. */
-  void play(float[] sample, float gain) {
+  synchronized void play(float[] sample, float gain) {
     if(sample != null && sample.length > 0) {
       voices.add(new Voice(sample, SoundChannel.EFFECTS, false, Math.max(0f, gain)));
     }
   }
 
   /** Starts the ambience loop, crossfading out the previous one. */
-  void startAmbience(float[] sample) {
+  synchronized void startAmbience(float[] sample) {
     ambience = startLoop(ambience, sample, SoundChannel.AMBIENCE);
   }
 
-  void stopAmbience() {
+  synchronized void stopAmbience() {
     stopAmbience(LOOP_FADE_SECONDS);
   }
 
-  void stopAmbience(double fadeSeconds) {
+  synchronized void stopAmbience(double fadeSeconds) {
     stopLoop(ambience, fadeSeconds);
     ambience = null;
   }
 
   /** Starts the music loop, crossfading out the previous mood. */
-  void startMusic(float[] sample) {
+  synchronized void startMusic(float[] sample) {
     music = startLoop(music, sample, SoundChannel.MUSIC);
   }
 
-  void stopMusic() {
+  synchronized void stopMusic() {
     stopMusic(LOOP_FADE_SECONDS);
   }
 
-  void stopMusic(double fadeSeconds) {
+  synchronized void stopMusic(double fadeSeconds) {
     stopLoop(music, fadeSeconds);
     music = null;
   }
 
   /** Starts or replaces the loop of an engine (the player or the rival). */
-  void startEngine(float[] sample, boolean player) {
+  synchronized void startEngine(float[] sample, boolean player) {
     int slot = player ? 0 : 1;
     engines[slot] = startLoop(engines[slot], sample, SoundChannel.ENGINES);
   }
 
-  void stopEngine(boolean player) {
+  synchronized void stopEngine(boolean player) {
     stopEngine(player, LOOP_FADE_SECONDS);
   }
 
   /** Stops an engine with a fade of its own: short on destruction, long on a march. */
-  void stopEngine(boolean player, double fadeSeconds) {
+  synchronized void stopEngine(boolean player, double fadeSeconds) {
     int slot = player ? 0 : 1;
     stopLoop(engines[slot], fadeSeconds);
     engines[slot] = null;
@@ -111,7 +115,7 @@ final class SampleMixer {
    * caller passes a buffer of {@code frames} samples. With the sound off the
    * block is silence (the loops wait, they do not advance).
    */
-  void render(float[] out, int frames) {
+  synchronized void render(float[] out, int frames) {
     Arrays.fill(out, 0, frames, 0f);
     if(!enabled.getAsBoolean()) {
       return;

@@ -47,6 +47,13 @@ public final class SampledSound implements SoundService {
   public static final float SAMPLE_RATE = SampleLibrary.SAMPLE_RATE;
   /** The frames of every writing block (about 23 ms at 44.1 kHz). */
   private static final int FRAMES = 1024;
+  /**
+   * The buffer of the output line, in bytes: four writing blocks (about 93 ms at
+   * 44.1 kHz). The default buffer of some devices is 500 ms, which queues every
+   * effect far behind the picture; if the device rejects this size, the factory
+   * falls back to its default.
+   */
+  static final int LINE_BUFFER_BYTES = FRAMES * 4 * 2;
   /** The music fades to nothing fast when the scene closes. */
   private static final double MUSIC_STOP_FADE_SECONDS = 0.15;
 
@@ -86,7 +93,7 @@ public final class SampledSound implements SoundService {
     AudioFormat format = SampleLibrary.canonicalFormat();
     try {
       SourceDataLine line = opener.open(format);
-      line.open(format);
+      openLine(line, format);
       line.start();
       SampledSound sound = new SampledSound(enabled == null ? () -> true : enabled, line, library);
       sound.startPlayer();
@@ -94,6 +101,18 @@ public final class SampledSound implements SoundService {
     } catch(LineUnavailableException | IllegalArgumentException e) {
       // No audio backend at all: the game runs in silence instead of crashing.
       return SoundService.NONE;
+    }
+  }
+
+  /**
+   * Opens the line with the bounded buffer; when the device only takes its own
+   * sizes, the default (longer) latency is better than no sound at all.
+   */
+  private static void openLine(SourceDataLine line, AudioFormat format) throws LineUnavailableException {
+    try {
+      line.open(format, LINE_BUFFER_BYTES);
+    } catch(IllegalArgumentException e) {
+      line.open(format);
     }
   }
 
