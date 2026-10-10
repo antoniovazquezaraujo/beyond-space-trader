@@ -39,6 +39,15 @@ public final class ShipCatalog {
 
   /** The art of a piece by the name of its item, or null when it has no art yet. */
   public ShipArtFile piece(String name) {
+    ShipArtFile piece = pieceNamed(name);
+    if(piece == null) {
+      // The equipment names arrive localised: retry with the English canonical.
+      piece = pieceNamed(ShipArtNames.canonical(name));
+    }
+    return piece;
+  }
+
+  private ShipArtFile pieceNamed(String name) {
     for(ShipArtFile piece : pieces) {
       if(piece.name().equalsIgnoreCase(name)) {
         return piece;
