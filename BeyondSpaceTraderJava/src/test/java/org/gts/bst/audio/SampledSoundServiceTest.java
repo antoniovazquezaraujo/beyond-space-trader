@@ -36,7 +36,7 @@ class SampledSoundServiceTest {
 
   @Test
   void theFactoryFallsBackWithoutALineAndPlaysThroughTheInjectedOne() throws InterruptedException {
-    SampleLibrary library = new SampleLibrary();
+    SampleLibrary library = HermeticSounds.library();
 
     assertSame(SoundService.NONE, SampledSound.create(() -> true, format -> {
       throw new LineUnavailableException("the device is busy");

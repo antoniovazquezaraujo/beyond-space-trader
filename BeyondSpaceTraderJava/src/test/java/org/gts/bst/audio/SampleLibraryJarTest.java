@@ -61,6 +61,8 @@ class SampleLibraryJarTest {
   private static void writeJar(Path jar) throws IOException {
     try(JarOutputStream out = new JarOutputStream(Files.newOutputStream(jar))) {
       add(out, "org/gts/bst/audio/SampleLibrary.class", resource("org/gts/bst/audio/SampleLibrary.class"));
+      add(out, "org/gts/bst/audio/SampleLibrary$ResourceOpener.class",
+          resource("org/gts/bst/audio/SampleLibrary$ResourceOpener.class"));
       add(out, "sounds/ships/gnat-1.wav", resource("sounds/ships/gnat-1.wav"));
     }
   }

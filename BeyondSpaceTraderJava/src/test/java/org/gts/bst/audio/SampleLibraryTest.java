@@ -23,14 +23,15 @@ import org.junit.jupiter.api.Test;
 /**
  * The loader over the WAV fixtures of {@code src/test/resources/sounds/}: the
  * classpath probing works inside the jar, so the tests exercise it as the game
- * does.
+ * does. The library is hermetic ({@link HermeticSounds}), so the real samples of
+ * {@code src/main/resources/sounds/} never leak into the expectations.
  */
 class SampleLibraryTest {
   private static final float WAV_TOLERANCE = 0.01f;
 
   @Test
   void theVariantsOfAKeyAreChosenAtRandom() {
-    SampleLibrary library = new SampleLibrary();
+    SampleLibrary library = HermeticSounds.library();
 
     Set<Float> heard = new HashSet<>();
     for(int i = 0; i < 60; i++) {
@@ -45,7 +46,7 @@ class SampleLibraryTest {
 
   @Test
   void aMissingKeyIsSilence() {
-    SampleLibrary library = new SampleLibrary();
+    SampleLibrary library = HermeticSounds.library();
 
     assertNull(library.sample("combat/nothing"), "a key without resources is silence, not an error");
     assertNull(library.sample("ui/menu-move"), "and so is a key with no variants");
@@ -54,7 +55,7 @@ class SampleLibraryTest {
   @Test
   void aStrayFormatIsConvertedToTheCanonicalOne() {
     // The fixture travel/warp-1.wav is 22.05 kHz: it must arrive resampled to 44.1.
-    float[] sample = new SampleLibrary().sample("travel/warp");
+    float[] sample = HermeticSounds.library().sample("travel/warp");
 
     assertNotNull(sample, "the fixture is loaded through the converter");
     assertTrue(sample.length >= 4300 && sample.length <= 4500,
@@ -68,9 +69,9 @@ class SampleLibraryTest {
 
   @Test
   void theEngineFallbackGoesFromTypeToSizeToDefault() {
-    SampleLibrary library = new SampleLibrary();
+    SampleLibrary library = HermeticSounds.library();
 
-    // Gnat (small): its own type sample exists and wins.
+    // Gnat (small): its own type fixture exists and wins.
     List<String> gnat = SampledSound.engineKeys(ShipType.Gnat);
     assertEquals(List.of("ships/gnat", "ships/small", "ships/default"), gnat);
     assertNotNull(library.sample(gnat.get(0)), "the type sample wins when it exists");
@@ -81,8 +82,9 @@ class SampleLibraryTest {
     assertNull(library.sample(bumblebee.get(0)), "no sample of the type");
     assertNotNull(library.sample(bumblebee.get(1)), "the size sample answers");
 
-    // Scorpion (large) has neither: the shared default closes the chain.
+    // Scorpion (huge) has neither: the shared default closes the chain.
     List<String> scorpion = SampledSound.engineKeys(ShipType.Scorpion);
+    assertEquals("ships/huge", scorpion.get(1));
     assertNull(library.sample(scorpion.get(0)));
     assertNull(library.sample(scorpion.get(1)));
     assertNotNull(library.sample(scorpion.get(2)), "the default sample answers last");
