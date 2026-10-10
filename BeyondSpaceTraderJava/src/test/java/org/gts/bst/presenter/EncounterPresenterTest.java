@@ -729,6 +729,26 @@ class EncounterPresenterTest {
     assertEquals(List.of(SoundEffect.POLICE), view.effects, "the police alarm sounds once per encounter");
   }
 
+  @Test
+  void theFirstPartOfAPeacefulEncounterShowsItsInitialTexts() {
+    Game game = newGame();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.start();
+
+    assertEquals(game.encounter().EncounterTextInitial(), view.model.encounterText(),
+        "the first part shows the initial texts (the trader hello), not the fight boilerplate");
+    assertEquals(game.encounter().EncounterActionInitial(), view.model.actionText());
+
+    // After a round the render moves on to the texts of the encounter in course
+    // (the tick resolves the round like the automatic fight, no dialogs).
+    presenter.tick();
+    assertEquals(game.encounter().EncounterText(), view.model.encounterText());
+    assertEquals(game.encounter().EncounterAction(), view.model.actionText());
+  }
+
   private static class FakeView implements EncounterView {
     private final List<String> logs = new ArrayList<>();
     private final List<String> speechAndWaits = new ArrayList<>();
