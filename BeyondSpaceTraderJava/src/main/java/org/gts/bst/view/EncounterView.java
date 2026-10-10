@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.ports.MusicTheme;
+import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ship.equip.WeaponType;
 
 
@@ -83,6 +84,13 @@ public interface EncounterView {
    * right sample. The suppliers are read when a beam is born, not now.
    */
   default void weapons(Supplier<WeaponType> you, Supplier<WeaponType> opponent) {
+  }
+
+  /**
+   * A one-shot the encounter asks for outside the scene (the police arriving);
+   * the view forwards it to the sound service.
+   */
+  default void effect(SoundEffect effect) {
   }
 
 }

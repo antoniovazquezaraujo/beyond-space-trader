@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
+import org.gts.bst.ports.Alarm;
 
 
 /**
@@ -44,6 +45,7 @@ final class SampleMixer {
   private Voice ambience;
   private Voice music;
   private final Voice[] engines = new Voice[2];
+  private final Voice[] alarms = new Voice[2];
 
   SampleMixer(BooleanSupplier enabled) {
     this.enabled = enabled;
@@ -52,6 +54,7 @@ final class SampleMixer {
     volumes.put(SoundChannel.AMBIENCE, 0.55f);
     volumes.put(SoundChannel.MUSIC, 0.5f);
     volumes.put(SoundChannel.ENGINES, 0.5f);
+    volumes.put(SoundChannel.ALERTS, 0.6f);
   }
 
   synchronized void setVolume(SoundChannel channel, float volume) {
@@ -108,6 +111,19 @@ final class SampleMixer {
     int slot = player ? 0 : 1;
     stopLoop(engines[slot], fadeSeconds);
     engines[slot] = null;
+  }
+
+  /** Starts an alarm loop ({@code Alarm.ordinal()} is its slot: the two can overlap). */
+  synchronized void startAlarm(Alarm alarm, float[] sample) {
+    int slot = alarm.ordinal();
+    alarms[slot] = startLoop(alarms[slot], sample, SoundChannel.ALERTS);
+  }
+
+  /** Stops an alarm loop of its slot. */
+  synchronized void stopAlarm(Alarm alarm) {
+    int slot = alarm.ordinal();
+    stopLoop(alarms[slot]);
+    alarms[slot] = null;
   }
 
   /**

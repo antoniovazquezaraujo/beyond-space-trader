@@ -193,8 +193,15 @@ public final class LanternaEncounterView implements EncounterView {
     // ship, the one behind us, is the one that leaves the scene. The ship turns
     // away with the escape (also when the flee key asked for it, with no dash).
     sound.play(SoundEffect.ESCAPE);
+    content.stopAlarms();
     content.faceAway();
     content.opponentLeaves(!content.exitedRight());
+  }
+
+  @Override
+  public void effect(SoundEffect effect) {
+    // A one-shot of the encounter, outside the scene (the police arriving).
+    sound.play(effect);
   }
 
   @Override
@@ -329,7 +336,8 @@ public final class LanternaEncounterView implements EncounterView {
       stars.cancel();
       stars = null;
     }
-    // The scene is over: the engines fade fast with the music.
+    // The scene is over: the engines and the alarms fade fast with the music.
+    content.stopAlarms();
     sound.engineStop(true, CLOSE_FADE_SECONDS);
     sound.engineStop(false, CLOSE_FADE_SECONDS);
     sound.music(MusicTheme.NONE);

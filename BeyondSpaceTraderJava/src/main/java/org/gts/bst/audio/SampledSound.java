@@ -16,6 +16,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
+import org.gts.bst.ports.Alarm;
 import org.gts.bst.ports.AmbienceKey;
 import org.gts.bst.ports.MusicTheme;
 import org.gts.bst.ports.SoundEffect;
@@ -211,6 +212,25 @@ public final class SampledSound implements SoundService {
     mixer.setVolume(channel, volume);
   }
 
+  @Override
+  public void alarm(Alarm alarm, boolean on) {
+    if(alarm == null) {
+      return;
+    }
+    if(!on) {
+      mixer.stopAlarm(alarm);
+      return;
+    }
+    // Like the engines, the loops start even with the sound off: turning it on
+    // resumes them. A missing sample means no alarm at all.
+    float[] sample = library.sample(alarmKey(alarm));
+    if(sample == null) {
+      mixer.stopAlarm(alarm);
+    } else {
+      mixer.startAlarm(alarm, sample);
+    }
+  }
+
   /** Plays the samples of a key as a one-shot (null sample is silence). */
   private void playKey(String key) {
     mixer.play(library.sample(key), 1f);
@@ -225,6 +245,8 @@ public final class SampledSound implements SoundService {
         return "ui/menu-select";
       case ALERT:
         return "alerts/alert";
+      case POLICE:
+        return "alerts/police";
       case WARNING:
         return "alerts/warning";
       case LASER:
@@ -264,6 +286,11 @@ public final class SampledSound implements SoundService {
 
   private static String ambienceKey(AmbienceKey key) {
     return "ambient/" + key.name().toLowerCase(Locale.ROOT);
+  }
+
+  /** The sample of an alarm loop. */
+  static String alarmKey(Alarm alarm) {
+    return alarm == Alarm.ATTACK ? "alerts/attack" : "alerts/danger";
   }
 
   private static String musicKey(MusicTheme theme) {

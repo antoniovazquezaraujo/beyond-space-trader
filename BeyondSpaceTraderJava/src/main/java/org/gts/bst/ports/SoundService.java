@@ -105,6 +105,16 @@ public interface SoundService {
   default void music(MusicTheme theme) {
   }
 
+  /**
+   * Starts or stops an alarm loop ({@code alerts/attack}, {@code alerts/danger});
+   * the two can sound together, and a missing sample is silence.
+   *
+   * @param alarm the alarm to start or stop
+   * @param on true to start the loop, false to fade it out
+   */
+  default void alarm(Alarm alarm, boolean on) {
+  }
+
   /** A service that plays nothing (tests, headless runs and the mute option). */
   SoundService NONE = effect -> {
   };

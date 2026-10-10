@@ -20,6 +20,8 @@ public enum SoundEffect {
   MENU_SELECT,
   /** A message to read (a dialog with a single button). */
   ALERT,
+  /** The police shows up in an encounter. */
+  POLICE,
   /** A question waiting for an answer (a dialog with two buttons). */
   WARNING,
   /** A shot is born. */

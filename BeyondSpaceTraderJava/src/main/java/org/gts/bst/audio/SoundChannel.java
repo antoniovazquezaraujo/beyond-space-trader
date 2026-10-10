@@ -18,5 +18,6 @@ public enum SoundChannel {
   EFFECTS,
   AMBIENCE,
   MUSIC,
-  ENGINES
+  ENGINES,
+  ALERTS
 }

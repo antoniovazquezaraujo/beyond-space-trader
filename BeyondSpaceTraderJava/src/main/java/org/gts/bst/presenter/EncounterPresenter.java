@@ -19,6 +19,7 @@ import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
 import org.gts.bst.ports.MusicTheme;
+import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.Weapon;
 import org.gts.bst.ship.equip.WeaponType;
@@ -51,6 +52,8 @@ public class EncounterPresenter implements EncounterDialogHost {
   /** The number of the round: every one is a new part for the scene. */
   private int round;
   private boolean running;
+  /** The police alarm sounds once per encounter, even if it turns police later. */
+  private boolean policeAlertPlayed;
 
   public EncounterPresenter(Game game, EncounterView view) {
     this.game = game;
@@ -282,8 +285,17 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   /** Renders a part: the tension picks the music and the rest is the model. */
   private void render() {
+    playPoliceAlert();
     view.music(music(game.encounter().getEncounterType()));
     view.render(model(game.encounter().EncounterText(), game.encounter().EncounterAction()));
+  }
+
+  /** The police alarm, once per encounter (also when the police shows up later). */
+  private void playPoliceAlert() {
+    if(!policeAlertPlayed && ShipArtItems.police(game.encounter().getEncounterType())) {
+      policeAlertPlayed = true;
+      view.effect(SoundEffect.POLICE);
+    }
   }
 
   /**

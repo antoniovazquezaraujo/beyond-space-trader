@@ -25,6 +25,7 @@ import org.gts.bst.view.ShipArtFile;
 import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipPicture;
 import org.gts.bst.view.ShipSites;
+import org.gts.bst.ports.Alarm;
 import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ports.SoundService;
 import org.gts.bst.ship.equip.WeaponType;
@@ -142,6 +143,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private final SoundService sound;
   private Supplier<WeaponType> youWeapon = () -> null;
   private Supplier<WeaponType> opponentWeapon = () -> null;
+  /** The alarm loops of the fight: the rival firing and the first hit on us. */
+  private boolean attackAlarm;
+  private boolean dangerAlarm;
   private final List<String> log = new ArrayList<>();
   private final List<String> alerts = new ArrayList<>();
   private final List<Beam> beams = new ArrayList<>();
@@ -490,6 +494,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
         // Its way takes it out of the scene: it is gone, minding its business.
         opponentGone = true;
         sound.engineStop(false, ENGINE_MARCH_FADE);
+        stopAlarms();
         if(onOpponentGone != null) {
           // The crossing is over: the encounter ends by itself.
           onOpponentGone.run();
@@ -764,16 +769,22 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
       // Our own ship broke up this round: the engine fades with the explosion.
       sound.engineStop(true, ENGINE_DESTROY_FADE);
       sound.play(SoundEffect.EXPLOSION);
+      stopAlarms();
     }
     if(down && before.opponentHull().value() > 0) {
       sound.engineStop(false, ENGINE_DESTROY_FADE);
       sound.play(SoundEffect.EXPLOSION);
+      stopAlarms();
       for(int i = 0; i < 4; i++) {
         flashes.add(new Flash(opponentX() + opponentWidth / 2 - 2 + i, opponentMiddleY() - 1 + i % 2,
             String.valueOf(BURST), i % 2 == 0 ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.RED_BRIGHT,
             BURST_FRAMES, false));
       }
       return;
+    }
+    if(after.opponentDisabled() && !before.opponentDisabled()) {
+      // The fight is over when the systems are disabled.
+      stopAlarms();
     }
     // My beam: aimed at the other ship, where it stops (a hit) or goes on (a miss).
     if(after.youAttacked()) {
@@ -947,8 +958,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(model != null && !opponentGone && !opponentLeaving) {
       opponentLeaving = true;
       opponentLeavesRight = toTheRight;
-      // The engine fades while the ship goes away through the edge.
+      // The engine fades while the ship goes away through the edge, and the
+      // fight is over: the alarms stop too.
       sound.engineStop(false, ENGINE_MARCH_FADE);
+      stopAlarms();
       invalidate();
     }
   }
@@ -960,6 +973,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** The scene shows a result to read: it stays until the player leaves (intro). */
   public void awaitLeave() {
+    // The fight is over (a surrender, a loot, an inspection): no alarm goes on.
+    stopAlarms();
     leaving = true;
     invalidate();
   }
@@ -979,8 +994,39 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     int toY = pendingOppHit ? targetY : aimedY(nose, row, targetX, targetY, toX);
     beams.add(new Beam(nose, row, toX, toY, TextColor.ANSI.RED_BRIGHT, BEAM_FRAMES));
     opponentShot();
+    // The first shot of the rival starts the attack alarm; it stays on while the
+    // fight lasts (over the danger one, if it is already sounding).
+    startAttackAlarm();
     if(pendingOppHit) {
       impact(yourX(), targetY, pendingOppDamage, false);
+    }
+  }
+
+  /** The first shot of the rival: the attack alarm loop starts. */
+  private void startAttackAlarm() {
+    if(!attackAlarm) {
+      attackAlarm = true;
+      sound.alarm(Alarm.ATTACK, true);
+    }
+  }
+
+  /** The first hit on our ship: the danger alarm loop starts, over the attack one. */
+  private void startDangerAlarm() {
+    if(!dangerAlarm) {
+      dangerAlarm = true;
+      sound.alarm(Alarm.DANGER, true);
+    }
+  }
+
+  /** Stops the alarm loops of the fight (idempotent); nothing rings after this. */
+  public void stopAlarms() {
+    if(attackAlarm) {
+      attackAlarm = false;
+      sound.alarm(Alarm.ATTACK, false);
+    }
+    if(dangerAlarm) {
+      dangerAlarm = false;
+      sound.alarm(Alarm.DANGER, false);
     }
   }
 
@@ -1018,6 +1064,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
    */
   private void impact(int shipLeft, int row, int damage, boolean onOpponent) {
     sound.play(SoundEffect.HIT);
+    if(!onOpponent) {
+      // The first hit on our ship starts the danger alarm, over the attack one.
+      startDangerAlarm();
+    }
     boolean shield = onOpponent ? model.opponentShield().value() > 0 : model.youShield().value() > 0;
     int x = shipLeft + (onOpponent ? opponentWidth : youWidth) / 2;
     if(shield) {
