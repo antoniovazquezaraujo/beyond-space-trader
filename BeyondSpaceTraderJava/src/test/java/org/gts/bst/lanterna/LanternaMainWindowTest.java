@@ -2281,6 +2281,35 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theChartSoundsWhenTheCursorMovesAndSelects() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      assertEquals(List.of(SoundEffect.CHART_MOVE), sound.played(), "the cursor moving on the map");
+
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(SoundEffect.CHART_SELECT), sound.played(), "tracking the system on the map");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void warpingPlaysTheWarpSound() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();

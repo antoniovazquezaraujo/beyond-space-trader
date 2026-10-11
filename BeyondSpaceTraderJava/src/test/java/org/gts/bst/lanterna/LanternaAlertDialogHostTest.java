@@ -198,6 +198,67 @@ class LanternaAlertDialogHostTest {
   }
 
   @Test
+  void theDialogFocusAndItsButtonsSound() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      LanternaAlertDialogHost host = new LanternaAlertDialogHost(gui, sound);
+      DialogResult[] answer = new DialogResult[1];
+      Thread worker = new Thread(() -> answer[0] = host.show("Title", "Question",
+          List.of(new AlertButton("Yes", DialogResult.Yes), new AlertButton("No", DialogResult.No))));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui);
+      gui.updateScreen();
+      sound.clear();
+
+      // The n key moves the focus and sounds; Escape stays silent.
+      dialog.handleInput(new KeyStroke('n', false, false));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "moving the dialog focus");
+
+      // ENTER presses the focused button (the second one after n): one select.
+      sound.clear();
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the dialog closes with ENTER");
+      assertEquals(DialogResult.No, answer[0], "the focused button is the second after n");
+      assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played(), "the acceptance sounds once");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void cancellingADialogStaysSilent() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      LanternaAlertDialogHost host = new LanternaAlertDialogHost(gui, sound);
+      DialogResult[] answer = new DialogResult[1];
+      Thread worker = new Thread(() -> answer[0] = host.show("Title", "Question",
+          List.of(new AlertButton("Yes", DialogResult.Yes), new AlertButton("No", DialogResult.No))));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui);
+      sound.clear();
+
+      dialog.handleInput(new KeyStroke(KeyType.Escape));
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the dialog closes with ESCAPE");
+      assertEquals(DialogResult.No, answer[0], "Escape picks the cancel button");
+      assertEquals(List.of(), sound.played(), "a cancel does not sound");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theQuietOutcomesGoToTheSinkWithoutSoundOrDialog() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
     screen.startScreen();

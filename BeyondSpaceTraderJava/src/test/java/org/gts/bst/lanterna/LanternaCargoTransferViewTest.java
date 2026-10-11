@@ -18,14 +18,42 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
+import java.util.List;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.presenter.CargoTransferPresenter;
 import org.gts.bst.ports.DialogService;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.testing.TestSoundService;
 import org.junit.jupiter.api.Test;
 import spacetrader.Game;
 
 
 class LanternaCargoTransferViewTest {
+  @Test
+  void theNumbersSoundWhenTheCargoMoves() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
+      Game game = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, DialogService.NONE);
+      game.encounter().getOpponent().Cargo()[0] = 7;
+      LanternaCargoTransferView view = new LanternaCargoTransferView(gui, game,
+          CargoTransferPresenter.Mode.Plunder, sound);
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+      sound.clear();
+
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('1', false, false, true));
+
+      assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played(), "moving the cargo sounds");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   @Test
   void digitIndexAcceptsTheShiftedSymbols() {
     assertEquals(0, LanternaCargoTransferView.digitIndex('1'));
