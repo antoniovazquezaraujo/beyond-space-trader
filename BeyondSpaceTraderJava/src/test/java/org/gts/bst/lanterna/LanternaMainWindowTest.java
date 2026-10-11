@@ -46,6 +46,7 @@ import org.gts.bst.ports.DialogResult;
 import org.gts.bst.ports.DialogService;
 import org.gts.bst.ports.GameWindow;
 import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.view.LanternaDialogService;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -2303,6 +2304,77 @@ class LanternaMainWindowTest {
       sound.clear();
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       assertEquals(List.of(SoundEffect.CHART_SELECT), sound.played(), "tracking the system on the map");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theWarpSoundsWhenTheShipSetsOffNotOnArrival() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      List<StarSystem> atWarp = new ArrayList<>();
+      Game[] holder = new Game[1];
+      // The whole trip (encounters included) resolves inside Warp: at the sound
+      // of the warp the commander must still be in the system of departure.
+      SoundService watched = effect -> {
+        if(effect == SoundEffect.WARP) {
+          atWarp.add(holder[0].Commander().CurrentSystem());
+        }
+        sound.play(effect);
+      };
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, watched);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(),
+          (type, messageArgs) -> DialogResult.Yes);
+      holder[0].setAutoSave(false);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem origin = holder[0].Commander().CurrentSystem();
+      StarSystem target = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != origin && system.DestOk()) {
+          target = system;
+          break;
+        }
+      }
+      assertNotNull(target, "the galaxy must have a reachable system");
+      holder[0].SelectedSystemId(target.Id());
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+
+      assertSame(target, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertEquals(List.of(SoundEffect.WARP), sound.played(), "the trip plays the warp");
+      assertEquals(List.of(origin), atWarp, "the warp sounds when the ship sets off, not on arrival");
+
+      // The Portable Singularity jump sounds at the same moment: on departure.
+      holder[0].setCanSuperWarp(true);
+      StarSystem far = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != holder[0].Commander().CurrentSystem()) {
+          far = system;
+          break;
+        }
+      }
+      assertNotNull(far, "the galaxy must have another system");
+      StarSystem beforeJump = holder[0].Commander().CurrentSystem();
+      holder[0].SelectedSystemId(far.Id());
+      atWarp.clear();
+      sound.clear();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('g', false, false));
+      gui.updateScreen();
+
+      assertSame(far, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertEquals(List.of(beforeJump), atWarp, "the jump sounds when the ship sets off too");
     } finally {
       screen.stopScreen();
       screen.close();
