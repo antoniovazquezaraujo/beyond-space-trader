@@ -545,7 +545,66 @@ class LanternaEncounterViewTest {
 
     content.opponentLeaves(true);
 
-    assertEquals(List.of(Boolean.FALSE), sound.engineStops(), "the ship that marches out stops its engine");
+    assertEquals(List.of(), sound.engineStops(), "the engine goes on while the ship crosses the edge");
+    assertTrue(content.animating(), "the scene is not over until the ship is gone");
+
+    content.tick();
+
+    assertEquals(List.of(Boolean.FALSE), sound.engineStops(),
+        "and it stops when the ship leaves the screen");
+  }
+
+  @Test
+  void ignoringWhileTheRivalCrossesStopsTheEngineOnlyWhenItDisappears() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
+      LanternaEncounterView[] view = new LanternaEncounterView[1];
+      List<EncounterAction> executed = new ArrayList<>();
+      // The presenter of an Ignore exits and closes the scene.
+      view[0] = new LanternaEncounterView(gui, action -> {
+        executed.add(action);
+        view[0].close();
+      }, () -> { }, plunder -> { }, sound);
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view[0].render(ignoring(you, opponent, 0));
+      gui.addWindow(view[0].asWindow());
+      gui.updateScreen();
+      EncounterSceneComponent content = (EncounterSceneComponent) view[0].asWindow().getComponent();
+      for(int i = 0; i < 14; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+
+      // The player ignores it while it crosses: the scene waits for the exit.
+      view[0].asWindow().getFocusedInteractable().handleInput(new KeyStroke('i', false, false));
+      assertEquals(List.of(EncounterAction.Ignore), executed);
+      assertTrue(content.animating(), "the scene waits for the crossing");
+      assertTrue(gui.getWindows().contains(view[0].asWindow()), "and it stays open");
+      assertEquals(List.of(), sound.engineStops(), "the engine goes on while the ship is on screen");
+
+      // The ship finishes crossing: the engine stops and the view closes.
+      int frames = 0;
+      while(frames < 60 && gui.getWindows().contains(view[0].asWindow())) {
+        content.tick();
+        gui.updateScreen();
+        frames++;
+      }
+      assertFalse(gui.getWindows().contains(view[0].asWindow()), "the view closes when the ship is gone");
+      assertEquals(List.of(Boolean.FALSE, Boolean.TRUE, Boolean.FALSE), sound.engineStops(),
+          "the rival's engine stops when it disappears, and the close fades both");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
   }
 
   @Test
