@@ -45,6 +45,7 @@ the numbered variants are explained above.
 | `alerts/alert-1.wav` | A dialog with a single button |
 | `alerts/warning-1.wav` | A dialog that asks a question (two buttons) |
 | `alerts/police-1.wav` | The police shows up in an encounter (once per encounter) |
+| `alerts/police-scan-1.wav` | The police scanner sweeps your ship |
 | `combat/laser-pulse-1.wav` | A Pulse laser firing |
 | `combat/laser-beam-1.wav` | A Beam laser firing |
 | `combat/laser-military-1.wav` | A Military laser firing |
