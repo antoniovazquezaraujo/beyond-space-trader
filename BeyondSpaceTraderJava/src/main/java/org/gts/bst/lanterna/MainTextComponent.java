@@ -968,6 +968,13 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       return row;
     }
     UiPalette.title(graphics, x, row++, title, panelWidth);
+    if(count == 0) {
+      // Nothing for sale here (the system tech level): say it, do not leave a gap.
+      if(row < height - 5) {
+        UiPalette.line(graphics, x, row++, Strings.EquipmentNoneForSale, panelWidth);
+      }
+      return row;
+    }
     List<String> buy = new ArrayList<>();
     buy.addAll(equipment.buyWeapons());
     buy.addAll(equipment.buyShields());

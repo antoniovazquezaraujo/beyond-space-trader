@@ -175,7 +175,9 @@ public class EquipmentPresenter {
         selected.Name(),
         Strings.EquipmentTypes.get(selected.EquipmentType().CastToInt()),
         Strings.EquipmentDescriptions.get(selected.EquipmentType().CastToInt()).get(selected.SubType().asInteger()),
-        Functions.FormatMoney(selected.Price()),
+        // On the sell side the system may not offer the item at all (its tech
+        // level can be lower, and Price() is 0 then): the line carries only the sale.
+        sellSideSelected ? "" : Functions.FormatMoney(selected.Price()),
         Functions.FormatMoney(selected.SellPrice()),
         power,
         charge,
