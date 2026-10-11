@@ -822,6 +822,7 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** The police scanner; when it ends, they say the outcome (all clear). */
   public void inspection(boolean confiscated, String afterScan) {
+    sound.play(SoundEffect.POLICE_SCAN);
     scanFrames = SCAN_FRAMES;
     catwalkPending = confiscated;
     scanSpeech = afterScan;

@@ -251,6 +251,8 @@ public final class SampledSound implements SoundService {
         return "alerts/alert";
       case POLICE:
         return "alerts/police";
+      case POLICE_SCAN:
+        return "alerts/police-scan";
       case WARNING:
         return "alerts/warning";
       case LASER:

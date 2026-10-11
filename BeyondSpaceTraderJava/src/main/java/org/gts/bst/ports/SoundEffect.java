@@ -26,6 +26,8 @@ public enum SoundEffect {
   ALERT,
   /** The police shows up in an encounter. */
   POLICE,
+  /** The police scanner sweeps the ship. */
+  POLICE_SCAN,
   /** A question waiting for an answer (a dialog with two buttons). */
   WARNING,
   /** A shot is born. */
