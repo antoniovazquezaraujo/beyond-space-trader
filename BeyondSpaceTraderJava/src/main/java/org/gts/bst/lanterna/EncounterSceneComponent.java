@@ -618,6 +618,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
           || toward < 0 && opponentX() + opponentWidth <= -2) {
         opponentGone = true;
         opponentLeaving = false;
+        // The ship is off the screen at last: now its engine fades out.
+        sound.engineStop(false, ENGINE_MARCH_FADE);
       }
     }
     if(responseFrames > 0 && --responseFrames == 0) {
@@ -959,9 +961,8 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     if(model != null && !opponentGone && !opponentLeaving) {
       opponentLeaving = true;
       opponentLeavesRight = toTheRight;
-      // The engine fades while the ship goes away through the edge, and the
-      // fight is over: the alarms stop too.
-      sound.engineStop(false, ENGINE_MARCH_FADE);
+      // The fight is over (the alarms stop), but the engine goes on until the
+      // ship leaves the screen (see the exit block of tick).
       stopAlarms();
       invalidate();
     }
@@ -982,7 +983,10 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
 
   /** True while the scene has something to finish (the close has to wait for it). */
   public boolean animating() {
-    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving || opponentLeaving;
+    // The crossing of the ship that ignores us also counts: the scene is not
+    // over until it leaves the screen.
+    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving || opponentLeaving
+        || model != null && model.opponentIgnores() && !opponentGone;
   }
 
   /** The reply of the other ship, played a moment after our shot. */

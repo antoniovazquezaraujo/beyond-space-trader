@@ -144,9 +144,13 @@ public final class LanternaEncounterView implements EncounterView {
       }
     });
     content.onOpponentGone(() -> {
-      if(closed || closing) {
-        // The encounter is already going: a frame queued by the star timer
-        // must not ignore it twice or close it again.
+      if(closed) {
+        return;
+      }
+      if(closing) {
+        // The scene was only waiting for the crossing: the ship is off the
+        // screen, so the close goes now (no extra wait).
+        closeNow();
         return;
       }
       if(model == null || !model.actions().contains(EncounterAction.Ignore)) {
