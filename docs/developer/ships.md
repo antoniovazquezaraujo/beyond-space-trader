@@ -407,3 +407,68 @@ Inside an open list (the chassis with `f` in the ship editor, the colours and
 backgrounds with `t`/`f` in the hull editor) the arrows and `n`/`p` move the
 selection and ENTER picks it; outside the list `n`/`p` keep cycling the elements
 as the tables above say.
+
+## Appendix: the ships, by the numbers
+
+The source of truth is `Consts.ShipSpecs`. Hull in points; cargo bays, equipment
+slots, crew quarters and fuel tanks in units; the fuel cost per unit and the
+repair cost per hull point in credits; the price in credits, before the trade-in
+of the ship in use. **Motors** is the number of engine pieces the drawing of the
+ship carries (one, two or three by size): the game has no engine statistic, fuel
+tanks and fuel cost do that job.
+
+### The shipyard ships
+
+| Ship | Size | Hull | Cargo bays | Weapons | Shields | Gadgets | Crew | Fuel tanks | Fuel cost | Repair cost | Motors | Price | Tech |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Flea | Tiny | 25 | 10 | 0 | 0 | 0 | 1 | 20 | 1 | 1 | 1 | 2,000 | 4 |
+| Gnat | Small | 100 | 15 | 1 | 0 | 1 | 1 | 14 | 1 | 2 | 1 | 10,000 | 5 |
+| Firefly | Small | 100 | 20 | 1 | 1 | 1 | 1 | 17 | 1 | 3 | 1 | 25,000 | 5 |
+| Mosquito | Small | 100 | 15 | 2 | 1 | 1 | 1 | 13 | 1 | 5 | 1 | 30,000 | 5 |
+| Bumblebee | Medium | 100 | 25 | 1 | 2 | 2 | 2 | 15 | 1 | 7 | 2 | 60,000 | 5 |
+| Beetle | Medium | 50 | 50 | 0 | 1 | 1 | 3 | 14 | 1 | 10 | 2 | 80,000 | 5 |
+| Hornet | Large | 150 | 20 | 3 | 2 | 1 | 2 | 16 | 2 | 15 | 2 | 100,000 | 6 |
+| Grasshopper | Large | 150 | 30 | 2 | 2 | 3 | 3 | 15 | 3 | 15 | 2 | 150,000 | 6 |
+| Termite | Huge | 200 | 60 | 1 | 3 | 2 | 3 | 13 | 4 | 20 | 3 | 225,000 | 7 |
+| Wasp | Huge | 200 | 35 | 3 | 2 | 2 | 3 | 14 | 5 | 20 | 3 | 300,000 | 7 |
+
+### The special ships
+
+Their occurrence is 0: the game never generates them at random (quests and
+scripted encounters place them). The shipyard lists them at a level-8 system,
+because it only filters by the minimum tech level of the ship. The Custom Ship
+is the one of the designer: its values are the ones the player sets there.
+
+| Ship | Size | Hull | Cargo bays | Weapons | Shields | Gadgets | Crew | Fuel tanks | Fuel cost | Repair cost | Motors | Price |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Space Monster | Huge | 500 | 0 | 3 | 0 | 0 | 1 | 1 | 1 | 1 | 3 | 500,000 |
+| Dragonfly | Small | 10 | 0 | 2 | 3 | 2 | 1 | 1 | 1 | 1 | 1 | 500,000 |
+| Mantis | Medium | 300 | 0 | 3 | 1 | 3 | 3 | 1 | 1 | 1 | 2 | 500,000 |
+| Scarab | Large | 400 | 20 | 2 | 0 | 0 | 2 | 1 | 1 | 1 | 2 | 500,000 |
+| Scorpion | Huge | 300 | 30 | 2 | 2 | 2 | 2 | 1 | 1 | 1 | 3 | 500,000 |
+| Bottle | Small | 10 | 0 | 0 | 0 | 0 | 0 | 1 | 1 | 1 | 1 | 100 |
+| Custom Ship | Huge | — | — | — | — | — | — | — | — | — | 3 | — |
+
+### Appearance and roles
+
+When the game builds a random opponent it filters the types by the political
+system and weighs the rest by **Appearance** (the higher, the more common).
+**Police**, **Pirates** and **Traders** are the minimum activity the system
+needs for the type to show up in that role: 0 means any system, `—` means the
+type never appears in that role.
+
+| Ship | Appearance | Police | Pirates | Traders |
+| --- | --- | --- | --- | --- |
+| Flea | 2 | — | — | 0 |
+| Gnat | 28 | 0 | 0 | 0 |
+| Firefly | 20 | 0 | 0 | 0 |
+| Mosquito | 20 | 0 | 1 | 0 |
+| Bumblebee | 15 | 1 | 1 | 0 |
+| Beetle | 3 | — | — | 0 |
+| Hornet | 6 | 2 | 3 | 1 |
+| Grasshopper | 2 | 3 | 4 | 2 |
+| Termite | 2 | 4 | 5 | 3 |
+| Wasp | 2 | 5 | 6 | 4 |
+
+The special ships have appearance 0 and never take part in the random
+generation.
