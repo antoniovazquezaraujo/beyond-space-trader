@@ -29,6 +29,7 @@ import spacetrader.StarSystem;
 import spacetrader.Strings;
 import spacetrader.TestDialogService;
 import spacetrader.enums.AlertType;
+import spacetrader.enums.TechLevel;
 
 
 class EquipmentPresenterTest {
@@ -62,6 +63,31 @@ class EquipmentPresenterTest {
     assertTrue(view.info.sellVisible());
     assertFalse(view.info.buyVisible());
     assertTrue(view.info.power().matches("\\d+"));
+  }
+
+  @Test
+  void theSellSideOnlyShowsTheSellPrice() {
+    Game game = newGame(new TestDialogService());
+    // A low-tech system does not sell the starting laser (Price() is 0): the
+    // panel must not paint a buy price next to the real sell one.
+    StarSystem low = game.Universe()[0];
+    low.TechLevel(TechLevel.t1);
+    game.Commander().CurrentSystem(low);
+    FakeView view = new FakeView();
+    EquipmentPresenter presenter = new EquipmentPresenter(game, view);
+    presenter.update();
+
+    presenter.select(EquipmentType.Weapon, true, 0);
+    assertTrue(view.info.sellVisible());
+    assertEquals("", view.info.buyPrice(), "the sell side shows no buy price");
+    assertFalse(view.info.sellPrice().isEmpty(), "and the sell price is there: " + view.info.sellPrice());
+
+    // The buy side keeps its own price.
+    moveToHighTechSystem(game);
+    presenter.update();
+    Ship ship = game.Commander().getShip();
+    presenter.select(EquipmentType.Weapon, false, view.model.buyWeapons().indexOf(ship.Weapons()[0].Name()));
+    assertFalse(view.info.buyPrice().isEmpty(), "the buy side still shows the buy price");
   }
 
   @Test

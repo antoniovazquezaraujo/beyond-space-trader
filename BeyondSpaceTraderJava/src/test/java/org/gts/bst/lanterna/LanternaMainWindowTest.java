@@ -61,6 +61,7 @@ import spacetrader.enums.StarSystemId;
 import spacetrader.Strings;
 import spacetrader.TestDialogService;
 import spacetrader.TradeCalculator;
+import spacetrader.enums.TechLevel;
 
 
 class LanternaMainWindowTest {
@@ -985,6 +986,33 @@ class LanternaMainWindowTest {
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
       gui.updateScreen();
       assertFalse(screenText(screen).contains(Strings.PersonnelTitle));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theEquipmentPanelSaysWhenNothingIsForSale() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      // A system below the tech level of everything for sale: an empty buy list.
+      holder[0].Commander().CurrentSystem().TechLevel(TechLevel.t1);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('e', false, false));
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains(Strings.EquipmentNoneForSale), screenText(screen));
     } finally {
       screen.stopScreen();
       screen.close();
