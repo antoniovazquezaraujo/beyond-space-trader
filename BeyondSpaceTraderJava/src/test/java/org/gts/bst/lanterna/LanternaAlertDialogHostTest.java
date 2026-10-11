@@ -259,6 +259,35 @@ class LanternaAlertDialogHostTest {
   }
 
   @Test
+  void theDialogsOpenAtTheBottom() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      LanternaAlertDialogHost host = new LanternaAlertDialogHost(gui);
+      Thread worker = new Thread(() -> host.show("Title", "Message",
+          List.of(new AlertButton("Ok", DialogResult.OK))));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui);
+      // The placement happens right after the window is added: give it a moment.
+      for(int i = 0; i < 100 && dialog.getPosition().getRow() <= 10; i++) {
+        Thread.sleep(10);
+      }
+
+      assertTrue(dialog.getPosition().getRow() > 20 / 2,
+          "the dialog opens in the lower half (row " + dialog.getPosition().getRow() + ")");
+
+      dialog.handleInput(new KeyStroke(KeyType.Escape));
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the dialog closes with ESCAPE");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theQuietOutcomesGoToTheSinkWithoutSoundOrDialog() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
     screen.startScreen();

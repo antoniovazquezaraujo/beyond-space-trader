@@ -1656,7 +1656,7 @@ class LanternaEncounterViewTest {
       gui.addWindow(scene);
       gui.updateScreen();
 
-      Thread asking = new Thread(() -> LanternaDialogs.askAmountAtBottom(gui, "Comprar armas",
+      Thread asking = new Thread(() -> LanternaDialogs.askAmount(gui, "Comprar armas",
           "Cuántas unidades", 5));
       asking.setDaemon(true);
       asking.start();
