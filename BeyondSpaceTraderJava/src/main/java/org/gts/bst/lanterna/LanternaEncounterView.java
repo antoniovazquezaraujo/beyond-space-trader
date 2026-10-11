@@ -575,9 +575,8 @@ public final class LanternaEncounterView implements EncounterView {
    */
   private void execute(EncounterAction action) {
     clearAlertSpeech();
-    if(action == EncounterAction.Trade) {
-      awaitingLeave = true;
-    }
+    // The wait after a trade is marked by the cutscene itself (askCargo*Quantity),
+    // so a trade that never offered anything leaves the scene alive.
     commands.execute(action);
   }
 

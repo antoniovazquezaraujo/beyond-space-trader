@@ -54,6 +54,8 @@ public class EncounterPresenter implements EncounterDialogHost {
   private boolean running;
   /** The police alarm sounds once per encounter, even if it turns police later. */
   private boolean policeAlertPlayed;
+  /** True when the trade reached its offer: then the encounter ends after it. */
+  private boolean tradeOffered;
 
   public EncounterPresenter(Game game, EncounterView view) {
     this.game = game;
@@ -196,9 +198,16 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void trade() {
+    tradeOffered = false;
     // The catwalk and the question run inside the offer (the scene of the trade).
     game.encounter().EncounterTrade(this);
-    exit(EncounterResult.Normal);
+    if(tradeOffered) {
+      exit(EncounterResult.Normal);
+    } else {
+      // Nothing was offered (the trader has nothing we can pay for): the
+      // encounter goes on, so the player can still ignore, attack or flee.
+      update();
+    }
   }
 
   public void yield() {
@@ -235,6 +244,7 @@ public class EncounterPresenter implements EncounterDialogHost {
   public void buyTraderCargo(int tradeItem) {
     CargoBuyOffer offer = Trade.CargoBuyOffer(game, tradeItem, CargoBuyOp.BuyTrader);
     if(offer != null) {
+      tradeOffered = true;
       Integer qty = view.askCargoBuyQuantity(offer);
       if(qty != null) {
         Trade.CargoBuy(game, offer, qty);
@@ -246,6 +256,7 @@ public class EncounterPresenter implements EncounterDialogHost {
   public void sellTraderCargo(int tradeItem) {
     CargoSellOffer offer = Trade.CargoSellOffer(game, tradeItem, CargoSellOp.SellTrader);
     if(offer != null) {
+      tradeOffered = true;
       Integer qty = view.askCargoSellQuantity(offer);
       if(qty != null) {
         Trade.CargoSell(game, offer, qty);
