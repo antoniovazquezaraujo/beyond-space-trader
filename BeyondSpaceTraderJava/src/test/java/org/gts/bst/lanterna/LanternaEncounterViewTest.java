@@ -548,6 +548,21 @@ class LanternaEncounterViewTest {
   }
 
   @Test
+  void thePoliceScannerSoundsOnEverySweep() {
+    TestSoundService sound = new TestSoundService();
+    EncounterSceneComponent content = new EncounterSceneComponent(key -> false, sound);
+
+    // The one-argument inspection delegates to the two-argument one: a sweep.
+    content.inspection(false);
+    assertEquals(List.of(SoundEffect.POLICE_SCAN), sound.played(), "the sweep sounds once");
+
+    // A second scanner (the catwalk follows, then another inspection) sounds again.
+    content.inspection(true);
+    assertEquals(List.of(SoundEffect.POLICE_SCAN, SoundEffect.POLICE_SCAN), sound.played(),
+        "every sweep sounds");
+  }
+
+  @Test
   void theSceneShowsTheKeysOfTheAvailableActions() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();

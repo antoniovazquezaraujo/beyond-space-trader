@@ -118,6 +118,7 @@ class SampledSoundServiceTest {
     assertEquals("ui/chart-select", SampledSound.keyOf(SoundEffect.CHART_SELECT));
     assertEquals("ui/menu-move", SampledSound.keyOf(SoundEffect.MENU_MOVE));
     assertEquals("ui/menu-select", SampledSound.keyOf(SoundEffect.MENU_SELECT));
+    assertEquals("alerts/police-scan", SampledSound.keyOf(SoundEffect.POLICE_SCAN));
   }
 
   private static boolean hasSound(byte[] block) {
