@@ -53,7 +53,7 @@ the numbered variants are explained above.
 | `combat/laser-quantum-1.wav` | A Quantum disruptor firing |
 | `combat/hit-1.wav` | A shot landing on a ship (variants `-2`, `-3`... welcome) |
 | `combat/explosion-1.wav` | A ship being destroyed (variants welcome) |
-| `travel/warp-1.wav` | Warping to another system |
+| `travel/warp-1.wav` | Warping away: it sounds as the ship sets off |
 | `travel/escape-1.wav` | Getting away from an encounter |
 
 ### Loops
