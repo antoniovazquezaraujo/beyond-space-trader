@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -5375,7 +5376,26 @@ class LanternaEncounterViewTest {
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       assertEquals(List.of(EncounterAction.Trade), executed, "the intro key deals");
 
-      // The presenter closes the encounter when the trade is over: the scene waits.
+      // The cutscene of the trade (the catwalk and the question) is what marks
+      // the wait: cancelling the amount still leaves the scene waiting for the
+      // player when the presenter closes the encounter.
+      Thread answering = new Thread(() -> {
+        for(int i = 0; i < 1500 && gui.getWindows().size() < 2; i++) {
+          try {
+            Thread.sleep(20);
+          } catch(InterruptedException e) {
+            return;
+          }
+        }
+        Window dialog = gui.getActiveWindow();
+        if(dialog != null && dialog != view.asWindow()) {
+          dialog.handleInput(new KeyStroke(KeyType.Escape));
+        }
+      });
+      answering.setDaemon(true);
+      answering.start();
+      assertNull(view.askCargoBuyQuantity(new CargoBuyOffer(0, CargoBuyOp.BuyTrader, 120, 3)),
+          "the cancelled amount is no offer");
       view.close();
       gui.updateScreen();
       assertTrue(gui.getWindows().contains(view.asWindow()), "the scene waits for the player");
@@ -5384,6 +5404,45 @@ class LanternaEncounterViewTest {
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       gui.updateScreen();
       assertFalse(gui.getWindows().contains(view.asWindow()), "the player leaves with intro");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theIgnoreKeyStillWorksAfterATradeWithoutAnOffer() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      List<EncounterAction> executed = new ArrayList<>();
+      LanternaEncounterView view = new LanternaEncounterView(gui, executed::add, () -> { }, plunder -> { });
+      ShipPicture you = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
+          .picture(ShipType.Flea, List.of(), 0);
+      ShipPicture opponent = new ShipCatalog(List.of(),
+          ShipArtFile.parse(new StringReader("[dos]\nyyyyy\n")), List.of())
+          .picture(ShipType.Scorpion, List.of(), 0);
+      view.render(new EncounterViewModel(
+          EnumSet.of(EncounterAction.Attack, EncounterAction.Ignore, EncounterAction.Trade),
+          false, 0, "Flea", new EncounterViewModel.Bar(100, 100), new EncounterViewModel.Bar(0, 100),
+          "Trader", new EncounterViewModel.Bar(50, 100), new EncounterViewModel.Bar(100, 100),
+          "The trader offers to deal.", "Choose an action.",
+          ShipType.Flea, ShipType.Scorpion, false, false, 0, 0, you, opponent, false, false,
+          false, 5, false, 0, ""));
+      gui.addWindow(view.asWindow());
+      gui.updateScreen();
+
+      // The trade command opened no cutscene (the presenter never offered):
+      // the scene must not swallow the other keys.
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('t', false, false));
+      assertEquals(List.of(EncounterAction.Trade), executed);
+
+      view.asWindow().getFocusedInteractable().handleInput(new KeyStroke('i', false, false));
+      assertEquals(List.of(EncounterAction.Trade, EncounterAction.Ignore), executed,
+          "the ignore key is not swallowed after a trade without an offer");
     } finally {
       screen.stopScreen();
       screen.close();

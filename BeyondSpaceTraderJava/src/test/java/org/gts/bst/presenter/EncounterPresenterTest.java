@@ -484,6 +484,45 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void aTraderWithoutMoneyKeepsTheEncounterOpen() {
+    Game game = newGame();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+    game.encounter().getOpponent().Cargo()[0] = 1;
+    assertTrue(game.encounter().getOpponent().HasTradeableItems(), "the trader has something to sell");
+    game.Commander().setCash(0);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.trade();
+
+    assertFalse(view.closed, "a trade with no offer must not close the encounter");
+    assertFalse(view.cargoBuyAsked, "there was no offer to ask about");
+    assertEquals(EncounterResult.Continue, presenter.result(), "the encounter goes on");
+
+    presenter.ignore();
+
+    assertTrue(view.closed, "the merchant can still be ignored afterwards");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void anOfferedTradeEndsTheEncounterEvenWhenTheAmountIsCancelled() {
+    Game game = newGame();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+    game.encounter().getOpponent().Cargo()[0] = 1;
+    assertTrue(game.encounter().getOpponent().HasTradeableItems(), "the trader has something to sell");
+    game.Commander().setCash(100000);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.trade();
+
+    assertTrue(view.cargoBuyAsked, "the offer was shown");
+    assertTrue(view.closed, "after an offer the encounter ends, even if the amount is cancelled");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
   void submittingWithIllegalCargoConfiscatesAndFinesWithTheScanner() {
     TestDialogService dialogs = new TestDialogService();
     dialogs.setResult(DialogResult.Yes);
@@ -765,6 +804,7 @@ class EncounterPresenterTest {
     private boolean plunderShown;
     private boolean inspectionCalled;
     private boolean inspectionConfiscated;
+    private boolean cargoBuyAsked;
     private Integer cargoBuyAnswer;
     private Integer cargoSellAnswer;
 
@@ -838,6 +878,7 @@ class EncounterPresenterTest {
 
     @Override
     public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
+      cargoBuyAsked = true;
       return cargoBuyAnswer;
     }
 
