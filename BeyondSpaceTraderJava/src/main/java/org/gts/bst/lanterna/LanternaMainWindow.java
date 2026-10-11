@@ -294,27 +294,27 @@ public final class LanternaMainWindow
   @Override
   public Integer askFuelAmount(int maxAmount) {
     return LanternaDialogs.askAmount(gui, Strings.DialogFuelTitle,
-        Functions.StringVars(Strings.DialogFuelPrompt, "" + maxAmount), maxAmount);
+        Functions.StringVars(Strings.DialogFuelPrompt, "" + maxAmount), maxAmount, sound);
   }
 
   @Override
   public Integer askRepairsAmount(int maxAmount) {
     return LanternaDialogs.askAmount(gui, Strings.DialogRepairsTitle,
-        Functions.StringVars(Strings.DialogRepairsPrompt, "" + maxAmount), maxAmount);
+        Functions.StringVars(Strings.DialogRepairsPrompt, "" + maxAmount), maxAmount, sound);
   }
 
   @Override
   public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
     return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoBuyTitle, item),
-        Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount());
+        Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount(), sound);
   }
 
   @Override
   public Integer askCargoSellQuantity(CargoSellOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
     return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoSellTitle, item),
-        Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount());
+        Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount(), sound);
   }
 
   @Override
@@ -400,7 +400,7 @@ public final class LanternaMainWindow
       return;
     }
     LanternaCargoTransferView view = new LanternaCargoTransferView(gui, game,
-        plunder ? CargoTransferPresenter.Mode.Plunder : CargoTransferPresenter.Mode.Jettison);
+        plunder ? CargoTransferPresenter.Mode.Plunder : CargoTransferPresenter.Mode.Jettison, sound);
     gui.addWindow(view.asWindow());
     gui.waitForWindowToClose(view.asWindow());
   }
@@ -605,6 +605,7 @@ public final class LanternaMainWindow
         bankPresenter.payBack();
         return true;
       case 'i':
+        sound.play(SoundEffect.MENU_SELECT);
         bankPresenter.toggleInsurance();
         return true;
       default:
@@ -651,7 +652,7 @@ public final class LanternaMainWindow
   @Override
   public Integer askLoanAmount(int maxAmount) {
     return LanternaDialogs.askAmount(gui, Strings.DialogLoanTitle,
-        Functions.StringVars(Strings.DialogLoanPrompt, "" + maxAmount), maxAmount);
+        Functions.StringVars(Strings.DialogLoanPrompt, "" + maxAmount), maxAmount, sound);
   }
 
   @Override
@@ -659,7 +660,7 @@ public final class LanternaMainWindow
     Game game = gameSupplier.get();
     int max = Math.min(game.Commander().getDebt(), game.Commander().getCash());
     return LanternaDialogs.askAmount(gui, Strings.DialogPayBackTitle,
-        Functions.StringVars(Strings.DialogPayBackPrompt, "" + max), max);
+        Functions.StringVars(Strings.DialogPayBackPrompt, "" + max), max, sound);
   }
 
   @Override
@@ -753,27 +754,37 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         content.designerField(Math.floorMod(content.designerField() - 1, DESIGNER_FIELDS));
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         content.designerField(Math.floorMod(content.designerField() + 1, DESIGNER_FIELDS));
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowLeft:
         return changeDesignerField(model, -1);
       case ArrowRight:
         return changeDesignerField(model, 1);
-      case Enter:
-        return activateDesignerField(model);
+      case Enter: {
+        boolean activated = activateDesignerField(model);
+        if(activated) {
+          sound.play(SoundEffect.MENU_SELECT);
+        }
+        return activated;
+      }
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'r') {
+          sound.play(SoundEffect.MENU_SELECT);
           askDesignerName(model);
           return true;
         }
         if(character == 'c') {
+          sound.play(SoundEffect.MENU_SELECT);
           shipyardPresenter.construct(model.name());
           return true;
         }
         if(character == 'v') {
+          sound.play(SoundEffect.MENU_SELECT);
           shipyardPresenter.saveTemplate(model.name());
           return true;
         }
@@ -787,10 +798,12 @@ public final class LanternaMainWindow
     int field = content.designerField();
     if(field == 0 && !model.sizes().isEmpty()) {
       shipyardPresenter.onSizeChanged(Math.floorMod(model.sizeIndex() + delta, model.sizes().size()));
+      sound.play(SoundEffect.MENU_MOVE);
       return true;
     }
     if(field == 1 && !model.templates().isEmpty()) {
       shipyardPresenter.loadSelectedTemplate(Math.floorMod(model.templateIndex() + delta, model.templates().size()));
+      sound.play(SoundEffect.MENU_MOVE);
       return true;
     }
     if(field >= 3 && field <= 9) {
@@ -813,6 +826,7 @@ public final class LanternaMainWindow
       }
       numbers[index] = next;
       shipyardPresenter.onValuesChanged(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5], numbers[6]);
+      sound.play(SoundEffect.MENU_MOVE);
       return true;
     }
     return false;
@@ -956,7 +970,7 @@ public final class LanternaMainWindow
         break;
       case 8:
         Integer value = LanternaDialogs.askAmount(gui, Strings.DialogLeaveEmptyTitle,
-            Functions.StringVars(Strings.DialogLeaveEmptyPrompt, "99"), 99);
+            Functions.StringVars(Strings.DialogLeaveEmptyPrompt, "99"), 99, sound);
         if(value != null) {
           options.setLeaveEmpty(value);
         }
@@ -1034,6 +1048,7 @@ public final class LanternaMainWindow
         int index = content.shipListIndex();
         if(model != null && index < model.rows().size() && model.rows().get(index).buyVisible()) {
           shipListPresenter.buy(index);
+          sound.play(SoundEffect.MENU_SELECT);
           selectShipListEntry(0);
         }
         return true;
@@ -1069,13 +1084,17 @@ public final class LanternaMainWindow
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'b') {
-          equipmentPresenter.buy();
-          selectEquipmentEntry(content.equipmentIndex());
+          if(equipmentPresenter.buy()) {
+            sound.play(SoundEffect.MENU_SELECT);
+            selectEquipmentEntry(content.equipmentIndex());
+          }
           return true;
         }
         if(character == 's') {
-          equipmentPresenter.sell();
-          selectEquipmentEntry(content.equipmentIndex());
+          if(equipmentPresenter.sell()) {
+            sound.play(SoundEffect.MENU_SELECT);
+            selectEquipmentEntry(content.equipmentIndex());
+          }
           return true;
         }
         return false;
@@ -1162,6 +1181,7 @@ public final class LanternaMainWindow
     }
     game.Commander().setCash(game.Commander().getCash() - 2000);
     game.Commander().getShip().setEscapePod(true);
+    sound.play(SoundEffect.MENU_SELECT);
     content.log(Strings.MainEscapePodBought);
     refresh();
   }
@@ -1185,6 +1205,7 @@ public final class LanternaMainWindow
           return false;
         }
         if(personnelPresenter.hireFire()) {
+          sound.play(SoundEffect.MENU_SELECT);
           selectPersonnelEntry(Math.min(content.personnelIndex(),
               Math.max(0, content.personnelEntryCount() - 1)));
         }
@@ -1307,10 +1328,12 @@ public final class LanternaMainWindow
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'b') {
+          sound.play(SoundEffect.MENU_SELECT);
           presenter.buyCargo(content.selectedItem(), allAmount(key));
           return true;
         }
         if(character == 's') {
+          sound.play(SoundEffect.MENU_SELECT);
           presenter.sellCargo(content.selectedItem(), allAmount(key));
           return true;
         }
@@ -1420,6 +1443,7 @@ public final class LanternaMainWindow
     }
     if(best != null) {
       selectSystem(game, best);
+      sound.play(SoundEffect.CHART_MOVE);
     }
   }
 
@@ -1453,6 +1477,7 @@ public final class LanternaMainWindow
       // No answer or a No: the offer stays in the system.
       return;
     }
+    sound.play(SoundEffect.CHART_SELECT);
     try {
       game.HandleSpecialEvent();
     } catch(GameEndException e) {
@@ -1521,6 +1546,7 @@ public final class LanternaMainWindow
       return;
     }
     if(matches.size() == 1) {
+      sound.play(SoundEffect.CHART_SELECT);
       selectedSystem(game, matches.get(0));
       return;
     }
@@ -1545,6 +1571,7 @@ public final class LanternaMainWindow
   }
 
   private void trackSelection(Game game) {
+    sound.play(SoundEffect.CHART_SELECT);
     StarSystem selected = game.SelectedSystem() == null
         ? game.Commander().CurrentSystem() : game.SelectedSystem();
     if(selected == game.TrackedSystem()) {
@@ -1562,6 +1589,7 @@ public final class LanternaMainWindow
 
   private void buyFuel() {
     if(presenter != null && presenter.buyFuel()) {
+      sound.play(SoundEffect.MENU_SELECT);
       presenter.updateAll();
     }
     content.invalidate();
@@ -1829,22 +1857,28 @@ public final class LanternaMainWindow
 
   private boolean handleNewsKey(KeyStroke key) {
     key = listKey(key);
+    int before = content.newsScroll();
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveNewsScroll(-1);
-        return true;
+        break;
       case ArrowDown:
         content.moveNewsScroll(1);
-        return true;
+        break;
       case PageUp:
         content.moveNewsScroll(-10);
-        return true;
+        break;
       case PageDown:
         content.moveNewsScroll(10);
-        return true;
+        break;
       default:
         return false;
     }
+    // A scroll against an edge moves nothing: it must not sound.
+    if(content.newsScroll() != before) {
+      sound.play(SoundEffect.MENU_MOVE);
+    }
+    return true;
   }
 
   private void openNews() {
@@ -1859,8 +1893,10 @@ public final class LanternaMainWindow
   private boolean handleGameOverKey(KeyStroke key) {
     switch(key.getKeyType()) {
       case F2:
+        sound.play(SoundEffect.MENU_SELECT);
         return runAction(newGameAction, Strings.MainNewGameUnavailable);
       case F3:
+        sound.play(SoundEffect.MENU_SELECT);
         openHighScores();
         return true;
       case Escape:
@@ -1922,6 +1958,7 @@ public final class LanternaMainWindow
 
   private void buyRepairs() {
     if(presenter != null && presenter.buyRepairs()) {
+      sound.play(SoundEffect.MENU_SELECT);
       presenter.updateAll();
     }
     content.invalidate();

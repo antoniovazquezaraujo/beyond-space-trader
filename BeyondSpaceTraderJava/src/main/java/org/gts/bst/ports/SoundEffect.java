@@ -18,6 +18,10 @@ public enum SoundEffect {
   MENU_MOVE,
   /** An entry accepted (a menu, a toggle). */
   MENU_SELECT,
+  /** The chart cursor moves to another system. */
+  CHART_MOVE,
+  /** The chart accepts something (a target, a find, a special event). */
+  CHART_SELECT,
   /** A message to read (a dialog with a single button). */
   ALERT,
   /** The police shows up in an encounter. */

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.HullFile;
@@ -63,7 +64,13 @@ public final class ShipEditorView extends ArtEditorWindow {
   private String hullsPath = ShipArtFile.resolve("chassis.txt").toString();
 
   public ShipEditorView(List<ShipDesign> designs, List<ShipArtFile> hulls, List<ShipArtFile> pieces) {
-    super(Strings.EditorShipTitle);
+    this(designs, hulls, pieces, SoundService.NONE);
+  }
+
+  /** The same, with the sound of the tool that opens the editor. */
+  public ShipEditorView(List<ShipDesign> designs, List<ShipArtFile> hulls, List<ShipArtFile> pieces,
+      SoundService sound) {
+    super(Strings.EditorShipTitle, sound);
     this.hulls = hulls;
     this.pieces = pieces;
     this.designs = slots(designs);
@@ -254,6 +261,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       message = "no pieces with a key in pieces.txt";
       return;
     }
+    menuMove();
     int index = pens.indexOf(pen);
     pen = index < 0 ? pens.get(step < 0 ? pens.size() - 1 : 0)
         : pens.get((index + step + pens.size()) % pens.size());
@@ -367,9 +375,12 @@ public final class ShipEditorView extends ArtEditorWindow {
       char character = type == KeyType.Character ? Character.toLowerCase(key.getCharacter()) : 0;
       if((type == KeyType.ArrowUp || character == 'p') && !items.isEmpty()) {
         listIndex = (listIndex + items.size() - 1) % items.size();
+        menuMove();
       } else if((type == KeyType.ArrowDown || character == 'n') && !items.isEmpty()) {
         listIndex = (listIndex + 1) % items.size();
+        menuMove();
       } else if(type == KeyType.Enter) {
+        menuSelect();
         pick();
       }
       redraw();
@@ -377,24 +388,34 @@ public final class ShipEditorView extends ArtEditorWindow {
     }
     if(key.getKeyType() == KeyType.Tab) {
       nextDesign(1);
+      menuMove();
       return true;
     }
     if(key.getKeyType() == KeyType.ReverseTab) {
       nextDesign(-1);
+      menuMove();
       return true;
     }
     switch(key.getKeyType()) {
       case ArrowLeft:
-        cursorX = Math.max(0, cursorX - 1);
+        if(cursorX > 0) {
+          cursorX--;
+          menuMove();
+        }
         break;
       case ArrowRight:
         cursorX++;
+        menuMove();
         break;
       case ArrowUp:
-        cursorY = Math.max(0, cursorY - 1);
+        if(cursorY > 0) {
+          cursorY--;
+          menuMove();
+        }
         break;
       case ArrowDown:
         cursorY++;
+        menuMove();
         break;
       case Character:
         character(key.getCharacter());
@@ -409,23 +430,35 @@ public final class ShipEditorView extends ArtEditorWindow {
   /** The letters are vim keys (move), the digits pick an element; the rest are commands. */
   private void character(char character) {
     if(character >= '1' && character <= '9') {
+      if(character - '1' < pens().size()) {
+        menuMove();
+      }
       pickPen(character - '1');
       return;
     }
     switch(Character.toLowerCase(character)) {
       case 'h':
-        cursorX = Math.max(0, cursorX - 1);
+        if(cursorX > 0) {
+          cursorX--;
+          menuMove();
+        }
         break;
       case 'l':
         cursorX++;
+        menuMove();
         break;
       case 'k':
-        cursorY = Math.max(0, cursorY - 1);
+        if(cursorY > 0) {
+          cursorY--;
+          menuMove();
+        }
         break;
       case 'j':
         cursorY++;
+        menuMove();
         break;
       case ' ':
+        menuSelect();
         toggleCell();
         break;
       case 'n':
@@ -438,12 +471,15 @@ public final class ShipEditorView extends ArtEditorWindow {
         cycleVariant();
         break;
       case 't':
+        menuSelect();
         renameDesign();
         break;
       case 'f':
+        menuSelect();
         openList();
         break;
       case 's':
+        menuSelect();
         save();
         break;
       default:
@@ -476,6 +512,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       message = "the " + ShipSites.kindName(kind) + " has no variants";
       return;
     }
+    menuMove();
     variants.merge(kind, 1, Integer::sum);
     message = "preview: " + pieceFor(pen).name();
   }

@@ -16,6 +16,7 @@ import com.googlecode.lanterna.input.KeyType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.HullFile;
 import org.gts.bst.view.LetterGrid;
@@ -65,7 +66,12 @@ public final class HullEditorView extends ArtEditorWindow {
   private String shipsPath = ShipArtFile.resolve("ships.txt").toString();
 
   public HullEditorView(List<ShipArtFile> hulls) {
-    super(Strings.EditorHullTitle);
+    this(hulls, SoundService.NONE);
+  }
+
+  /** The same, with the sound of the tool that opens the editor. */
+  public HullEditorView(List<ShipArtFile> hulls, SoundService sound) {
+    super(Strings.EditorHullTitle, sound);
     this.hulls = new ArrayList<>(hulls);
     loadHull(0);
   }
@@ -159,9 +165,12 @@ public final class HullEditorView extends ArtEditorWindow {
       char character = type == KeyType.Character ? Character.toLowerCase(key.getCharacter()) : 0;
       if((type == KeyType.ArrowUp || character == 'p') && !items.isEmpty()) {
         listIndex = (listIndex + items.size() - 1) % items.size();
+        menuMove();
       } else if((type == KeyType.ArrowDown || character == 'n') && !items.isEmpty()) {
         listIndex = (listIndex + 1) % items.size();
+        menuMove();
       } else if(type == KeyType.Enter) {
+        menuSelect();
         pick();
       }
       redraw();
@@ -171,6 +180,7 @@ public final class HullEditorView extends ArtEditorWindow {
       char letter = Character.toUpperCase(key.getCharacter());
       ShipArtFile.ColorLetter old = currentLetter();
       if(letter != ' ') {
+        menuSelect();
         letters.set(letterIndex, new ShipArtFile.ColorLetter(letter, old.color(), old.bgColor(), old.blink()));
         message = "letter " + letter;
       }
@@ -180,24 +190,34 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     if(key.getKeyType() == KeyType.Tab) {
       nextHull(1);
+      menuMove();
       return true;
     }
     if(key.getKeyType() == KeyType.ReverseTab) {
       nextHull(-1);
+      menuMove();
       return true;
     }
     switch(key.getKeyType()) {
       case ArrowLeft:
-        cursorX = Math.max(0, cursorX - 1);
+        if(cursorX > 0) {
+          cursorX--;
+          menuMove();
+        }
         break;
       case ArrowRight:
         cursorX++;
+        menuMove();
         break;
       case ArrowUp:
-        cursorY = Math.max(0, cursorY - 1);
+        if(cursorY > 0) {
+          cursorY--;
+          menuMove();
+        }
         break;
       case ArrowDown:
         cursorY++;
+        menuMove();
         break;
       case Character:
         character(Character.toLowerCase(key.getCharacter()));
@@ -233,23 +253,35 @@ public final class HullEditorView extends ArtEditorWindow {
   /** The letters are vim keys (move), the digits pick an element; the rest are commands. */
   private void character(char character) {
     if(character >= '1' && character <= '9') {
+      if(character - '1' < letters.size()) {
+        menuMove();
+      }
       pickLetter(character - '1');
       return;
     }
     switch(character) {
       case 'h':
-        cursorX = Math.max(0, cursorX - 1);
+        if(cursorX > 0) {
+          cursorX--;
+          menuMove();
+        }
         break;
       case 'l':
         cursorX++;
+        menuMove();
         break;
       case 'k':
-        cursorY = Math.max(0, cursorY - 1);
+        if(cursorY > 0) {
+          cursorY--;
+          menuMove();
+        }
         break;
       case 'j':
         cursorY++;
+        menuMove();
         break;
       case ' ':
+        menuSelect();
         toggleCell();
         break;
       case 'n':
@@ -258,29 +290,45 @@ public final class HullEditorView extends ArtEditorWindow {
       case 'p':
         cycleLetter(-1);
         break;
-      case '+':
+      case '+': {
+        int before = letters.size();
         addLetter();
+        if(letters.size() != before) {
+          menuMove();
+        }
         break;
-      case '-':
+      }
+      case '-': {
+        int before = letters.size();
         removeLetter();
+        if(letters.size() != before) {
+          menuMove();
+        }
         break;
+      }
       case 'r':
+        menuSelect();
         nameLetter = true;
         message = "type the letter for the combination " + currentLetter().color();
         break;
       case 't':
+        menuSelect();
         openList(false);
         break;
       case 'f':
+        menuSelect();
         openList(true);
         break;
       case 'i':
+        menuMove();
         styleBlink();
         break;
       case 'z':
+        menuMove();
         styleSize();
         break;
       case 's':
+        menuSelect();
         save();
         break;
       default:
@@ -294,6 +342,7 @@ public final class HullEditorView extends ArtEditorWindow {
       message = "no elements: add one with [+]";
       return;
     }
+    menuMove();
     letterIndex = (letterIndex + step + letters.size()) % letters.size();
     message = "element: " + elementLabel(letterIndex);
   }

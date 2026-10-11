@@ -243,6 +243,10 @@ public final class SampledSound implements SoundService {
         return "ui/menu-move";
       case MENU_SELECT:
         return "ui/menu-select";
+      case CHART_MOVE:
+        return "ui/chart-move";
+      case CHART_SELECT:
+        return "ui/chart-select";
       case ALERT:
         return "alerts/alert";
       case POLICE:

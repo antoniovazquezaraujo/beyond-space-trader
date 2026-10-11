@@ -67,6 +67,7 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
           return true;
         }
         if(key.getKeyType() == KeyType.Enter && !(getFocusedInteractable() instanceof Button)) {
+          sound.play(SoundEffect.MENU_SELECT);
           chosen[0] = buttons.get(0).result();
           close();
           return true;
@@ -81,6 +82,7 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
     Button first = null;
     for(AlertButton button : buttons) {
       Button component = new Button(button.text(), () -> {
+        sound.play(SoundEffect.MENU_SELECT);
         chosen[0] = button.result();
         dialog.close();
       });
@@ -102,9 +104,9 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
 
   /**
    * The n/p keys move the focus along the row of buttons (down/up), wrapping
-   * around; any other key is left to the dialog.
+   * around; any other key is left to the dialog. Moving plays the step sound.
    */
-  private static boolean moveButtonFocus(List<Button> row, BasicWindow dialog, KeyStroke key) {
+  private boolean moveButtonFocus(List<Button> row, BasicWindow dialog, KeyStroke key) {
     if(row.isEmpty() || key.getKeyType() != KeyType.Character) {
       return false;
     }
@@ -118,6 +120,7 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
         ? (character == 'n' ? 0 : row.size() - 1)
         : Math.floorMod(current + (character == 'n' ? 1 : -1), row.size());
     dialog.setFocusedInteractable(row.get(next));
+    sound.play(SoundEffect.MENU_MOVE);
     return true;
   }
 
