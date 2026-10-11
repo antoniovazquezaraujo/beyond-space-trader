@@ -38,8 +38,10 @@ the numbered variants are explained above.
 
 | File (inside `sounds/`) | What it is |
 | --- | --- |
-| `ui/menu-move-1.wav` | Moving the cursor in a menu or a list |
-| `ui/menu-select-1.wav` | Accepting an entry (the F10 menu, a toggle) |
+| `ui/menu-move-1.wav` | The cursor moves anywhere: menus, lists, dialogs, editors |
+| `ui/menu-select-1.wav` | Anything accepted: a menu entry, a toggle, a button, an amount, a cargo move |
+| `ui/chart-move-1.wav` | The chart cursor moves to another system |
+| `ui/chart-select-1.wav` | The chart accepts something: tracking a system, a find, a special event |
 | `alerts/alert-1.wav` | A dialog with a single button |
 | `alerts/warning-1.wav` | A dialog that asks a question (two buttons) |
 | `alerts/police-1.wav` | The police shows up in an encounter (once per encounter) |
@@ -155,6 +157,13 @@ with a short crossfade. A key without a sample is silence, and the two loops
 share their own channel in the mixer (`ALERTS`, 0.6 by default).
 
 ## Adding a sound
+
+The two menu keys sound across the whole UI: the F10 menu, every list (trade,
+bank, ships, equipment, personnel, quests, options), the dialogs and their
+buttons, the quantity dialogs, the cargo transfer and the ship editors. The
+chart (the map) has its own pair, `ui/chart-move`/`ui/chart-select`, so moving
+the cursor and setting a target do not sound like a list. Nothing sounds when a
+key changes nothing (an arrow against an edge, a cancel with Escape).
 
 The engine reads any WAV that `javax.sound` can open and converts it on load to
 the canonical format; a file that cannot be converted is ignored with a warning
