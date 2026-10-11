@@ -54,30 +54,13 @@ public final class InputDialog extends DialogWindow {
   }
 
   /**
-   * The same dialog, but sitting at the bottom of the screen, so it does not cover
-   * the ships of the encounter scene.
+   * Opens the dialog at the bottom of the screen (the shared placement of every
+   * floating dialog) and waits until it closes.
    */
-  public static String showAtBottom(WindowBasedTextGUI gui, String title, String prompt, String initial) {
-    return showAtBottom(gui, title, prompt, initial, SoundService.NONE);
-  }
-
-  /** The same, with the sound of the screen that opens it. */
-  public static String showAtBottom(WindowBasedTextGUI gui, String title, String prompt, String initial,
-      SoundService sound) {
-    return new InputDialog(title, prompt, initial, sound).showAtBottom(gui);
-  }
-
-  /** Opens the dialog and pins it to the bottom once the window manager has placed it. */
-  private String showAtBottom(WindowBasedTextGUI gui) {
+  @Override
+  public String showDialog(WindowBasedTextGUI gui) {
     result = null;
-    gui.addWindow(this);
-    TerminalSize screen = gui.getScreen().getTerminalSize();
-    TerminalSize size = getDecoratedSize();
-    setPosition(new com.googlecode.lanterna.TerminalPosition(
-        Math.max(0, (screen.getColumns() - size.getColumns()) / 2),
-        Math.max(0, screen.getRows() - size.getRows() - 1)));
-    invalidate();
-    waitUntilClosed();
+    DialogPlacement.showAtBottom(gui, this);
     return result;
   }
 
@@ -103,13 +86,6 @@ public final class InputDialog extends DialogWindow {
   private void cancel() {
     result = null;
     close();
-  }
-
-  @Override
-  public String showDialog(WindowBasedTextGUI gui) {
-    result = null;
-    super.showDialog(gui);
-    return result;
   }
 
   /**

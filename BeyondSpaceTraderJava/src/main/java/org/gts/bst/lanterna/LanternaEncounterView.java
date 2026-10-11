@@ -398,7 +398,7 @@ public final class LanternaEncounterView implements EncounterView {
     playUntil(content::catwalkOut);
     String title = Functions.StringVars(Strings.DialogCargoBuyTitle, item) + "  "
         + Functions.FormatMoney(offer.unitPrice());
-    Integer qty = LanternaDialogs.askAmountAtBottom(gui, title,
+    Integer qty = LanternaDialogs.askAmount(gui, title,
         Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount(), sound);
     if(qty != null && qty > 0) {
       content.haul();
@@ -423,7 +423,7 @@ public final class LanternaEncounterView implements EncounterView {
     playUntil(content::catwalkOut);
     String title = Functions.StringVars(Strings.DialogCargoSellTitle, item) + "  "
         + Functions.FormatMoney(offer.price());
-    Integer qty = LanternaDialogs.askAmountAtBottom(gui, title,
+    Integer qty = LanternaDialogs.askAmount(gui, title,
         Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount(), sound);
     if(qty != null && qty > 0) {
       content.haul();

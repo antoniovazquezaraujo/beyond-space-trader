@@ -97,8 +97,8 @@ public final class LanternaAlertDialogHost implements AlertDialogHost {
     if(first != null) {
       dialog.setFocusedInteractable(first);
     }
-    gui.addWindow(dialog);
-    gui.waitForWindowToClose(dialog);
+    // Every floating dialog lands at the bottom, over the screen or the scene.
+    DialogPlacement.showAtBottom(gui, dialog);
     return chosen[0];
   }
 
