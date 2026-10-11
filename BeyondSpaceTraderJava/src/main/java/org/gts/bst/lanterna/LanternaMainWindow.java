@@ -1618,8 +1618,10 @@ public final class LanternaMainWindow
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_DEPARTURE).getPath(), game.Serialize(), game.Dialogs());
       }
-      game.Warp(true);
+      // The sound is the ship setting off, not the arrival: the whole trip
+      // (encounters included) resolves inside Warp, so it plays before the call.
       sound.play(SoundEffect.WARP);
+      game.Warp(true);
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_ARRIVAL).getPath(), game.Serialize(), game.Dialogs());
       }
@@ -1677,8 +1679,10 @@ public final class LanternaMainWindow
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_DEPARTURE).getPath(), game.Serialize(), game.Dialogs());
       }
-      game.Warp(false);
+      // The sound is the ship setting off, not the arrival: the whole trip
+      // (encounters included) resolves inside Warp, so it plays before the call.
       sound.play(SoundEffect.WARP);
+      game.Warp(false);
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_ARRIVAL).getPath(), game.Serialize(), game.Dialogs());
       }
