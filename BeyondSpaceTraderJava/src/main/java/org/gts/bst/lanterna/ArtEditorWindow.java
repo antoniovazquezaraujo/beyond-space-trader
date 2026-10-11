@@ -74,6 +74,11 @@ abstract class ArtEditorWindow extends BasicWindow {
     sound.play(SoundEffect.MENU_SELECT);
   }
 
+  /** The sound of the tool, for the dialogs the editors open (the name). */
+  protected final SoundService sound() {
+    return sound;
+  }
+
   protected boolean blinkOn() {
     return blinkOn;
   }

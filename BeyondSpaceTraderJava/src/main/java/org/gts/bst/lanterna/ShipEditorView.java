@@ -173,8 +173,8 @@ public final class ShipEditorView extends ArtEditorWindow {
     if(gui == null) {
       return;
     }
-    String typed = com.googlecode.lanterna.gui2.dialogs.TextInputDialog.showDialog(gui, "ship name",
-        "Name (it will be the [name] in ships.txt):", design.name());
+    String typed = InputDialog.show(gui, "ship name",
+        "Name (it will be the [name] in ships.txt):", design.name(), sound());
     rename(typed);
   }
 
