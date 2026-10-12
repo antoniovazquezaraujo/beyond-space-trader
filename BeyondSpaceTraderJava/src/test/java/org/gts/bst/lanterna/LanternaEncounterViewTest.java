@@ -555,7 +555,7 @@ class LanternaEncounterViewTest {
   }
 
   @Test
-  void ignoringWhileTheRivalCrossesStopsTheEngineOnlyWhenItDisappears() throws IOException {
+  void oneIgnorePressClosesTheSceneWhileTheRivalCrosses() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(80, 24)));
     screen.startScreen();
     try {
@@ -584,23 +584,13 @@ class LanternaEncounterViewTest {
       }
       gui.updateScreen();
 
-      // The player ignores it while it crosses: the scene waits for the exit.
+      // The player ignores it while it crosses: one press closes the scene now.
       view[0].asWindow().getFocusedInteractable().handleInput(new KeyStroke('i', false, false));
       assertEquals(List.of(EncounterAction.Ignore), executed);
-      assertTrue(content.animating(), "the scene waits for the crossing");
-      assertTrue(gui.getWindows().contains(view[0].asWindow()), "and it stays open");
-      assertEquals(List.of(), sound.engineStops(), "the engine goes on while the ship is on screen");
-
-      // The ship finishes crossing: the engine stops and the view closes.
-      int frames = 0;
-      while(frames < 60 && gui.getWindows().contains(view[0].asWindow())) {
-        content.tick();
-        gui.updateScreen();
-        frames++;
-      }
-      assertFalse(gui.getWindows().contains(view[0].asWindow()), "the view closes when the ship is gone");
-      assertEquals(List.of(Boolean.FALSE, Boolean.TRUE, Boolean.FALSE), sound.engineStops(),
-          "the rival's engine stops when it disappears, and the close fades both");
+      assertFalse(content.animating(), "the crossing does not defer the close");
+      assertFalse(gui.getWindows().contains(view[0].asWindow()), "the press closes the scene at once");
+      assertEquals(List.of(Boolean.TRUE, Boolean.FALSE), sound.engineStops(),
+          "the close fades both engines instead of following the ship");
     } finally {
       screen.stopScreen();
       screen.close();
@@ -3331,13 +3321,14 @@ class LanternaEncounterViewTest {
     try {
       MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
       gui.setTheme(LanternaTheme.create());
+      TestSoundService sound = new TestSoundService();
       List<EncounterAction> executed = new ArrayList<>();
       LanternaEncounterView[] view = new LanternaEncounterView[1];
       // The presenter closes the encounter as soon as the action is over.
       view[0] = new LanternaEncounterView(gui, action -> {
         executed.add(action);
         view[0].close();
-      }, () -> { }, plunder -> { });
+      }, () -> { }, plunder -> { }, sound);
       ShipPicture you = new ShipCatalog(List.of(),
           ShipArtFile.parse(new StringReader("[uno]\nxxxxx\n")), List.of())
           .picture(ShipType.Flea, List.of(), 0);
@@ -3363,6 +3354,8 @@ class LanternaEncounterViewTest {
       assertEquals(List.of(EncounterAction.Ignore), executed,
           "once it is gone, the encounter ignores it by itself");
       assertFalse(gui.getWindows().contains(view[0].asWindow()), "and the window is closed");
+      assertEquals(List.of(Boolean.FALSE, Boolean.TRUE, Boolean.FALSE), sound.engineStops(),
+          "the rival's engine stops at the exit, and the automatic close fades both");
     } finally {
       screen.stopScreen();
       screen.close();
