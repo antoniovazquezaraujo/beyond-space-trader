@@ -1,6 +1,6 @@
 [flea]
 type=Flea
-chasis=drone
+chasis=tiny-1
 group=R x=15 y=1 n=1
 group=C x=33 y=3 n=1
 group=D x=22 y=4 n=1
@@ -10,7 +10,7 @@ group=B x=11 y=5 n=1
 group=M x=26 y=5 n=1
 [gnat]
 type=Gnat
-chasis=shuttle
+chasis=small-1
 group=P x=2 y=1 n=1
 group=R x=10 y=1 n=1
 group=C x=16 y=1 n=1
@@ -21,7 +21,7 @@ group=M x=13 y=3 n=1
 group=A x=21 y=3 n=1
 [La niña]
 type=Firefly
-chasis=scout
+chasis=small-2
 group=R x=4 y=1 n=1
 group=C x=10 y=2 n=1
 group=A x=17 y=3 n=1
@@ -33,7 +33,7 @@ group=G x=14 y=4 n=1
 group=E x=16 y=5 n=1
 [mosquito]
 type=Mosquito
-chasis=courier
+chasis=small-3
 group=R x=9 y=1 n=1
 group=D x=10 y=2 n=1
 group=G x=13 y=2 n=1
@@ -48,7 +48,7 @@ group=P x=5 y=5 n=1
 group=A x=20 y=5 n=1
 [nave-2]
 type=Bumblebee
-chasis=corvette
+chasis=medium-1
 group=R x=6 y=1 n=1
 group=P x=10 y=3 n=1
 group=B x=3 y=4 n=1
@@ -65,7 +65,7 @@ group=E x=22 y=6 n=1
 group=E x=24 y=6 n=1
 [beetle]
 type=Beetle
-chasis=gunship
+chasis=medium-2
 group=R x=4 y=1 n=1
 group=P x=6 y=2 n=1
 group=C x=12 y=2 n=1
@@ -76,7 +76,7 @@ group=G x=12 y=4 n=1
 group=E x=14 y=4 n=1
 [hornet]
 type=Hornet
-chasis=carrier
+chasis=large-2
 group=R x=6 y=1 n=1
 group=P x=11 y=2 n=1
 group=C x=26 y=2 n=1
@@ -92,7 +92,7 @@ group=E x=21 y=6 n=1
 group=E x=24 y=6 n=1
 [La Santamaría]
 type=Grasshopper
-chasis=cruiser
+chasis=large-1
 group=R x=6 y=1 n=1
 group=P x=10 y=3 n=1
 group=C x=20 y=3 n=1
@@ -106,7 +106,7 @@ group=A x=47 y=6 n=1
 group=E x=42 y=7 n=2
 [nave-1]
 type=Termite
-chasis=hauler
+chasis=huge-2
 group=R x=7 y=1 n=1
 group=M x=4 y=2 n=1
 group=M x=5 y=3 n=1
@@ -123,7 +123,7 @@ group=E x=16 y=8 n=1
 group=E x=18 y=8 n=1
 [wasp]
 type=Wasp
-chasis=dreadnought
+chasis=huge-1
 group=R x=11 y=1 n=1
 group=C x=25 y=2 n=1
 group=A x=29 y=2 n=1
@@ -144,7 +144,7 @@ group=E x=27 y=11 n=1
 group=E x=32 y=11 n=1
 [monster]
 type=SpaceMonster
-chasis=dreadnought
+chasis=huge-1
 group=R x=23 y=1 n=1
 group=C x=35 y=5 n=1
 group=A x=44 y=6 n=1
@@ -154,7 +154,7 @@ group=A x=52 y=8 n=1
 group=D x=32 y=9 n=2
 [dragonfly]
 type=Dragonfly
-chasis=clipper
+chasis=small-4
 group=R x=6 y=1 n=1
 group=A x=27 y=2 n=1
 group=G x=1 y=3 n=1
@@ -170,7 +170,7 @@ group=E x=25 y=5 n=1
 group=E x=27 y=5 n=1
 [mantis]
 type=Mantis
-chasis=frigate
+chasis=medium-3
 group=R x=5 y=1 n=1
 group=C x=15 y=2 n=1
 group=A x=19 y=2 n=1
@@ -185,7 +185,7 @@ group=E x=17 y=4 n=1
 group=A x=24 y=4 n=1
 [scarab]
 type=Scarab
-chasis=freighter
+chasis=large-3
 group=R x=21 y=1 n=1
 group=A x=31 y=2 n=1
 group=C x=33 y=3 n=1
@@ -197,14 +197,14 @@ group=B x=26 y=6 n=1
 group=D x=17 y=7 n=2
 [bottle]
 type=Bottle
-chasis=shuttle
+chasis=small-1
 group=R x=7 y=1 n=1
 group=C x=16 y=1 n=1
 group=D x=11 y=2 n=1
 group=M x=12 y=3 n=1
 [Custom]
 type=Custom
-chasis=dreadnought
+chasis=huge-1
 group=R x=18 y=1 n=1
 group=C x=29 y=3 n=1
 group=D x=15 y=9 n=2
@@ -213,7 +213,7 @@ group=M x=25 y=9 n=1
 group=M x=27 y=9 n=1
 [scorpion]
 type=Scorpion
-chasis=dreadnought
+chasis=huge-1
 group=R x=23 y=1 n=1
 group=C x=35 y=5 n=1
 group=A x=44 y=6 n=1

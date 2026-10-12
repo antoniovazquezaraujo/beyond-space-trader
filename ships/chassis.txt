@@ -3,7 +3,8 @@
 ;; El espacio es vacio; todo lo demas (puntos y unicode incluidos) se dibuja.
 ;; Las lineas en blanco tambien son del chasis, tambien las de los extremos:
 ;; una linea en blanco antes del siguiente [chasis] es una fila mas del anterior.
-[shuttle]                      
+[small-1]                      
+;; used by: Gnat, Bottle
 size=small
 key=A color=green
 key=B color=yellow
@@ -36,7 +37,8 @@ zone=C x=11 y=4 w=4 h=1
  ╘■■─■■■/-∙ ▒▒▒▄▄▄▀▀\ 
          └[────\___]] 
 
-[scout]
+[small-2]
+;; used by: Firefly
 size=small
 key=A color=white bgcolor=black
 key=B color=green
@@ -63,7 +65,8 @@ color=red
   `.            /┘
      ─=─=─=─=─=/ 
              
-[corvette]
+[medium-1]
+;; used by: Bumblebee
 size=medium
 key=A color=blue
 key=B color=red
@@ -105,7 +108,8 @@ color=green
  └'---------------╚╚╚╚-----'  
            ``--. └──└─────▀   
 
-[cruiser]
+[large-1]
+;; used by: Grasshopper
 size=large
 key=A color=orange
 key=B color=pink
@@ -153,7 +157,8 @@ color=blue
                 .'     ___....-``▀▀▀▀```▄▄▄▄▄▄▄-┘
               .'--'''''                          
 
-[dreadnought]
+[huge-1]
+;; used by: Wasp, SpaceMonster, Custom, Scorpion
 size=huge
 key=A color=red
 zone=A x=15 y=2 w=5 h=1
@@ -199,7 +204,8 @@ color=yellow
                                                          
 ;; new chassis from the author's draft: names are proposals; colours and size pending
 
-[courier]
+[small-3]
+;; used by: Mosquito
 size=small
 key=A color=magenta
 key=B color=gold bgcolor=darkgrey
@@ -225,7 +231,8 @@ color=green
 └▀▄`.─-___▄▄  ▓ ┘┘/\
      `∙═--_______+─°
 
-[gunship]
+[medium-2]
+;; used by: Beetle
 size=medium
 key=A color=orange
 key=B color=brown
@@ -278,7 +285,8 @@ color=gray
 └▀▄▄\─----▄▄  ▓ ▄▄▄┘
      \═══════  ▀\──
 
-[frigate]
+[medium-3]
+;; used by: Mantis
 size=medium
 key=A color=olive
 key=B color=gold
@@ -312,7 +320,8 @@ color=green
      ▒\────────▒▓ ▄▄▄▄▄█
        \═══════  ▀\────
 
-[carrier]
+[large-2]
+;; used by: Hornet
 size=large
 key=A color=darkgrey
 key=B color=orange
@@ -351,7 +360,8 @@ color=yellow
   ═════════░▐░▐░▐░▐────────────╜|
     └──────═══╘════╛──────────┘-'
 
-[drone]
+[tiny-1]
+;; used by: Flea
 size=tiny
 key=A color=lime
 key=B color=teal
@@ -420,7 +430,8 @@ color=maroon
 \  /┘┘┘═╗   ▄▄░═»═».╔══--──-Θ--/ /┘┘┘/`-.\
  \-────=╚══\≡▐▄▄\═══╝≡-───▄▄▄▄▄▄▄▄▌=────-_-≥
 
-[freighter]
+[large-3]
+;; used by: Scarab
 size=large
 key=A color=brightmagenta
 key=B color=brightyellow
@@ -483,7 +494,8 @@ color=blue
         └─▄┘╝  └▄┐═┌▄┘╔▄▄╝
                  └─┘══╝
 
-[clipper]
+[small-4]
+;; used by: Dragonfly
 size=small
 key=A color=darkgrey
 key=B color=lightgrey
@@ -526,7 +538,8 @@ color=red
     \╙▀▄▄▄▄▄▄-/▄▄=▄`--  (   ▄▄)▄
      ╙------/
 
-[hauler]
+[huge-2]
+;; used by: Termite
 size=huge
 key=A color=teal
 key=B color=skyblue
