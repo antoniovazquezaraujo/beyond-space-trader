@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.EquipmentInfoViewModel;
@@ -142,6 +143,28 @@ class EquipmentPresenterTest {
     assertTrue(presenter.sell());
     assertNull(ship.Weapons()[0]);
     assertEquals(2500, game.Commander().getCash());
+  }
+
+  @Test
+  void showsTheNewShipAfterATrade() {
+    Game game = newGame(new TestDialogService());
+    moveToHighTechSystem(game);
+    Ship ship = game.Commander().getShip();
+    FakeView view = new FakeView();
+    EquipmentPresenter presenter = new EquipmentPresenter(game, view);
+    presenter.update();
+    assertEquals(ship.Weapons()[0].Name(), view.model.sellWeapons().get(0), "the laser of the ship in flight");
+
+    // The trade swaps the whole ship: the screen must read the new one, not the old.
+    Ship traded = new Ship(ShipType.Wasp);
+    game.Commander().setShip(traded);
+    presenter.update();
+
+    assertEquals(traded.Weapons().length, view.model.sellWeapons().size(),
+        "the weapon slots of the Wasp: " + view.model.sellWeapons());
+    assertEquals(traded.Shields().length, view.model.sellShields().size(),
+        "the shield slots of the Wasp: " + view.model.sellShields());
+    assertEquals(Strings.EquipmentFreeSlot, view.model.sellWeapons().get(0));
   }
 
   private static Game newGame(TestDialogService dialogs) {

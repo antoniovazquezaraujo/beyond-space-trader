@@ -10,8 +10,10 @@ package org.gts.bst.presenter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
@@ -46,15 +48,20 @@ class ShipListPresenterTest {
 
     new ShipListPresenter(game, view).update();
 
-    assertEquals(Consts.ShipSpecs.size(), view.model.rows().size());
-    ShipListViewModel.Row owned = view.model.rows().get(ship.Type().CastToInt());
+    assertEquals(forSaleCount(), view.model.rows().size(), "only the ships with an occurrence are for sale");
+    ShipListViewModel.Row owned = rowOf(view, ship.Type());
     assertEquals(Strings.ShipBuyGotOne, owned.price());
     assertFalse(owned.buyVisible());
     ShipSpec flea = Consts.ShipSpecs.get(ShipType.Flea.CastToInt());
-    ShipListViewModel.Row fleaRow = view.model.rows().get(ShipType.Flea.CastToInt());
+    ShipListViewModel.Row fleaRow = rowOf(view, ShipType.Flea);
     assertEquals(flea.Name(), fleaRow.name());
     assertTrue(fleaRow.buyVisible());
     assertEquals(Functions.FormatMoney(flea.getPrice() - ship.Worth(false)), fleaRow.price());
+
+    for(ShipType special : List.of(ShipType.SpaceMonster, ShipType.Dragonfly, ShipType.Mantis,
+        ShipType.Scarab, ShipType.Bottle, ShipType.Custom, ShipType.Scorpion)) {
+      assertNull(rowOf(view, special), "the special ships are not for sale: " + special);
+    }
   }
 
   @Test
@@ -99,6 +106,63 @@ class ShipListPresenterTest {
     assertEquals(ShipType.Flea, game.Commander().getShip().Type());
   }
 
+  /**
+   * The old presenter cached the ship: after the first trade the row of the Flea
+   * kept being buyable and every press paid the old ship's worth again.
+   */
+  @Test
+  void buyingTheFleaOnceDoesNotMintMoney() {
+    TestDialogService dialogs = new TestDialogService();
+    Game game = newGame(dialogs);
+    moveToSystem(game, true);
+    game.Commander().setCash(1000);
+    FakeView view = new FakeView();
+    ShipListPresenter presenter = new ShipListPresenter(game, view);
+    presenter.update();
+    int fleaRow = view.model.rows().indexOf(rowOf(view, ShipType.Flea));
+    int price = Consts.ShipSpecs.get(ShipType.Flea.CastToInt()).getPrice() - game.Commander().getShip().Worth(false);
+    assertEquals(Functions.FormatMoney(price), rowOf(view, ShipType.Flea).price());
+    dialogs.setResult(DialogResult.Yes);
+
+    assertTrue(presenter.buy(fleaRow), "the first trade down is legitimate");
+    assertEquals(1000 - price, game.Commander().getCash(), "the price is paid once");
+    assertEquals(ShipType.Flea, game.Commander().getShip().Type());
+
+    presenter.update();
+    assertEquals(Strings.ShipBuyGotOne, rowOf(view, ShipType.Flea).price(), "now the Flea is the ship in flight");
+    assertFalse(rowOf(view, ShipType.Flea).buyVisible());
+    ShipListViewModel.Row gnat = rowOf(view, ShipType.Gnat);
+    assertTrue(gnat.buyVisible());
+    assertEquals(Functions.FormatMoney(Consts.ShipSpecs.get(ShipType.Gnat.CastToInt()).getPrice()
+        - game.Commander().getShip().Worth(false)), gnat.price(),
+        "the row of the Gnat is priced against the new ship, not the old one");
+
+    int cash = game.Commander().getCash();
+    for(int i = 0; i < 5; i++) {
+      assertFalse(presenter.buy(fleaRow), "asking for the ship already owned is rejected");
+    }
+    assertEquals(cash, game.Commander().getCash(), "and it never pays again");
+  }
+
+  private static ShipListViewModel.Row rowOf(FakeView view, ShipType type) {
+    for(ShipListViewModel.Row row : view.model.rows()) {
+      if(row.name().equals(Strings.ShipNames.get(type.CastToInt()))) {
+        return row;
+      }
+    }
+    return null;
+  }
+
+  private static int forSaleCount() {
+    int count = 0;
+    for(ShipSpec spec : Consts.ShipSpecs) {
+      if(spec.Occurrence() > 0) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   private static Game newGame(TestDialogService dialogs) {
     return new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
   }
@@ -130,4 +194,3 @@ class ShipListPresenterTest {
     }
   }
 }
-

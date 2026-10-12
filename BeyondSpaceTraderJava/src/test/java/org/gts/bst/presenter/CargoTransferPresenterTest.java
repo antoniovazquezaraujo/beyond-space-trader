@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.presenter.CargoTransferPresenter.Mode;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.CargoTransferView;
 import org.gts.bst.view.CargoTransferViewModel;
 import org.gts.bst.ports.DialogResult;
@@ -19,6 +20,7 @@ import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.junit.jupiter.api.Test;
 import spacetrader.Game;
+import spacetrader.Ship;
 import spacetrader.TestDialogService;
 
 
@@ -74,6 +76,21 @@ class CargoTransferPresenterTest {
 
     assertEquals(2, game.Commander().getShip().Cargo()[0]);
     assertEquals(2, game.encounter().getOpponent().Cargo()[0]);
+  }
+
+  @Test
+  void showsTheNewShipAfterATrade() {
+    Game game = newGame(new TestDialogService());
+    FakeView view = new FakeView();
+    CargoTransferPresenter presenter = new CargoTransferPresenter(game, view, Mode.Jettison);
+    presenter.update();
+    assertEquals("0/15", view.model.bays(), "the Gnat bays");
+
+    // The trade swaps the whole ship: the screen must read the new one, not the old.
+    game.Commander().setShip(new Ship(ShipType.Beetle));
+    presenter.update();
+
+    assertEquals("0/50", view.model.bays(), "the Beetle bays, not the old ship's");
   }
 
   private static Game newGame(TestDialogService dialogs) {
