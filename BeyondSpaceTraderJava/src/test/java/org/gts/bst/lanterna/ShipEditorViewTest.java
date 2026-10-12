@@ -388,9 +388,9 @@ class ShipEditorViewTest {
 
   @Test
   void createsTheMissingDesignAndSavesIt() throws IOException {
-    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=scout\n"));
+    List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=small-2\n"));
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(
-        "[trini]\nsize=tiny\ncolor=cyan\nxxxxx\n[scout]\nsize=small\ncolor=cyan\nxxxxx\n"));
+        "[trini]\nsize=tiny\ncolor=cyan\nxxxxx\n[small-2]\nsize=small\ncolor=cyan\nxxxxx\n"));
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Engine]\nkey=M\ncolor=red\nM\n"));
     Path file = Files.createTempFile("naves", ".txt");
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
