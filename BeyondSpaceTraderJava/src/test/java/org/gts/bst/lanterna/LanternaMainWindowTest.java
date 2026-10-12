@@ -35,7 +35,10 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.gts.bst.difficulty.Difficulty;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.events.SpecialEventType;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
@@ -2710,6 +2713,159 @@ class LanternaMainWindowTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void theDesignerSaysWhyItCannotConstructOrSave() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().CurrentSystem(firstShipyard(holder[0]));
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('d', false, false));
+      gui.updateScreen();
+
+      // The current ship template has a name; a default one leaves the name empty.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      gui.updateScreen();
+      assertEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerConstruct),
+          "the construct row is dim without a name");
+      assertEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerSave),
+          "and so is the save one");
+
+      // [C] refuses and says why; nothing is built or saved.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.DesignerNeedsName), screenText(screen));
+      assertEquals(ShipType.Gnat, holder[0].Commander().getShip().Type(), "no design was built");
+      assertEquals(1000, holder[0].Commander().getCash());
+
+      // [V] refuses the same way, and no file dialog opens.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.DesignerNeedsName), screenText(screen));
+      assertEquals(1, gui.getWindows().size(), "no file dialog while the name is missing");
+
+      // ENTER on the construct row refuses too.
+      for(int i = 0; i < 10; i++) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      }
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.DesignerNeedsName), screenText(screen));
+
+      // With a name the save is enabled; over the unit limit the construct is not.
+      Thread renamer = new Thread(() -> window.asWindow().getFocusedInteractable()
+          .handleInput(new KeyStroke('r', false, false)));
+      renamer.setDaemon(true);
+      renamer.start();
+      Window dialog = waitForDialog(gui, window.asWindow());
+      type(dialog, "Halcon");
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      renamer.join(5000);
+      assertFalse(renamer.isAlive(), "the rename dialog closes with the name accepted");
+
+      // From the construct row around the wrap to the cargo one, and up it goes.
+      for(int i = 0; i < 4; i++) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      }
+      for(int i = 0; i < 200; i++) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      }
+      gui.updateScreen();
+
+      String percent = percentFromUnits(screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.DesignerOverUnits, percent)),
+          "the refusal names the percentage: " + screenText(screen));
+      assertEquals(ShipType.Gnat, holder[0].Commander().getShip().Type(), "still nothing built");
+      assertEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerConstruct),
+          "the row stays dim while the design is over the limit");
+      assertNotEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerSave),
+          "the save row is enabled again with a name");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aValidDesignIsConstructedFromThePanel() throws IOException {
+    String customNameBefore = Strings.ShipNames.get(ShipType.Custom.CastToInt());
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setResult(DialogResult.Yes);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      holder[0].Commander().setCash(10000000);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().CurrentSystem(firstShipyard(holder[0]));
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('d', false, false));
+      gui.updateScreen();
+      assertNotEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerConstruct),
+          "the default design is ready to be built");
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+
+      assertEquals(ShipType.Custom, holder[0].Commander().getShip().Type(), "the design was built");
+      assertTrue(holder[0].Commander().getCash() < 10000000, "and the yard charged for it");
+      assertFalse(screenText(screen).contains(Strings.DesignerConstruct), "the designer closed");
+    } finally {
+      // Building a custom ship renames the Custom type for the whole JVM (Strings
+      // is static): put it back so the rest of the tests see the bundle name.
+      Strings.SetShipName(ShipType.Custom, customNameBefore);
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static StarSystem firstShipyard(Game game) {
+    for(StarSystem system : game.Universe()) {
+      if(system.Shipyard() != null) {
+        return system;
+      }
+    }
+    throw new AssertionError("the universe must have shipyards");
+  }
+
+  /** The foreground colour of the first cell of a text of the screen, or null. */
+  private static TextColor colorOf(Screen screen, String text) {
+    for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
+      int x = row(screen, y).indexOf(text);
+      if(x >= 0) {
+        return screen.getFrontCharacter(x, y).getForegroundColor();
+      }
+    }
+    return null;
+  }
+
+  /** The percentage of the units line of the designer, like {@code 430%}. */
+  private static String percentFromUnits(String text) {
+    Matcher matcher = Pattern.compile("\\(([^)]*%)\\)").matcher(text);
+    assertTrue(matcher.find(), "the units line must show a percentage: " + text);
+    return matcher.group(1);
   }
 
   @Test

@@ -125,6 +125,17 @@ class StringsSpanishTest {
     assertFalse(spanish.getProperty("DirectKeys").contains("[R]"), "no [R] in the spanish direct keys");
   }
 
+  /** The refusals of the designer are localised, with the amount placeholder where it belongs. */
+  @Test
+  void theDesignerRefusalsAreLocalisedInBothBundles() throws IOException {
+    Properties english = properties("Strings.properties");
+    Properties spanish = properties("Strings_es.properties");
+    assertEquals("Give the design a name with [R].", english.getProperty("DesignerNeedsName"));
+    assertEquals("Ponle un nombre al diseño con [R].", spanish.getProperty("DesignerNeedsName"));
+    assertEquals("You are over the unit limit (^1). Remove cargo or slots.", english.getProperty("DesignerOverUnits"));
+    assertEquals("Te pasas del límite de unidades (^1). Quita carga o ranuras.", spanish.getProperty("DesignerOverUnits"));
+  }
+
   private static Set<String> keys(String resource) throws IOException {
     return properties(resource).stringPropertyNames();
   }
