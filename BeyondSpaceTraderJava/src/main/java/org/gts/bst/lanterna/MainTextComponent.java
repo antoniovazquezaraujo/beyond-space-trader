@@ -832,6 +832,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         UiPalette.draw(graphics, x, row++, line, UiPalette.WARN, x + panelWidth);
       }
     }
+    if(dock != null) {
+      row = drawDockBlock(graphics, x, row, height - 5);
+    }
     if(row < height - 5) {
       UiPalette.title(graphics, x, row++, Strings.ShipCargoLabel, panelWidth);
     }
@@ -847,6 +850,38 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       }
       graphics.putString(x, row++, cut(cargoLine, panelWidth));
     }
+  }
+
+  /**
+   * The dock block of the ship panel: fuel and hull of the ship in flight, with
+   * the costs of the port when there is something to buy. It is the same model
+   * the navigation panel used to draw.
+   */
+  private int drawDockBlock(TextGUIGraphics graphics, int x, int row, int maxRow) {
+    row++;
+    row = drawDockLine(graphics, x, row, dock.fuelStatus(), UiPalette.TEXT, maxRow);
+    row = drawDockLine(graphics, x, row, dock.fuelCost(),
+        dock.fuelButtonVisible() ? UiPalette.MONEY : UiPalette.TEXT, maxRow);
+    row = drawDockLine(graphics, x, row, dock.hullStatus(), UiPalette.TEXT, maxRow);
+    row = drawDockLine(graphics, x, row, dock.repairCost(),
+        dock.repairButtonVisible() ? UiPalette.MONEY : UiPalette.TEXT, maxRow);
+    return row + 1;
+  }
+
+  /** A wrapped line of the dock block, never past {@code maxRow}. */
+  private int drawDockLine(TextGUIGraphics graphics, int x, int row, String text, TextColor color, int maxRow) {
+    if(row >= maxRow) {
+      return row;
+    }
+    List<String> lines = new ArrayList<>();
+    wrap(lines, text, panelWidth);
+    for(String line : lines) {
+      if(row >= maxRow) {
+        break;
+      }
+      UiPalette.draw(graphics, x, row++, line, color, x + panelWidth);
+    }
+    return row;
   }
 
   private void drawShipListPanel(TextGUIGraphics graphics, int x, int height) {
@@ -1394,17 +1429,6 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         if(system.specialVisible() && !system.specialTooltip().isEmpty()) {
           row = drawWrapped(graphics, x, row, Functions.StringVars(Strings.MainSpecial, system.specialTooltip()),
               UiPalette.ACCENT);
-        }
-        row++;
-      }
-      if(dock != null) {
-        row = drawWrapped(graphics, x, row, dock.fuelStatus(), UiPalette.TEXT);
-        if(dock.fuelButtonVisible()) {
-          row = drawWrapped(graphics, x, row, dock.fuelCost(), UiPalette.MONEY);
-        }
-        row = drawWrapped(graphics, x, row, dock.hullStatus(), UiPalette.TEXT);
-        if(dock.repairButtonVisible()) {
-          row = drawWrapped(graphics, x, row, dock.repairCost(), UiPalette.MONEY);
         }
         row++;
       }

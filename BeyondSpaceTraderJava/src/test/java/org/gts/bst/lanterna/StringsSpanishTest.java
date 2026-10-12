@@ -105,6 +105,15 @@ class StringsSpanishTest {
     assertFalse(spanish.containsKey("ComposerKeys"), "ComposerKeys is gone from the Spanish bundle");
   }
 
+  /** The keys of the ship panel name the dock shortcuts in both languages. */
+  @Test
+  void theShipKeysNameTheDockShortcutsInBothLanguages() throws IOException {
+    Properties english = properties("Strings.properties");
+    Properties spanish = properties("Strings_es.properties");
+    assertEquals("[F] fuel \u00b7 [R] repairs \u00b7 [SPACE] close", english.getProperty("ShipKeys"));
+    assertEquals("[F] combustible \u00b7 [R] reparaciones \u00b7 [ESPACIO] cerrar", spanish.getProperty("ShipKeys"));
+  }
+
   private static Set<String> keys(String resource) throws IOException {
     return properties(resource).stringPropertyNames();
   }

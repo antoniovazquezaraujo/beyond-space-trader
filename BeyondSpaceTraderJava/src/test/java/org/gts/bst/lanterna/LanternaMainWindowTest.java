@@ -1190,8 +1190,8 @@ class LanternaMainWindowTest {
 
       String text = screenText(screen);
       assertTrue(text.contains(Strings.ShipCargoLabel), text);
-      assertTrue(text.contains("Machines"), "the last line that fits is drawn: " + text);
-      assertFalse(text.contains("Narcotics"), "the first line that does not fit is hidden: " + text);
+      assertTrue(text.contains("Furs"), "the last line that fits is drawn: " + text);
+      assertFalse(text.contains("Food"), "the first line that does not fit is hidden: " + text);
       assertFalse(text.contains("Robots"), "the rest of the hold is hidden: " + text);
       // Row height - 5 stays reserved: the ship panel occupies the right 50 columns.
       assertTrue(row(screen, 25).substring(50).isBlank(), "nothing is drawn on the reserved row: " + row(screen, 25));
@@ -3786,7 +3786,7 @@ class LanternaMainWindowTest {
       StarSystem current = holder[0].Commander().CurrentSystem();
       String dockLine = Functions.StringVars(Strings.DockHullStatus, "100");
       assertTrue(screenText(screen).contains(current.Name()), screenText(screen));
-      assertTrue(screenText(screen).contains(dockLine), screenText(screen));
+      assertFalse(screenText(screen).contains(dockLine), "the dock block lives in the ship panel now");
 
       // Selecting another system shows its data instead of the current one.
       StarSystem target = current;
@@ -3806,8 +3806,45 @@ class LanternaMainWindowTest {
       assertTrue(text.contains(Functions.StringVars(Strings.MainTech, target.TechLevel().name,
           target.PoliticalSystem().Name())), text);
       assertTrue(text.contains(Strings.MainTargetOffRange), text);
-      assertFalse(text.contains(dockLine), "the dock data belongs to the current system");
+      assertFalse(text.contains(dockLine), "the dock block is not in the navigation panel");
       assertFalse(text.contains(current.Name()), text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theShipPanelShowsTheDockBlockAndItsKeys() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].Commander().getShip().setHull(90);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      String hullLine = Functions.StringVars(Strings.DockHullStatus, "90");
+      assertFalse(screenText(screen).contains(hullLine),
+          "the navigation panel has no dock block: " + screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains(hullLine), "the ship panel shows the hull state: " + text);
+      assertTrue(text.contains(Functions.StringVars(Strings.DockRepairCost,
+          Functions.FormatMoney(10 * holder[0].Commander().getShip().getRepairCost()))),
+          "and what the repairs will cost: " + text);
+      assertTrue(text.contains(Strings.DockTankFull), "the full tank is said as well: " + text);
+      assertTrue(text.contains("[F] fuel") && text.contains("[R] repairs"),
+          "the keys of the dock block are at the foot: " + text);
     } finally {
       screen.stopScreen();
       screen.close();
