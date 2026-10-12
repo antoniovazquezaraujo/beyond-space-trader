@@ -581,7 +581,8 @@ public final class ShipEditorView extends ArtEditorWindow {
   private List<String> items() {
     List<String> items = new ArrayList<>();
     for(ShipArtFile hull : offeredHulls()) {
-      items.add(hull.name() + (isUnsized(hull.size()) ? " (no size)" : ""));
+      // The size travels with the name: the hulls are named <size>-<n> now.
+      items.add(hull.name() + (isUnsized(hull.size()) ? " (no size)" : " (" + hull.size() + ")"));
     }
     return items;
   }
