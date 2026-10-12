@@ -321,23 +321,27 @@ white; write `color=orange` (or the index, or `#rrggbb`).
 
 ## Format of `ships.txt` (the ships)
 
-Every section is one ship: its name, its game type (the spec that sets the site
-budget), the chassis it uses and its **letter groups** (the sites the game fills).
+Every section is one ship: **its header is its game type** (the spec that sets
+the site budget), plus the chassis it uses and its **letter groups** (the sites
+the game fills).
 
 ```
 ;; a comment (two semicolons, like the other files)
-[firefly pirata]
-type=Firefly
+[Firefly]
 chasis=small-2
 group=A x=3 y=1 n=2 color=red
 group=M x=6 y=3
 ```
 
-- `[nombre]` is free; `type=` names the ship type of the game specs (with no
-  type, the panel cannot check the sites); `chasis=` must match a `[name]` of
-  `chassis.txt` (`chassis=` is accepted too).
+- `[Type]` is the English name of a game type (`ShipType`: `Firefly`, `Wasp`,
+  `SpaceMonster`, `Custom`…); the matching ignores case. `chasis=` must match a
+  `[name]` of `chassis.txt` (`chassis=` is accepted too).
+- **Old files keep loading**: a header is still read as a free name when the
+  section carries a `type=` line, and then the `type=` names the game type (it
+  wins over the header). Saving always writes the new format: `[Type]` and no
+  `type=`.
 - The editor keeps **one design per game type**, the 17 of `ShipType` in enum
-  order: a design whose `type=` is unknown or repeated is ignored when loading
+  order: a design whose type is unknown or repeated is ignored when loading
   and dropped when saving (the editor says how many).
 - `group=<letter> x=<n> y=<n> [n=<count>]`: a run of the same site
   letter starting at `(x,y)`, `n` letters long (one by default), in a colour.
@@ -359,14 +363,14 @@ Both editors have a vertical panel on the left, and the selected row of every
 list has a background of its own; each list opens with its title inside a line
 (`─ Ships ───`, `─ Elements ───`). The **ship editor** panel starts with the
 **17 ship types of the game, always in enum order and always complete**: every
-row is one design, its name and its type in brackets (`mi nave [Bumblebee]`),
-each in its own column, `TAB` and `⇧TAB` move through them and the open one is
-highlighted. The type is fixed: there is no `+` (a new design) and no `y` (to
-cycle the type); `t` renames the design and `f` picks its chassis. When
-`ships.txt` has no design for a type, the editor makes one in memory (named
-after the type, with the first hull of its size and no groups), so no type is
+row is one design, headed by its type (`Bumblebee`), `TAB` and `⇧TAB` move
+through them and the open one is highlighted. The type is fixed: there is no
+`+` (a new design), no `y` (to cycle the type) and no rename (the header **is**
+the type); `f` picks its chassis. When
+`ships.txt` has no design for a type, the editor makes one in memory (of the
+type, with the first hull of its size and no groups), so no type is
 ever editable without a design; saving writes the 17 designs in enum order, each
-with its correct `type=`, and leaves out the designs whose type is unknown or
+headed by its type, and leaves out the designs whose type is unknown or
 repeated. Then come the numbered elements: `n` and `p` move through them and the
 keys `1` to `9` pick one directly. Each element is a piece key the game may fill
 a site with, one column per field (number, key, name, `have/max` and mark:
@@ -384,7 +388,6 @@ it.
 | `1` to `9` | Pick the element with that number |
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the element painted. The cursor moves one cell right either way |
 | `v` | Preview: cycle which piece of the element is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
-| `t` | Rename the open ship (it stays in its type) |
 | `f` | Pick the frame (chassis) from a list, each row with its size (`small-1 (small)`): only the hulls of the size of the type, so a type can never wear a hull of another size; a hull without size (`size=` empty or `any`) is listed as `(no size)` and takes the size of the type when picked |
 | `TAB` / `⇧TAB` | Next / previous type (the file keeps one design per type) |
 | `s` | Save every ship back to `ships.txt` (the 17 designs in enum order); when the editor has given a size to a hull, `chassis.txt` is written too |

@@ -73,7 +73,7 @@ public final class ShipCatalog {
     if(hull == null) {
       // No assembly (or its chassis is missing): a chassis of the size will do, with no sites.
       hull = chassisOfSize(type);
-      design = hull == null ? null : new ShipDesign(type.name(), type.name(), hull.name(), List.of());
+      design = hull == null ? null : new ShipDesign(type.name(), hull.name(), List.of());
     }
     if(hull == null) {
       return new ShipPicture(0, 0);

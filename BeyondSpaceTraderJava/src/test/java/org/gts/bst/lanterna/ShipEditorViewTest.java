@@ -47,9 +47,10 @@ class ShipEditorViewTest {
       view.shipsPath(file.toString());
       gui.addWindow(view);
       gui.updateScreen();
-      int row = panelRowWith(screen, "[Flea]");
-      assertTrue(row >= 0 && screenText(screen).split("\n", -1)[row].contains("prueba"),
-          "the loaded design is at the place of its type: " + screenText(screen));
+      int row = panelRowWith(screen, "Flea");
+      assertTrue(row >= 0, "the loaded design is at the place of its type: " + screenText(screen));
+      assertFalse(screenText(screen).contains("prueba"),
+          "the free name of an old file is not shown: " + screenText(screen));
       assertTrue(screenText(screen).contains("1  M  Engine  0/1  ⚠"),
           "the panel of elements: " + screenText(screen));
 
@@ -61,7 +62,6 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke('s', false, false));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
       assertEquals(ShipType.values().length, saved.size(), "one design per game type");
-      assertEquals("prueba", saved.get(0).name());
       assertEquals("Flea", saved.get(0).type());
       assertEquals("uno", saved.get(0).chassis());
       assertEquals(1, saved.get(0).groups().size());
@@ -97,7 +97,7 @@ class ShipEditorViewTest {
 
       ShipType[] types = ShipType.values();
       assertEquals(17, types.length, "the game has 17 ship types");
-      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "[Flea]")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "Flea")).getBackgroundColor(),
           "the first type is open: " + screenText(screen));
       for(int i = 1; i < types.length; i++) {
         view.handleKey(new KeyStroke(KeyType.Tab));
@@ -147,7 +147,7 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke(KeyType.Tab));
       view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
-      assertTrue(panelRowWith(screen, "[Firefly]") >= 0, screenText(screen));
+      assertTrue(panelRowWith(screen, "Firefly") >= 0, screenText(screen));
 
       // f only offers the hulls of the size of the type and the ones without size
       view.handleKey(new KeyStroke('f', false, false));
@@ -167,16 +167,15 @@ class ShipEditorViewTest {
       assertTrue(screenText(screen).contains("chasis=libre (size=small)"), screenText(screen));
 
       // y no longer cycles the type
-      assertEquals(-1, panelRowWith(screen, "[Wasp]"));
+      assertEquals(-1, panelRowWith(screen, "Wasp"));
       view.handleKey(new KeyStroke('y', false, false));
       view.handleKey(new KeyStroke('y', false, false));
       gui.updateScreen();
-      assertTrue(panelRowWith(screen, "[Firefly]") >= 0, screenText(screen));
+      assertTrue(panelRowWith(screen, "Firefly") >= 0, screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
       assertEquals(17, saved.size());
-      assertEquals("prueba", saved.get(ShipType.Firefly.ordinal()).name());
       assertEquals("Firefly", saved.get(ShipType.Firefly.ordinal()).type(), "the type never changes");
       assertEquals("libre", saved.get(ShipType.Firefly.ordinal()).chassis());
       assertTrue(Files.readString(chassisFile).contains("[libre]\nsize=small"),
@@ -404,9 +403,8 @@ class ShipEditorViewTest {
       gui.updateScreen();
 
       // the file has no design for Flea: the editor makes one of the type and its size
-      int row = panelRowWith(screen, "[Flea]");
-      assertTrue(row >= 0 && screenText(screen).split("\n", -1)[row].contains("Flea"),
-          "the missing design is created in memory: " + screenText(screen));
+      int row = panelRowWith(screen, "Flea");
+      assertTrue(row >= 0, "the missing design is created in memory: " + screenText(screen));
 
       // and it is editable like any other
       view.handleKey(new KeyStroke(' ', false, false));
@@ -416,7 +414,6 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke('s', false, false));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
       assertEquals(17, saved.size());
-      assertEquals("Flea", saved.get(ShipType.Flea.ordinal()).name());
       assertEquals("Flea", saved.get(ShipType.Flea.ordinal()).type());
       assertEquals("trini", saved.get(ShipType.Flea.ordinal()).chassis(), "the first hull of its size");
       assertEquals(1, saved.get(ShipType.Flea.ordinal()).groups().size(), "the painted site is saved");
@@ -461,12 +458,11 @@ class ShipEditorViewTest {
       for(int i = 0; i < types.length; i++) {
         assertEquals(types[i].name(), saved.get(i).type(), "one design per type, in enum order");
       }
-      assertEquals("cuatro", saved.get(ShipType.Flea.ordinal()).name());
-      assertEquals("dos", saved.get(ShipType.Firefly.ordinal()).name());
-      for(ShipDesign design : saved) {
-        assertFalse(design.name().equals("uno") || design.name().equals("tres"),
-            "the unknown and the repeated one are gone: " + design.name());
-      }
+      String savedText = Files.readString(file);
+      assertFalse(savedText.contains("type="), "the old type= line is not written back: " + savedText);
+      assertFalse(savedText.contains("[uno]") || savedText.contains("[dos]")
+          || savedText.contains("[tres]") || savedText.contains("[cuatro]"),
+          "the free names of the old file are gone: " + savedText);
     } finally {
       screen.stopScreen();
       screen.close();
@@ -491,7 +487,7 @@ class ShipEditorViewTest {
       gui.updateScreen();
       assertFalse(screenText(screen).contains("[+]"), "the keys line has no new ship: " + screenText(screen));
       assertFalse(screenText(screen).contains("[y]"), "the keys line has no type cycle: " + screenText(screen));
-      assertTrue(screenText(screen).contains("[t] rename"), "renaming stays: " + screenText(screen));
+      assertFalse(screenText(screen).contains("[t] rename"), "renaming is gone: " + screenText(screen));
 
       // + does nothing and y does not touch the type: the 17 are already there
       view.handleKey(new KeyStroke('+', false, false));
@@ -501,16 +497,12 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke('y', false, false));
       gui.updateScreen();
       assertFalse(screenText(screen).contains("new"), "no ship was added: " + screenText(screen));
-      assertTrue(panelRowWith(screen, "[Firefly]") >= 0, screenText(screen));
+      assertTrue(panelRowWith(screen, "Firefly") >= 0, screenText(screen));
 
       view.handleKey(new KeyStroke('s', false, false));
       List<ShipDesign> saved = ShipDesign.load(file.toString());
       assertEquals(17, saved.size());
-      assertEquals("prueba", saved.get(ShipType.Firefly.ordinal()).name());
       assertEquals("Firefly", saved.get(ShipType.Firefly.ordinal()).type());
-      for(ShipDesign design : saved) {
-        assertFalse(design.name().equals("new"), "no ship called `new`");
-      }
     } finally {
       screen.stopScreen();
       screen.close();
@@ -519,7 +511,7 @@ class ShipEditorViewTest {
   }
 
   @Test
-  void renamingKeepsTheType() throws IOException {
+  void savingWritesTheTypeAsTheHeaderAndDropsTheOldName() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader("[prueba]\ntype=Firefly\nchasis=uno\n"));
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\nsize=small\ncolor=cyan\nxxxxx\n"));
     Path file = Files.createTempFile("naves", ".txt");
@@ -535,18 +527,13 @@ class ShipEditorViewTest {
       view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
 
-      // the [t] dialog lands in this method: rename and the type is untouched
-      view.rename("otra nave");
-      gui.updateScreen();
-      int row = panelRowWith(screen, "[Firefly]");
-      assertTrue(row >= 0 && screenText(screen).split("\n", -1)[row].contains("otra nave"),
-          "the renamed design: " + screenText(screen));
-      assertTrue(screenText(screen).contains("renamed: otra nave"), screenText(screen));
-
       view.handleKey(new KeyStroke('s', false, false));
-      List<ShipDesign> saved = ShipDesign.load(file.toString());
-      assertEquals("otra nave", saved.get(ShipType.Firefly.ordinal()).name());
-      assertEquals("Firefly", saved.get(ShipType.Firefly.ordinal()).type());
+
+      String saved = Files.readString(file);
+      assertTrue(saved.contains("[Firefly]"), "the header is the game type: " + saved);
+      assertTrue(saved.contains("chasis=uno"), saved);
+      assertFalse(saved.contains("type="), "the type= line of the old files is not written back: " + saved);
+      assertFalse(saved.contains("[prueba]"), "and neither is the old free name: " + saved);
     } finally {
       screen.stopScreen();
       screen.close();
@@ -569,26 +556,24 @@ class ShipEditorViewTest {
       ShipEditorView view = new ShipEditorView(designs, hulls, pieces);
       gui.addWindow(view);
       gui.updateScreen();
-      // the title bar does not repeat the open ship: it is in the list
-      assertFalse(screenText(screen).contains("ships: uno"), screenText(screen));
       // the open type is the one with a background of its own in the ships list
-      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "[Flea]")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "Flea")).getBackgroundColor(),
           screenText(screen));
-      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowWith(screen, "[Gnat]")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowWith(screen, "Gnat")).getBackgroundColor(),
           screenText(screen));
 
       view.handleKey(new KeyStroke(KeyType.Tab));
       gui.updateScreen();
-      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "[Gnat]")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "Gnat")).getBackgroundColor(),
           screenText(screen));
-      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowWith(screen, "[Flea]")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.BLACK, screen.getBackCharacter(1, panelRowWith(screen, "Flea")).getBackgroundColor(),
           screenText(screen));
-      assertTrue(screenText(screen).contains("ship 2/17: dos"), screenText(screen));
+      assertTrue(screenText(screen).contains("ship 2/17: Gnat"), screenText(screen));
 
       // ⇧TAB goes back
       view.handleKey(new KeyStroke(KeyType.ReverseTab));
       gui.updateScreen();
-      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "[Flea]")).getBackgroundColor(),
+      assertEquals(TextColor.ANSI.WHITE, screen.getBackCharacter(1, panelRowWith(screen, "Flea")).getBackgroundColor(),
           "from the second one it goes back: " + screenText(screen));
     } finally {
       screen.stopScreen();
@@ -711,7 +696,7 @@ class ShipEditorViewTest {
   }
 
   @Test
-  void linesUpTheShipsAndTheirTypes() throws IOException {
+  void paintsTheWholeRowOfTheOpenShip() throws IOException {
     List<ShipDesign> designs = ShipDesign.parse(new StringReader(
         "[uno]\ntype=Flea\nchasis=h1\n[una nave larga]\ntype=Gnat\nchasis=h2\n"));
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(
@@ -726,11 +711,11 @@ class ShipEditorViewTest {
       gui.updateScreen();
 
       String[] lines = screenText(screen).split("\n", -1);
-      int first = panelRowWith(screen, "[Flea]");
-      int second = panelRowWith(screen, "[Gnat]");
+      int first = panelRowWith(screen, "Flea");
+      int second = panelRowWith(screen, "Gnat");
       assertTrue(first >= 0 && second >= 0, screenText(screen));
-      assertEquals(lines[first].indexOf("[Flea]"), lines[second].indexOf("[Gnat]"),
-          "the type column: " + screenText(screen));
+      assertTrue(lines[first].startsWith("│Flea"), "the type heads its row: " + screenText(screen));
+      assertTrue(lines[second].startsWith("│Gnat"), "the old names are not shown: " + screenText(screen));
 
       // the highlight of the open ship covers the whole panel row
       int divider = lines[first].indexOf('│', 1);
@@ -843,8 +828,8 @@ class ShipEditorViewTest {
   }
 
   @Test
-  void cutsLongNamesWithoutMovingTheTypeColumn() throws IOException {
-    // Arrange: a name longer than the name column, with two other types to line up
+  void ignoresTheLongNamesOfOldFilesWithoutBreakingThePanel() throws IOException {
+    // Arrange: an old file whose free names are so long they had to be cut before
     List<ShipDesign> designs = ShipDesign.parse(new StringReader(
         "[una nave extremadamente larga]\ntype=Firefly\nchasis=h1\n"
         + "[nave alfa]\ntype=Gnat\nchasis=h2\n"
@@ -862,19 +847,17 @@ class ShipEditorViewTest {
       // Act
       gui.updateScreen();
 
-      // Assert
+      // Assert: the panel shows the types, never the free names
       String[] lines = screenText(screen).split("\n", -1);
-      int first = panelRowWith(screen, "[Firefly]");
-      int second = panelRowWith(screen, "[Gnat]");
+      int first = panelRowWith(screen, "Firefly");
+      int second = panelRowWith(screen, "Gnat");
       assertTrue(first >= 0 && second >= 0, screenText(screen));
-      assertEquals(lines[first].indexOf("[Firefly]"), lines[second].indexOf("[Gnat]"),
-          "the type column does not move: " + screenText(screen));
       assertFalse(screenText(screen).contains("una nave extremadamente larga"),
-          "the long name is cut: " + screenText(screen));
-      assertTrue(screenText(screen).contains("una nave extremadam"),
-          "the head of the name is kept: " + screenText(screen));
+          "the old long name is not shown: " + screenText(screen));
       int divider = lines[first].indexOf('│', 1);
-      assertTrue(lines[first].indexOf("[Firefly]") + "[Firefly]".length() <= divider,
+      assertTrue(lines[first].indexOf("Firefly") + "Firefly".length() <= divider,
+          "the type fits in the panel: " + screenText(screen));
+      assertTrue(lines[second].indexOf("Gnat") + "Gnat".length() <= divider,
           "the type fits in the panel: " + screenText(screen));
     } finally {
       screen.stopScreen();
