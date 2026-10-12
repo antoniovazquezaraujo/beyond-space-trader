@@ -821,12 +821,12 @@ public final class LanternaMainWindow
         }
         if(character == 'c') {
           sound.play(SoundEffect.MENU_SELECT);
-          shipyardPresenter.construct(model.name());
+          constructDesign(model);
           return true;
         }
         if(character == 'v') {
           sound.play(SoundEffect.MENU_SELECT);
-          shipyardPresenter.saveTemplate(model.name());
+          saveDesign(model);
           return true;
         }
         return false;
@@ -879,14 +879,47 @@ public final class LanternaMainWindow
         askDesignerName(model);
         return true;
       case 10:
-        shipyardPresenter.construct(model.name());
+        constructDesign(model);
         return true;
       case 11:
-        shipyardPresenter.saveTemplate(model.name());
+        saveDesign(model);
         return true;
       default:
         return false;
     }
+  }
+
+  /** Builds the design; when the panel has it disabled, says what is missing. */
+  private void constructDesign(ShipyardDesignerViewModel model) {
+    if(!model.constructEnabled()) {
+      warnDesignerDisabled(model);
+      return;
+    }
+    shipyardPresenter.construct(model.name());
+  }
+
+  /** Saves the template; when the panel has it disabled, says what is missing. */
+  private void saveDesign(ShipyardDesignerViewModel model) {
+    if(!model.saveEnabled()) {
+      warnDesignerDisabled(model);
+      return;
+    }
+    shipyardPresenter.saveTemplate(model.name());
+  }
+
+  /**
+   * Says why the design cannot be built or saved: the name is missing, the yard
+   * is over its unit limit, or both. The reason goes to the log of the panel,
+   * where the rest of the messages of the designer are read.
+   */
+  private void warnDesignerDisabled(ShipyardDesignerViewModel model) {
+    if(model.name().isEmpty()) {
+      content.log(Strings.DesignerNeedsName);
+    }
+    if(model.percentLevel() == 3) {
+      content.log(Functions.StringVars(Strings.DesignerOverUnits, model.percent()));
+    }
+    content.invalidate();
   }
 
   private void askDesignerName(ShipyardDesignerViewModel model) {

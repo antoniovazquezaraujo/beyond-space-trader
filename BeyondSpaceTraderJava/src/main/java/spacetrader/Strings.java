@@ -505,8 +505,10 @@ public final class Strings {
   public static final String DesignerHull = text("DesignerHull");
   public static final String DesignerKeys = text("DesignerKeys");
   public static final String DesignerName = text("DesignerName");
+  public static final String DesignerNeedsName = text("DesignerNeedsName");
   public static final String DesignerNumeric = text("DesignerNumeric");
   public static final String DesignerNumericValue = text("DesignerNumericValue");
+  public static final String DesignerOverUnits = text("DesignerOverUnits");
   public static final String DesignerSave = text("DesignerSave");
   public static final String DesignerShield = text("DesignerShield");
   public static final String DesignerSize = text("DesignerSize");

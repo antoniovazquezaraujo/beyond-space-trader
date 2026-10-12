@@ -67,6 +67,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private static final int NAVIGATION_PANEL_WIDTH = 42;
+  /** The dim colour of a disabled action (no dedicated entry in {@link UiPalette}). */
+  private static final TextColor DISABLED = new TextColor.Indexed(240);
   private static final int TRADE_PANEL_WIDTH = 48;
   private static final int TRADE_PANEL_TARGET_WIDTH = 75;
   /** From this screen width the trade panel shows the target columns. */
@@ -943,6 +945,18 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawDesignerRow(TextGUIGraphics graphics, int x, int row, int field, String text) {
+    drawDesignerRow(graphics, x, row, field, text, true);
+  }
+
+  /**
+   * The same, for a row whose action is off: the marker still says where the
+   * field is, but the text goes dim so the refusal is visible before pressing.
+   */
+  private void drawDesignerRow(TextGUIGraphics graphics, int x, int row, int field, String text, boolean enabled) {
+    if(!enabled) {
+      UiPalette.draw(graphics, x, row, text, DISABLED, x + panelWidth);
+      return;
+    }
     drawRow(graphics, x, row, designerField == field, text);
   }
 
@@ -1105,10 +1119,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerTotal, designer.totalCost()), panelWidth));
     }
     if(row < height - 5) {
-      drawDesignerRow(graphics, x, row++, 10, marker(10) + Strings.DesignerConstruct);
+      drawDesignerRow(graphics, x, row++, 10, marker(10) + Strings.DesignerConstruct,
+          designer.constructEnabled());
     }
     if(row < height - 5) {
-      drawDesignerRow(graphics, x, row, 11, marker(11) + Strings.DesignerSave);
+      drawDesignerRow(graphics, x, row, 11, marker(11) + Strings.DesignerSave, designer.saveEnabled());
     }
   }
 
