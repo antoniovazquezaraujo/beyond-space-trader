@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.gui2.Interactable;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
@@ -4014,8 +4015,6 @@ class LanternaMainWindowTest {
 
       String text = screenText(screen);
       assertTrue(text.contains("[G] jump"), text);
-      assertTrue(text.contains("[F] fuel"), text);
-      assertTrue(text.contains("[R] repairs"), text);
       assertTrue(text.contains("[F10] menu"), text);
       assertTrue(text.indexOf("[F10] menu") > text.indexOf("[G] jump"),
           "the program menu goes after the contextual actions:\n" + text);
@@ -4039,6 +4038,10 @@ class LanternaMainWindowTest {
       window.setPresenter(presenter);
       presenter.updateAll();
       gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // The dock actions live in the ship panel now: open it first.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
       gui.updateScreen();
 
       // The key opens the amount dialog and then plays the scene, both blocking:
@@ -4068,6 +4071,57 @@ class LanternaMainWindowTest {
       assertEquals(100, holder[0].Commander().getShip().getHull(), "the presenter applies the repair");
       assertEquals(980, holder[0].Commander().getCash());
       assertTrue(gui.getWindows().contains(window.asWindow()), "the main window stays");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theDockActionsLiveInTheShipPanel() throws Exception {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // On the map, f and r do nothing now: the keys go unhandled and no dialog opens.
+      assertEquals(Interactable.Result.UNHANDLED,
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('f', false, false)));
+      assertEquals(Interactable.Result.UNHANDLED,
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('r', false, false)));
+      assertEquals(1, gui.getWindows().size(), "no dialog opens from the map");
+
+      // In the ship panel, f buys fuel: it opens its amount dialog.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+      Thread fuel = new Thread(() ->
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('f', false, false)));
+      fuel.setDaemon(true);
+      fuel.start();
+      Window fuelDialog = waitForDialog(gui, window.asWindow());
+      assertEquals(Strings.DialogFuelTitle, fuelDialog.getTitle(), "the fuel dialog comes from the panel");
+      fuelDialog.handleInput(new KeyStroke(KeyType.Escape));
+      fuel.join(5000);
+      assertFalse(fuel.isAlive(), "the fuel dialog closes with Escape");
+
+      // And r repairs: its dialog is the one of the repairs.
+      Thread repairs = new Thread(() ->
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('r', false, false)));
+      repairs.setDaemon(true);
+      repairs.start();
+      Window repairsDialog = waitForDialog(gui, window.asWindow());
+      assertEquals(Strings.DialogRepairsTitle, repairsDialog.getTitle(), "the repairs dialog comes from the panel");
+      repairsDialog.handleInput(new KeyStroke(KeyType.Escape));
+      repairs.join(5000);
+      assertFalse(repairs.isAlive(), "the repairs dialog closes with Escape");
     } finally {
       screen.stopScreen();
       screen.close();

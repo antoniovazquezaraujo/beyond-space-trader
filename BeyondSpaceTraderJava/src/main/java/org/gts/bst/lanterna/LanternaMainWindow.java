@@ -543,8 +543,10 @@ public final class LanternaMainWindow
     if(content.panel() == MainPanel.Personnel) {
       return handlePersonnelKey(key);
     }
-    if(content.panel() == MainPanel.Commander || content.panel() == MainPanel.Ship
-        || content.panel() == MainPanel.About) {
+    if(content.panel() == MainPanel.Ship) {
+      return handleShipKey(key);
+    }
+    if(content.panel() == MainPanel.Commander || content.panel() == MainPanel.About) {
       return false;
     }
     if(content.panel() == MainPanel.ShipList) {
@@ -1423,17 +1425,11 @@ public final class LanternaMainWindow
       case 't':
         trackSelection(game);
         return true;
-      case 'f':
-        buyFuel();
-        return true;
       case 'g':
         jump();
         return true;
       case ' ':
         warp();
-        return true;
-      case 'r':
-        buyRepairs();
         return true;
       case 'h':
         moveSelection(game, -1, 0);
@@ -1452,6 +1448,28 @@ public final class LanternaMainWindow
         return true;
       case 'y':
         acceptSpecialEvent();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * The keys of the ship panel: its dock block shows the fuel and hull state,
+   * so `F` buys fuel and `R` repairs the hull from here. From the map they do
+   * nothing: the panel is the place of the dock actions. Escape and SPACE
+   * already close the panel before this.
+   */
+  private boolean handleShipKey(KeyStroke key) {
+    if(key.getKeyType() != KeyType.Character) {
+      return false;
+    }
+    switch(Character.toLowerCase(key.getCharacter())) {
+      case 'f':
+        buyFuel();
+        return true;
+      case 'r':
+        buyRepairs();
         return true;
       default:
         return false;

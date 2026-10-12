@@ -114,6 +114,17 @@ class StringsSpanishTest {
     assertEquals("[F] combustible \u00b7 [R] reparaciones \u00b7 [ESPACIO] cerrar", spanish.getProperty("ShipKeys"));
   }
 
+  /** The direct keys of the map no longer name the dock shortcuts: they live in the ship panel. */
+  @Test
+  void theDirectKeysLeaveTheDockShortcutsToTheShipPanel() throws IOException {
+    Properties english = properties("Strings.properties");
+    Properties spanish = properties("Strings_es.properties");
+    assertFalse(english.getProperty("DirectKeys").contains("[F]"), "no [F] in the english direct keys");
+    assertFalse(english.getProperty("DirectKeys").contains("[R]"), "no [R] in the english direct keys");
+    assertFalse(spanish.getProperty("DirectKeys").contains("[F]"), "no [F] in the spanish direct keys");
+    assertFalse(spanish.getProperty("DirectKeys").contains("[R]"), "no [R] in the spanish direct keys");
+  }
+
   private static Set<String> keys(String resource) throws IOException {
     return properties(resource).stringPropertyNames();
   }
