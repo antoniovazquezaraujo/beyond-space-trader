@@ -39,5 +39,9 @@ public enum SoundEffect {
   /** The ship warps away. */
   WARP,
   /** The ship gets away from an encounter (the map warp keeps {@link #WARP}). */
-  ESCAPE
+  ESCAPE,
+  /** A hammer blow on the hull while the repairs go on. */
+  REPAIR_HIT,
+  /** The hull repairs are done. */
+  REPAIR_DONE
 }

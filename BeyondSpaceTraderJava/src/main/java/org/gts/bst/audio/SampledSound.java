@@ -265,6 +265,10 @@ public final class SampledSound implements SoundService {
         return "travel/warp";
       case ESCAPE:
         return "travel/escape";
+      case REPAIR_HIT:
+        return "repair/hammer";
+      case REPAIR_DONE:
+        return "repair/done";
       default:
         return "";
     }

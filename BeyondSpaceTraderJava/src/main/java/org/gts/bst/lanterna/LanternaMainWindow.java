@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.function.Supplier;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
@@ -32,6 +34,7 @@ import org.gts.bst.presenter.EquipmentPresenter;
 import org.gts.bst.presenter.HighScoresPresenter;
 import org.gts.bst.presenter.PersonnelPresenter;
 import org.gts.bst.presenter.QuestsPresenter;
+import org.gts.bst.presenter.ShipArtItems;
 import org.gts.bst.presenter.ShipListPresenter;
 import org.gts.bst.presenter.ShipPresenter;
 import org.gts.bst.presenter.ShipyardPresenter;
@@ -63,8 +66,10 @@ import org.gts.bst.view.PersonnelViewModel;
 import org.gts.bst.view.QuestsView;
 import org.gts.bst.view.QuestsViewModel;
 import org.gts.bst.view.ShipInfoViewModel;
+import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipListView;
 import org.gts.bst.view.ShipListViewModel;
+import org.gts.bst.view.ShipPicture;
 import org.gts.bst.view.ShipView;
 import org.gts.bst.view.ShipViewModel;
 import org.gts.bst.view.ShipyardDesignerViewModel;
@@ -76,6 +81,7 @@ import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.GameEndException;
+import spacetrader.Ship;
 import spacetrader.SpecialEvent;
 import spacetrader.StarSystem;
 import spacetrader.enums.StarSystemId;
@@ -403,6 +409,39 @@ public final class LanternaMainWindow
         plunder ? CargoTransferPresenter.Mode.Plunder : CargoTransferPresenter.Mode.Jettison, sound);
     gui.addWindow(view.asWindow());
     gui.waitForWindowToClose(view.asWindow());
+  }
+
+  @Override
+  public void repairScene(int from, int to) {
+    Game game = gameSupplier.get();
+    if(game == null || to <= from) {
+      return;
+    }
+    Ship ship = game.Commander().getShip();
+    ShipPicture picture = ShipCatalog.shared().picture(ship.Type(), ShipArtItems.of(ship), ship.CargoBays());
+    RepairSceneComponent content = new RepairSceneComponent(picture, from, to, ship.HullStrength(), sound);
+    content.setPreferredSize(new TerminalSize(120, 30));
+    BasicWindow scene = new BasicWindow(Strings.RepairSceneTitle);
+    scene.setHints(Set.of(Window.Hint.MODAL, Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+    scene.setComponent(content);
+    scene.setFocusedInteractable(content);
+    Timer timer = new Timer("repair-scene", true);
+    content.onDone(() -> {
+      timer.cancel();
+      scene.close();
+    });
+    timer.scheduleAtFixedRate(new TimerTask() {
+      @Override
+      public void run() {
+        try {
+          gui.getGUIThread().invokeLater(content::tick);
+        } catch(IllegalStateException e) {
+          return;
+        }
+      }
+    }, RepairSceneComponent.FRAME_MILLIS, RepairSceneComponent.FRAME_MILLIS);
+    gui.addWindow(scene);
+    gui.waitForWindowToClose(scene);
   }
 
   @Override

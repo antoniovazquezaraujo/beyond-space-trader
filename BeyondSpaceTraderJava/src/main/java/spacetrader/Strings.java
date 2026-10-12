@@ -293,6 +293,8 @@ public final class Strings {
   public static final String DialogFuelTitle = text("DialogFuelTitle");
   public static final String DialogRepairsPrompt = text("DialogRepairsPrompt");
   public static final String DialogRepairsTitle = text("DialogRepairsTitle");
+  public static final String RepairSceneTitle = text("RepairSceneTitle");
+  public static final String RepairSceneSkip = text("RepairSceneSkip");
   public static final String MainCargo = text("MainCargo");
   public static final String MainChartGalactic = text("MainChartGalactic");
   public static final String MainChartShortRange = text("MainChartShortRange");
