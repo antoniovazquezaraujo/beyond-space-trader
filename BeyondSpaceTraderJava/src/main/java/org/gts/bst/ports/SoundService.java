@@ -115,6 +115,17 @@ public interface SoundService {
   default void alarm(Alarm alarm, boolean on) {
   }
 
+  /**
+   * Starts or stops the workshop loop of the repair scene ({@code
+   * repair/workshop}). It is a loop of its own: the ambience of the screen keeps
+   * its voice and is heard again when the repairs are over. A missing sample is
+   * silence.
+   *
+   * @param on true to start the loop, false to fade it out
+   */
+  default void repairLoop(boolean on) {
+  }
+
   /** A service that plays nothing (tests, headless runs and the mute option). */
   SoundService NONE = effect -> {
   };

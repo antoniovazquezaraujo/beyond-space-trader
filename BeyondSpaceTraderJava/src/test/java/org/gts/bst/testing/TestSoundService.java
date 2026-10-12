@@ -39,6 +39,7 @@ public final class TestSoundService implements SoundService {
   private final List<Engine> engines = new ArrayList<>();
   private final List<Boolean> engineStops = new ArrayList<>();
   private final List<AlarmCall> alarms = new ArrayList<>();
+  private final List<Boolean> repairLoops = new ArrayList<>();
 
   @Override
   public void play(SoundEffect effect) {
@@ -95,6 +96,11 @@ public final class TestSoundService implements SoundService {
     return alarms;
   }
 
+  /** The workshop loop of the repair scene started or stopped, in order. */
+  public List<Boolean> repairLoops() {
+    return repairLoops;
+  }
+
   /** The last ambience asked for, or null when none was. */
   public AmbienceKey lastAmbience() {
     return ambiences.isEmpty() ? null : ambiences.get(ambiences.size() - 1);
@@ -109,6 +115,7 @@ public final class TestSoundService implements SoundService {
     engines.clear();
     engineStops.clear();
     alarms.clear();
+    repairLoops.clear();
   }
 
   @Override
@@ -124,5 +131,10 @@ public final class TestSoundService implements SoundService {
   @Override
   public void alarm(Alarm alarm, boolean on) {
     alarms.add(new AlarmCall(alarm, on));
+  }
+
+  @Override
+  public void repairLoop(boolean on) {
+    repairLoops.add(on);
   }
 }

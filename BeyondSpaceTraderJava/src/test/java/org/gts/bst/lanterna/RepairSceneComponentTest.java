@@ -36,7 +36,7 @@ import spacetrader.Strings;
 
 class RepairSceneComponentTest {
   @Test
-  void theBarRisesWithTheHitsAndEndsWithTheDoneSound() throws IOException {
+  void theBarRisesWithTheWorkshopAndEndsWithTheDoneSound() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
@@ -47,13 +47,22 @@ class RepairSceneComponentTest {
       gui.updateScreen();
 
       assertEquals(40, content.hull(), "the bar starts at the hull in flight");
+      assertEquals(List.of(Boolean.TRUE), sound.repairLoops(), "the workshop loop starts with the scene");
       String text = screenText(screen);
       assertTrue(text.contains(Strings.RepairSceneTitle), text);
       assertTrue(text.contains("40 -> 60 / 100"), "the numbers of the repair: " + text);
       assertTrue(text.contains(Strings.RepairSceneSkip), text);
       int filledAtStart = count(text, '█');
 
-      int ticks = 0;
+      // Halfway the bar is halfway: the rise is continuous, not a jump at the end.
+      for(int i = 0; i < 20; i++) {
+        content.tick();
+      }
+      gui.updateScreen();
+      assertEquals(50, content.hull(), "the bar is halfway when half the frames are gone");
+      assertTrue(count(screenText(screen), '█') > filledAtStart, "and it has grown on screen");
+
+      int ticks = 20;
       while(!content.finished() && ticks < 200) {
         content.tick();
         ticks++;
@@ -61,22 +70,32 @@ class RepairSceneComponentTest {
       gui.updateScreen();
 
       assertTrue(content.finished(), "the repair ends by itself");
-      assertEquals(20, ticks, "one frame per hull point when they fit in the range");
+      assertEquals(40, ticks, "twenty points last forty frames, inside the range");
       assertEquals(60, content.hull(), "all the way to the hull asked for");
       assertEquals(1, count(sound.played(), SoundEffect.REPAIR_DONE), "the done sounds once");
       assertEquals(SoundEffect.REPAIR_DONE, sound.played().get(sound.played().size() - 1),
           "and it is the last thing heard");
-      assertTrue(count(sound.played(), SoundEffect.REPAIR_HIT) >= 2, "the hammer hits on the way");
       assertTrue(count(screenText(screen), '█') > filledAtStart, "the bar has grown by the end");
 
       for(int i = 0; i < 6; i++) {
         content.tick();
       }
       assertFalse(gui.getWindows().contains(window), "the scene goes after the done pause");
+      assertEquals(List.of(Boolean.TRUE, Boolean.FALSE), sound.repairLoops(),
+          "and the workshop loop fades out with the close");
     } finally {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void theDurationFollowsThePointsBetweenFourAndTenSeconds() throws IOException {
+    // A tiny repair rounds the floor of four seconds (36 frames at 110 ms).
+    assertEquals(36, ticksToFinish(new RepairSceneComponent(picture(), 98, 100, 100, new TestSoundService())));
+    assertEquals(60, ticksToFinish(new RepairSceneComponent(picture(), 70, 100, 100, new TestSoundService())));
+    // A huge one hits the ceiling of ten seconds (91 frames).
+    assertEquals(91, ticksToFinish(new RepairSceneComponent(picture(), 0, 100, 100, new TestSoundService())));
   }
 
   @Test
@@ -103,10 +122,22 @@ class RepairSceneComponentTest {
         gui.updateScreen();
       }
       assertFalse(gui.getWindows().contains(window), "the scene closes after the done");
+      assertEquals(List.of(Boolean.TRUE, Boolean.FALSE), sound.repairLoops(),
+          "skipping also stops the workshop loop");
     } finally {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  private static int ticksToFinish(RepairSceneComponent content) {
+    int ticks = 0;
+    while(!content.finished() && ticks < 200) {
+      content.tick();
+      ticks++;
+    }
+    assertTrue(content.finished(), "the repair must end");
+    return ticks;
   }
 
   private static Window show(MultiWindowTextGUI gui, RepairSceneComponent content) {

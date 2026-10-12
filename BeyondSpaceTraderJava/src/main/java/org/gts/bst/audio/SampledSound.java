@@ -57,6 +57,8 @@ public final class SampledSound implements SoundService {
   static final int LINE_BUFFER_BYTES = FRAMES * 4 * 2;
   /** The music fades to nothing fast when the scene closes. */
   private static final double MUSIC_STOP_FADE_SECONDS = 0.15;
+  /** The workshop loop of the repair scene fades out fast when the scene closes. */
+  private static final double REPAIR_FADE_SECONDS = 0.12;
 
   private final BooleanSupplier enabled;
   private final SourceDataLine line;
@@ -236,6 +238,19 @@ public final class SampledSound implements SoundService {
     mixer.play(library.sample(key), 1f);
   }
 
+  @Override
+  public void repairLoop(boolean on) {
+    // Like the other loops, it starts even with the sound off: turning it on
+    // resumes it. It does not touch the ambience of the screen: the map keeps
+    // sounding under the scene. A missing sample is silence.
+    float[] sample = on ? library.sample("repair/workshop") : null;
+    if(sample == null) {
+      mixer.stopRepair(REPAIR_FADE_SECONDS);
+    } else {
+      mixer.startRepair(sample);
+    }
+  }
+
   /** The key of an effect: the map of the README of {@code sounds/}. */
   static String keyOf(SoundEffect effect) {
     switch(effect) {
@@ -265,8 +280,6 @@ public final class SampledSound implements SoundService {
         return "travel/warp";
       case ESCAPE:
         return "travel/escape";
-      case REPAIR_HIT:
-        return "repair/hammer";
       case REPAIR_DONE:
         return "repair/done";
       default:

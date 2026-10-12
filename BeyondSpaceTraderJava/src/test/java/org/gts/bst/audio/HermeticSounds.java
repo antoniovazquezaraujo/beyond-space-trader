@@ -29,6 +29,7 @@ final class HermeticSounds {
       "/sounds/combat/laser-pulse-1.wav",
       "/sounds/music/calm-1.wav",
       "/sounds/music/tense-1.wav",
+      "/sounds/repair/workshop-1.wav",
       "/sounds/ships/default-1.wav",
       "/sounds/ships/gnat-1.wav",
       "/sounds/ships/medium-1.wav",

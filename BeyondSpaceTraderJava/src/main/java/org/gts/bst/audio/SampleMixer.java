@@ -20,9 +20,10 @@ import org.gts.bst.ports.Alarm;
 
 /**
  * Mixes the active voices into a float buffer: the one-shots (effects, shots),
- * the ambience loop of the screen, the music loop and the two engine loops (the
- * player and the rival). Each voice carries its gain and a short fade in/out,
- * and each {@link SoundChannel} has its own volume.
+ * the ambience loop of the screen, the music loop, the two engine loops (the
+ * player and the rival), the two alarm loops and the workshop loop of the
+ * repair scene. Each voice carries its gain and a short fade in/out, and each
+ * {@link SoundChannel} has its own volume.
  *
  * <p>It has no thread and no device: {@link SampledSound} calls {@link #render}
  * from its playback thread, and the tests call it directly, so the mixing is
@@ -44,6 +45,7 @@ final class SampleMixer {
   private final Map<SoundChannel, Float> volumes = new EnumMap<>(SoundChannel.class);
   private Voice ambience;
   private Voice music;
+  private Voice repair;
   private final Voice[] engines = new Voice[2];
   private final Voice[] alarms = new Voice[2];
 
@@ -85,6 +87,21 @@ final class SampleMixer {
   /** Starts the music loop, crossfading out the previous mood. */
   synchronized void startMusic(float[] sample) {
     music = startLoop(music, sample, SoundChannel.MUSIC);
+  }
+
+  /**
+   * Starts the workshop loop of the repair scene. It is a voice of its own, on
+   * the ambience channel but without touching the ambience of the screen: the
+   * map keeps sounding under the scene and comes back when it closes.
+   */
+  synchronized void startRepair(float[] sample) {
+    repair = startLoop(repair, sample, SoundChannel.AMBIENCE);
+  }
+
+  /** Stops the workshop loop with a fade of its own (short: the scene is going). */
+  synchronized void stopRepair(double fadeSeconds) {
+    stopLoop(repair, fadeSeconds);
+    repair = null;
   }
 
   synchronized void stopMusic() {

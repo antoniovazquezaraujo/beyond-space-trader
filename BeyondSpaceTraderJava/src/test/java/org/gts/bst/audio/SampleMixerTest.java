@@ -87,6 +87,29 @@ class SampleMixerTest {
     assertEquals(0f, stopping[stopping.length - 1], 1e-3f, "and it is gone at the end of the fade");
   }
 
+  /** The repair loop lives on its own: it does not touch the ambience of the screen. */
+  @Test
+  void theRepairLoopStartsAndStopsWithoutTouchingTheAmbience() {
+    SampleMixer mixer = new SampleMixer(() -> true);
+    mixer.startAmbience(constant(0.5f, 44100));
+    mixer.startRepair(constant(1f, 44100));
+
+    float[] both = new float[44100];
+    mixer.render(both, both.length);
+    assertEquals(0.825f, both[40000], 1e-3f, "the ambience and the workshop mix on the channel");
+
+    mixer.stopRepair(0.01);
+    float[] stopped = new float[44100];
+    mixer.render(stopped, stopped.length);
+    assertEquals(0.275f, stopped[stopped.length - 1], 1e-3f, "the workshop fades out and the ambience stays");
+
+    // A missing sample starts no voice.
+    mixer.startRepair(null);
+    float[] silence = new float[1000];
+    mixer.render(silence, silence.length);
+    assertEquals(0.275f, silence[500], 1e-3f, "no workshop voice is added");
+  }
+
   /** The two alarm loops overlap and can be stopped; a missing sample is no voice. */
   @Test
   void theTwoAlarmsOverlapAndCanBeStopped() {

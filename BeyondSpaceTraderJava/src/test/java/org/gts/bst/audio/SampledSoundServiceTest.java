@@ -122,9 +122,21 @@ class SampledSoundServiceTest {
   }
 
   @Test
-  void theRepairKeysUseTheirSamples() {
-    assertEquals("repair/hammer", SampledSound.keyOf(SoundEffect.REPAIR_HIT));
+  void theRepairLoopUsesItsSampleAndIsSilentWithoutOne() throws InterruptedException {
     assertEquals("repair/done", SampledSound.keyOf(SoundEffect.REPAIR_DONE));
+
+    RecordingLine line = new RecordingLine();
+    SoundService sound = SampledSound.create(() -> true, line::open, HermeticSounds.library());
+    sound.repairLoop(true);
+    assertTrue(line.sounded.await(WAIT_MILLIS, TimeUnit.MILLISECONDS), "the workshop loop reaches the line");
+    assertTrue(hasSound(line.firstNonSilent()), "and it is not silence");
+    sound.repairLoop(false);
+
+    // A missing workshop sample is silence, never an error.
+    RecordingLine silent = new RecordingLine();
+    SoundService without = SampledSound.create(() -> true, silent::open, new SampleLibrary(resource -> null));
+    without.repairLoop(true);
+    assertNull(silent.firstNonSilent(), "a missing workshop sample is silence");
   }
 
   private static boolean hasSound(byte[] block) {

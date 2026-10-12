@@ -29,16 +29,19 @@ import spacetrader.Strings;
  *
  * <p>The component only plays the repair: it takes the drawing of the ship and
  * the hull values, raises the bar from {@code from} to {@code to} while the
- * hammer hits and its sparks fly over the hull, and calls back when it is over
- * (or when the player skips it with any key). The model is never touched here:
- * the presenter applies the repair when the scene returns.
+ * sparks fly over the hull, and calls back when it is over (or when the player
+ * skips it with any key). The workshop loop sounds the whole time (see
+ * {@link SoundService#repairLoop(boolean)}) and the done effect closes the
+ * scene. The model is never touched here: the presenter applies the repair when
+ * the scene returns.
  */
 public final class RepairSceneComponent extends AbstractInteractableComponent<RepairSceneComponent> {
   /** The clock of the scene: the host timer calls {@link #tick()} at this pace. */
   static final int FRAME_MILLIS = 110;
-  /** The repair lasts one frame per hull point, clamped to this range. */
-  private static final int MIN_FRAMES = 8;
-  private static final int MAX_FRAMES = 40;
+  /** The repair lasts two frames per hull point, clamped to this range (4 s to 10 s). */
+  private static final int FRAMES_PER_POINT = 2;
+  private static final int MIN_FRAMES = 36;
+  private static final int MAX_FRAMES = 91;
   /** The frames between two hammer blows: five, six or seven, in turn. */
   private static final int HIT_MIN = 5;
   private static final int HIT_SPREAD = 3;
@@ -82,8 +85,10 @@ public final class RepairSceneComponent extends AbstractInteractableComponent<Re
     this.to = to;
     this.max = Math.max(max, to);
     this.sound = sound;
-    this.totalFrames = Math.max(MIN_FRAMES, Math.min(MAX_FRAMES, to - from));
+    this.totalFrames = Math.max(MIN_FRAMES, Math.min(MAX_FRAMES, (to - from) * FRAMES_PER_POINT));
     this.hull = from;
+    // The workshop sounds the whole time the scene is open.
+    sound.repairLoop(true);
   }
 
   /** The callback of the end: the host takes the window away. */
@@ -121,14 +126,13 @@ public final class RepairSceneComponent extends AbstractInteractableComponent<Re
     if(frame >= nextHit) {
       hits++;
       nextHit = frame + HIT_MIN + hits % HIT_SPREAD;
-      hit();
+      sparks();
     }
     invalidate();
   }
 
-  /** A hammer blow on the hull: its sound and its sparks. */
-  private void hit() {
-    sound.play(SoundEffect.REPAIR_HIT);
+  /** The sparks of a hammer blow on the hull (the workshop loop carries the sound). */
+  private void sparks() {
     int x = 1 + hits * 3 % Math.max(1, picture.width() - 2);
     int y = 1 + hits * 2 % Math.max(1, picture.height() - 2);
     flashes.add(new Flash(x, y, SPARK, TextColor.ANSI.YELLOW_BRIGHT, SPARK_FRAMES));
@@ -149,13 +153,14 @@ public final class RepairSceneComponent extends AbstractInteractableComponent<Re
     invalidate();
   }
 
-  /** Takes the window away, once. */
+  /** Takes the window away, once: the workshop loop fades out with it. */
   private void close() {
     if(closed) {
       return;
     }
     closed = true;
     invalidate();
+    sound.repairLoop(false);
     if(onDone != null) {
       onDone.run();
     }
