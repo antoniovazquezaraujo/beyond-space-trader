@@ -15,7 +15,7 @@ piece catalogue below is the inventory of what has to be drawn.
 | --- | --- | --- |
 | `ships/chassis.txt` | The chassis drawings | Hand; the menu reloads it when an editor closes |
 | `ships/pieces.txt` | The piece drawings | Hand; the menu reloads it when an editor closes |
-| `ships/ships.txt` | One assembly: a chassis and its placed pieces | The composer, with `s` |
+| `ships/ships.txt` | One design per game type: its chassis and its site groups | The ship editor, with `s` |
 
 Lookup order (UTF-8): `ships/<file>`, `../ships/<file>`, `BeyondSpaceTraderJava/ships/<file>`.
 
