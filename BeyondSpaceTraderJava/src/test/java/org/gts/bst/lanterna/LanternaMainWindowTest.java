@@ -3989,6 +3989,68 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void buyingRepairsPlaysTheSceneAndAppliesTheHull() throws Exception {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      holder[0].Commander().getShip().setHull(90);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // The key opens the amount dialog and then plays the scene, both blocking:
+      // it goes in a worker, as the dialog tests do.
+      Thread worker = new Thread(() ->
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('r', false, false)));
+      worker.setDaemon(true);
+      worker.start();
+
+      Window amount = waitForWindow(gui, Strings.DialogRepairsTitle);
+      amount.handleInput(new KeyStroke('2', false, false));
+      amount.handleInput(new KeyStroke('0', false, false));
+      amount.handleInput(new KeyStroke(KeyType.Enter));
+
+      // The worker holds the main component while the scene is open: the test
+      // thread only talks to the scene (repainting it would need that lock).
+      Window scene = waitForWindow(gui, Strings.RepairSceneTitle);
+      assertTrue(scene.getComponent() instanceof RepairSceneComponent, "the scene of the repairs");
+      RepairSceneComponent content = (RepairSceneComponent) scene.getComponent();
+      // One key skips to the end, the next one takes the scene away.
+      scene.getFocusedInteractable().handleInput(new KeyStroke('x', false, false));
+      assertTrue(content.finished(), "the key completes the repair");
+      scene.getFocusedInteractable().handleInput(new KeyStroke('x', false, false));
+
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the key press returns when the scene closes");
+      assertEquals(100, holder[0].Commander().getShip().getHull(), "the presenter applies the repair");
+      assertEquals(980, holder[0].Commander().getCash());
+      assertTrue(gui.getWindows().contains(window.asWindow()), "the main window stays");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static Window waitForWindow(MultiWindowTextGUI gui, String title) throws InterruptedException {
+    for(int i = 0; i < 500; i++) {
+      for(Window window : gui.getWindows()) {
+        if(title.equals(window.getTitle())) {
+          return window;
+        }
+      }
+      Thread.sleep(10);
+    }
+    fail("the window was not shown: " + title);
+    return null;
+  }
+
+  @Test
   void onlyTheChosenQuietAlertsSpeakUnderTheRival() {
     List<AlertType> chosen = List.of(AlertType.EncounterPoliceFine, AlertType.EncounterPoliceBribeCant,
         AlertType.EncounterMarieCelesteNoBribe, AlertType.EncounterSurrenderRefused);

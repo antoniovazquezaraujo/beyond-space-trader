@@ -121,6 +121,12 @@ class SampledSoundServiceTest {
     assertEquals("alerts/police-scan", SampledSound.keyOf(SoundEffect.POLICE_SCAN));
   }
 
+  @Test
+  void theRepairKeysUseTheirSamples() {
+    assertEquals("repair/hammer", SampledSound.keyOf(SoundEffect.REPAIR_HIT));
+    assertEquals("repair/done", SampledSound.keyOf(SoundEffect.REPAIR_DONE));
+  }
+
   private static boolean hasSound(byte[] block) {
     if(block == null) {
       return false;
