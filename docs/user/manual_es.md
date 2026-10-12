@@ -245,13 +245,15 @@ transporta **al instante a cualquier sistema seleccionado**, sin gastar
 combustible ni días. Solo funciona mientras la llevas a bordo y se consume tras
 el salto.
 
-Combustible y reparaciones:
+Combustible y reparaciones (en el panel de Nave, `V`):
 
 | Tecla | Acción |
 | --- | --- |
 | `F` | Comprar combustible (pregunta cuánto; limitado por tu dinero y el depósito) |
 | `R` | Reparar el casco (pregunta cuánto; limitado por tu dinero) |
 | `F8` | Opciones; *Llenar el depósito al llegar* y *Reparar el casco por completo al llegar* lo hacen automáticamente |
+
+El panel de Nave muestra el depósito y el casco con lo que costará llenarlo o repararlo; `F` y `R` funcionan con él abierto.
 
 ### 4.3 Las teclas diarias
 
@@ -533,7 +535,6 @@ guarda en `data/HighScores.bin` y se ve con `F3`.
 | `/` | Buscar un sistema por nombre |
 | `Espacio` | Viajar al sistema seleccionado (o por el agujero de gusano del actual) |
 | `G` | Salto con la Singularidad Portátil |
-| `F` / `R` | Comprar combustible / reparar el casco |
 | `Y` | Evento especial del sistema actual |
 | `C` | Comercio |
 | `B` | Banco |
@@ -559,6 +560,7 @@ guarda en `data/HighScores.bin` y se ve con `F3`.
 | Banco (`B`) | `G` préstamo · `P` devolver · `I` seguro |
 | Misiones (`Q`) | `INTRO` fijar objetivo · `Espacio` cerrar |
 | Tripulación (`P`) | `H` contratar/despedir |
+| Nave (`V`) | `F` combustible · `R` reparaciones · `Espacio` cerrar |
 | Naves en venta (`S`) | `B` comprar |
 | Equipo (`E`) | `B` comprar · `S` vender |
 | Diseño (`D`) | `←`/`→` cambiar · `R` nombre · `C` construir · `V` guardar plantilla |

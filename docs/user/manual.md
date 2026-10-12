@@ -234,13 +234,15 @@ The **Portable Singularity** (`G`) is a one-shot quest reward: it teleports you
 to **any selected system** instantaneously, without spending fuel or days. It
 works only while it is on board and it is consumed after the jump.
 
-Fuel and repairs:
+Fuel and repairs (in the ship panel, `V`):
 
 | Key | Action |
 | --- | --- |
 | `F` | Buy fuel (asks how much; limited by your cash and the tank) |
 | `R` | Repair the hull (asks how much; limited by your cash) |
 | `F8` | Options; *Get full fuel tanks on arrival* and *Get full hull repairs on arrival* do it automatically |
+
+The ship panel shows the tank and the hull with what a refill or the repairs will cost; `F` and `R` work while it is open.
 
 ### 4.3 The daily keys
 
@@ -514,7 +516,6 @@ stored in `data/HighScores.bin` and can be seen from `F3`.
 | `/` | Find a system by name |
 | `SPACE` | Warp to the selected system (or through the wormhole of the current one) |
 | `G` | Portable Singularity jump |
-| `F` / `R` | Buy fuel / repair hull |
 | `Y` | Special event of the current system |
 | `C` | Trade |
 | `B` | Bank |
@@ -540,6 +541,7 @@ stored in `data/HighScores.bin` and can be seen from `F3`.
 | Bank (`B`) | `G` loan · `P` pay back · `I` insurance |
 | Quests (`Q`) | `ENTER` set the target · `SPACE` close |
 | Personnel (`P`) | `H` hire/fire |
+| Ship (`V`) | `F` fuel · `R` repairs · `SPACE` close |
 | Ships for sale (`S`) | `B` buy |
 | Equipment (`E`) | `B` buy · `S` sell |
 | Designer (`D`) | `←`/`→` change · `R` name · `C` construct · `V` save template |

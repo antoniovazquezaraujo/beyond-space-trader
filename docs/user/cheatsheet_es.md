@@ -26,7 +26,6 @@ Una página con las teclas y los paneles del juego. Los detalles están en el
 | `/` | Buscar un sistema por nombre |
 | `Espacio` | Viajar al sistema seleccionado (o por el agujero de gusano) |
 | `G` | Salto con la Singularidad Portátil |
-| `F` / `R` | Comprar combustible / reparar el casco |
 | `Y` | Evento especial del sistema actual |
 | `Esc` | Cerrar el panel; salir desde el mapa |
 | `n` / `p` | Periódico / tripulación en el mapa; bajar/subir en las listas |
@@ -41,7 +40,7 @@ Una página con las teclas y los paneles del juego. Los detalles están en el
 | `N` Periódico | Flechas para desplazar · `AvPág`/`RePág` |
 | `P` Tripulación | `H` contratar/despedir |
 | `I` Comandante | `Espacio` cerrar |
-| `V` Nave y carga | `Espacio` cerrar |
+| `V` Nave y carga | `F` combustible · `R` reparaciones · `Espacio` cerrar |
 | `S` Naves en venta | `B` comprar |
 | `E` Equipo | `B` comprar · `S` vender |
 | `D` Diseño de nave | `←`/`→` cambiar · `R` nombre · `C` construir · `V` guardar |

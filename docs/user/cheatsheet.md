@@ -26,7 +26,6 @@ One page with the keys and panels of the game. The details are in the
 | `/` | Find a system by name |
 | `SPACE` | Warp to the selected system (or through the wormhole) |
 | `G` | Portable Singularity jump |
-| `F` / `R` | Buy fuel / repair hull |
 | `Y` | Special event of the current system |
 | `Esc` | Close the panel; quit from the map |
 | `n` / `p` | Newspaper / personnel on the map; down/up in the lists |
@@ -41,7 +40,7 @@ One page with the keys and panels of the game. The details are in the
 | `N` Newspaper | Arrows scroll · `PageUp`/`PageDown` |
 | `P` Personnel | `H` hire/fire |
 | `I` Commander | `SPACE` close |
-| `V` Ship and cargo | `SPACE` close |
+| `V` Ship and cargo | `F` fuel · `R` repairs · `SPACE` close |
 | `S` Ships for sale | `B` buy |
 | `E` Equipment | `B` buy · `S` sell |
 | `D` Ship designer | `←`/`→` change · `R` name · `C` construct · `V` save |
