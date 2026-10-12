@@ -31,15 +31,18 @@ import spacetrader.enums.AlertType;
 public class PersonnelPresenter {
   private final Game game;
   private final Commander cmdr;
-  private final Ship ship;
   private final PersonnelView view;
   private CrewMember selected = null;
 
   public PersonnelPresenter(Game game, PersonnelView view) {
     this.game = game;
     this.cmdr = game.Commander();
-    this.ship = cmdr.getShip();
     this.view = view;
+  }
+
+  /** The ship in flight: read live, so a trade always shows the new one. */
+  private Ship ship() {
+    return cmdr.getShip();
   }
 
   public void update() {
@@ -48,7 +51,7 @@ public class PersonnelPresenter {
   }
 
   public void selectCrew(int index) {
-    CrewMember[] crew = ship.Crew();
+    CrewMember[] crew = ship().Crew();
     selected = index >= 0 && index + 1 < crew.length ? crew[index + 1] : null;
     view.renderInfo(info());
   }
@@ -66,16 +69,16 @@ public class PersonnelPresenter {
     if(selected == null || !hireFireVisible()) {
       return false;
     }
-    if(ship.HasCrew(selected.Id())) {
+    if(ship().HasCrew(selected.Id())) {
       if(game.Dialogs().alert(AlertType.CrewFireMercenary, selected.Name()) == DialogResult.Yes) {
-        ship.Fire(selected.Id());
+        ship().Fire(selected.Id());
         update();
         return true;
       }
-    } else if(ship.FreeCrewQuarters() == 0) {
+    } else if(ship().FreeCrewQuarters() == 0) {
       game.Dialogs().alert(AlertType.CrewNoQuarters, selected.Name());
     } else {
-      ship.Hire(selected);
+      ship().Hire(selected);
       update();
       return true;
     }
@@ -91,7 +94,7 @@ public class PersonnelPresenter {
 
   private List<String> crewEntries() {
     List<String> entries = new ArrayList<>();
-    CrewMember[] crew = ship.Crew();
+    CrewMember[] crew = ship().Crew();
     for(int i = 1; i < crew.length; i++) {
       entries.add(crew[i] == null ? Strings.PersonnelVacancy : crew[i].toString());
     }
@@ -113,7 +116,7 @@ public class PersonnelPresenter {
     return new PersonnelInfo(true, selected.Name(), selected.Rate() > 0,
         Functions.StringVars(Strings.MoneyRateSuffix, Functions.FormatMoney(selected.Rate())),
         selected.Pilot() + "", selected.Fighter() + "", selected.Trader() + "", selected.Engineer() + "",
-        hireFireVisible(), ship.HasCrew(selected.Id()) ? Strings.MercenaryFire : Strings.MercenaryHire);
+        hireFireVisible(), ship().HasCrew(selected.Id()) ? Strings.MercenaryFire : Strings.MercenaryHire);
   }
 
   private boolean hireFireVisible() {

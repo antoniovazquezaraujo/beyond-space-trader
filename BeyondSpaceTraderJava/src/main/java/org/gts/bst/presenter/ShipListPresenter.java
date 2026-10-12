@@ -27,25 +27,41 @@ import spacetrader.enums.AlertType;
 
 /**
  * Fills the ship list and mediates the purchase. No front-end types involved.
+ *
+ * <p>The ship and the prices are read from the commander at the moment of use:
+ * caching the ship would keep the old one paying after a trade, and buying the
+ * same type again would mint money. The yard only sells the ships with an
+ * occurrence (the ten normal ones); the special ships are not offered.
  */
 public class ShipListPresenter {
+  /** The spec indexes the yard sells: the special ships (occurrence zero) are not for sale. */
+  private static final List<Integer> FOR_SALE_IDS = forSaleIds();
+
   private final Game game;
   private final Commander cmdr;
-  private final Ship ship;
   private final ShipListView view;
-  private final int[] prices = new int[Consts.ShipSpecs.size()];
 
   public ShipListPresenter(Game game, ShipListView view) {
     this.game = game;
     this.cmdr = game.Commander();
-    this.ship = cmdr.getShip();
     this.view = view;
   }
 
-  public void update() {
-    List<ShipListViewModel.Row> rows = new ArrayList<>(Consts.ShipSpecs.size());
+  private static List<Integer> forSaleIds() {
+    List<Integer> ids = new ArrayList<>();
     for(int i = 0; i < Consts.ShipSpecs.size(); i++) {
-      ShipSpec spec = Consts.ShipSpecs.get(i);
+      if(Consts.ShipSpecs.get(i).Occurrence() > 0) {
+        ids.add(i);
+      }
+    }
+    return List.copyOf(ids);
+  }
+
+  public void update() {
+    Ship ship = cmdr.getShip();
+    List<ShipListViewModel.Row> rows = new ArrayList<>(FOR_SALE_IDS.size());
+    for(int id : FOR_SALE_IDS) {
+      ShipSpec spec = Consts.ShipSpecs.get(id);
       boolean buyVisible = false;
       String price;
       if(spec.MinimumTechLevel().ordinal() > cmdr.CurrentSystem().TechLevel().ordinal()) {
@@ -54,8 +70,7 @@ public class ShipListPresenter {
         price = Strings.ShipBuyGotOne;
       } else {
         buyVisible = true;
-        prices[i] = spec.getPrice() - ship.Worth(false);
-        price = Functions.FormatMoney(prices[i]);
+        price = Functions.FormatMoney(priceOf(spec, ship));
       }
       rows.add(new ShipListViewModel.Row(spec.Name(), price, buyVisible));
     }
@@ -63,11 +78,17 @@ public class ShipListPresenter {
   }
 
   public void selectCurrentShip() {
-    select(ship.Type().CastToInt());
+    int row = FOR_SALE_IDS.indexOf(cmdr.getShip().Type().CastToInt());
+    if(row >= 0) {
+      select(row);
+    }
   }
 
-  public void select(int id) {
-    ShipSpec spec = Consts.ShipSpecs.get(id);
+  public void select(int row) {
+    ShipSpec spec = specOf(row);
+    if(spec == null) {
+      return;
+    }
     view.renderInfo(new ShipInfoViewModel(
         spec.Name(),
         Strings.Sizes.get(spec.getSize().CastToInt()),
@@ -84,18 +105,29 @@ public class ShipListPresenter {
   }
 
   public void notifyTribblesTradeInIfNeeded() {
-    if(ship.getTribbles() > 0 && !game.getTribbleMessage()) {
+    if(cmdr.getShip().getTribbles() > 0 && !game.getTribbleMessage()) {
       game.Dialogs().alert(AlertType.TribblesTradeIn);
       game.setTribbleMessage(true);
     }
   }
 
   /**
-   * Returns true when the ship was bought.
+   * Returns true when the ship was bought. The price is computed again with the
+   * ship in flight and only the ships the list offers can be bought, so asking
+   * for the type already owned is rejected instead of paying for it again.
    */
-  public boolean buy(int id) {
-    select(id);
-    if(cmdr.TradeShip(Consts.ShipSpecs.get(id), prices[id])) {
+  public boolean buy(int row) {
+    ShipSpec spec = specOf(row);
+    if(spec == null) {
+      return false;
+    }
+    select(row);
+    Ship ship = cmdr.getShip();
+    if(spec.MinimumTechLevel().ordinal() > cmdr.CurrentSystem().TechLevel().ordinal()
+        || spec.Type() == ship.Type()) {
+      return false;
+    }
+    if(cmdr.TradeShip(spec, priceOf(spec, ship))) {
       if(game.getQuestStatusScarab() == SpecialEvent.StatusScarabDone) {
         game.setQuestStatusScarab(SpecialEvent.StatusScarabNotStarted);
       }
@@ -104,5 +136,14 @@ public class ShipListPresenter {
     }
     return false;
   }
-}
 
+  /** The price of a spec against the ship traded in. */
+  private static int priceOf(ShipSpec spec, Ship ship) {
+    return spec.getPrice() - ship.Worth(false);
+  }
+
+  /** The spec of a listed row, or null when the row does not exist. */
+  private static ShipSpec specOf(int row) {
+    return row < 0 || row >= FOR_SALE_IDS.size() ? null : Consts.ShipSpecs.get(FOR_SALE_IDS.get(row));
+  }
+}
