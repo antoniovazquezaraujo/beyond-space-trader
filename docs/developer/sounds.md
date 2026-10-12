@@ -15,6 +15,7 @@ BeyondSpaceTraderJava/src/main/resources/sounds/
 ├── ui/          menu blips            ui/menu-move-1.wav
 ├── alerts/      dialogs               alerts/alert-1.wav
 ├── combat/      shots, hits, blasts   combat/laser-pulse-1.wav
+├── repair/      hull repairs         repair/hammer-1.wav
 ├── travel/      warp and escape       travel/warp-1.wav
 ├── ships/       engine loops          ships/flea-1.wav
 ├── ambient/     per-screen ambience   ambient/trade-1.wav
@@ -54,6 +55,8 @@ the numbered variants are explained above.
 | `combat/laser-quantum-1.wav` | A Quantum disruptor firing |
 | `combat/hit-1.wav` | A shot landing on a ship (variants `-2`, `-3`... welcome) |
 | `combat/explosion-1.wav` | A ship being destroyed (variants welcome) |
+| `repair/hammer-1.wav` | A hammer blow on the hull while the repair scene plays (variants welcome) |
+| `repair/done-1.wav` | The hull repairs are done (end of the repair scene) |
 | `travel/warp-1.wav` | Warping away: it sounds as the ship sets off |
 | `travel/escape-1.wav` | Getting away from an encounter |
 

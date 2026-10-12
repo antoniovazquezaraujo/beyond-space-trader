@@ -23,6 +23,9 @@ and the presenters stay.
   galactic chart.
 - **Encounters:** they replace the context panel with their own action keys; the map
   stays visible behind.
+- **Repair scene:** paying for hull repairs opens a full-screen modal scene (our ship
+  under the hammer, the hull bar rising, the hits sounding); any key finishes it
+  early. The model is only changed when the scene returns.
 - **Options, save/load and confirmations:** panels in the same window, not a
   separate menu screen.
 - **Direct menu at the bottom:** the navigation screen shows the direct keys in the
