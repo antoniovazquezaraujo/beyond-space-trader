@@ -46,6 +46,15 @@ blink=true                   ← optional; only true or false (false by default)
   match the size of the ship type (`⚠ hull size: small (type: huge)`), so a
   rowing boat cannot pass for a cargo ship without a warning; the hull editor
   sets it with `z`.
+- **The hulls of the game are named `<size>-<n>`** (`tiny-1`, `small-1`,
+  `small-2`, `medium-1`, `large-3`, `huge-1`...): the name says the size at a
+  glance, but **`size=` is the source of truth** and the two must agree. The
+  ship editor only offers the hulls of the size of the open type (and the ones
+  without size), so a type can never wear a hull of another size. The hull
+  editor panel shows the name, the size it wears and the types that use it
+  (`Hull: small-1`, `Size: small`, `Used by: Gnat, Bottle`); `ships/chassis.txt`
+  also carries a `;; used by:` comment under every hull header for the same
+  information next to the art.
 - **In a chassis**, `key=` with a style defines a **colour letter** (a free
   letter and the colour, background and blink it paints with:
   `key=X color=red bgcolor=blue blink=true`) and `zone=` paints a **colour
@@ -319,7 +328,7 @@ budget), the chassis it uses and its **letter groups** (the sites the game fills
 ;; a comment (two semicolons, like the other files)
 [firefly pirata]
 type=Firefly
-chasis=scout
+chasis=small-2
 group=A x=3 y=1 n=2 color=red
 group=M x=6 y=3
 ```
@@ -376,7 +385,7 @@ it.
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the element painted. The cursor moves one cell right either way |
 | `v` | Preview: cycle which piece of the element is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
 | `t` | Rename the open ship (it stays in its type) |
-| `f` | Pick the frame (chassis) from a list: only the hulls of the size of the type, so a type can never wear a hull of another size; a hull without size (`size=` empty or `any`) is listed as `(no size)` and takes the size of the type when picked |
+| `f` | Pick the frame (chassis) from a list, each row with its size (`small-1 (small)`): only the hulls of the size of the type, so a type can never wear a hull of another size; a hull without size (`size=` empty or `any`) is listed as `(no size)` and takes the size of the type when picked |
 | `TAB` / `⇧TAB` | Next / previous type (the file keeps one design per type) |
 | `s` | Save every ship back to `ships.txt` (the 17 designs in enum order); when the editor has given a size to a hull, `chassis.txt` is written too |
 | `Esc` | Back to the menu |
@@ -384,10 +393,13 @@ it.
 The **hull editor** paints the colours of a hull: the drawing is read only. Its
 panel lists the colour elements (`1. Cyan/Black/Blink (A)`); they are added with
 `+` and removed with `-`, and removing one also erases the letters it had
-painted. Then come the drawing with its colour letters and the same hull painted
-with those colours. The size of a hull that a type is using is fixed by that
-type: `z` only cycles the size of a free hull, and on a hull in use it warns
-with the type that wears it (`⚠ in use by [Gnat] (small)`).
+painted. At the foot of the panel it shows the info of the open hull: its name,
+the size it wears and the types that use it (`Hull: small-1`, `Size: small`,
+`Used by: Gnat, Bottle`; `(free)` when nobody wears it). Then come the drawing
+with its colour letters and the same hull painted with those colours. The size
+of a hull that a type is using is fixed by that type: `z` only cycles the size
+of a free hull, and on a hull in use it warns with the type that wears it
+(`⚠ in use by [Gnat] (small)`).
 
 | Key | Action |
 | --- | --- |
