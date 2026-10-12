@@ -147,12 +147,6 @@ public final class LanternaEncounterView implements EncounterView {
       if(closed) {
         return;
       }
-      if(closing) {
-        // The scene was only waiting for the crossing: the ship is off the
-        // screen, so the close goes now (no extra wait).
-        closeNow();
-        return;
-      }
       if(model == null || !model.actions().contains(EncounterAction.Ignore)) {
         // The other ship did not see us (we are cloaked) and crosses and leaves,
         // but it can still keep a decision open (attack, flee or surrender): the

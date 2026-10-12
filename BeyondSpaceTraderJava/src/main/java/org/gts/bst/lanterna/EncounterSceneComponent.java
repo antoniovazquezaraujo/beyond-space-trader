@@ -981,12 +981,14 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
     invalidate();
   }
 
-  /** True while the scene has something to finish (the close has to wait for it). */
+  /**
+   * True while the scene has something to finish (the close has to wait for it):
+   * the scanner, the catwalk, a result to read and the ship leaving the screen.
+   * The crossing of the one that ignores us is not here: pressing Ignore closes
+   * the scene at once, and when it goes by itself the game fires the end.
+   */
   public boolean animating() {
-    // The crossing of the ship that ignores us also counts: the scene is not
-    // over until it leaves the screen.
-    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving || opponentLeaving
-        || model != null && model.opponentIgnores() && !opponentGone;
+    return scanFrames > 0 || catwalk != Catwalk.NONE || catwalkPending || leaving || opponentLeaving;
   }
 
   /** The reply of the other ship, played a moment after our shot. */
