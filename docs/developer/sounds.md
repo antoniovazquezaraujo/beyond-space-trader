@@ -227,12 +227,51 @@ size and then from the shared default (silence when none exists):
 
 ## Credits and licences
 
-Fill a row for every WAV you add: **audio files are usually not free**, and the
-project is GPL v3. Check the licence of each download before committing it (for
-example, Freesound files often require attribution).
+Every WAV that ships inside the jar is listed here. The samples are optional,
+but **audio files are usually not free**, and the project is GPL v3, so the
+licence of every file was checked before committing it. The **CC0** files are
+listed for provenance (they do not require attribution); the **CC BY 3.0**
+files do require it, with the authors credited below.
 
-| Key / file | Author | Source | Licence |
+The author of this port, **Antonio Vázquez Araujo**, is credited for the
+originals and for the edits and mixes he made from the CC0 material. Some
+mixes use samples from more than one source; the components that could be
+identified are listed too.
+
+| File | Author | Source | Licence |
 | --- | --- | --- | --- |
-| `ui/menu-move-1.wav` | | | |
-| `combat/laser-pulse-1.wav` | | | |
-| ... | | | |
+| `ui/menu-move-1.wav` | Antonio Vázquez Araujo | Edit of the 100-CC0-wood-metal-SFX pack | CC0 |
+| `ui/menu-select-1.wav` | Antonio Vázquez Araujo | Edit of the 100-CC0-wood-metal-SFX pack | CC0 |
+| `ui/chart-move-1.wav` | Circlerun | [Button SFX Pack III](https://opengameart.org/content/button-sfx-pack-iii-assortment-ot-hi-tech) (edit) | CC0 |
+| `ui/chart-select-1.wav` | Antonio Vázquez Araujo | Edit of the 100-CC0-wood-metal-SFX pack | CC0 |
+| `alerts/attack-1.wav` | Antonio Vázquez Araujo | Original | |
+| `alerts/danger-1.wav` | JW_Audio | [Freesound 828620](https://freesound.org/s/828620/) | CC0 |
+| `alerts/danger-2.wav` | Antonio Vázquez Araujo | Edit of Circlerun and Black Lodge Games samples | CC0 |
+| `alerts/police-1.wav` | Antonio Vázquez Araujo | Original | |
+| `alerts/police-scan-1.wav` | LilMati | [Freesound 523764](https://freesound.org/s/523764/) | CC0 |
+| `ambient/bank-1.wav` | Ampaquini | [Freesound 536858](https://freesound.org/s/536858/) | CC0 |
+| `ambient/navigation-1.wav` | Antonio Vázquez Araujo | Original mix | |
+| `ambient/news-1.wav` | Tuben | [Freesound 272044](https://freesound.org/s/272044/) | CC0 |
+| `ambient/trade-1.wav` | Antonio Vázquez Araujo | Original mix | |
+| `combat/explosion-1.wav` | Antonio Vázquez Araujo | Original | |
+| `combat/hit-1.wav` | Antonio Vázquez Araujo | Original edit | |
+| `combat/hit-2.wav` | Michel Baradari | [Explosions](https://opengameart.org/content/2-high-quality-explosions) (apollo-music.de) | CC BY 3.0 |
+| `combat/hit-3.wav` | Antonio Vázquez Araujo | Original edit | |
+| `combat/laser-beam-1.wav` | Chesshunter | [Freesound 404825](https://freesound.org/s/404825/) | CC0 |
+| `combat/laser-military-1.wav` | Antonio Vázquez Araujo | Original | |
+| `combat/laser-morgan-1.wav` | IanStarGem | [Freesound 341831](https://freesound.org/s/341831/) | CC0 |
+| `combat/laser-photon-1.wav` | Jesús Lastra (jalastram) | [Sound Effects FX 012](https://opengameart.org/content/sound-effects-fx-012) | CC BY 3.0 |
+| `combat/laser-pulse-1.wav` | robertvari | [Freesound 582930](https://freesound.org/s/582930/) | CC0 |
+| `combat/laser-quantum-1.wav` | Jesús Lastra (jalastram) | [Sound Effects FX 012](https://opengameart.org/content/sound-effects-fx-012) | CC BY 3.0 |
+| `repair/workshop-1.wav` | Antonio Vázquez Araujo | Original mix (100-CC0-wood-metal-SFX samples) | CC0 |
+| `ships/bottle-1.wav` | Antonio Vázquez Araujo | Original | |
+| `ships/default-1.wav` | Karma-Ron | [Freesound 130883](https://freesound.org/s/130883/) | CC0 |
+| `ships/firefly-1.wav` | Karma-Ron | [Freesound 130883](https://freesound.org/s/130883/) | CC0 |
+| `ships/gnat-1.wav` | Antonio Vázquez Araujo | Original edit (may include kyles, [Freesound 637828](https://freesound.org/s/637828/)) | CC0 |
+| `ships/huge-1.wav` | Antonio Vázquez Araujo | Original | |
+| `ships/large-1.wav` | Antonio Vázquez Araujo | Original | |
+| `ships/medium-1.wav` | Antonio Vázquez Araujo | Mix of [691899](https://freesound.org/s/691899/) (mescamilla1980) and [240697](https://freesound.org/s/240697/) (Hugofski) with a Circlerun sample | CC0 |
+| `ships/mosquito-1.wav` | Antonio Vázquez Araujo | Original | |
+| `ships/small-1.wav` | reacthor | [Freesound 237964](https://freesound.org/s/237964/) | CC0 |
+| `ships/tiny-1.wav` | Antonio Vázquez Araujo | Original | |
+| `travel/warp-1.wav` | robertvari | [Freesound 582930](https://freesound.org/s/582930/) | CC0 |
