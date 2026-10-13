@@ -67,6 +67,20 @@ bin\beyond-space-trader.bat --lang es           # Windows
 `--lang=es`. Por defecto se usa el idioma del sistema; los textos sin traducción
 caen al inglés.
 
+Los efectos de sonido se pueden apagar durante toda la partida con `--mute` (o
+`--no-sound`), para una sesión de terminal silenciosa:
+
+```bash
+./bin/beyond-space-trader.sh --mute             # Linux/macOS
+bin\beyond-space-trader.bat --no-sound          # Windows
+```
+
+El sonido viene activado; la opción *Efectos de sonido* (`F8`) lo apaga y lo
+enciende dentro del juego. El juego reproduce samples WAV incluidos en el
+paquete: menús, avisos, combate, salto y el ambiente de cada pantalla. Los
+sonidos viajan dentro del programa, así que no hay nada que instalar ni
+gestionar.
+
 ### Otras formas de instalar
 
 - **Snap Store (Linux):** el juego también se publica como snap:
@@ -231,13 +245,15 @@ transporta **al instante a cualquier sistema seleccionado**, sin gastar
 combustible ni días. Solo funciona mientras la llevas a bordo y se consume tras
 el salto.
 
-Combustible y reparaciones:
+Combustible y reparaciones (en el panel de Nave, `V`):
 
 | Tecla | Acción |
 | --- | --- |
 | `F` | Comprar combustible (pregunta cuánto; limitado por tu dinero y el depósito) |
 | `R` | Reparar el casco (pregunta cuánto; limitado por tu dinero) |
 | `F8` | Opciones; *Llenar el depósito al llegar* y *Reparar el casco por completo al llegar* lo hacen automáticamente |
+
+El panel de Nave muestra el depósito y el casco con lo que costará llenarlo o repararlo; `F` y `R` funcionan con él abierto.
 
 ### 4.3 Las teclas diarias
 
@@ -375,6 +391,7 @@ valores actuales como predeterminados y `L` los recupera:
 | Seguir atacando a la nave que huye | Sigue disparando a una nave que huye |
 | Intentar inutilizar a los oponentes cuando sea posible | Usa el disparo para inutilizar en vez de destruir |
 | Columnas por sector en el mapa galáctico | 1, 2 o 3 columnas por sector, para ajustarlo a tu fuente |
+| Efectos de sonido | Reproduce los sonidos incluidos en el juego; también `--mute` al arrancar |
 
 El **menú (`F10`)** contiene las acciones del programa: récords (`F3`),
 opciones (`F8`), guardar (`F5`), cargar (`F9`), partida nueva (`F2`), acerca de y
@@ -518,7 +535,6 @@ guarda en `data/HighScores.bin` y se ve con `F3`.
 | `/` | Buscar un sistema por nombre |
 | `Espacio` | Viajar al sistema seleccionado (o por el agujero de gusano del actual) |
 | `G` | Salto con la Singularidad Portátil |
-| `F` / `R` | Comprar combustible / reparar el casco |
 | `Y` | Evento especial del sistema actual |
 | `C` | Comercio |
 | `B` | Banco |
@@ -544,6 +560,7 @@ guarda en `data/HighScores.bin` y se ve con `F3`.
 | Banco (`B`) | `G` préstamo · `P` devolver · `I` seguro |
 | Misiones (`Q`) | `INTRO` fijar objetivo · `Espacio` cerrar |
 | Tripulación (`P`) | `H` contratar/despedir |
+| Nave (`V`) | `F` combustible · `R` reparaciones · `Espacio` cerrar |
 | Naves en venta (`S`) | `B` comprar |
 | Equipo (`E`) | `B` comprar · `S` vender |
 | Diseño (`D`) | `←`/`→` cambiar · `R` nombre · `C` construir · `V` guardar plantilla |

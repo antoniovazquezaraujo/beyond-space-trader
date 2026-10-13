@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.function.IntSupplier;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.difficulty.Difficulty;
@@ -266,11 +267,44 @@ class MainPresenterTest {
     game.Commander().getShip().setHull(90);
     FakeView view = new FakeView();
     view.repairsAnswer = 20;
+    view.hullSupplier = () -> game.Commander().getShip().getHull();
     MainPresenter presenter = new MainPresenter(() -> game, view);
 
     assertTrue(presenter.buyRepairs());
+    assertEquals(1, view.repairCalls, "the repair scene plays once");
+    assertEquals(90, view.repairFrom, "from the hull in flight");
+    assertEquals(100, view.repairTo, "to the hull paid for");
+    assertEquals(90, view.hullAtScene, "the scene plays before the hull changes");
     assertEquals(100, game.Commander().getShip().getHull());
     assertEquals(980, game.Commander().getCash());
+  }
+
+  @Test
+  void cancellingTheRepairDialogPlaysNoScene() {
+    Game game = newGame();
+    game.Commander().getShip().setHull(90);
+    FakeView view = new FakeView();
+    MainPresenter presenter = new MainPresenter(() -> game, view);
+
+    assertFalse(presenter.buyRepairs());
+    assertEquals(0, view.repairCalls, "no answer, no scene");
+    assertEquals(90, game.Commander().getShip().getHull());
+    assertEquals(1000, game.Commander().getCash());
+  }
+
+  @Test
+  void repairsBelowTheCostOfAPointPlayNoScene() {
+    Game game = newGame();
+    game.Commander().getShip().setHull(90);
+    FakeView view = new FakeView();
+    view.repairsAnswer = 1;
+    MainPresenter presenter = new MainPresenter(() -> game, view);
+
+    presenter.buyRepairs();
+
+    assertEquals(0, view.repairCalls, "nothing to repair, no scene");
+    assertEquals(90, game.Commander().getShip().getHull());
+    assertEquals(1000, game.Commander().getCash());
   }
 
   @Test
@@ -373,6 +407,11 @@ class MainPresenterTest {
     private Integer repairsAnswer;
     private Integer cargoBuyAnswer;
     private Integer cargoSellAnswer;
+    private IntSupplier hullSupplier;
+    private int repairCalls;
+    private int repairFrom = -1;
+    private int repairTo = -1;
+    private int hullAtScene = -1;
 
     @Override
     public void renderStatusBar(MainStatusViewModel model) {
@@ -417,6 +456,14 @@ class MainPresenterTest {
     @Override
     public Integer askRepairsAmount(int maxAmount) {
       return repairsAnswer;
+    }
+
+    @Override
+    public void repairScene(int from, int to) {
+      repairCalls++;
+      repairFrom = from;
+      repairTo = to;
+      hullAtScene = hullSupplier == null ? -1 : hullSupplier.getAsInt();
     }
 
     @Override

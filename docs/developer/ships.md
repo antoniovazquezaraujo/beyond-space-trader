@@ -15,7 +15,7 @@ piece catalogue below is the inventory of what has to be drawn.
 | --- | --- | --- |
 | `ships/chassis.txt` | The chassis drawings | Hand; the menu reloads it when an editor closes |
 | `ships/pieces.txt` | The piece drawings | Hand; the menu reloads it when an editor closes |
-| `ships/ships.txt` | One assembly: a chassis and its placed pieces | The composer, with `s` |
+| `ships/ships.txt` | One design per game type: its chassis and its site groups | The ship editor, with `s` |
 
 Lookup order (UTF-8): `ships/<file>`, `../ships/<file>`, `BeyondSpaceTraderJava/ships/<file>`.
 
@@ -35,13 +35,26 @@ blink=true                   ← optional; only true or false (false by default)
 - **`[name]`** opens a part and closes the previous one.
 - **The `[name]` of a piece is the English name of the game item** it draws
   (`[Pulse Laser]`, `[Energy Shield]`, `[Engine]`): that is how the game finds the
-  piece for each thing. **In a piece**, `key=` says which site letter it fills
+  piece for each thing. The equipment names the player reads are localised, so
+  the lookups go through **`ShipArtNames.canonical(...)`**, which translates the
+  localised name back to that English canonical one (`"Láser de Pulso"` →
+  `"Pulse Laser"`, and `"5 Extra Cargo Bays"` → `"Extra Cargo Bays"`, because the
+  art has no amount). **In a piece**, `key=` says which site letter it fills
   (`key=M`).
 - **In a chassis**, `size=` declares its size (`tiny`, `small`, `medium`, `large`,
   `huge` or `any`; empty means unknown). The ship editor warns when it does not
   match the size of the ship type (`⚠ hull size: small (type: huge)`), so a
   rowing boat cannot pass for a cargo ship without a warning; the hull editor
   sets it with `z`.
+- **The hulls of the game are named `<size>-<n>`** (`tiny-1`, `small-1`,
+  `small-2`, `medium-1`, `large-3`, `huge-1`...): the name says the size at a
+  glance, but **`size=` is the source of truth** and the two must agree. The
+  ship editor only offers the hulls of the size of the open type (and the ones
+  without size), so a type can never wear a hull of another size. The hull
+  editor panel shows the name, the size it wears and the types that use it
+  (`Hull: small-1`, `Size: small`, `Used by: Gnat, Bottle`); `ships/chassis.txt`
+  also carries a `;; used by:` comment under every hull header for the same
+  information next to the art.
 - **In a chassis**, `key=` with a style defines a **colour letter** (a free
   letter and the colour, background and blink it paints with:
   `key=X color=red bgcolor=blue blink=true`) and `zone=` paints a **colour
@@ -308,23 +321,27 @@ white; write `color=orange` (or the index, or `#rrggbb`).
 
 ## Format of `ships.txt` (the ships)
 
-Every section is one ship: its name, its game type (the spec that sets the site
-budget), the chassis it uses and its **letter groups** (the sites the game fills).
+Every section is one ship: **its header is its game type** (the spec that sets
+the site budget), plus the chassis it uses and its **letter groups** (the sites
+the game fills).
 
 ```
 ;; a comment (two semicolons, like the other files)
-[firefly pirata]
-type=Firefly
-chasis=scout
+[Firefly]
+chasis=small-2
 group=A x=3 y=1 n=2 color=red
 group=M x=6 y=3
 ```
 
-- `[nombre]` is free; `type=` names the ship type of the game specs (with no
-  type, the panel cannot check the sites); `chasis=` must match a `[name]` of
-  `chassis.txt` (`chassis=` is accepted too).
+- `[Type]` is the English name of a game type (`ShipType`: `Firefly`, `Wasp`,
+  `SpaceMonster`, `Custom`…); the matching ignores case. `chasis=` must match a
+  `[name]` of `chassis.txt` (`chassis=` is accepted too).
+- **Old files keep loading**: a header is still read as a free name when the
+  section carries a `type=` line, and then the `type=` names the game type (it
+  wins over the header). Saving always writes the new format: `[Type]` and no
+  `type=`.
 - The editor keeps **one design per game type**, the 17 of `ShipType` in enum
-  order: a design whose `type=` is unknown or repeated is ignored when loading
+  order: a design whose type is unknown or repeated is ignored when loading
   and dropped when saving (the editor says how many).
 - `group=<letter> x=<n> y=<n> [n=<count>]`: a run of the same site
   letter starting at `(x,y)`, `n` letters long (one by default), in a colour.
@@ -346,14 +363,14 @@ Both editors have a vertical panel on the left, and the selected row of every
 list has a background of its own; each list opens with its title inside a line
 (`─ Ships ───`, `─ Elements ───`). The **ship editor** panel starts with the
 **17 ship types of the game, always in enum order and always complete**: every
-row is one design, its name and its type in brackets (`mi nave [Bumblebee]`),
-each in its own column, `TAB` and `⇧TAB` move through them and the open one is
-highlighted. The type is fixed: there is no `+` (a new design) and no `y` (to
-cycle the type); `t` renames the design and `f` picks its chassis. When
-`ships.txt` has no design for a type, the editor makes one in memory (named
-after the type, with the first hull of its size and no groups), so no type is
+row is one design, headed by its type (`Bumblebee`), `TAB` and `⇧TAB` move
+through them and the open one is highlighted. The type is fixed: there is no
+`+` (a new design), no `y` (to cycle the type) and no rename (the header **is**
+the type); `f` picks its chassis. When
+`ships.txt` has no design for a type, the editor makes one in memory (of the
+type, with the first hull of its size and no groups), so no type is
 ever editable without a design; saving writes the 17 designs in enum order, each
-with its correct `type=`, and leaves out the designs whose type is unknown or
+headed by its type, and leaves out the designs whose type is unknown or
 repeated. Then come the numbered elements: `n` and `p` move through them and the
 keys `1` to `9` pick one directly. Each element is a piece key the game may fill
 a site with, one column per field (number, key, name, `have/max` and mark:
@@ -371,8 +388,7 @@ it.
 | `1` to `9` | Pick the element with that number |
 | space | A letter in the cell is erased (whatever it is); an empty cell gets the element painted. The cursor moves one cell right either way |
 | `v` | Preview: cycle which piece of the element is shown (the weapons, and the role markers $ / ☠ / ✶); the game uses the real loadout |
-| `t` | Rename the open ship (it stays in its type) |
-| `f` | Pick the frame (chassis) from a list: only the hulls of the size of the type, so a type can never wear a hull of another size; a hull without size (`size=` empty or `any`) is listed as `(no size)` and takes the size of the type when picked |
+| `f` | Pick the frame (chassis) from a list, each row with its size (`small-1 (small)`): only the hulls of the size of the type, so a type can never wear a hull of another size; a hull without size (`size=` empty or `any`) is listed as `(no size)` and takes the size of the type when picked |
 | `TAB` / `⇧TAB` | Next / previous type (the file keeps one design per type) |
 | `s` | Save every ship back to `ships.txt` (the 17 designs in enum order); when the editor has given a size to a hull, `chassis.txt` is written too |
 | `Esc` | Back to the menu |
@@ -380,10 +396,13 @@ it.
 The **hull editor** paints the colours of a hull: the drawing is read only. Its
 panel lists the colour elements (`1. Cyan/Black/Blink (A)`); they are added with
 `+` and removed with `-`, and removing one also erases the letters it had
-painted. Then come the drawing with its colour letters and the same hull painted
-with those colours. The size of a hull that a type is using is fixed by that
-type: `z` only cycles the size of a free hull, and on a hull in use it warns
-with the type that wears it (`⚠ in use by [Gnat] (small)`).
+painted. At the foot of the panel it shows the info of the open hull: its name,
+the size it wears and the types that use it (`Hull: small-1`, `Size: small`,
+`Used by: Gnat, Bottle`; `(free)` when nobody wears it). Then come the drawing
+with its colour letters and the same hull painted with those colours. The size
+of a hull that a type is using is fixed by that type: `z` only cycles the size
+of a free hull, and on a hull in use it warns with the type that wears it
+(`⚠ in use by [Gnat] (small)`).
 
 | Key | Action |
 | --- | --- |
@@ -403,3 +422,68 @@ Inside an open list (the chassis with `f` in the ship editor, the colours and
 backgrounds with `t`/`f` in the hull editor) the arrows and `n`/`p` move the
 selection and ENTER picks it; outside the list `n`/`p` keep cycling the elements
 as the tables above say.
+
+## Appendix: the ships, by the numbers
+
+The source of truth is `Consts.ShipSpecs`. Hull in points; cargo bays, equipment
+slots, crew quarters and fuel tanks in units; the fuel cost per unit and the
+repair cost per hull point in credits; the price in credits, before the trade-in
+of the ship in use. **Motors** is the number of engine pieces the drawing of the
+ship carries (one, two or three by size): the game has no engine statistic, fuel
+tanks and fuel cost do that job.
+
+### The shipyard ships
+
+| Ship | Size | Hull | Cargo bays | Weapons | Shields | Gadgets | Crew | Fuel tanks | Fuel cost | Repair cost | Motors | Price | Tech |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Flea | Tiny | 25 | 10 | 0 | 0 | 0 | 1 | 20 | 1 | 1 | 1 | 2,000 | 4 |
+| Gnat | Small | 100 | 15 | 1 | 0 | 1 | 1 | 14 | 1 | 2 | 1 | 10,000 | 5 |
+| Firefly | Small | 100 | 20 | 1 | 1 | 1 | 1 | 17 | 1 | 3 | 1 | 25,000 | 5 |
+| Mosquito | Small | 100 | 15 | 2 | 1 | 1 | 1 | 13 | 1 | 5 | 1 | 30,000 | 5 |
+| Bumblebee | Medium | 100 | 25 | 1 | 2 | 2 | 2 | 15 | 1 | 7 | 2 | 60,000 | 5 |
+| Beetle | Medium | 50 | 50 | 0 | 1 | 1 | 3 | 14 | 1 | 10 | 2 | 80,000 | 5 |
+| Hornet | Large | 150 | 20 | 3 | 2 | 1 | 2 | 16 | 2 | 15 | 2 | 100,000 | 6 |
+| Grasshopper | Large | 150 | 30 | 2 | 2 | 3 | 3 | 15 | 3 | 15 | 2 | 150,000 | 6 |
+| Termite | Huge | 200 | 60 | 1 | 3 | 2 | 3 | 13 | 4 | 20 | 3 | 225,000 | 7 |
+| Wasp | Huge | 200 | 35 | 3 | 2 | 2 | 3 | 14 | 5 | 20 | 3 | 300,000 | 7 |
+
+### The special ships
+
+Their occurrence is 0: the game never generates them at random (quests and
+scripted encounters place them). The shipyard lists them at a level-8 system,
+because it only filters by the minimum tech level of the ship. The Custom Ship
+is the one of the designer: its values are the ones the player sets there.
+
+| Ship | Size | Hull | Cargo bays | Weapons | Shields | Gadgets | Crew | Fuel tanks | Fuel cost | Repair cost | Motors | Price |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Space Monster | Huge | 500 | 0 | 3 | 0 | 0 | 1 | 1 | 1 | 1 | 3 | 500,000 |
+| Dragonfly | Small | 10 | 0 | 2 | 3 | 2 | 1 | 1 | 1 | 1 | 1 | 500,000 |
+| Mantis | Medium | 300 | 0 | 3 | 1 | 3 | 3 | 1 | 1 | 1 | 2 | 500,000 |
+| Scarab | Large | 400 | 20 | 2 | 0 | 0 | 2 | 1 | 1 | 1 | 2 | 500,000 |
+| Scorpion | Huge | 300 | 30 | 2 | 2 | 2 | 2 | 1 | 1 | 1 | 3 | 500,000 |
+| Bottle | Small | 10 | 0 | 0 | 0 | 0 | 0 | 1 | 1 | 1 | 1 | 100 |
+| Custom Ship | Huge | — | — | — | — | — | — | — | — | — | 3 | — |
+
+### Appearance and roles
+
+When the game builds a random opponent it filters the types by the political
+system and weighs the rest by **Appearance** (the higher, the more common).
+**Police**, **Pirates** and **Traders** are the minimum activity the system
+needs for the type to show up in that role: 0 means any system, `—` means the
+type never appears in that role.
+
+| Ship | Appearance | Police | Pirates | Traders |
+| --- | --- | --- | --- | --- |
+| Flea | 2 | — | — | 0 |
+| Gnat | 28 | 0 | 0 | 0 |
+| Firefly | 20 | 0 | 0 | 0 |
+| Mosquito | 20 | 0 | 1 | 0 |
+| Bumblebee | 15 | 1 | 1 | 0 |
+| Beetle | 3 | — | — | 0 |
+| Hornet | 6 | 2 | 3 | 1 |
+| Grasshopper | 2 | 3 | 4 | 2 |
+| Termite | 2 | 4 | 5 | 3 |
+| Wasp | 2 | 5 | 6 | 4 |
+
+The special ships have appearance 0 and never take part in the random
+generation.

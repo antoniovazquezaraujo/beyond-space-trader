@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.EquipmentInfoViewModel;
@@ -29,6 +30,7 @@ import spacetrader.StarSystem;
 import spacetrader.Strings;
 import spacetrader.TestDialogService;
 import spacetrader.enums.AlertType;
+import spacetrader.enums.TechLevel;
 
 
 class EquipmentPresenterTest {
@@ -62,6 +64,31 @@ class EquipmentPresenterTest {
     assertTrue(view.info.sellVisible());
     assertFalse(view.info.buyVisible());
     assertTrue(view.info.power().matches("\\d+"));
+  }
+
+  @Test
+  void theSellSideOnlyShowsTheSellPrice() {
+    Game game = newGame(new TestDialogService());
+    // A low-tech system does not sell the starting laser (Price() is 0): the
+    // panel must not paint a buy price next to the real sell one.
+    StarSystem low = game.Universe()[0];
+    low.TechLevel(TechLevel.t1);
+    game.Commander().CurrentSystem(low);
+    FakeView view = new FakeView();
+    EquipmentPresenter presenter = new EquipmentPresenter(game, view);
+    presenter.update();
+
+    presenter.select(EquipmentType.Weapon, true, 0);
+    assertTrue(view.info.sellVisible());
+    assertEquals("", view.info.buyPrice(), "the sell side shows no buy price");
+    assertFalse(view.info.sellPrice().isEmpty(), "and the sell price is there: " + view.info.sellPrice());
+
+    // The buy side keeps its own price.
+    moveToHighTechSystem(game);
+    presenter.update();
+    Ship ship = game.Commander().getShip();
+    presenter.select(EquipmentType.Weapon, false, view.model.buyWeapons().indexOf(ship.Weapons()[0].Name()));
+    assertFalse(view.info.buyPrice().isEmpty(), "the buy side still shows the buy price");
   }
 
   @Test
@@ -116,6 +143,28 @@ class EquipmentPresenterTest {
     assertTrue(presenter.sell());
     assertNull(ship.Weapons()[0]);
     assertEquals(2500, game.Commander().getCash());
+  }
+
+  @Test
+  void showsTheNewShipAfterATrade() {
+    Game game = newGame(new TestDialogService());
+    moveToHighTechSystem(game);
+    Ship ship = game.Commander().getShip();
+    FakeView view = new FakeView();
+    EquipmentPresenter presenter = new EquipmentPresenter(game, view);
+    presenter.update();
+    assertEquals(ship.Weapons()[0].Name(), view.model.sellWeapons().get(0), "the laser of the ship in flight");
+
+    // The trade swaps the whole ship: the screen must read the new one, not the old.
+    Ship traded = new Ship(ShipType.Wasp);
+    game.Commander().setShip(traded);
+    presenter.update();
+
+    assertEquals(traded.Weapons().length, view.model.sellWeapons().size(),
+        "the weapon slots of the Wasp: " + view.model.sellWeapons());
+    assertEquals(traded.Shields().length, view.model.sellShields().size(),
+        "the shield slots of the Wasp: " + view.model.sellShields());
+    assertEquals(Strings.EquipmentFreeSlot, view.model.sellWeapons().get(0));
   }
 
   private static Game newGame(TestDialogService dialogs) {

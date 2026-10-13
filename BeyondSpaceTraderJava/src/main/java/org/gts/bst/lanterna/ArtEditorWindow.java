@@ -17,18 +17,29 @@ import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
 import java.util.Set;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 
 
 /**
  * A full screen window with a canvas: the editors just paint and handle keys, and
- * they share the blink clock (for the pieces and the zones that flash).
+ * they share the blink clock (for the pieces and the zones that flash). The sound
+ * service of the tool that opens the editor feeds the shared menu sounds; the
+ * default is silence, so the editors still open without a device.
  */
 abstract class ArtEditorWindow extends BasicWindow {
   private final Canvas canvas = new Canvas();
   private volatile boolean blinkOn = true;
+  private final SoundService sound;
 
   ArtEditorWindow(String title) {
+    this(title, SoundService.NONE);
+  }
+
+  /** The same, with the sound of the tool that opens the editor. */
+  ArtEditorWindow(String title, SoundService sound) {
     super(title);
+    this.sound = sound;
     setHints(Set.of(Window.Hint.FULL_SCREEN));
     setComponent(canvas);
     setFocusedInteractable(canvas);
@@ -51,6 +62,21 @@ abstract class ArtEditorWindow extends BasicWindow {
         canvas.invalidate();
       }
     }, 500, 500);
+  }
+
+  /** A step of the cursor or the selection: the shared sound of the whole UI. */
+  protected final void menuMove() {
+    sound.play(SoundEffect.MENU_MOVE);
+  }
+
+  /** An acceptance of the editor (an edit, a command): the shared select sound. */
+  protected final void menuSelect() {
+    sound.play(SoundEffect.MENU_SELECT);
+  }
+
+  /** The sound of the tool, for the dialogs the editors open (the name). */
+  protected final SoundService sound() {
+    return sound;
   }
 
   protected boolean blinkOn() {

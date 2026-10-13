@@ -73,6 +73,11 @@ public class GameOptions extends STSerializableObject {
    * galaxy's proportions with the terminal font the player uses.
    */
   private int _galaxyColumns = 2;
+  /**
+   * Play the sound effects (see ADR 0006). Old saves and defaults files without
+   * the key keep the sound on.
+   */
+  private boolean _sound = true;
 
   public GameOptions(Hashtable hash) {
     super(hash);
@@ -93,6 +98,7 @@ public class GameOptions extends STSerializableObject {
     _trackAutoOff = GetValueFromHash(hash, "_trackAutoOff", _trackAutoOff);
     _leaveEmpty = GetValueFromHash(hash, "_leaveEmpty", _leaveEmpty);
     _galaxyColumns = GetValueFromHash(hash, "_galaxyColumns", _galaxyColumns);
+    _sound = GetValueFromHash(hash, "_sound", _sound);
   }
   public GameOptions(boolean loadFromDefaults) {
     if(loadFromDefaults) {
@@ -119,6 +125,7 @@ public class GameOptions extends STSerializableObject {
     hash.add("_trackAutoOff", _trackAutoOff);
     hash.add("_leaveEmpty", _leaveEmpty);
     hash.add("_galaxyColumns", _galaxyColumns);
+    hash.add("_sound", _sound);
     return hash;
   }
 
@@ -140,6 +147,7 @@ public class GameOptions extends STSerializableObject {
     setTrackAutoOff(source.getTrackAutoOff());
     setLeaveEmpty(source.getLeaveEmpty());
     setGalaxyColumns(source.getGalaxyColumns());
+    setSound(source.getSound());
   }
   public void LoadFromDefaults(boolean errorIfFileNotFound) {
     LoadFromDefaults(errorIfFileNotFound, DialogService.NONE);
@@ -258,5 +266,11 @@ public class GameOptions extends STSerializableObject {
   }
   public void setTrackAutoOff(boolean value) {
     _trackAutoOff = value;
+  }
+  public boolean getSound() {
+    return _sound;
+  }
+  public void setSound(boolean value) {
+    _sound = value;
   }
 }

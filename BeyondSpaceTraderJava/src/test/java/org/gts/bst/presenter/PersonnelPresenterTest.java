@@ -105,6 +105,25 @@ class PersonnelPresenterTest {
     assertFalse(ship.HasCrew(merc.Id()));
   }
 
+  @Test
+  void showsTheNewShipAfterATrade() {
+    Game game = newGame(new TestDialogService());
+    Ship ship = game.Commander().getShip();
+    FakeView view = new FakeView();
+    PersonnelPresenter presenter = new PersonnelPresenter(game, view);
+    presenter.update();
+    assertEquals(ship.Crew().length - 1, view.model.crewEntries().size(), "the Gnat has one quarter");
+
+    // The trade swaps the whole ship: the screen must read the new one, not the old.
+    Ship traded = new Ship(ShipType.Beetle);
+    game.Commander().setShip(traded);
+    presenter.update();
+
+    assertEquals(traded.Crew().length - 1, view.model.crewEntries().size(),
+        "the quarters of the Beetle: " + view.model.crewEntries());
+    assertEquals(2, view.model.crewEntries().size());
+  }
+
   private static Game newGame(TestDialogService dialogs) {
     return new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, null, dialogs);
   }

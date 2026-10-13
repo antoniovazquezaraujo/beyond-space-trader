@@ -20,6 +20,9 @@ import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import org.gts.bst.audio.SampledSound;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.view.ShipArtFile;
 import spacetrader.Strings;
 
@@ -33,6 +36,7 @@ import spacetrader.Strings;
  * <pre>
  *   ./run-composer.sh              -> starts the composer
  *   ./run-composer.sh --lang es    -> Spanish texts
+ *   ./run-composer.sh --mute       -> silent (the menu and the editors sound)
  * </pre>
  */
 public final class ShipComposer {
@@ -46,6 +50,11 @@ public final class ShipComposer {
     }
     Screen screen = new DefaultTerminalFactory().createScreen();
     screen.startScreen();
+    // The composer sounds like the game: the menu keys and the editor cursors
+    // step and accept; --mute (or no device) leaves it silent.
+    SoundService sound = LanternaApp.soundMuted(args)
+        ? SoundService.NONE
+        : SampledSound.create(() -> true);
     try {
       MultiWindowTextGUI gui = createGui(screen);
       while(true) {
@@ -60,11 +69,11 @@ public final class ShipComposer {
           System.err.println(e.getMessage());
           return;
         }
-        int chosen = chooseMode(gui);
+        int chosen = chooseMode(gui, sound);
         if(chosen == 0) {
-          gui.addWindowAndWait(new ShipEditorView(designs, chassis, pieces));
+          gui.addWindowAndWait(new ShipEditorView(designs, chassis, pieces, sound));
         } else if(chosen == 1) {
-          gui.addWindowAndWait(new HullEditorView(chassis));
+          gui.addWindowAndWait(new HullEditorView(chassis, sound));
         } else {
           break;
         }
@@ -83,15 +92,20 @@ public final class ShipComposer {
   }
 
   /** The little menu: the ship editor, the hull editor or quit (Esc quits too). */
-  private static int chooseMode(MultiWindowTextGUI gui) {
-    MenuWindow window = menu();
+  private static int chooseMode(MultiWindowTextGUI gui, SoundService sound) {
+    MenuWindow window = menu(sound);
     gui.addWindowAndWait(window);
     return window.chosen();
   }
 
   /** The menu window, ready for the tests to drive it with a virtual GUI. */
   static MenuWindow menu() {
-    return new MenuWindow();
+    return menu(SoundService.NONE);
+  }
+
+  /** The menu with the sound of the tool. */
+  static MenuWindow menu(SoundService sound) {
+    return new MenuWindow(sound);
   }
 
   /**
@@ -104,12 +118,18 @@ public final class ShipComposer {
     static final int QUIT = 2;
 
     private final ActionListBox menu = new ActionListBox();
+    private final SoundService sound;
     /** The chosen option, or -1 while the menu is open. */
     private int chosen = -1;
 
     MenuWindow() {
+      this(SoundService.NONE);
+    }
+
+    MenuWindow(SoundService sound) {
       // The cover already writes SHIP EDITOR: a title here would repeat it.
       super("");
+      this.sound = sound;
       menu.addItem(Strings.ComposerShips, () -> choose(0));
       menu.addItem(Strings.ComposerHulls, () -> choose(1));
       menu.addItem(Strings.ComposerQuit, () -> choose(QUIT));
@@ -128,7 +148,13 @@ public final class ShipComposer {
       if(moveSelection(key)) {
         return true;
       }
-      return super.handleInput(key);
+      // The arrows are the list's own: a sound only when the selection moved.
+      int before = menu.getSelectedIndex();
+      boolean handled = super.handleInput(key);
+      if(handled && menu.getSelectedIndex() != before) {
+        sound.play(SoundEffect.MENU_MOVE);
+      }
+      return handled;
     }
 
     /** The n/p keys move the selection like the arrows, wrapping around. */
@@ -146,10 +172,12 @@ public final class ShipComposer {
       }
       int current = menu.getSelectedIndex();
       menu.setSelectedIndex(Math.floorMod(current + (character == 'n' ? 1 : -1), items));
+      sound.play(SoundEffect.MENU_MOVE);
       return true;
     }
 
     private void choose(int option) {
+      sound.play(SoundEffect.MENU_SELECT);
       chosen = option;
       close();
     }

@@ -11,6 +11,7 @@ package org.gts.bst.presenter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -27,6 +28,10 @@ import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.GadgetType;
+import org.gts.bst.ship.equip.Weapon;
+import org.gts.bst.ship.equip.WeaponType;
+import org.gts.bst.ports.MusicTheme;
+import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.view.Alerts;
 import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.EncounterAction;
@@ -479,6 +484,45 @@ class EncounterPresenterTest {
   }
 
   @Test
+  void aTraderWithoutMoneyKeepsTheEncounterOpen() {
+    Game game = newGame();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+    game.encounter().getOpponent().Cargo()[0] = 1;
+    assertTrue(game.encounter().getOpponent().HasTradeableItems(), "the trader has something to sell");
+    game.Commander().setCash(0);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.trade();
+
+    assertFalse(view.closed, "a trade with no offer must not close the encounter");
+    assertFalse(view.cargoBuyAsked, "there was no offer to ask about");
+    assertEquals(EncounterResult.Continue, presenter.result(), "the encounter goes on");
+
+    presenter.ignore();
+
+    assertTrue(view.closed, "the merchant can still be ignored afterwards");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
+  void anOfferedTradeEndsTheEncounterEvenWhenTheAmountIsCancelled() {
+    Game game = newGame();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+    game.encounter().getOpponent().Cargo()[0] = 1;
+    assertTrue(game.encounter().getOpponent().HasTradeableItems(), "the trader has something to sell");
+    game.Commander().setCash(100000);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.trade();
+
+    assertTrue(view.cargoBuyAsked, "the offer was shown");
+    assertTrue(view.closed, "after an offer the encounter ends, even if the amount is cancelled");
+    assertEquals(EncounterResult.Normal, presenter.result());
+  }
+
+  @Test
   void submittingWithIllegalCargoConfiscatesAndFinesWithTheScanner() {
     TestDialogService dialogs = new TestDialogService();
     dialogs.setResult(DialogResult.Yes);
@@ -658,9 +702,97 @@ class EncounterPresenterTest {
     return gameWith(new TestDialogService());
   }
 
+  @Test
+  void theMusicFollowsTheTensionOfTheEncounter() {
+    assertEquals(MusicTheme.TENSE, EncounterPresenter.music(EncounterType.PirateAttack));
+    assertEquals(MusicTheme.TENSE, EncounterPresenter.music(EncounterType.PoliceInspect));
+    assertEquals(MusicTheme.TENSE, EncounterPresenter.music(EncounterType.ScorpionAttack));
+    assertEquals(MusicTheme.TENSE, EncounterPresenter.music(EncounterType.TraderAttack),
+        "a trader that turns violent is tension");
+    assertEquals(MusicTheme.CALM, EncounterPresenter.music(EncounterType.TraderSell));
+    assertEquals(MusicTheme.CALM, EncounterPresenter.music(EncounterType.BottleGood));
+    assertEquals(MusicTheme.CALM, EncounterPresenter.music(EncounterType.CaptainAhab));
+    assertEquals(MusicTheme.CALM, EncounterPresenter.music(EncounterType.MarieCeleste));
+  }
+
+  @Test
+  void theMusicChangesWhenTheSituationChanges() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.PirateAttack);
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.start();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+    presenter.update();
+    game.encounter().setEncounterType(EncounterType.PoliceInspect);
+    presenter.update();
+
+    assertEquals(List.of(MusicTheme.TENSE, MusicTheme.CALM, MusicTheme.TENSE), view.musicThemes,
+        "every part re-evaluates the tension and the view crossfades");
+  }
+
+  @Test
+  void theShotOfAShipUsesItsStrongestWeapon() {
+    Weapon pulse = new Weapon(WeaponType.PulseLaser, 50, false, 2000, TechLevel.t5, 15);
+    Weapon morgan = new Weapon(WeaponType.MorgansLaser, 0, false, 50000, TechLevel.t8, 85);
+    Weapon beam = new Weapon(WeaponType.BeamLaser, 35, false, 12500, TechLevel.t6, 25);
+    Weapon quantum = new Weapon(WeaponType.QuantumDistruptor, 0, true, 50000, TechLevel.t8, 60);
+    Weapon photon = new Weapon(WeaponType.PhotonDisruptor, 0, true, 15000, TechLevel.t6, 20);
+
+    assertEquals(WeaponType.MorgansLaser,
+        EncounterPresenter.strongest(new Weapon[] {pulse, beam, morgan, quantum}),
+        "Morgan's laser goes over the rest");
+    assertEquals(WeaponType.BeamLaser, EncounterPresenter.strongest(new Weapon[] {null, pulse, beam}),
+        "a null slot is skipped");
+    assertEquals(WeaponType.QuantumDistruptor, EncounterPresenter.strongest(new Weapon[] {photon, quantum}),
+        "the quantum goes over the photon");
+    assertNull(EncounterPresenter.strongest(new Weapon[] {null}), "no weapons means no sample");
+  }
+
+  @Test
+  void thePoliceAlarmSoundsOnceWhenThePoliceArrives() {
+    Game game = newGame();
+    FakeView view = new FakeView();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.start();
+    assertTrue(view.effects.isEmpty(), "a trader does not ring the police alarm");
+
+    // The encounter turns police (the Marie Celeste police shows up).
+    game.encounter().setEncounterType(EncounterType.MarieCelestePolice);
+    presenter.update();
+    presenter.update();
+
+    assertEquals(List.of(SoundEffect.POLICE), view.effects, "the police alarm sounds once per encounter");
+  }
+
+  @Test
+  void theFirstPartOfAPeacefulEncounterShowsItsInitialTexts() {
+    Game game = newGame();
+    game.encounter().setEncounterType(EncounterType.TraderSell);
+    FakeView view = new FakeView();
+    EncounterPresenter presenter = new EncounterPresenter(game, view);
+
+    presenter.start();
+
+    assertEquals(game.encounter().EncounterTextInitial(), view.model.encounterText(),
+        "the first part shows the initial texts (the trader hello), not the fight boilerplate");
+    assertEquals(game.encounter().EncounterActionInitial(), view.model.actionText());
+
+    // After a round the render moves on to the texts of the encounter in course
+    // (the tick resolves the round like the automatic fight, no dialogs).
+    presenter.tick();
+    assertEquals(game.encounter().EncounterText(), view.model.encounterText());
+    assertEquals(game.encounter().EncounterAction(), view.model.actionText());
+  }
+
   private static class FakeView implements EncounterView {
     private final List<String> logs = new ArrayList<>();
     private final List<String> speechAndWaits = new ArrayList<>();
+    private final List<MusicTheme> musicThemes = new ArrayList<>();
+    private final List<SoundEffect> effects = new ArrayList<>();
     private EncounterViewModel model;
     private boolean closed;
     private boolean loggedAfterClose;
@@ -672,12 +804,23 @@ class EncounterPresenterTest {
     private boolean plunderShown;
     private boolean inspectionCalled;
     private boolean inspectionConfiscated;
+    private boolean cargoBuyAsked;
     private Integer cargoBuyAnswer;
     private Integer cargoSellAnswer;
 
     @Override
     public void render(EncounterViewModel model) {
       this.model = model;
+    }
+
+    @Override
+    public void music(MusicTheme theme) {
+      musicThemes.add(theme);
+    }
+
+    @Override
+    public void effect(SoundEffect effect) {
+      effects.add(effect);
     }
 
     @Override
@@ -735,6 +878,7 @@ class EncounterPresenterTest {
 
     @Override
     public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
+      cargoBuyAsked = true;
       return cargoBuyAnswer;
     }
 

@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.function.Supplier;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
@@ -32,6 +34,7 @@ import org.gts.bst.presenter.EquipmentPresenter;
 import org.gts.bst.presenter.HighScoresPresenter;
 import org.gts.bst.presenter.PersonnelPresenter;
 import org.gts.bst.presenter.QuestsPresenter;
+import org.gts.bst.presenter.ShipArtItems;
 import org.gts.bst.presenter.ShipListPresenter;
 import org.gts.bst.presenter.ShipPresenter;
 import org.gts.bst.presenter.ShipyardPresenter;
@@ -50,7 +53,10 @@ import org.gts.bst.view.EquipmentViewModel;
 import org.gts.bst.view.HighScoresView;
 import org.gts.bst.view.HighScoresViewModel;
 import org.gts.bst.view.DockViewModel;
+import org.gts.bst.ports.AmbienceKey;
 import org.gts.bst.ports.GameWindow;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.view.MainStatusViewModel;
 import org.gts.bst.view.MainView;
 import org.gts.bst.view.MainWindow;
@@ -60,8 +66,10 @@ import org.gts.bst.view.PersonnelViewModel;
 import org.gts.bst.view.QuestsView;
 import org.gts.bst.view.QuestsViewModel;
 import org.gts.bst.view.ShipInfoViewModel;
+import org.gts.bst.view.ShipCatalog;
 import org.gts.bst.view.ShipListView;
 import org.gts.bst.view.ShipListViewModel;
+import org.gts.bst.view.ShipPicture;
 import org.gts.bst.view.ShipView;
 import org.gts.bst.view.ShipViewModel;
 import org.gts.bst.view.ShipyardDesignerViewModel;
@@ -73,6 +81,7 @@ import spacetrader.Consts;
 import spacetrader.Functions;
 import spacetrader.Game;
 import spacetrader.GameEndException;
+import spacetrader.Ship;
 import spacetrader.SpecialEvent;
 import spacetrader.StarSystem;
 import spacetrader.enums.StarSystemId;
@@ -107,6 +116,7 @@ public final class LanternaMainWindow
 
   private final Supplier<Game> gameSupplier;
   private final WindowBasedTextGUI gui;
+  private final SoundService sound;
   private final BasicWindow window = new BasicWindow();
   private final MainTextComponent content;
   private MainPresenter presenter;
@@ -124,8 +134,13 @@ public final class LanternaMainWindow
   private Runnable loadGameAction;
 
   public LanternaMainWindow(Supplier<Game> gameSupplier, WindowBasedTextGUI gui) {
+    this(gameSupplier, gui, SoundService.NONE);
+  }
+
+  public LanternaMainWindow(Supplier<Game> gameSupplier, WindowBasedTextGUI gui, SoundService sound) {
     this.gameSupplier = gameSupplier;
     this.gui = gui;
+    this.sound = sound;
     this.content = new MainTextComponent(gameSupplier, this::handleKey);
     window.setHints(Set.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
     window.setComponent(content);
@@ -165,6 +180,56 @@ public final class LanternaMainWindow
       presenter.updateAll();
     }
     content.invalidate();
+    updateAmbience();
+  }
+
+  /**
+   * Asks for the ambience of what the screen shows now. The mixer ignores the
+   * keys it is already playing, so this can run after every key; when a panel
+   * opens or closes, the ambience crossfades to the new one.
+   */
+  private void updateAmbience() {
+    if(content.titleScreen()) {
+      sound.ambience(AmbienceKey.TITLE);
+    } else if(content.menuVisible()) {
+      sound.ambience(AmbienceKey.MENU);
+    } else {
+      sound.ambience(panelAmbience(content.panel()));
+    }
+  }
+
+  /** The ambience of a context panel: the navigation one for the map. */
+  static AmbienceKey panelAmbience(MainPanel panel) {
+    switch(panel) {
+      case Trade:
+        return AmbienceKey.TRADE;
+      case Bank:
+        return AmbienceKey.BANK;
+      case Quests:
+        return AmbienceKey.QUESTS;
+      case Personnel:
+        return AmbienceKey.PERSONNEL;
+      case Commander:
+        return AmbienceKey.COMMANDER;
+      case Ship:
+        return AmbienceKey.SHIP;
+      case ShipList:
+        return AmbienceKey.SHIPLIST;
+      case Equipment:
+        return AmbienceKey.EQUIPMENT;
+      case Options:
+        return AmbienceKey.OPTIONS;
+      case HighScores:
+        return AmbienceKey.HIGHSCORES;
+      case Designer:
+        return AmbienceKey.DESIGNER;
+      case News:
+        return AmbienceKey.NEWS;
+      case About:
+        return AmbienceKey.ABOUT;
+      default:
+        return AmbienceKey.NAVIGATION;
+    }
   }
 
   public void log(String message) {
@@ -235,27 +300,27 @@ public final class LanternaMainWindow
   @Override
   public Integer askFuelAmount(int maxAmount) {
     return LanternaDialogs.askAmount(gui, Strings.DialogFuelTitle,
-        Functions.StringVars(Strings.DialogFuelPrompt, "" + maxAmount), maxAmount);
+        Functions.StringVars(Strings.DialogFuelPrompt, "" + maxAmount), maxAmount, sound);
   }
 
   @Override
   public Integer askRepairsAmount(int maxAmount) {
     return LanternaDialogs.askAmount(gui, Strings.DialogRepairsTitle,
-        Functions.StringVars(Strings.DialogRepairsPrompt, "" + maxAmount), maxAmount);
+        Functions.StringVars(Strings.DialogRepairsPrompt, "" + maxAmount), maxAmount, sound);
   }
 
   @Override
   public Integer askCargoBuyQuantity(CargoBuyOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
     return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoBuyTitle, item),
-        Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount());
+        Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount(), sound);
   }
 
   @Override
   public Integer askCargoSellQuantity(CargoSellOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
     return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoSellTitle, item),
-        Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount());
+        Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount(), sound);
   }
 
   @Override
@@ -271,7 +336,7 @@ public final class LanternaMainWindow
     }
     EncounterPresenter[] presenter = new EncounterPresenter[1];
     LanternaEncounterView view = new LanternaEncounterView(gui,
-        action -> dispatch(presenter[0], action), () -> presenter[0].tick(), this::showCargoTransfer);
+        action -> dispatch(presenter[0], action), () -> presenter[0].tick(), this::showCargoTransfer, sound);
     view.header(game::Commander);
     encounterView = view;
     view.onClose(() -> encounterView = null);
@@ -341,9 +406,42 @@ public final class LanternaMainWindow
       return;
     }
     LanternaCargoTransferView view = new LanternaCargoTransferView(gui, game,
-        plunder ? CargoTransferPresenter.Mode.Plunder : CargoTransferPresenter.Mode.Jettison);
+        plunder ? CargoTransferPresenter.Mode.Plunder : CargoTransferPresenter.Mode.Jettison, sound);
     gui.addWindow(view.asWindow());
     gui.waitForWindowToClose(view.asWindow());
+  }
+
+  @Override
+  public void repairScene(int from, int to) {
+    Game game = gameSupplier.get();
+    if(game == null || to <= from) {
+      return;
+    }
+    Ship ship = game.Commander().getShip();
+    ShipPicture picture = ShipCatalog.shared().picture(ship.Type(), ShipArtItems.of(ship), ship.CargoBays());
+    RepairSceneComponent content = new RepairSceneComponent(picture, from, to, ship.HullStrength(), sound);
+    content.setPreferredSize(new TerminalSize(120, 30));
+    BasicWindow scene = new BasicWindow(Strings.RepairSceneTitle);
+    scene.setHints(Set.of(Window.Hint.MODAL, Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+    scene.setComponent(content);
+    scene.setFocusedInteractable(content);
+    Timer timer = new Timer("repair-scene", true);
+    content.onDone(() -> {
+      timer.cancel();
+      scene.close();
+    });
+    timer.scheduleAtFixedRate(new TimerTask() {
+      @Override
+      public void run() {
+        try {
+          gui.getGUIThread().invokeLater(content::tick);
+        } catch(IllegalStateException e) {
+          return;
+        }
+      }
+    }, RepairSceneComponent.FRAME_MILLIS, RepairSceneComponent.FRAME_MILLIS);
+    gui.addWindow(scene);
+    gui.waitForWindowToClose(scene);
   }
 
   @Override
@@ -371,6 +469,13 @@ public final class LanternaMainWindow
   }
 
   private boolean handleKey(KeyStroke key) {
+    boolean handled = handleKeyInternal(key);
+    // The key may have opened or closed a panel: the ambience follows the screen.
+    updateAmbience();
+    return handled;
+  }
+
+  private boolean handleKeyInternal(KeyStroke key) {
     if(content.titleScreen()) {
       // Any key enters the program from the title screen, and the menu keys do their
       // job at once: F2 there starts a game instead of being swallowed.
@@ -438,8 +543,10 @@ public final class LanternaMainWindow
     if(content.panel() == MainPanel.Personnel) {
       return handlePersonnelKey(key);
     }
-    if(content.panel() == MainPanel.Commander || content.panel() == MainPanel.Ship
-        || content.panel() == MainPanel.About) {
+    if(content.panel() == MainPanel.Ship) {
+      return handleShipKey(key);
+    }
+    if(content.panel() == MainPanel.Commander || content.panel() == MainPanel.About) {
       return false;
     }
     if(content.panel() == MainPanel.ShipList) {
@@ -539,6 +646,7 @@ public final class LanternaMainWindow
         bankPresenter.payBack();
         return true;
       case 'i':
+        sound.play(SoundEffect.MENU_SELECT);
         bankPresenter.toggleInsurance();
         return true;
       default:
@@ -585,7 +693,7 @@ public final class LanternaMainWindow
   @Override
   public Integer askLoanAmount(int maxAmount) {
     return LanternaDialogs.askAmount(gui, Strings.DialogLoanTitle,
-        Functions.StringVars(Strings.DialogLoanPrompt, "" + maxAmount), maxAmount);
+        Functions.StringVars(Strings.DialogLoanPrompt, "" + maxAmount), maxAmount, sound);
   }
 
   @Override
@@ -593,7 +701,7 @@ public final class LanternaMainWindow
     Game game = gameSupplier.get();
     int max = Math.min(game.Commander().getDebt(), game.Commander().getCash());
     return LanternaDialogs.askAmount(gui, Strings.DialogPayBackTitle,
-        Functions.StringVars(Strings.DialogPayBackPrompt, "" + max), max);
+        Functions.StringVars(Strings.DialogPayBackPrompt, "" + max), max, sound);
   }
 
   @Override
@@ -687,28 +795,38 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         content.designerField(Math.floorMod(content.designerField() - 1, DESIGNER_FIELDS));
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         content.designerField(Math.floorMod(content.designerField() + 1, DESIGNER_FIELDS));
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowLeft:
         return changeDesignerField(model, -1);
       case ArrowRight:
         return changeDesignerField(model, 1);
-      case Enter:
-        return activateDesignerField(model);
+      case Enter: {
+        boolean activated = activateDesignerField(model);
+        if(activated) {
+          sound.play(SoundEffect.MENU_SELECT);
+        }
+        return activated;
+      }
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'r') {
+          sound.play(SoundEffect.MENU_SELECT);
           askDesignerName(model);
           return true;
         }
         if(character == 'c') {
-          shipyardPresenter.construct(model.name());
+          sound.play(SoundEffect.MENU_SELECT);
+          constructDesign(model);
           return true;
         }
         if(character == 'v') {
-          shipyardPresenter.saveTemplate(model.name());
+          sound.play(SoundEffect.MENU_SELECT);
+          saveDesign(model);
           return true;
         }
         return false;
@@ -721,10 +839,12 @@ public final class LanternaMainWindow
     int field = content.designerField();
     if(field == 0 && !model.sizes().isEmpty()) {
       shipyardPresenter.onSizeChanged(Math.floorMod(model.sizeIndex() + delta, model.sizes().size()));
+      sound.play(SoundEffect.MENU_MOVE);
       return true;
     }
     if(field == 1 && !model.templates().isEmpty()) {
       shipyardPresenter.loadSelectedTemplate(Math.floorMod(model.templateIndex() + delta, model.templates().size()));
+      sound.play(SoundEffect.MENU_MOVE);
       return true;
     }
     if(field >= 3 && field <= 9) {
@@ -747,6 +867,7 @@ public final class LanternaMainWindow
       }
       numbers[index] = next;
       shipyardPresenter.onValuesChanged(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5], numbers[6]);
+      sound.play(SoundEffect.MENU_MOVE);
       return true;
     }
     return false;
@@ -758,14 +879,47 @@ public final class LanternaMainWindow
         askDesignerName(model);
         return true;
       case 10:
-        shipyardPresenter.construct(model.name());
+        constructDesign(model);
         return true;
       case 11:
-        shipyardPresenter.saveTemplate(model.name());
+        saveDesign(model);
         return true;
       default:
         return false;
     }
+  }
+
+  /** Builds the design; when the panel has it disabled, says what is missing. */
+  private void constructDesign(ShipyardDesignerViewModel model) {
+    if(!model.constructEnabled()) {
+      warnDesignerDisabled(model);
+      return;
+    }
+    shipyardPresenter.construct(model.name());
+  }
+
+  /** Saves the template; when the panel has it disabled, says what is missing. */
+  private void saveDesign(ShipyardDesignerViewModel model) {
+    if(!model.saveEnabled()) {
+      warnDesignerDisabled(model);
+      return;
+    }
+    shipyardPresenter.saveTemplate(model.name());
+  }
+
+  /**
+   * Says why the design cannot be built or saved: the name is missing, the yard
+   * is over its unit limit, or both. The reason goes to the log of the panel,
+   * where the rest of the messages of the designer are read.
+   */
+  private void warnDesignerDisabled(ShipyardDesignerViewModel model) {
+    if(model.name().isEmpty()) {
+      content.log(Strings.DesignerNeedsName);
+    }
+    if(model.percentLevel() == 3) {
+      content.log(Functions.StringVars(Strings.DesignerOverUnits, model.percent()));
+    }
+    content.invalidate();
   }
 
   private void askDesignerName(ShipyardDesignerViewModel model) {
@@ -807,9 +961,11 @@ public final class LanternaMainWindow
       }
       int delta = key.getKeyType() == KeyType.ArrowUp ? -1 : 1;
       content.optionsIndex(Math.floorMod(content.optionsIndex() + delta, count));
+      sound.play(SoundEffect.MENU_MOVE);
       return true;
     }
     if(key.getKeyType() == KeyType.Enter) {
+      sound.play(SoundEffect.MENU_SELECT);
       toggleOption(game, content.optionsIndex());
       return true;
     }
@@ -851,6 +1007,7 @@ public final class LanternaMainWindow
     lines.add(optionLine(Strings.OptionAutoSave, game.getAutoSave()));
     lines.add(Functions.StringVars(Strings.OptionsValue, Strings.OptionGalaxyColumns,
         "" + options.getGalaxyColumns()));
+    lines.add(optionLine(Strings.OptionSound, options.getSound()));
     return lines;
   }
 
@@ -887,7 +1044,7 @@ public final class LanternaMainWindow
         break;
       case 8:
         Integer value = LanternaDialogs.askAmount(gui, Strings.DialogLeaveEmptyTitle,
-            Functions.StringVars(Strings.DialogLeaveEmptyPrompt, "99"), 99);
+            Functions.StringVars(Strings.DialogLeaveEmptyPrompt, "99"), 99, sound);
         if(value != null) {
           options.setLeaveEmpty(value);
         }
@@ -919,6 +1076,9 @@ public final class LanternaMainWindow
       case 17:
         options.setGalaxyColumns(options.getGalaxyColumns() >= 3 ? 1 : options.getGalaxyColumns() + 1);
         break;
+      case 18:
+        options.setSound(!options.getSound());
+        break;
       default:
         break;
     }
@@ -948,9 +1108,11 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         selectShipListEntry(content.shipListIndex() - 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         selectShipListEntry(content.shipListIndex() + 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Character:
         if(Character.toLowerCase(key.getCharacter()) != 'b') {
@@ -960,6 +1122,7 @@ public final class LanternaMainWindow
         int index = content.shipListIndex();
         if(model != null && index < model.rows().size() && model.rows().get(index).buyVisible()) {
           shipListPresenter.buy(index);
+          sound.play(SoundEffect.MENU_SELECT);
           selectShipListEntry(0);
         }
         return true;
@@ -986,20 +1149,26 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         selectEquipmentEntry(content.equipmentIndex() - 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         selectEquipmentEntry(content.equipmentIndex() + 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'b') {
-          equipmentPresenter.buy();
-          selectEquipmentEntry(content.equipmentIndex());
+          if(equipmentPresenter.buy()) {
+            sound.play(SoundEffect.MENU_SELECT);
+            selectEquipmentEntry(content.equipmentIndex());
+          }
           return true;
         }
         if(character == 's') {
-          equipmentPresenter.sell();
-          selectEquipmentEntry(content.equipmentIndex());
+          if(equipmentPresenter.sell()) {
+            sound.play(SoundEffect.MENU_SELECT);
+            selectEquipmentEntry(content.equipmentIndex());
+          }
           return true;
         }
         return false;
@@ -1086,6 +1255,7 @@ public final class LanternaMainWindow
     }
     game.Commander().setCash(game.Commander().getCash() - 2000);
     game.Commander().getShip().setEscapePod(true);
+    sound.play(SoundEffect.MENU_SELECT);
     content.log(Strings.MainEscapePodBought);
     refresh();
   }
@@ -1098,15 +1268,18 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         selectPersonnelEntry(content.personnelIndex() - 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         selectPersonnelEntry(content.personnelIndex() + 1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Character:
         if(Character.toLowerCase(key.getCharacter()) != 'h') {
           return false;
         }
         if(personnelPresenter.hireFire()) {
+          sound.play(SoundEffect.MENU_SELECT);
           selectPersonnelEntry(Math.min(content.personnelIndex(),
               Math.max(0, content.personnelEntryCount() - 1)));
         }
@@ -1190,6 +1363,7 @@ public final class LanternaMainWindow
   /** Shows the title screen (the splash, or the banner when it does not fit) until a key is pressed. */
   public void showTitleScreen() {
     content.titleScreen(true);
+    updateAmbience();
   }
 
   private void openAbout() {
@@ -1219,17 +1393,21 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveItemSelection(-1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         content.moveItemSelection(1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Character:
         char character = Character.toLowerCase(key.getCharacter());
         if(character == 'b') {
+          sound.play(SoundEffect.MENU_SELECT);
           presenter.buyCargo(content.selectedItem(), allAmount(key));
           return true;
         }
         if(character == 's') {
+          sound.play(SoundEffect.MENU_SELECT);
           presenter.sellCargo(content.selectedItem(), allAmount(key));
           return true;
         }
@@ -1280,17 +1458,11 @@ public final class LanternaMainWindow
       case 't':
         trackSelection(game);
         return true;
-      case 'f':
-        buyFuel();
-        return true;
       case 'g':
         jump();
         return true;
       case ' ':
         warp();
-        return true;
-      case 'r':
-        buyRepairs();
         return true;
       case 'h':
         moveSelection(game, -1, 0);
@@ -1309,6 +1481,28 @@ public final class LanternaMainWindow
         return true;
       case 'y':
         acceptSpecialEvent();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * The keys of the ship panel: its dock block shows the fuel and hull state,
+   * so `F` buys fuel and `R` repairs the hull from here. From the map they do
+   * nothing: the panel is the place of the dock actions. Escape and SPACE
+   * already close the panel before this.
+   */
+  private boolean handleShipKey(KeyStroke key) {
+    if(key.getKeyType() != KeyType.Character) {
+      return false;
+    }
+    switch(Character.toLowerCase(key.getCharacter())) {
+      case 'f':
+        buyFuel();
+        return true;
+      case 'r':
+        buyRepairs();
         return true;
       default:
         return false;
@@ -1339,6 +1533,7 @@ public final class LanternaMainWindow
     }
     if(best != null) {
       selectSystem(game, best);
+      sound.play(SoundEffect.CHART_MOVE);
     }
   }
 
@@ -1372,6 +1567,7 @@ public final class LanternaMainWindow
       // No answer or a No: the offer stays in the system.
       return;
     }
+    sound.play(SoundEffect.CHART_SELECT);
     try {
       game.HandleSpecialEvent();
     } catch(GameEndException e) {
@@ -1440,6 +1636,7 @@ public final class LanternaMainWindow
       return;
     }
     if(matches.size() == 1) {
+      sound.play(SoundEffect.CHART_SELECT);
       selectedSystem(game, matches.get(0));
       return;
     }
@@ -1464,6 +1661,7 @@ public final class LanternaMainWindow
   }
 
   private void trackSelection(Game game) {
+    sound.play(SoundEffect.CHART_SELECT);
     StarSystem selected = game.SelectedSystem() == null
         ? game.Commander().CurrentSystem() : game.SelectedSystem();
     if(selected == game.TrackedSystem()) {
@@ -1481,6 +1679,7 @@ public final class LanternaMainWindow
 
   private void buyFuel() {
     if(presenter != null && presenter.buyFuel()) {
+      sound.play(SoundEffect.MENU_SELECT);
       presenter.updateAll();
     }
     content.invalidate();
@@ -1509,6 +1708,9 @@ public final class LanternaMainWindow
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_DEPARTURE).getPath(), game.Serialize(), game.Dialogs());
       }
+      // The sound is the ship setting off, not the arrival: the whole trip
+      // (encounters included) resolves inside Warp, so it plays before the call.
+      sound.play(SoundEffect.WARP);
       game.Warp(true);
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_ARRIVAL).getPath(), game.Serialize(), game.Dialogs());
@@ -1567,6 +1769,9 @@ public final class LanternaMainWindow
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_DEPARTURE).getPath(), game.Serialize(), game.Dialogs());
       }
+      // The sound is the ship setting off, not the arrival: the whole trip
+      // (encounters included) resolves inside Warp, so it plays before the call.
+      sound.play(SoundEffect.WARP);
       game.Warp(false);
       if(game.getAutoSave()) {
         Functions.SaveFile(new File(Consts.SaveDirectory, AUTOSAVE_ARRIVAL).getPath(), game.Serialize(), game.Dialogs());
@@ -1583,11 +1788,14 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveMenuSelection(-1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         content.moveMenuSelection(1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Enter:
+        sound.play(SoundEffect.MENU_SELECT);
         activateMenuEntry();
         return true;
       case Escape:
@@ -1707,11 +1915,14 @@ public final class LanternaMainWindow
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveQuestSelection(-1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case ArrowDown:
         content.moveQuestSelection(1);
+        sound.play(SoundEffect.MENU_MOVE);
         return true;
       case Enter:
+        sound.play(SoundEffect.MENU_SELECT);
         selectQuestTarget();
         content.closePanel();
         return true;
@@ -1740,22 +1951,28 @@ public final class LanternaMainWindow
 
   private boolean handleNewsKey(KeyStroke key) {
     key = listKey(key);
+    int before = content.newsScroll();
     switch(key.getKeyType()) {
       case ArrowUp:
         content.moveNewsScroll(-1);
-        return true;
+        break;
       case ArrowDown:
         content.moveNewsScroll(1);
-        return true;
+        break;
       case PageUp:
         content.moveNewsScroll(-10);
-        return true;
+        break;
       case PageDown:
         content.moveNewsScroll(10);
-        return true;
+        break;
       default:
         return false;
     }
+    // A scroll against an edge moves nothing: it must not sound.
+    if(content.newsScroll() != before) {
+      sound.play(SoundEffect.MENU_MOVE);
+    }
+    return true;
   }
 
   private void openNews() {
@@ -1770,8 +1987,10 @@ public final class LanternaMainWindow
   private boolean handleGameOverKey(KeyStroke key) {
     switch(key.getKeyType()) {
       case F2:
+        sound.play(SoundEffect.MENU_SELECT);
         return runAction(newGameAction, Strings.MainNewGameUnavailable);
       case F3:
+        sound.play(SoundEffect.MENU_SELECT);
         openHighScores();
         return true;
       case Escape:
@@ -1833,6 +2052,7 @@ public final class LanternaMainWindow
 
   private void buyRepairs() {
     if(presenter != null && presenter.buyRepairs()) {
+      sound.play(SoundEffect.MENU_SELECT);
       presenter.updateAll();
     }
     content.invalidate();

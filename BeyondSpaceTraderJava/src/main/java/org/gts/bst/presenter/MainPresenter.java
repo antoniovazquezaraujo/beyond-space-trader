@@ -135,6 +135,10 @@ public class MainPresenter {
       return false;
     }
     int toAdd = amount / ship.getRepairCost();
+    if(toAdd > 0) {
+      // The scene plays the repair before the model changes; it does not touch it.
+      view.repairScene(ship.getHull(), ship.getHull() + toAdd);
+    }
     ship.setHull(ship.getHull() + toAdd);
     cmdr.setCash(cmdr.getCash() - toAdd * ship.getRepairCost());
     updateAll();

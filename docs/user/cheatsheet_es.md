@@ -13,6 +13,7 @@ Una página con las teclas y los paneles del juego. Los detalles están en el
 | Linux/macOS | `./bin/beyond-space-trader.sh` |
 | Windows | `bin\beyond-space-trader.bat` |
 | En español | añade `--lang es` |
+| Sin sonido | añade `--mute` (o `--no-sound`) |
 | Desde el código | compila con `mvn clean package -DskipTests` y arranca con `./run.sh` |
 
 ## El mapa
@@ -25,7 +26,6 @@ Una página con las teclas y los paneles del juego. Los detalles están en el
 | `/` | Buscar un sistema por nombre |
 | `Espacio` | Viajar al sistema seleccionado (o por el agujero de gusano) |
 | `G` | Salto con la Singularidad Portátil |
-| `F` / `R` | Comprar combustible / reparar el casco |
 | `Y` | Evento especial del sistema actual |
 | `Esc` | Cerrar el panel; salir desde el mapa |
 | `n` / `p` | Periódico / tripulación en el mapa; bajar/subir en las listas |
@@ -40,13 +40,13 @@ Una página con las teclas y los paneles del juego. Los detalles están en el
 | `N` Periódico | Flechas para desplazar · `AvPág`/`RePág` |
 | `P` Tripulación | `H` contratar/despedir |
 | `I` Comandante | `Espacio` cerrar |
-| `V` Nave y carga | `Espacio` cerrar |
+| `V` Nave y carga | `F` combustible · `R` reparaciones · `Espacio` cerrar |
 | `S` Naves en venta | `B` comprar |
 | `E` Equipo | `B` comprar · `S` vender |
 | `D` Diseño de nave | `←`/`→` cambiar · `R` nombre · `C` construir · `V` guardar |
 | `O` Cápsula de escape | 2.000 cr, pide confirmación |
 | `F2` / `F5` / `F9` | Partida nueva / guardar / cargar |
-| `F3` / `F8` / `F10` | Récords / opciones / menú |
+| `F3` / `F8` / `F10` | Récords / opciones (sonido sí/no) / menú |
 | `A` Acerca de | Origen, autores y licencia |
 | Cualquier panel | `Esc` lo cierra (`Espacio` en los de solo lectura) |
 | Listas | `↑`/`↓` y también `n`/`p`, `j`/`k` |

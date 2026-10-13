@@ -23,10 +23,37 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
+import java.util.List;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.testing.TestSoundService;
 import org.junit.jupiter.api.Test;
 
 
 class LanternaDialogsTest {
+  @Test
+  void acceptingAnAmountSounds() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Integer[] answer = new Integer[1];
+      Thread worker = new Thread(() -> answer[0] = LanternaDialogs.askAmount(gui, "Buy", "How many?", 20, sound));
+      worker.setDaemon(true);
+      worker.start();
+      Window dialog = waitForDialog(gui);
+      sound.clear();
+
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the dialog closes with Enter");
+      assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played(), "accepting the amount sounds");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   @Test
   void enterAcceptsTheAmountTyped() throws IOException, InterruptedException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(60, 20)));

@@ -11,6 +11,7 @@ package org.gts.bst.view;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
@@ -136,7 +137,12 @@ public final class ShipSites {
 
   /** The kind of a piece, by the name of the game item it draws. */
   public static Kind kindOf(String pieceName) {
-    return KINDS.getOrDefault(pieceName == null ? "" : pieceName.strip().toLowerCase(), Kind.PART);
+    if(pieceName == null) {
+      return Kind.PART;
+    }
+    // The equipment names arrive localised: the art only knows the English ones.
+    return KINDS.getOrDefault(ShipArtNames.canonical(pieceName).strip().toLowerCase(Locale.ROOT),
+        Kind.PART);
   }
 
   /** The name of a kind, for the panels. */

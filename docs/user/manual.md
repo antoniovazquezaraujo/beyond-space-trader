@@ -66,6 +66,19 @@ bin\beyond-space-trader.bat --lang es           # Windows
 `--lang=es` form. The game uses the system language by default; texts without a
 translation fall back to English.
 
+The sound effects can be turned off for the whole run with `--mute` (or
+`--no-sound`), for a quiet terminal session:
+
+```bash
+./bin/beyond-space-trader.sh --mute             # Linux/macOS
+bin\beyond-space-trader.bat --no-sound          # Windows
+```
+
+Sound effects are on by default; the *Sound effects* option (`F8`) turns them
+off and on inside the game. The game plays WAV samples bundled with the
+package: menus, alerts, combat, warp and the ambience of each screen. The
+samples travel inside the program, so there is nothing to install or manage.
+
 ### Other install options
 
 - **Snap Store (Linux):** the game is also published as a snap:
@@ -221,13 +234,15 @@ The **Portable Singularity** (`G`) is a one-shot quest reward: it teleports you
 to **any selected system** instantaneously, without spending fuel or days. It
 works only while it is on board and it is consumed after the jump.
 
-Fuel and repairs:
+Fuel and repairs (in the ship panel, `V`):
 
 | Key | Action |
 | --- | --- |
 | `F` | Buy fuel (asks how much; limited by your cash and the tank) |
 | `R` | Repair the hull (asks how much; limited by your cash) |
 | `F8` | Options; *Get full fuel tanks on arrival* and *Get full hull repairs on arrival* do it automatically |
+
+The ship panel shows the tank and the hull with what a refill or the repairs will cost; `F` and `R` work while it is open.
 
 ### 4.3 The daily keys
 
@@ -361,6 +376,7 @@ as defaults and `L` loads them back:
 | Continue attacking fleeing ship | Keeps firing at a ship that flees |
 | Attempt to disable opponents when possible | Uses the shot to disable instead of destroy |
 | Galaxy chart columns per sector | 1, 2 or 3 columns per sector, to fit your font |
+| Sound effects | Plays the sounds bundled with the game; also `--mute` at startup |
 
 The **menu (`F10`)** holds the program actions: high scores (`F3`), options
 (`F8`), save (`F5`), load (`F9`), new game (`F2`), about and quit. `Quit` (and
@@ -500,7 +516,6 @@ stored in `data/HighScores.bin` and can be seen from `F3`.
 | `/` | Find a system by name |
 | `SPACE` | Warp to the selected system (or through the wormhole of the current one) |
 | `G` | Portable Singularity jump |
-| `F` / `R` | Buy fuel / repair hull |
 | `Y` | Special event of the current system |
 | `C` | Trade |
 | `B` | Bank |
@@ -526,6 +541,7 @@ stored in `data/HighScores.bin` and can be seen from `F3`.
 | Bank (`B`) | `G` loan · `P` pay back · `I` insurance |
 | Quests (`Q`) | `ENTER` set the target · `SPACE` close |
 | Personnel (`P`) | `H` hire/fire |
+| Ship (`V`) | `F` fuel · `R` repairs · `SPACE` close |
 | Ships for sale (`S`) | `B` buy |
 | Equipment (`E`) | `B` buy · `S` sell |
 | Designer (`D`) | `←`/`→` change · `R` name · `C` construct · `V` save template |

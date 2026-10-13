@@ -293,6 +293,8 @@ public final class Strings {
   public static final String DialogFuelTitle = text("DialogFuelTitle");
   public static final String DialogRepairsPrompt = text("DialogRepairsPrompt");
   public static final String DialogRepairsTitle = text("DialogRepairsTitle");
+  public static final String RepairSceneTitle = text("RepairSceneTitle");
+  public static final String RepairSceneSkip = text("RepairSceneSkip");
   public static final String MainCargo = text("MainCargo");
   public static final String MainChartGalactic = text("MainChartGalactic");
   public static final String MainChartShortRange = text("MainChartShortRange");
@@ -492,6 +494,7 @@ public final class Strings {
   public static final String OptionShowTrackedRange = text("OptionShowTrackedRange");
   public static final String OptionTrackAutoOff = text("OptionTrackAutoOff");
   public static final String OptionGalaxyColumns = text("OptionGalaxyColumns");
+  public static final String OptionSound = text("OptionSound");
 
   public static final String DesignerCargo = text("DesignerCargo");
   public static final String DesignerConstruct = text("DesignerConstruct");
@@ -502,8 +505,10 @@ public final class Strings {
   public static final String DesignerHull = text("DesignerHull");
   public static final String DesignerKeys = text("DesignerKeys");
   public static final String DesignerName = text("DesignerName");
+  public static final String DesignerNeedsName = text("DesignerNeedsName");
   public static final String DesignerNumeric = text("DesignerNumeric");
   public static final String DesignerNumericValue = text("DesignerNumericValue");
+  public static final String DesignerOverUnits = text("DesignerOverUnits");
   public static final String DesignerSave = text("DesignerSave");
   public static final String DesignerShield = text("DesignerShield");
   public static final String DesignerSize = text("DesignerSize");

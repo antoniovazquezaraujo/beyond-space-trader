@@ -13,6 +13,7 @@ One page with the keys and panels of the game. The details are in the
 | Linux/macOS | `./bin/beyond-space-trader.sh` |
 | Windows | `bin\beyond-space-trader.bat` |
 | In Spanish | add `--lang es` |
+| Mute the sound | add `--mute` (or `--no-sound`) |
 | From source | build with `mvn clean package -DskipTests`, run with `./run.sh` |
 
 ## The map
@@ -25,7 +26,6 @@ One page with the keys and panels of the game. The details are in the
 | `/` | Find a system by name |
 | `SPACE` | Warp to the selected system (or through the wormhole) |
 | `G` | Portable Singularity jump |
-| `F` / `R` | Buy fuel / repair hull |
 | `Y` | Special event of the current system |
 | `Esc` | Close the panel; quit from the map |
 | `n` / `p` | Newspaper / personnel on the map; down/up in the lists |
@@ -40,13 +40,13 @@ One page with the keys and panels of the game. The details are in the
 | `N` Newspaper | Arrows scroll · `PageUp`/`PageDown` |
 | `P` Personnel | `H` hire/fire |
 | `I` Commander | `SPACE` close |
-| `V` Ship and cargo | `SPACE` close |
+| `V` Ship and cargo | `F` fuel · `R` repairs · `SPACE` close |
 | `S` Ships for sale | `B` buy |
 | `E` Equipment | `B` buy · `S` sell |
 | `D` Ship designer | `←`/`→` change · `R` name · `C` construct · `V` save |
 | `O` Escape pod | 2,000 cr, asks first |
 | `F2` / `F5` / `F9` | New game / save / load |
-| `F3` / `F8` / `F10` | High scores / options / menu |
+| `F3` / `F8` / `F10` | High scores / options (sound on/off) / menu |
 | `A` About | Origin, authors and license |
 | Any panel | `Esc` closes it (`SPACE` in the read-only ones) |
 | Lists | `↑`/`↓` and also `n`/`p`, `j`/`k` |

@@ -102,22 +102,29 @@ class ShipyardPresenterTest {
 
   @Test
   void constructingBuildsTheCustomShip() {
-    TestDialogService dialogs = new TestDialogService();
-    Game game = newGame(dialogs);
-    moveToAShipyardSystem(game);
-    game.Commander().setCash(1000000);
-    FakeView view = new FakeView();
-    ShipyardPresenter presenter = new ShipyardPresenter(game, view);
-    presenter.start();
-    presenter.onNameChanged("My Ship");
-    presenter.customImageLoaded();
-    dialogs.setResult(DialogResult.Yes);
+    // Building renames the Custom type for the whole JVM (Strings is static):
+    // put it back so the rest of the tests see the bundle name.
+    String before = Strings.ShipNames.get(ShipType.Custom.CastToInt());
+    try {
+      TestDialogService dialogs = new TestDialogService();
+      Game game = newGame(dialogs);
+      moveToAShipyardSystem(game);
+      game.Commander().setCash(1000000);
+      FakeView view = new FakeView();
+      ShipyardPresenter presenter = new ShipyardPresenter(game, view);
+      presenter.start();
+      presenter.onNameChanged("My Ship");
+      presenter.customImageLoaded();
+      dialogs.setResult(DialogResult.Yes);
 
-    presenter.construct("My Ship");
+      presenter.construct("My Ship");
 
-    assertEquals(ShipType.Custom, game.Commander().getShip().Type());
-    assertEquals("My Ship", Strings.ShipNames.get(ShipType.Custom.CastToInt()));
-    assertTrue(view.closed);
+      assertEquals(ShipType.Custom, game.Commander().getShip().Type());
+      assertEquals("My Ship", Strings.ShipNames.get(ShipType.Custom.CastToInt()));
+      assertTrue(view.closed);
+    } finally {
+      Strings.SetShipName(ShipType.Custom, before);
+    }
   }
 
   @Test

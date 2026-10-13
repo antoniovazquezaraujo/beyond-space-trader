@@ -20,6 +20,8 @@ import java.util.Set;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.presenter.CargoTransferPresenter;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.view.CargoTransferView;
 import org.gts.bst.view.CargoTransferViewModel;
 import spacetrader.Consts;
@@ -37,10 +39,18 @@ public final class LanternaCargoTransferView implements CargoTransferView {
   private final CargoTransferPresenter presenter;
   private final BasicWindow window;
   private final TextScreenComponent content;
+  private final SoundService sound;
   private CargoTransferViewModel model;
 
   public LanternaCargoTransferView(WindowBasedTextGUI gui, Game game, CargoTransferPresenter.Mode mode) {
+    this(gui, game, mode, SoundService.NONE);
+  }
+
+  /** The same, with the sound of the screen that opens it. */
+  public LanternaCargoTransferView(WindowBasedTextGUI gui, Game game, CargoTransferPresenter.Mode mode,
+      SoundService sound) {
     this.gui = gui;
+    this.sound = sound;
     this.presenter = new CargoTransferPresenter(game, this, mode);
     this.content = new TextScreenComponent(this::handleKey);
     this.window = new BasicWindow(mode == CargoTransferPresenter.Mode.Plunder
@@ -76,14 +86,14 @@ public final class LanternaCargoTransferView implements CargoTransferView {
   public Integer askSellQuantity(CargoSellOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
     return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoSellTitle, item),
-        Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount());
+        Functions.StringVars(Strings.DialogCargoSellPrompt, "" + offer.maxAmount()), offer.maxAmount(), sound);
   }
 
   @Override
   public Integer askBuyQuantity(CargoBuyOffer offer) {
     String item = Consts.TradeItems.get(offer.tradeItem()).Name();
     return LanternaDialogs.askAmount(gui, Functions.StringVars(Strings.DialogCargoBuyTitle, item),
-        Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount());
+        Functions.StringVars(Strings.DialogCargoBuyPrompt, "" + offer.maxAmount()), offer.maxAmount(), sound);
   }
 
   private boolean handleKey(KeyStroke key) {
@@ -100,6 +110,7 @@ public final class LanternaCargoTransferView implements CargoTransferView {
       return false;
     }
     // Shift+digit arrives as the shifted symbol on most terminals.
+    sound.play(SoundEffect.MENU_SELECT);
     presenter.transfer(index, key.isShiftDown() || character < '0' || character > '9');
     return true;
   }

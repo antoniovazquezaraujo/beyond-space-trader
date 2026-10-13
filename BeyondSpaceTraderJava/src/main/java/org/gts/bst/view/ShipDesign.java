@@ -20,11 +20,15 @@ import java.util.List;
 
 
 /**
- * A ship design, one section of ships.txt: its name, its game type (the spec that
- * sets the site budget), the chassis it uses and the letter groups (the sites the
- * game fills, with where they start, how many there are and their colour).
+ * A ship design, one section of ships.txt: its game type (the spec that sets the
+ * site budget), the chassis it uses and the letter groups (the sites the game
+ * fills, with where they start, how many there are and their colour).
+ *
+ * <p>The header of a section is the {@code ShipType} of the design (the matching
+ * ignores case). An old file can still carry a free header and a {@code type=}
+ * line: then the {@code type=} wins.
  */
-public record ShipDesign(String name, String type, String chassis, List<LetterGroup> groups) {
+public record ShipDesign(String type, String chassis, List<LetterGroup> groups) {
   /** A group of the same site letter: where it starts, how many and its colour. */
   public record LetterGroup(char letter, int x, int y, int n) {
   }
@@ -33,7 +37,8 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
   public static List<ShipDesign> parse(Reader reader) throws IOException {
     List<ShipDesign> designs = new ArrayList<>();
     BufferedReader buffered = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader);
-    String name = null;
+    String header = null;
+    boolean explicitType = false;
     String type = "";
     String chassis = "";
     List<LetterGroup> groups = new ArrayList<>();
@@ -43,20 +48,23 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
         continue;
       }
       if(trimmed.startsWith("[") && trimmed.endsWith("]")) {
-        if(name != null) {
-          designs.add(new ShipDesign(name, type, chassis, List.copyOf(groups)));
+        if(header != null) {
+          designs.add(new ShipDesign(explicitType ? type : header, chassis, List.copyOf(groups)));
         }
-        name = trimmed.substring(1, trimmed.length() - 1).strip();
+        header = trimmed.substring(1, trimmed.length() - 1).strip();
+        explicitType = false;
         type = "";
         chassis = "";
         groups.clear();
         continue;
       }
-      if(name == null) {
+      if(header == null) {
         continue;
       }
       if(trimmed.startsWith("type=")) {
+        // An old file still names its designs: the explicit type wins over the header.
         type = trimmed.substring("type=".length()).strip();
+        explicitType = true;
       } else if(trimmed.startsWith("chasis=") || trimmed.startsWith("chassis=")) {
         chassis = trimmed.substring(trimmed.indexOf('=') + 1).strip();
       } else if(trimmed.startsWith("group=")) {
@@ -66,8 +74,8 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
         }
       }
     }
-    if(name != null) {
-      designs.add(new ShipDesign(name, type, chassis, List.copyOf(groups)));
+    if(header != null) {
+      designs.add(new ShipDesign(explicitType ? type : header, chassis, List.copyOf(groups)));
     }
     return designs;
   }
@@ -119,12 +127,11 @@ public record ShipDesign(String name, String type, String chassis, List<LetterGr
     }
   }
 
-  /** Saves every design of the list, one section each. */
+  /** Saves every design of the list, one section each, headed by its game type. */
   public static void save(String fileName, List<ShipDesign> designs) throws IOException {
     try(PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Path.of(fileName), StandardCharsets.UTF_8))) {
       for(ShipDesign design : designs) {
-        writer.println("[" + design.name() + "]");
-        writer.println("type=" + design.type());
+        writer.println("[" + design.type() + "]");
         writer.println("chasis=" + design.chassis());
         for(LetterGroup group : design.groups()) {
           writer.println("group=" + group.letter() + " x=" + group.x() + " y=" + group.y() + " n=" + group.n());
