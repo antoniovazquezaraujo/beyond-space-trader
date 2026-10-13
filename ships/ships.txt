@@ -142,19 +142,15 @@ group=A x=52 y=8 n=1
 group=D x=32 y=9 n=2
 [Dragonfly]
 chasis=small-4
-group=R x=6 y=1 n=1
-group=A x=27 y=2 n=1
-group=G x=1 y=3 n=1
-group=G x=3 y=3 n=1
-group=C x=20 y=3 n=1
-group=A x=28 y=3 n=1
-group=D x=11 y=4 n=1
-group=M x=13 y=4 n=1
-group=B x=19 y=4 n=1
-group=B x=21 y=4 n=1
-group=E x=22 y=5 n=1
-group=E x=25 y=5 n=1
-group=E x=27 y=5 n=1
+group=R x=9 y=1 n=1
+group=C x=12 y=1 n=1
+group=B x=5 y=2 n=2
+group=G x=12 y=2 n=2
+group=A x=16 y=2 n=1
+group=D x=9 y=3 n=1
+group=M x=10 y=3 n=1
+group=A x=18 y=3 n=1
+group=E x=11 y=5 n=3
 [Mantis]
 chasis=medium-3
 group=R x=5 y=1 n=1
@@ -171,9 +167,9 @@ group=E x=17 y=4 n=1
 group=A x=24 y=4 n=1
 [Scarab]
 chasis=large-3
-group=R x=21 y=1 n=1
+group=R x=33 y=1 n=1
 group=A x=31 y=2 n=1
-group=C x=33 y=3 n=1
+group=C x=43 y=3 n=1
 group=M x=8 y=4 n=2
 group=A x=34 y=5 n=1
 group=B x=20 y=6 n=1
