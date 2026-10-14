@@ -25,6 +25,16 @@ around Model-View-Presenter. Trade between star systems, upgrade your ship, take
 on quests, dodge pirates and police, and try to retire to your own moon in
 Utopia.
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="docs/user/images/star-chart.png" alt="The short-range chart, the target panel and the key line" width="100%">
+</p>
+<p align="center">
+  <img src="docs/user/images/trade.png" alt="The trade panel: the local market, your cargo and the target prices" width="49%">
+  <img src="docs/user/images/encounter.png" alt="An encounter with a pirate" width="49%">
+</p>
+
 ## 🎮 Download and play (no Java needed)
 
 1. Open the [latest release](https://github.com/antoniovazquezaraujo/beyond-space-trader/releases/latest)
