@@ -72,6 +72,7 @@ public final class Strings {
   public static final String EncounterOppMissed = text("EncounterOppMissed");
   public static final String EncounterHidePrincess = text("EncounterHidePrincess");
   public static final String EncounterHideSculpture = text("EncounterHideSculpture");
+  public static final String EncounterHullLabel = text("EncounterHullLabel");
   public static final String EncounterHullStrength = text("EncounterHullStrength");
   public static final String EncounterPiratesDestroyed = text("EncounterPiratesDestroyed");
   public static final String EncounterPiratesDisabled = text("EncounterPiratesDisabled");
@@ -101,6 +102,7 @@ public final class Strings {
   public static final String EncounterPretextStolen = text("EncounterPretextStolen");
   public static final String EncounterPretextTrader = text("EncounterPretextTrader");
   public static final String EncounterPrincessRescued = text("EncounterPrincessRescued");
+  public static final String EncounterShieldLabel = text("EncounterShieldLabel");
   public static final String EncounterShieldStrength = text("EncounterShieldStrength");
   public static final String EncounterShieldNone = text("EncounterShieldNone");
   public static final String EncounterShipCaptain = text("EncounterShipCaptain");

@@ -1461,9 +1461,9 @@ public final class EncounterSceneComponent extends AbstractInteractableComponent
   private void drawShipBars(TextGUIGraphics graphics, int x, int row, int maxX, String name, EncounterViewModel.Bar hull,
       EncounterViewModel.Bar shield) {
     int at = UiPalette.draw(graphics, x, row, name, UiPalette.ACCENT, maxX);
-    at = UiPalette.draw(graphics, at, row, "  casco ", UiPalette.TEXT, maxX);
+    at = UiPalette.draw(graphics, at, row, "  " + Strings.EncounterHullLabel + " ", UiPalette.TEXT, maxX);
     at = UiPalette.draw(graphics, at, row, bar(hull), UiPalette.statusColor(hull.value(), hull.max()), maxX);
-    at = UiPalette.draw(graphics, at, row, "  escudo ", UiPalette.TEXT, maxX);
+    at = UiPalette.draw(graphics, at, row, "  " + Strings.EncounterShieldLabel + " ", UiPalette.TEXT, maxX);
     UiPalette.draw(graphics, at, row, bar(shield), UiPalette.statusColor(shield.value(), shield.max()), maxX);
   }
 
