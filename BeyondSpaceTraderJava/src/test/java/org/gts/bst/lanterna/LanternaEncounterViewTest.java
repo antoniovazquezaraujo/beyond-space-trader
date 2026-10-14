@@ -92,8 +92,8 @@ class LanternaEncounterViewTest {
       gui.updateScreen();
       text = screenText(screen);
       assertTrue(text.contains("Flea"), text);
-      assertTrue(text.contains("casco ████████"), "the hull bar of the player: " + text);
-      assertTrue(text.contains("casco ████░░░░"), "half hull for the opponent: " + text);
+      assertTrue(text.contains("Hull ████████"), "the hull bar of the player: " + text);
+      assertTrue(text.contains("Hull ████░░░░"), "half hull for the opponent: " + text);
       assertTrue(text.contains("xxxxx"), "the ship of the player is painted: " + text);
       assertTrue(text.contains("yyyyy"), "and the opponent too: " + text);
       assertFalse(text.contains("| o o >"), "the old sprite is gone: " + text);
@@ -158,6 +158,27 @@ class LanternaEncounterViewTest {
       executed.clear();
       view.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       assertEquals(List.of(EncounterAction.Trade), executed, "the intro key deals with the trader");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theHullAndShieldBarsAreLabelledInTheGameLanguage() throws IOException {
+    // A wide scene, so both bars and their labels fit whole (the Spanish labels
+    // are shorter than the English ones and the scene is laid out for them).
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(120, 30)));
+    screen.startScreen();
+    try {
+      sceneWithTwoShips(screen);
+      String text = screenText(screen);
+
+      // The game runs in English here: the bars must not leak the Spanish labels.
+      assertTrue(text.contains("Hull ████████"), "the hull bar is labelled in English:\n" + text);
+      assertTrue(text.contains("Shields "), "the shield bar is labelled in English:\n" + text);
+      assertFalse(text.contains("casco"), "no Spanish leaks into the English scene:\n" + text);
+      assertFalse(text.contains("escudo"), "neither for the shield bar:\n" + text);
     } finally {
       screen.stopScreen();
       screen.close();
@@ -5589,7 +5610,7 @@ class LanternaEncounterViewTest {
       assertTrue(separator > hullRow, "the separator closes the header:\n" + text);
 
       // The bars, the legend and the log start under the header; the keys stay at the bottom.
-      assertEquals(separator + 1, rowOfText(screen, "casco ████████"),
+      assertEquals(separator + 1, rowOfText(screen, "Hull ████████"),
           "the bars start under the header:\n" + text);
       assertTrue(rowOfText(screen, spacetrader.Strings.EncounterLegend) > separator,
           "the legend starts under the header:\n" + text);
@@ -5687,7 +5708,7 @@ class LanternaEncounterViewTest {
       assertEquals(1, rowOfText(screen, fuel), text);
       int separator = headerSeparatorRow(screen);
       assertEquals(2, separator, "the separator closes the header right under its fields:\n" + text);
-      assertEquals(separator + 1, rowOfText(screen, "casco"),
+      assertEquals(separator + 1, rowOfText(screen, "Hull █"),
           "the bars start under the separator:\n" + text);
 
       // The legend starts under the header: it never steps on it.
@@ -5738,7 +5759,7 @@ class LanternaEncounterViewTest {
           "" + game.Commander().getShip().getFuel(), "" + game.Commander().getShip().FuelTanks());
       assertEquals(1, rowOfText(screen, fuel), text);
       assertEquals(2, headerSeparatorRow(screen), "the separator closes the header:\n" + text);
-      assertEquals(3, rowOfText(screen, "casco"), "the bars start under the separator:\n" + text);
+      assertEquals(3, rowOfText(screen, "Hull █"), "the bars start under the separator:\n" + text);
       assertTrue(rowOfText(screen, spacetrader.Strings.EncounterLegend) > 2, text);
       assertEquals(screen.getTerminalSize().getRows() - 2, rowOfText(screen, "Fourth line."), text);
       assertEquals(screen.getTerminalSize().getRows() - 1,
@@ -5783,7 +5804,7 @@ class LanternaEncounterViewTest {
       gui.updateScreen();
       String text = screenText(screen);
       int legendColumn = screen.getTerminalSize().getColumns() - 24;
-      assertEquals(0, rowOfText(screen, "casco"), text);
+      assertEquals(0, rowOfText(screen, "Hull █"), text);
       assertRivalBarWhole(screen, legendColumn, 0, text);
       assertEquals('│', screen.getBackCharacter(legendColumn, 2).getCharacter(),
           "the legend starts under the bars:\n" + text);
@@ -5794,7 +5815,7 @@ class LanternaEncounterViewTest {
       content.commander(game::Commander);
       gui.updateScreen();
       text = screenText(screen);
-      assertEquals(3, rowOfText(screen, "casco"), text);
+      assertEquals(3, rowOfText(screen, "Hull █"), text);
       assertRivalBarWhole(screen, legendColumn, 3, text);
       assertEquals('│', screen.getBackCharacter(legendColumn, 5).getCharacter(),
           "the legend starts under the bars and their gap:\n" + text);
@@ -5807,7 +5828,10 @@ class LanternaEncounterViewTest {
 
   /** The rival bar reaches the legend column with its cells painted. */
   private static void assertRivalBarWhole(Screen screen, int legendColumn, int row, String text) {
-    for(int column = legendColumn - 1; column <= legendColumn + 2; column++) {
+    // The English labels ("Hull", "Shields") are one column narrower than the
+    // Spanish ones ("casco"), so the filled cells of the rival bar sit one
+    // column earlier: the window over the legend column still lands on them.
+    for(int column = legendColumn - 2; column <= legendColumn + 1; column++) {
       assertEquals('█', screen.getBackCharacter(column, row).getCharacter(),
           "the legend must not erase the rival bar (column " + column + "):\n" + text);
     }
