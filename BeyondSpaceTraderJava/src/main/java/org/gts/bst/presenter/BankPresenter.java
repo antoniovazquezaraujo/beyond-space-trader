@@ -10,7 +10,7 @@ package org.gts.bst.presenter;
 
 import org.gts.bst.view.BankView;
 import org.gts.bst.view.BankViewModel;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import spacetrader.Commander;
 import spacetrader.Consts;
 import spacetrader.Functions;

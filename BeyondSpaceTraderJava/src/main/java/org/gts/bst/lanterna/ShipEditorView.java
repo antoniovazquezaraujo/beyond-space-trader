@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.ship.ShipSize;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.HullFile;
@@ -63,7 +64,13 @@ public final class ShipEditorView extends ArtEditorWindow {
   private String hullsPath = ShipArtFile.resolve("chassis.txt").toString();
 
   public ShipEditorView(List<ShipDesign> designs, List<ShipArtFile> hulls, List<ShipArtFile> pieces) {
-    super(Strings.EditorShipTitle);
+    this(designs, hulls, pieces, SoundService.NONE);
+  }
+
+  /** The same, with the sound of the tool that opens the editor. */
+  public ShipEditorView(List<ShipDesign> designs, List<ShipArtFile> hulls, List<ShipArtFile> pieces,
+      SoundService sound) {
+    super(Strings.EditorShipTitle, sound);
     this.hulls = hulls;
     this.pieces = pieces;
     this.designs = slots(designs);
@@ -103,9 +110,9 @@ public final class ShipEditorView extends ArtEditorWindow {
     for(ShipType type : ShipType.values()) {
       ShipDesign design = byType.get(type);
       if(design == null) {
-        slots.add(new ShipDesign(type.name(), type.name(), newChassis(type), List.of()));
+        slots.add(new ShipDesign(type.name(), newChassis(type), List.of()));
       } else {
-        slots.add(new ShipDesign(design.name(), type.name(), design.chassis(), design.groups()));
+        slots.add(new ShipDesign(type.name(), design.chassis(), design.groups()));
       }
     }
     return slots;
@@ -159,31 +166,6 @@ public final class ShipEditorView extends ArtEditorWindow {
     updateTitle();
   }
 
-  /** Renames the open ship with a little dialog (the [name] of ships.txt). */
-  private void renameDesign() {
-    ShipDesign design = design();
-    com.googlecode.lanterna.gui2.WindowBasedTextGUI gui = getTextGUI();
-    if(gui == null) {
-      return;
-    }
-    String typed = com.googlecode.lanterna.gui2.dialogs.TextInputDialog.showDialog(gui, "ship name",
-        "Name (it will be the [name] in ships.txt):", design.name());
-    rename(typed);
-  }
-
-  /** Renames the open ship; the type never changes (the tests call it without the dialog). */
-  void rename(String name) {
-    if(name == null || name.isBlank()) {
-      return;
-    }
-    storeCurrent();
-    ShipDesign design = design();
-    designs.set(designIndex, new ShipDesign(name.strip(), design.type(), design.chassis(), design.groups()));
-    updateTitle();
-    message = "renamed: " + name.strip();
-    redraw();
-  }
-
   /** Moves to another ship, cycling: from the last one it goes back to the first. */
   private void nextDesign(int step) {
     if(designs.isEmpty()) {
@@ -198,7 +180,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   /** Says which type is open, so TAB does not look like it does nothing. */
   private void announceShip() {
     ShipDesign design = design();
-    message = "ship " + (designIndex + 1) + "/" + designs.size() + ": " + design.name();
+    message = "ship " + (designIndex + 1) + "/" + designs.size() + ": " + design.type();
   }
 
   private void storeCurrent() {
@@ -207,7 +189,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     for(LetterGrid.Run run : grid.runs()) {
       groups.add(new ShipDesign.LetterGroup(run.letter(), run.x(), run.y(), run.n()));
     }
-    designs.set(designIndex, new ShipDesign(design.name(), design.type(), design.chassis(), List.copyOf(groups)));
+    designs.set(designIndex, new ShipDesign(design.type(), design.chassis(), List.copyOf(groups)));
   }
 
   private ShipDesign design() {
@@ -254,6 +236,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       message = "no pieces with a key in pieces.txt";
       return;
     }
+    menuMove();
     int index = pens.indexOf(pen);
     pen = index < 0 ? pens.get(step < 0 ? pens.size() - 1 : 0)
         : pens.get((index + step + pens.size()) % pens.size());
@@ -367,9 +350,12 @@ public final class ShipEditorView extends ArtEditorWindow {
       char character = type == KeyType.Character ? Character.toLowerCase(key.getCharacter()) : 0;
       if((type == KeyType.ArrowUp || character == 'p') && !items.isEmpty()) {
         listIndex = (listIndex + items.size() - 1) % items.size();
+        menuMove();
       } else if((type == KeyType.ArrowDown || character == 'n') && !items.isEmpty()) {
         listIndex = (listIndex + 1) % items.size();
+        menuMove();
       } else if(type == KeyType.Enter) {
+        menuSelect();
         pick();
       }
       redraw();
@@ -377,24 +363,34 @@ public final class ShipEditorView extends ArtEditorWindow {
     }
     if(key.getKeyType() == KeyType.Tab) {
       nextDesign(1);
+      menuMove();
       return true;
     }
     if(key.getKeyType() == KeyType.ReverseTab) {
       nextDesign(-1);
+      menuMove();
       return true;
     }
     switch(key.getKeyType()) {
       case ArrowLeft:
-        cursorX = Math.max(0, cursorX - 1);
+        if(cursorX > 0) {
+          cursorX--;
+          menuMove();
+        }
         break;
       case ArrowRight:
         cursorX++;
+        menuMove();
         break;
       case ArrowUp:
-        cursorY = Math.max(0, cursorY - 1);
+        if(cursorY > 0) {
+          cursorY--;
+          menuMove();
+        }
         break;
       case ArrowDown:
         cursorY++;
+        menuMove();
         break;
       case Character:
         character(key.getCharacter());
@@ -409,23 +405,35 @@ public final class ShipEditorView extends ArtEditorWindow {
   /** The letters are vim keys (move), the digits pick an element; the rest are commands. */
   private void character(char character) {
     if(character >= '1' && character <= '9') {
+      if(character - '1' < pens().size()) {
+        menuMove();
+      }
       pickPen(character - '1');
       return;
     }
     switch(Character.toLowerCase(character)) {
       case 'h':
-        cursorX = Math.max(0, cursorX - 1);
+        if(cursorX > 0) {
+          cursorX--;
+          menuMove();
+        }
         break;
       case 'l':
         cursorX++;
+        menuMove();
         break;
       case 'k':
-        cursorY = Math.max(0, cursorY - 1);
+        if(cursorY > 0) {
+          cursorY--;
+          menuMove();
+        }
         break;
       case 'j':
         cursorY++;
+        menuMove();
         break;
       case ' ':
+        menuSelect();
         toggleCell();
         break;
       case 'n':
@@ -437,13 +445,12 @@ public final class ShipEditorView extends ArtEditorWindow {
       case 'v':
         cycleVariant();
         break;
-      case 't':
-        renameDesign();
-        break;
       case 'f':
+        menuSelect();
         openList();
         break;
       case 's':
+        menuSelect();
         save();
         break;
       default:
@@ -476,6 +483,7 @@ public final class ShipEditorView extends ArtEditorWindow {
       message = "the " + ShipSites.kindName(kind) + " has no variants";
       return;
     }
+    menuMove();
     variants.merge(kind, 1, Integer::sum);
     message = "preview: " + pieceFor(pen).name();
   }
@@ -544,7 +552,8 @@ public final class ShipEditorView extends ArtEditorWindow {
   private List<String> items() {
     List<String> items = new ArrayList<>();
     for(ShipArtFile hull : offeredHulls()) {
-      items.add(hull.name() + (isUnsized(hull.size()) ? " (no size)" : ""));
+      // The size travels with the name: the hulls are named <size>-<n> now.
+      items.add(hull.name() + (isUnsized(hull.size()) ? " (no size)" : " (" + hull.size() + ")"));
     }
     return items;
   }
@@ -576,7 +585,7 @@ public final class ShipEditorView extends ArtEditorWindow {
     ShipArtFile hull = offered.get(listIndex);
     ShipSize size = ShipSites.budgetOf(design.type()).size();
     storeCurrent();
-    designs.set(designIndex, new ShipDesign(design.name(), design.type(), hull.name(), design.groups()));
+    designs.set(designIndex, new ShipDesign(design.type(), hull.name(), design.groups()));
     listOpen = false;
     updateTitle();
     boolean adopted = adoptSize(hull.name(), size);
@@ -667,14 +676,13 @@ public final class ShipEditorView extends ArtEditorWindow {
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.putString(0, 0, EditorText.section("Ships", width));
     int row = 1;
-    int nameColumn = shipNameColumn(width);
     int first = Math.max(0, designIndex - 5);
     for(int i = first; i < designs.size() && i < first + 6 && row < rows; i++, row++) {
       if(i == designIndex) {
         graphics.setForegroundColor(TextColor.ANSI.BLACK);
         graphics.setBackgroundColor(TextColor.ANSI.WHITE);
       }
-      graphics.putString(0, row, shipRow(designs.get(i), nameColumn, width));
+      graphics.putString(0, row, shipRow(designs.get(i), width));
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
     }
@@ -725,21 +733,9 @@ public final class ShipEditorView extends ArtEditorWindow {
    * The width of the name column of the ships: the longest name, always leaving
    * room for the type bracket so the type column does not jump.
    */
-  private int shipNameColumn(int width) {
-    int names = 0;
-    int types = 0;
-    for(ShipDesign other : designs) {
-      names = Math.max(names, EditorText.width(other.name()));
-      types = Math.max(types, other.type().isEmpty() ? 0 : EditorText.width(other.type()) + 3);
-    }
-    return Math.min(names, Math.max(1, width - types));
-  }
-
-  /** A ship as the panel lists it: the name and its type, each in its own column. */
-  private static String shipRow(ShipDesign design, int nameColumn, int width) {
-    String name = EditorText.cut(EditorText.padRight(design.name(), nameColumn), nameColumn);
-    String text = design.type().isEmpty() ? name : name + " [" + design.type() + "]";
-    return EditorText.padRight(EditorText.cut(text, width), width);
+  /** A ship as the panel lists it: its game type (the header of its section). */
+  private static String shipRow(ShipDesign design, int width) {
+    return EditorText.padRight(EditorText.cut(design.type(), width), width);
   }
 
   /** The width of the name column of the elements, fixed for every row. */
@@ -901,7 +897,7 @@ public final class ShipEditorView extends ArtEditorWindow {
   private String keysLine() {
     ShipDesign design = design();
     return "[arrows] or hjkl move · space paint/erase · [n/p] element · [1-9] pick · [v] variant"
-        + " · [t] rename · [f] frame" + (design == null ? "" : " (" + design.chassis() + ")")
+        + " · [f] frame" + (design == null ? "" : " (" + design.chassis() + ")")
         + " · [s] save · [TAB] type · [ESC] exit";
   }
 

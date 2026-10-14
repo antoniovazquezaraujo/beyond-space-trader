@@ -43,7 +43,7 @@ class ShipRendererTest {
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader(
         "[Pulse Laser]\nkey=A\ncolor=red\nA\n[Beam Laser]\nkey=A\ncolor=cyan\nB\n"
         + "[Engine]\nkey=M\ncolor=white\nM\n"));
-    ShipDesign design = new ShipDesign("nave", "Wasp", "uno",
+    ShipDesign design = new ShipDesign("Wasp", "uno",
         List.of(new ShipDesign.LetterGroup('A', 0, 0, 3), new ShipDesign.LetterGroup('M', 4, 0, 1)));
     ShipPicture picture = ShipRenderer.draw(design, chassis(CHASSIS), pieces,
         List.of("Beam Laser", "Pulse Laser", "Engine"), 0);
@@ -59,7 +59,7 @@ class ShipRendererTest {
   @Test
   void drawsTheCargoGaugeWithoutAPiece() throws IOException {
     List<ShipArtFile> pieces = ShipArtFile.parse(new StringReader("[Cargo Gauge]\nkey=B\ncolor=green\n.\n"));
-    ShipDesign design = new ShipDesign("nave", "Wasp", "uno", List.of(new ShipDesign.LetterGroup('B', 0, 0, 9)));
+    ShipDesign design = new ShipDesign("Wasp", "uno", List.of(new ShipDesign.LetterGroup('B', 0, 0, 9)));
     ShipPicture picture = ShipRenderer.draw(design, chassis(CHASSIS), pieces, List.of(), 10);
 
     assertEquals("⣿⣀", text(picture, 0, 0, 2), "braille: one dot per bay (ten)");
@@ -68,7 +68,7 @@ class ShipRendererTest {
 
   @Test
   void leavesTheChassisWhenAnItemHasNoArt() throws IOException {
-    ShipDesign design = new ShipDesign("nave", "Wasp", "uno", List.of(new ShipDesign.LetterGroup('A', 0, 0, 1)));
+    ShipDesign design = new ShipDesign("Wasp", "uno", List.of(new ShipDesign.LetterGroup('A', 0, 0, 1)));
     ShipPicture picture = ShipRenderer.draw(design, chassis(CHASSIS), List.of(), List.of("Pulse Laser"), 0);
 
     assertEquals('x', picture.at(0, 0).codePoint(), "nothing to draw");
@@ -115,7 +115,7 @@ class ShipRendererTest {
   }
 
   private static ShipDesign design() {
-    return new ShipDesign("nave", "Wasp", "uno", List.of());
+    return new ShipDesign("Wasp", "uno", List.of());
   }
 
   /** The glyphs of a run of the picture, left to right. */

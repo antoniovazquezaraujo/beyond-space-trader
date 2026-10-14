@@ -43,13 +43,21 @@ Presentador):
 
 ### Principios de diseño
 
-* **MVP estricto:** los presentadores orquestan el modelo y las vistas hablan con
-  ellos a través de interfaces (`*View`) y modelos de vista (`*ViewModel`). Todo
-  se prueba sin abrir una ventana.
+* **MVP en las pantallas:** los presentadores orquestan el modelo y las vistas
+  hablan con ellos a través de interfaces (`*View`) y modelos de vista
+  (`*ViewModel`). Todo se prueba sin abrir una ventana.
 * **El modelo no conoce la UI:** `spacetrader.*` es la lógica del juego (reglas,
-  comercio, encuentros, universo) y no depende de Lanterna.
+  comercio, encuentros, universo) y depende solo de puertos neutros
+  (`org.gts.bst.ports`); no conoce Lanterna ni las vistas.
 * **La UI vive en `org.gts.bst.*`:** las interfaces de vista y los view models en
   `org.gts.bst.view`; el renderizado Lanterna en `org.gts.bst.lanterna`.
+* **El sonido también es un puerto:** los sonidos se piden con
+  `org.gts.bst.ports.SoundService` (`SoundEffect`, `AmbienceKey`, `MusicTheme`)
+  y salen de los WAV empaquetados en el jar (`src/main/resources/sounds/`,
+  todos opcionales), mezclados por `org.gts.bst.audio.SampledSound`. Sin
+  dispositivo de audio el juego arranca en silencio (`SoundService.NONE`), y el
+  jugador puede apagarlo en `F8` o con `--mute`. Ver
+  [ADR 0007](adr/0007-audio-por-muestras.md) y [sounds.md](sounds.md).
 * **Una sola ventana, paneles dentro:** el mapa (carta local/galáctica) es el eje
   de la pantalla y el panel contextual cambia con la actividad (comercio, banco,
   astillero, misiones, periódico, encuentro...).
@@ -66,6 +74,8 @@ Presentador):
   piezas y naves), los glifos y colores, y los editores (compositor).
 * **[Encuentros (`encounters.md`)](encounters.md):** todo lo que puede pasar en un
   encuentro, acción por acción y regla por regla.
+* **[Sonido (`sounds.md`)](sounds.md):** los samples dentro del jar, sus claves y
+  variantes, el formato canónico y el conversor.
 * **[Decisiones de arquitectura (`adr/`)](adr/README.md):** los ADR numerados
   (`0001`…) que fijan las decisiones de diseño; no se reescriben, se sustituyen.
 * **[Proceso de release (`release/Release_Process.md`)](release/Release_Process.md):**
@@ -84,9 +94,14 @@ el modelo está desacoplado de las vistas.
 - [x] Sustituir el build de NetBeans/Ant por Maven y eliminar JNLP/WebStart
 - [x] Refactorizar hacia Model-View-Presenter
 - [x] Portar la UI a Lanterna y eliminar el front-end Swing/JWinForms
-- [x] Paquete autónomo con `jlink` y workflow de release (zips de Linux y Windows)
-- [ ] Renderizador de naves: dibujar las naves del juego a partir del arte de
-      `ships/` (el compositor y los formatos ya están)
+- [x] Paquete autónomo con `jlink`, releases en GitHub (zips de Linux y Windows), Snap Store e itch.io
+- [x] Renderizador de naves: las naves se dibujan con el arte editable de `ships/`
+      en las pantallas y en la escena de los encuentros
+- [x] Compositor de naves y raíles del editor (los 17 tipos con sus cascos y
+      piezas, validados en CI)
+- [x] Descomponer `Game` por áreas (#46): Universe (#147), precios y comercio
+      (#148), noticias (#149), misiones y eventos (#150), llegada (#151),
+      serialización (#152) y viaje/encuentros (#229)
 
 ---
 
@@ -95,8 +110,8 @@ el modelo está desacoplado de las vistas.
 Requiere **JDK 17** y **Maven 3.9+**.
 
 ```bash
-mvn package                    # compila el jar
-./run.sh                       # compila y arranca la interfaz de terminal
+mvn clean package -DskipTests  # compila el paquete autónomo (output/BeyondSpaceTrader)
+./run.sh                       # arranca lo compilado (no compila)
 ./run.sh --lang es             # ... y arranca en español
 mvn verify                     # tests
 mvn -B -ntp -Pquality verify   # lo que corre la CI: tests + SpotBugs

@@ -22,13 +22,15 @@ import spacetrader.enums.StarSystemId;
 /**
  * Decides the encounters of a trip: who appears (pirates, police, traders, famous
  * captains, the quest ships and the very rare ones) and how they start. It only
- * generates: the ships and the encounter state stay in the game.
+ * generates: the ships and the encounter state stay in the game. The generator
+ * asks the game through the narrow {@link EncounterContext} and never holds a
+ * reference back to it.
  */
 public final class EncounterGenerator {
-  private final Game game;
+  private final EncounterContext context;
 
-  public EncounterGenerator(Game game) {
-    this.game = game;
+  public EncounterGenerator(EncounterContext context) {
+    this.context = context;
   }
 
   /** Looks for an encounter during a trip; true when one has to be shown. */
@@ -40,32 +42,32 @@ public final class EncounterGenerator {
   private boolean nonRandom() {
     boolean showEncounter = false;
     // Encounter with space monster
-    if(game.getClicks() == 1 && game.WarpSystem().Id() == StarSystemId.Acamar && game.getQuestStatusSpaceMonster() == SpecialEvent.StatusSpaceMonsterAtAcamar) {
-      game.encounter().setOpponent(game.SpaceMonster());
-      game.encounter().setEncounterType(game.Commander().getShip().Cloaked() ? EncounterType.SpaceMonsterIgnore : EncounterType.SpaceMonsterAttack);
+    if(context.getClicks() == 1 && context.WarpSystem().Id() == StarSystemId.Acamar && context.getQuestStatusSpaceMonster() == SpecialEvent.StatusSpaceMonsterAtAcamar) {
+      context.encounter().setOpponent(context.SpaceMonster());
+      context.encounter().setEncounterType(context.Commander().getShip().Cloaked() ? EncounterType.SpaceMonsterIgnore : EncounterType.SpaceMonsterAttack);
       showEncounter = true;
-    } else if(game.getArrivedViaWormhole() && game.getClicks() == 20 && game.WarpSystem().SpecialEventType() != SpecialEventType.NA
-        && game.WarpSystem().SpecialEvent().Type() == SpecialEventType.ScarabDestroyed
-        && game.getQuestStatusScarab() == SpecialEvent.StatusScarabHunting) {
+    } else if(context.getArrivedViaWormhole() && context.getClicks() == 20 && context.WarpSystem().SpecialEventType() != SpecialEventType.NA
+        && context.WarpSystem().SpecialEvent().Type() == SpecialEventType.ScarabDestroyed
+        && context.getQuestStatusScarab() == SpecialEvent.StatusScarabHunting) {
       // Encounter with the stolen Scarab
-      game.encounter().setOpponent(game.Scarab());
-      game.encounter().setEncounterType(game.Commander().getShip().Cloaked() ? EncounterType.ScarabIgnore : EncounterType.ScarabAttack);
+      context.encounter().setOpponent(context.Scarab());
+      context.encounter().setEncounterType(context.Commander().getShip().Cloaked() ? EncounterType.ScarabIgnore : EncounterType.ScarabAttack);
       showEncounter = true;
-    } else if(game.getClicks() == 1 && game.WarpSystem().Id() == StarSystemId.Zalkon && game.getQuestStatusDragonfly() == SpecialEvent.StatusDragonflyFlyZalkon) {
+    } else if(context.getClicks() == 1 && context.WarpSystem().Id() == StarSystemId.Zalkon && context.getQuestStatusDragonfly() == SpecialEvent.StatusDragonflyFlyZalkon) {
       // Encounter with stolen Dragonfly
-      game.encounter().setOpponent(game.Dragonfly());
-      game.encounter().setEncounterType(game.Commander().getShip().Cloaked() ? EncounterType.DragonflyIgnore : EncounterType.DragonflyAttack);
+      context.encounter().setOpponent(context.Dragonfly());
+      context.encounter().setEncounterType(context.Commander().getShip().Cloaked() ? EncounterType.DragonflyIgnore : EncounterType.DragonflyAttack);
       showEncounter = true;
-    } else if(game.getClicks() == 1 && game.WarpSystem().Id() == StarSystemId.Qonos && game.getQuestStatusPrincess() == SpecialEvent.StatusPrincessFlyQonos) {
+    } else if(context.getClicks() == 1 && context.WarpSystem().Id() == StarSystemId.Qonos && context.getQuestStatusPrincess() == SpecialEvent.StatusPrincessFlyQonos) {
       // Encounter with kidnappers in the Scorpion
-      game.encounter().setOpponent(game.Scorpion());
-      game.encounter().setEncounterType(game.Commander().getShip().Cloaked() ? EncounterType.ScorpionIgnore : EncounterType.ScorpionAttack);
+      context.encounter().setOpponent(context.Scorpion());
+      context.encounter().setEncounterType(context.Commander().getShip().Cloaked() ? EncounterType.ScorpionIgnore : EncounterType.ScorpionAttack);
       showEncounter = true;
-    } else if(game.getClicks() == 1 && game.encounter().getJustLootedMarie()) {
+    } else if(context.getClicks() == 1 && context.encounter().getJustLootedMarie()) {
       // ah, just when you thought you were gonna get away with it...
       generateOpponent(OpponentType.Police);
-      game.encounter().setEncounterType(EncounterType.MarieCelestePolice);
-      game.encounter().setJustLootedMarie(false);
+      context.encounter().setEncounterType(EncounterType.MarieCelestePolice);
+      context.encounter().setJustLootedMarie(false);
       showEncounter = true;
     }
     return showEncounter;
@@ -75,26 +77,26 @@ public final class EncounterGenerator {
     boolean showEncounter = false;
     if(mantis) {
       generateOpponent(OpponentType.Mantis);
-      game.encounter().setEncounterType(EncounterType.PirateAttack);
+      context.encounter().setEncounterType(EncounterType.PirateAttack);
     } else {
       generateOpponent(OpponentType.Pirate);
       // If you have a cloak, they don't see you
-      if(game.Commander().getShip().Cloaked()) {
-        game.encounter().setEncounterType(EncounterType.PirateIgnore);
-      } else if(game.encounter().getOpponent().Type().CastToInt() > game.Commander().getShip().Type().CastToInt()
-          || game.encounter().getOpponent().Type().CastToInt() >= ShipType.Grasshopper.CastToInt()
-          || Functions.GetRandom(Consts.ReputationScoreElite) > (game.Commander().getReputationScore() * 4)
-          / (1 + game.encounter().getOpponent().Type().CastToInt())) {
+      if(context.Commander().getShip().Cloaked()) {
+        context.encounter().setEncounterType(EncounterType.PirateIgnore);
+      } else if(context.encounter().getOpponent().Type().CastToInt() > context.Commander().getShip().Type().CastToInt()
+          || context.encounter().getOpponent().Type().CastToInt() >= ShipType.Grasshopper.CastToInt()
+          || Functions.GetRandom(Consts.ReputationScoreElite) > (context.Commander().getReputationScore() * 4)
+          / (1 + context.encounter().getOpponent().Type().CastToInt())) {
         // Pirates will mostly attack, but they are cowardly: if your rep is too high, they tend to flee
         // if Pirates are in a better ship, they won't flee, even if you have a very scary reputation.
-        game.encounter().setEncounterType(EncounterType.PirateAttack);
+        context.encounter().setEncounterType(EncounterType.PirateAttack);
       } else {
-        game.encounter().setEncounterType(EncounterType.PirateFlee);
+        context.encounter().setEncounterType(EncounterType.PirateFlee);
       }
     }
     // If they ignore you or flee and you can't see them, the encounter doesn't take place
     // If you automatically don't want to confront someone who ignores you, the encounter may not take place
-    if(game.encounter().getEncounterType() == EncounterType.PirateAttack || !(game.encounter().getOpponent().Cloaked() || game.Options().getAlwaysIgnorePirates())) {
+    if(context.encounter().getEncounterType() == EncounterType.PirateAttack || !(context.encounter().getOpponent().Cloaked() || context.Options().getAlwaysIgnorePirates())) {
       showEncounter = true;
     }
     return showEncounter;
@@ -104,41 +106,41 @@ public final class EncounterGenerator {
     boolean showEncounter = false;
     generateOpponent(OpponentType.Police);
     // If you are cloaked, they don't see you
-    game.encounter().setEncounterType(EncounterType.PoliceIgnore);
-    if(!game.Commander().getShip().Cloaked()) {
-      if(game.Commander().getPoliceRecordScore() < Consts.PoliceRecordScoreDubious) {
+    context.encounter().setEncounterType(EncounterType.PoliceIgnore);
+    if(!context.Commander().getShip().Cloaked()) {
+      if(context.Commander().getPoliceRecordScore() < Consts.PoliceRecordScoreDubious) {
         // If you're a criminal, the police will tend to attack
         // JAF - fixed this; there was code that didn't do anything.
         // if you're suddenly stuck in a lousy ship, Police won't flee even if you have a fearsome reputation.
-        if(game.encounter().getOpponent().WeaponStrength() > 0
-            && (game.Commander().getReputationScore() < Consts.ReputationScoreAverage
-            || Functions.GetRandom(Consts.ReputationScoreElite) > (game.Commander().getReputationScore() / (1 + game.encounter().getOpponent().Type().CastToInt())))
-            || game.encounter().getOpponent().Type().CastToInt() > game.Commander().getShip().Type().CastToInt()) {
-          if(game.Commander().getPoliceRecordScore() >= Consts.PoliceRecordScoreCriminal) {
-            game.encounter().setEncounterType(EncounterType.PoliceSurrender);
+        if(context.encounter().getOpponent().WeaponStrength() > 0
+            && (context.Commander().getReputationScore() < Consts.ReputationScoreAverage
+            || Functions.GetRandom(Consts.ReputationScoreElite) > (context.Commander().getReputationScore() / (1 + context.encounter().getOpponent().Type().CastToInt())))
+            || context.encounter().getOpponent().Type().CastToInt() > context.Commander().getShip().Type().CastToInt()) {
+          if(context.Commander().getPoliceRecordScore() >= Consts.PoliceRecordScoreCriminal) {
+            context.encounter().setEncounterType(EncounterType.PoliceSurrender);
           } else {
-            game.encounter().setEncounterType(EncounterType.PoliceAttack);
+            context.encounter().setEncounterType(EncounterType.PoliceAttack);
           }
-        } else if(game.encounter().getOpponent().Cloaked()) {
-          game.encounter().setEncounterType(EncounterType.PoliceIgnore);
+        } else if(context.encounter().getOpponent().Cloaked()) {
+          context.encounter().setEncounterType(EncounterType.PoliceIgnore);
         } else {
-          game.encounter().setEncounterType(EncounterType.PoliceFlee);
+          context.encounter().setEncounterType(EncounterType.PoliceFlee);
         }
-      } else if(!game.encounter().getInspected()
-          && (game.Commander().getPoliceRecordScore() < Consts.PoliceRecordScoreClean
-          || (game.Commander().getPoliceRecordScore() < Consts.PoliceRecordScoreLawful && Functions.GetRandom(12 - game.Difficulty().CastToInt()) < 1)
-          || (game.Commander().getPoliceRecordScore() >= Consts.PoliceRecordScoreLawful && Functions.GetRandom(40) == 0))) {
+      } else if(!context.encounter().getInspected()
+          && (context.Commander().getPoliceRecordScore() < Consts.PoliceRecordScoreClean
+          || (context.Commander().getPoliceRecordScore() < Consts.PoliceRecordScoreLawful && Functions.GetRandom(12 - context.Difficulty().CastToInt()) < 1)
+          || (context.Commander().getPoliceRecordScore() >= Consts.PoliceRecordScoreLawful && Functions.GetRandom(40) == 0))) {
         // If you're reputation is dubious, the police will inspect you
         // If your record is clean, the police will inspect you with a chance of 10% on Normal
         // If your record indicates you are a lawful trader, the chance on inspection drops to 2.5%
-        game.encounter().setEncounterType(EncounterType.PoliceInspect);
-        game.encounter().setInspected(true);
+        context.encounter().setEncounterType(EncounterType.PoliceInspect);
+        context.encounter().setInspected(true);
       }
     }
     // If they ignore you or flee and you can't see them, the encounter doesn't take place
     // If you automatically don't want to confront someone who ignores you, the encounter may not take place. Otherwise it will - JAF
-    if(game.encounter().getEncounterType() == EncounterType.PoliceAttack || game.encounter().getEncounterType() == EncounterType.PoliceInspect
-        || !(game.encounter().getOpponent().Cloaked() || game.Options().getAlwaysIgnorePolice())) {
+    if(context.encounter().getEncounterType() == EncounterType.PoliceAttack || context.encounter().getEncounterType() == EncounterType.PoliceInspect
+        || !(context.encounter().getOpponent().Cloaked() || context.Options().getAlwaysIgnorePolice())) {
       showEncounter = true;
     }
     return showEncounter;
@@ -150,32 +152,32 @@ public final class EncounterGenerator {
     boolean pirate = false;
     boolean police = false;
     boolean trader = false;
-    if(game.WarpSystem().Id() == StarSystemId.Gemulon && game.getQuestStatusGemulon() == SpecialEvent.StatusGemulonTooLate) {
+    if(context.WarpSystem().Id() == StarSystemId.Gemulon && context.getQuestStatusGemulon() == SpecialEvent.StatusGemulonTooLate) {
       if(Functions.GetRandom(10) > 4) {
         mantis = true;
       }
     } else {
       // Check if it is time for an encounter
-      int encounter = Functions.GetRandom(44 - (2 * game.Difficulty().CastToInt()));
-      int policeModifier = Math.max(1, 3 - PoliceRecord.GetPoliceRecordFromScore(game.Commander().getPoliceRecordScore()).Type().CastToInt());
+      int encounter = Functions.GetRandom(44 - (2 * context.Difficulty().CastToInt()));
+      int policeModifier = Math.max(1, 3 - PoliceRecord.GetPoliceRecordFromScore(context.Commander().getPoliceRecordScore()).Type().CastToInt());
       // encounters are half as likely if you're in a flea.
-      if(game.Commander().getShip().Type() == ShipType.Flea) {
+      if(context.Commander().getShip().Type() == ShipType.Flea) {
         encounter *= 2;
       }
-      if(encounter < game.WarpSystem().PoliticalSystem().ActivityPirates().CastToInt()) { // When you are already raided, other pirates have little to gain
-        pirate = !game.encounter().getRaided();
-      } else if(encounter < game.WarpSystem().PoliticalSystem().ActivityPirates().CastToInt() + game.WarpSystem().PoliticalSystem().ActivityPolice().CastToInt() * policeModifier) {
+      if(encounter < context.WarpSystem().PoliticalSystem().ActivityPirates().CastToInt()) { // When you are already raided, other pirates have little to gain
+        pirate = !context.encounter().getRaided();
+      } else if(encounter < context.WarpSystem().PoliticalSystem().ActivityPirates().CastToInt() + context.WarpSystem().PoliticalSystem().ActivityPolice().CastToInt() * policeModifier) {
         // policeModifier adapts itself to your criminal record: you'll encounter more police if you are a hardened criminal.
         police = true;
       } else if(encounter
-          < game.WarpSystem().PoliticalSystem().ActivityPirates().CastToInt()
-          + game.WarpSystem().PoliticalSystem().ActivityPolice().CastToInt() * policeModifier
-          + game.WarpSystem().PoliticalSystem().ActivityTraders().CastToInt()) {
+          < context.WarpSystem().PoliticalSystem().ActivityPirates().CastToInt()
+          + context.WarpSystem().PoliticalSystem().ActivityPolice().CastToInt() * policeModifier
+          + context.WarpSystem().PoliticalSystem().ActivityTraders().CastToInt()) {
         trader = true;
-      } else if(game.Commander().getShip().WildOnBoard() && game.WarpSystem().Id() == StarSystemId.Kravat) {
+      } else if(context.Commander().getShip().WildOnBoard() && context.WarpSystem().Id() == StarSystemId.Kravat) {
         // if you're coming in to Kravat & you have Wild onboard, there'll be swarms o' cops.
-        police = Functions.GetRandom(100) < 100 / Math.max(2, Math.min(4, 5 - game.Difficulty().CastToInt()));
-      } else if(game.Commander().getShip().ArtifactOnBoard() && Functions.GetRandom(20) <= 3) {
+        police = Functions.GetRandom(100) < 100 / Math.max(2, Math.min(4, 5 - context.Difficulty().CastToInt()));
+      } else if(context.Commander().getShip().ArtifactOnBoard() && Functions.GetRandom(20) <= 3) {
         mantis = true;
       }
     }
@@ -185,7 +187,7 @@ public final class EncounterGenerator {
       showEncounter = pirateEncounter(mantis);
     } else if(trader) {
       showEncounter = traderEncounter();
-    } else if(game.Commander().getDays() > 10 && Functions.GetRandom(1000) < game.getChanceOfVeryRareEncounter() && game.VeryRareEncounters().size() > 0) {
+    } else if(context.Commander().getDays() > 10 && Functions.GetRandom(1000) < context.getChanceOfVeryRareEncounter() && context.VeryRareEncounters().size() > 0) {
       showEncounter = veryRareEncounter();
     }
     return showEncounter;
@@ -195,26 +197,26 @@ public final class EncounterGenerator {
     boolean showEncounter = false;
     generateOpponent(OpponentType.Trader);
     // If you are cloaked, they don't see you
-    game.encounter().setEncounterType(EncounterType.TraderIgnore);
-    if(!game.Commander().getShip().Cloaked()) {
+    context.encounter().setEncounterType(EncounterType.TraderIgnore);
+    if(!context.Commander().getShip().Cloaked()) {
       // If you're a criminal, traders tend to flee if you've got at least some reputation
-      if(!game.Commander().getShip().Cloaked() && game.Commander().getPoliceRecordScore() <= Consts.PoliceRecordScoreCriminal
-          && Functions.GetRandom(Consts.ReputationScoreElite) <= (game.Commander().getReputationScore() * 10) / (1 + game.encounter().getOpponent().Type().CastToInt())) {
-        game.encounter().setEncounterType(EncounterType.TraderFlee);
-      } else if(Functions.GetRandom(1000) < game.getChanceOfTradeInOrbit()) { // Will there be trade in orbit?
-        if(game.Commander().getShip().FreeCargoBays() > 0 && game.encounter().getOpponent().HasTradeableItems()) {
-          game.encounter().setEncounterType(EncounterType.TraderSell);
-        } else if(game.Commander().getShip().HasTradeableItems()) {
+      if(!context.Commander().getShip().Cloaked() && context.Commander().getPoliceRecordScore() <= Consts.PoliceRecordScoreCriminal
+          && Functions.GetRandom(Consts.ReputationScoreElite) <= (context.Commander().getReputationScore() * 10) / (1 + context.encounter().getOpponent().Type().CastToInt())) {
+        context.encounter().setEncounterType(EncounterType.TraderFlee);
+      } else if(Functions.GetRandom(1000) < context.getChanceOfTradeInOrbit()) { // Will there be trade in orbit?
+        if(context.Commander().getShip().FreeCargoBays() > 0 && context.encounter().getOpponent().HasTradeableItems()) {
+          context.encounter().setEncounterType(EncounterType.TraderSell);
+        } else if(context.Commander().getShip().HasTradeableItems()) {
           // we fudge on whether the trader has capacity to carry the stuff he's buying.
-          game.encounter().setEncounterType(EncounterType.TraderBuy);
+          context.encounter().setEncounterType(EncounterType.TraderBuy);
         }
       }
     }
     // If they ignore you or flee and you can't see them, the encounter doesn't take place
     // If you automatically don't want to confront someone who ignores you, the encounter may not take place; otherwise it will.
-    if(!game.encounter().getOpponent().Cloaked()
-        && !(game.Options().getAlwaysIgnoreTraders() && (game.encounter().getEncounterType() == EncounterType.TraderIgnore || game.encounter().getEncounterType() == EncounterType.TraderFlee))
-        && !((game.encounter().getEncounterType() == EncounterType.TraderBuy || game.encounter().getEncounterType() == EncounterType.TraderSell) && game.Options().getAlwaysIgnoreTradeInOrbit())) {
+    if(!context.encounter().getOpponent().Cloaked()
+        && !(context.Options().getAlwaysIgnoreTraders() && (context.encounter().getEncounterType() == EncounterType.TraderIgnore || context.encounter().getEncounterType() == EncounterType.TraderFlee))
+        && !((context.encounter().getEncounterType() == EncounterType.TraderBuy || context.encounter().getEncounterType() == EncounterType.TraderSell) && context.Options().getAlwaysIgnoreTradeInOrbit())) {
       showEncounter = true;
     }
     return showEncounter;
@@ -229,59 +231,59 @@ public final class EncounterGenerator {
     // 4. Captain Huie will trade your Military Laser for points in Trading.
     // 5. Encounter an out-of-date bottle of Captain Marmoset's Skill Tonic. This will affect skills depending on game difficulty level.
     // 6. Encounter a good bottle of Captain Marmoset's Skill Tonic, which will invoke IncreaseRandomSkill one or two times, depending on game difficulty.
-    switch(game.VeryRareEncounters().get(Functions.GetRandom(game.VeryRareEncounters().size()))) {
+    switch(context.VeryRareEncounters().get(Functions.GetRandom(context.VeryRareEncounters().size()))) {
       case MarieCeleste:
         // Marie Celeste cannot be at Acamar, Qonos, or Zalkon as it may cause problems with the Space Monster, Scorpion, or Dragonfly
-        if(game.getClicks() > 1 && game.Commander().getCurrentSystemId() != StarSystemId.Acamar
-            && game.Commander().getCurrentSystemId() != StarSystemId.Zalkon
-            && game.Commander().getCurrentSystemId() != StarSystemId.Qonos) {
-          game.VeryRareEncounters().remove(VeryRareEncounter.MarieCeleste);
-          game.encounter().setEncounterType(EncounterType.MarieCeleste);
+        if(context.getClicks() > 1 && context.Commander().getCurrentSystemId() != StarSystemId.Acamar
+            && context.Commander().getCurrentSystemId() != StarSystemId.Zalkon
+            && context.Commander().getCurrentSystemId() != StarSystemId.Qonos) {
+          context.VeryRareEncounters().remove(VeryRareEncounter.MarieCeleste);
+          context.encounter().setEncounterType(EncounterType.MarieCeleste);
           generateOpponent(OpponentType.Trader);
-          for(int i = 0; i < game.encounter().getOpponent().Cargo().length; i++) {
-            game.encounter().getOpponent().Cargo()[i] = 0;
+          for(int i = 0; i < context.encounter().getOpponent().Cargo().length; i++) {
+            context.encounter().getOpponent().Cargo()[i] = 0;
           }
-          game.encounter().getOpponent().Cargo()[TradeItemType.Narcotics.CastToInt()] = Math.min(game.encounter().getOpponent().CargoBays(), 5);
+          context.encounter().getOpponent().Cargo()[TradeItemType.Narcotics.CastToInt()] = Math.min(context.encounter().getOpponent().CargoBays(), 5);
           showEncounter = true;
         }
         break;
       case CaptainAhab:
-        if(game.Commander().getShip().HasShield(ShieldType.Reflective) && game.Commander().Pilot() < 10
-            && game.Commander().getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
-          game.VeryRareEncounters().remove(VeryRareEncounter.CaptainAhab);
-          game.encounter().setEncounterType(EncounterType.CaptainAhab);
+        if(context.Commander().getShip().HasShield(ShieldType.Reflective) && context.Commander().Pilot() < 10
+            && context.Commander().getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
+          context.VeryRareEncounters().remove(VeryRareEncounter.CaptainAhab);
+          context.encounter().setEncounterType(EncounterType.CaptainAhab);
           generateOpponent(OpponentType.FamousCaptain);
           showEncounter = true;
         }
         break;
       case CaptainConrad:
-        if(game.Commander().getShip().HasWeapon(WeaponType.MilitaryLaser, true) && game.Commander().Engineer() < 10
-            && game.Commander().getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
-          game.VeryRareEncounters().remove(VeryRareEncounter.CaptainConrad);
-          game.encounter().setEncounterType(EncounterType.CaptainConrad);
+        if(context.Commander().getShip().HasWeapon(WeaponType.MilitaryLaser, true) && context.Commander().Engineer() < 10
+            && context.Commander().getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
+          context.VeryRareEncounters().remove(VeryRareEncounter.CaptainConrad);
+          context.encounter().setEncounterType(EncounterType.CaptainConrad);
           generateOpponent(OpponentType.FamousCaptain);
 
           showEncounter = true;
         }
         break;
       case CaptainHuie:
-        if(game.Commander().getShip().HasWeapon(WeaponType.MilitaryLaser, true) && game.Commander().Trader() < 10
-            && game.Commander().getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
-          game.VeryRareEncounters().remove(VeryRareEncounter.CaptainHuie);
-          game.encounter().setEncounterType(EncounterType.CaptainHuie);
+        if(context.Commander().getShip().HasWeapon(WeaponType.MilitaryLaser, true) && context.Commander().Trader() < 10
+            && context.Commander().getPoliceRecordScore() > Consts.PoliceRecordScoreCriminal) {
+          context.VeryRareEncounters().remove(VeryRareEncounter.CaptainHuie);
+          context.encounter().setEncounterType(EncounterType.CaptainHuie);
           generateOpponent(OpponentType.FamousCaptain);
           showEncounter = true;
         }
         break;
       case BottleOld:
-        game.VeryRareEncounters().remove(VeryRareEncounter.BottleOld);
-        game.encounter().setEncounterType(EncounterType.BottleOld);
+        context.VeryRareEncounters().remove(VeryRareEncounter.BottleOld);
+        context.encounter().setEncounterType(EncounterType.BottleOld);
         generateOpponent(OpponentType.Bottle);
         showEncounter = true;
         break;
       case BottleGood:
-        game.VeryRareEncounters().remove(VeryRareEncounter.BottleGood);
-        game.encounter().setEncounterType(EncounterType.BottleGood);
+        context.VeryRareEncounters().remove(VeryRareEncounter.BottleGood);
+        context.encounter().setEncounterType(EncounterType.BottleGood);
         generateOpponent(OpponentType.Bottle);
         showEncounter = true;
         break;
@@ -290,6 +292,6 @@ public final class EncounterGenerator {
   }
 
   private void generateOpponent(OpponentType oppType) {
-    game.encounter().setOpponent(new Ship(oppType));
+    context.encounter().setOpponent(new Ship(oppType));
   }
 }

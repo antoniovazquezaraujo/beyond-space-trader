@@ -16,7 +16,7 @@ import org.gts.bst.ship.equip.Gadget;
 import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.ship.equip.Shield;
 import org.gts.bst.ship.equip.Weapon;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.EquipmentInfoViewModel;
 import org.gts.bst.view.EquipmentView;
 import org.gts.bst.view.EquipmentViewModel;
@@ -38,7 +38,6 @@ public class EquipmentPresenter {
 
   private final Game game;
   private final Commander cmdr;
-  private final Ship ship;
   private final EquipmentView view;
   private Equipment selected = null;
   private boolean sellSideSelected = false;
@@ -47,8 +46,12 @@ public class EquipmentPresenter {
   public EquipmentPresenter(Game game, EquipmentView view) {
     this.game = game;
     this.cmdr = game.Commander();
-    this.ship = cmdr.getShip();
     this.view = view;
+  }
+
+  /** The ship in flight: read live, so a trade always shows the new one. */
+  private Ship ship() {
+    return cmdr.getShip();
   }
 
   public void update() {
@@ -65,7 +68,7 @@ public class EquipmentPresenter {
     selectedSlot = -1;
     if(index >= 0) {
       if(sellSide) {
-        Equipment[] equipment = ship.EquipmentByType(type);
+        Equipment[] equipment = ship().EquipmentByType(type);
         if(index < equipment.length) {
           selected = equipment[index];
           selectedSlot = index;
@@ -88,7 +91,7 @@ public class EquipmentPresenter {
       return false;
     }
     EquipmentType baseType = selected.EquipmentType();
-    if(baseType == EquipmentType.Gadget && ship.HasGadget(((Gadget)selected).Type())
+    if(baseType == EquipmentType.Gadget && ship().HasGadget(((Gadget)selected).Type())
         && ((Gadget)selected).Type() != GadgetType.ExtraCargoBays) {
       game.Dialogs().alert(AlertType.EquipmentAlreadyOwn);
       return false;
@@ -101,9 +104,9 @@ public class EquipmentPresenter {
       game.Dialogs().alert(AlertType.EquipmentIF);
       return false;
     }
-    if((baseType == EquipmentType.Weapon && ship.FreeSlotsWeapon() == 0)
-        || (baseType == EquipmentType.Shield && ship.FreeSlotsShield() == 0)
-        || (baseType == EquipmentType.Gadget && ship.FreeSlotsGadget() == 0)) {
+    if((baseType == EquipmentType.Weapon && ship().FreeSlotsWeapon() == 0)
+        || (baseType == EquipmentType.Shield && ship().FreeSlotsShield() == 0)
+        || (baseType == EquipmentType.Gadget && ship().FreeSlotsGadget() == 0)) {
       game.Dialogs().alert(AlertType.EquipmentNotEnoughSlots);
       return false;
     }
@@ -111,7 +114,7 @@ public class EquipmentPresenter {
         Functions.FormatNumber(selected.Price())) != DialogResult.Yes) {
       return false;
     }
-    ship.AddEquipment(selected);
+    ship().AddEquipment(selected);
     cmdr.setCash(cmdr.getCash() - selected.Price());
     update();
     return true;
@@ -130,12 +133,12 @@ public class EquipmentPresenter {
     }
     if(selected.EquipmentType() == EquipmentType.Gadget
         && (((Gadget)selected).Type() == GadgetType.ExtraCargoBays || ((Gadget)selected).Type() == GadgetType.HiddenCargoBays)
-        && ship.FreeCargoBays() < 5) {
+        && ship().FreeCargoBays() < 5) {
       game.Dialogs().alert(AlertType.EquipmentExtraBaysInUse);
       return false;
     }
     cmdr.setCash(cmdr.getCash() + selected.SellPrice());
-    ship.RemoveEquipment(selected.EquipmentType(), selectedSlot);
+    ship().RemoveEquipment(selected.EquipmentType(), selectedSlot);
     update();
     return true;
   }
@@ -145,9 +148,9 @@ public class EquipmentPresenter {
         names(forSale(EquipmentType.Weapon)),
         names(forSale(EquipmentType.Shield)),
         names(forSale(EquipmentType.Gadget)),
-        equipmentNames(ship.EquipmentByType(EquipmentType.Weapon)),
-        equipmentNames(ship.EquipmentByType(EquipmentType.Shield)),
-        equipmentNames(ship.EquipmentByType(EquipmentType.Gadget)));
+        equipmentNames(ship().EquipmentByType(EquipmentType.Weapon)),
+        equipmentNames(ship().EquipmentByType(EquipmentType.Shield)),
+        equipmentNames(ship().EquipmentByType(EquipmentType.Gadget)));
   }
 
   private EquipmentInfoViewModel info() {
@@ -175,7 +178,9 @@ public class EquipmentPresenter {
         selected.Name(),
         Strings.EquipmentTypes.get(selected.EquipmentType().CastToInt()),
         Strings.EquipmentDescriptions.get(selected.EquipmentType().CastToInt()).get(selected.SubType().asInteger()),
-        Functions.FormatMoney(selected.Price()),
+        // On the sell side the system may not offer the item at all (its tech
+        // level can be lower, and Price() is 0 then): the line carries only the sale.
+        sellSideSelected ? "" : Functions.FormatMoney(selected.Price()),
         Functions.FormatMoney(selected.SellPrice()),
         power,
         charge,

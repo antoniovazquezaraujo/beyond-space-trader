@@ -33,24 +33,27 @@ public class CargoTransferPresenter {
   }
 
   private final Game game;
-  private final Ship ship;
   private final CargoTransferView view;
   private final Mode mode;
 
   public CargoTransferPresenter(Game game, CargoTransferView view, Mode mode) {
     this.game = game;
-    this.ship = game.Commander().getShip();
     this.view = view;
     this.mode = mode;
   }
 
+  /** The ship in flight: read live, so a trade always shows the new one. */
+  private Ship ship() {
+    return game.Commander().getShip();
+  }
+
   public void update() {
-    Ship source = mode == Mode.Plunder ? game.encounter().getOpponent() : ship;
+    Ship source = mode == Mode.Plunder ? game.encounter().getOpponent() : ship();
     List<String> quantities = new ArrayList<>(Consts.TradeItems.size());
     for(int i = 0; i < Consts.TradeItems.size(); i++) {
       quantities.add("" + source.Cargo()[i]);
     }
-    view.render(new CargoTransferViewModel(quantities, ship.FilledCargoBays() + "/" + ship.CargoBays()));
+    view.render(new CargoTransferViewModel(quantities, ship().FilledCargoBays() + "/" + ship().CargoBays()));
   }
 
   /**

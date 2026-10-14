@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import org.gts.bst.difficulty.Difficulty;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import spacetrader.enums.GameEndType;

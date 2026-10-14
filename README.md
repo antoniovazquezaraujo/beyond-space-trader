@@ -11,6 +11,8 @@
 
 <p align="left">
   <a href="https://github.com/antoniovazquezaraujo/beyond-space-trader/releases/latest"><img src="https://img.shields.io/github/v/release/antoniovazquezaraujo/beyond-space-trader?include_prereleases&style=flat-square" alt="Latest release"></a>
+  <a href="https://snapcraft.io/beyond-space-trader-tui"><img src="https://img.shields.io/badge/Snap%20Store-install-E95420?style=flat-square&logo=snapcraft&logoColor=white" alt="Snap Store"></a>
+  <a href="https://avaraujo.itch.io/beyond-space-trader-tui"><img src="https://img.shields.io/badge/itch.io-download-FA5C5C?style=flat-square&logo=itch.io&logoColor=white" alt="itch.io"></a>
   <a href="https://antoniovazquezaraujo.github.io/beyond-space-trader/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-2EA043?style=flat-square&logo=github" alt="Documentation"></a>
   <a href="https://github.com/antoniovazquezaraujo/beyond-space-trader/actions/workflows/build.yml"><img src="https://github.com/antoniovazquezaraujo/beyond-space-trader/actions/workflows/build.yml/badge.svg?branch=develop" alt="Build status (develop)"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square" alt="License: GPL v3"></a>
@@ -38,6 +40,14 @@ Utopia.
 ./bin/beyond-space-trader.sh --lang es
 ```
 
+### Other ways to install
+
+- **Snap Store (Linux):** `sudo snap install beyond-space-trader-tui`. The snap
+  updates itself and keeps its saves and the editable ship art in
+  `~/snap/beyond-space-trader-tui/current/game`.
+- **itch.io:** the same Linux and Windows packages are available at
+  <https://avaraujo.itch.io/beyond-space-trader-tui>.
+
 The game needs a terminal of at least 60×15 (100×30 or more is recommended;
 120×30 fits the encounter scene comfortably).
 
@@ -55,16 +65,17 @@ The game needs a terminal of at least 60×15 (100×30 or more is recommended;
 Requires **JDK 17** and **Maven 3.9+**.
 
 ```bash
-mvn package                   # build the jar
-./run.sh                      # build and run the terminal UI
+mvn clean package -DskipTests # build the self-contained package in output/BeyondSpaceTrader
+./run.sh                      # run what is built (it does not build)
 ./run.sh --lang es            # ... and start it in Spanish
 mvn -B -ntp -Pquality verify  # tests + SpotBugs (what CI runs)
-mvn clean package -DskipTests # self-contained package in output/BeyondSpaceTrader
 ```
 
-`run-fixed-font.sh` is a development helper that starts the game in a terminal
-with a fixed monospace font (kitty, xfce4-terminal or alacritty), so the charts
-keep their proportions whatever the desktop font is.
+`run.sh` only runs the game: it prefers the package in `output/BeyondSpaceTrader`
+(its own Java runtime and ship art) and falls back to the jar. `run-fixed-font.sh`
+and `run-composer.sh` work the same way; the first one starts the game in a
+terminal with a fixed monospace font (kitty, xfce4-terminal or alacritty), so
+the charts keep their proportions whatever the desktop font is.
 
 ## 🧭 Status
 

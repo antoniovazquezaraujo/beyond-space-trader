@@ -16,7 +16,7 @@ import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.view.CommanderView;
 import org.gts.bst.view.CommanderViewModel;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import spacetrader.Consts;

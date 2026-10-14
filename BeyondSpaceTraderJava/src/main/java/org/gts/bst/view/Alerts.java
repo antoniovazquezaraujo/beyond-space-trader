@@ -11,6 +11,7 @@ package org.gts.bst.view;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import org.gts.bst.ports.DialogResult;
 import spacetrader.Strings;
 import spacetrader.enums.AlertType;
 

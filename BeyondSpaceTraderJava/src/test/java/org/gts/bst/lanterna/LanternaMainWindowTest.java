@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.gui2.Interactable;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
@@ -34,15 +35,22 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.gts.bst.difficulty.Difficulty;
+import org.gts.bst.ship.ShipType;
 import org.gts.bst.events.SpecialEventType;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
 import org.gts.bst.presenter.MainPresenter;
+import org.gts.bst.testing.TestSoundService;
 import org.gts.bst.view.Alerts;
-import org.gts.bst.view.DialogResult;
-import org.gts.bst.view.DialogService;
-import org.gts.bst.view.GameWindow;
+import org.gts.bst.ports.AmbienceKey;
+import org.gts.bst.ports.DialogResult;
+import org.gts.bst.ports.DialogService;
+import org.gts.bst.ports.GameWindow;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.view.LanternaDialogService;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -57,6 +65,7 @@ import spacetrader.enums.StarSystemId;
 import spacetrader.Strings;
 import spacetrader.TestDialogService;
 import spacetrader.TradeCalculator;
+import spacetrader.enums.TechLevel;
 
 
 class LanternaMainWindowTest {
@@ -988,6 +997,33 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theEquipmentPanelSaysWhenNothingIsForSale() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      // A system below the tech level of everything for sale: an empty buy list.
+      holder[0].Commander().CurrentSystem().TechLevel(TechLevel.t1);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('e', false, false));
+      gui.updateScreen();
+
+      assertTrue(screenText(screen).contains(Strings.EquipmentNoneForSale), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void theMapKeepsNAndPAsNewsAndPersonnel() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -1158,8 +1194,8 @@ class LanternaMainWindowTest {
 
       String text = screenText(screen);
       assertTrue(text.contains(Strings.ShipCargoLabel), text);
-      assertTrue(text.contains("Machines"), "the last line that fits is drawn: " + text);
-      assertFalse(text.contains("Narcotics"), "the first line that does not fit is hidden: " + text);
+      assertTrue(text.contains("Furs"), "the last line that fits is drawn: " + text);
+      assertFalse(text.contains("Food"), "the first line that does not fit is hidden: " + text);
       assertFalse(text.contains("Robots"), "the rest of the hold is hidden: " + text);
       // Row height - 5 stays reserved: the ship panel occupies the right 50 columns.
       assertTrue(row(screen, 25).substring(50).isBlank(), "nothing is drawn on the reserved row: " + row(screen, 25));
@@ -2126,6 +2162,376 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theMenuAndTheListsPlayTheirMenuSounds() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // The F10 menu: moving plays MENU_MOVE and activating MENU_SELECT.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F10));
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played());
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "moving up sounds too");
+      // Back to the second entry (Options) before activating it.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played(), "the menu entry activates with its sound");
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.OptionsTitle), screenText(screen));
+
+      // The options list moves and toggles with the same pair.
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played());
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "moving up sounds too");
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played());
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+      gui.updateScreen();
+
+      // The trade list moves with the sound too.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played());
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "moving up sounds too");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void thePanelsAndTheQuestListPlayTheirMoveSounds() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // The ship list, the equipment and the personnel panels sound when they move.
+      assertListMovesWithSound(gui, window, sound, 's');
+      assertListMovesWithSound(gui, window, sound, 'e');
+      assertListMovesWithSound(gui, window, sound, 'p');
+
+      // The quests panel has entries and moves and activates with the pair.
+      holder[0].setQuestStatusSpaceMonster(SpecialEvent.StatusSpaceMonsterAtAcamar);
+      holder[0].setQuestStatusMoon(SpecialEvent.StatusMoonBought);
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('q', false, false));
+      gui.updateScreen();
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "the quest list moves with the sound");
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "and up too");
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played(), "a destination activates with the select");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** Opens a list panel, moves down and up, and checks that each step sounds. */
+  private static void assertListMovesWithSound(MultiWindowTextGUI gui, LanternaMainWindow window,
+      TestSoundService sound, char panelKey) throws IOException {
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(panelKey, false, false));
+    gui.updateScreen();
+    sound.clear();
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+    assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "the panel " + panelKey + " sounds moving down");
+    sound.clear();
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowUp));
+    assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "the panel " + panelKey + " sounds moving up");
+    window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Escape));
+    gui.updateScreen();
+  }
+
+  @Test
+  void theSoundOptionTogglesThePreference() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.F8));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionSound, Strings.OptionsOn)), "the sound starts on: " + screenText(screen));
+
+      // p from the first entry wraps to the sound option (the last one).
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertFalse(holder[0].Options().getSound(), "ENTER turns the sound off");
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
+          Strings.OptionSound, Strings.OptionsOff)), screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(holder[0].Options().getSound(), "and ENTER turns it back on");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theChartSoundsWhenTheCursorMovesAndSelects() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      assertEquals(List.of(SoundEffect.CHART_MOVE), sound.played(), "the cursor moving on the map");
+
+      sound.clear();
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(SoundEffect.CHART_SELECT), sound.played(), "tracking the system on the map");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theWarpSoundsWhenTheShipSetsOffNotOnArrival() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      List<StarSystem> atWarp = new ArrayList<>();
+      Game[] holder = new Game[1];
+      // The whole trip (encounters included) resolves inside Warp: at the sound
+      // of the warp the commander must still be in the system of departure.
+      SoundService watched = effect -> {
+        if(effect == SoundEffect.WARP) {
+          atWarp.add(holder[0].Commander().CurrentSystem());
+        }
+        sound.play(effect);
+      };
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, watched);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(),
+          (type, messageArgs) -> DialogResult.Yes);
+      holder[0].setAutoSave(false);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem origin = holder[0].Commander().CurrentSystem();
+      StarSystem target = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != origin && system.DestOk()) {
+          target = system;
+          break;
+        }
+      }
+      assertNotNull(target, "the galaxy must have a reachable system");
+      holder[0].SelectedSystemId(target.Id());
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+
+      assertSame(target, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertEquals(List.of(SoundEffect.WARP), sound.played(), "the trip plays the warp");
+      assertEquals(List.of(origin), atWarp, "the warp sounds when the ship sets off, not on arrival");
+
+      // The Portable Singularity jump sounds at the same moment: on departure.
+      holder[0].setCanSuperWarp(true);
+      StarSystem far = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != holder[0].Commander().CurrentSystem()) {
+          far = system;
+          break;
+        }
+      }
+      assertNotNull(far, "the galaxy must have another system");
+      StarSystem beforeJump = holder[0].Commander().CurrentSystem();
+      holder[0].SelectedSystemId(far.Id());
+      atWarp.clear();
+      sound.clear();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('g', false, false));
+      gui.updateScreen();
+
+      assertSame(far, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertEquals(List.of(beforeJump), atWarp, "the jump sounds when the ship sets off too");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void warpingPlaysTheWarpSound() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].setAutoSave(false);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      StarSystem target = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != current && system.DestOk()) {
+          target = system;
+          break;
+        }
+      }
+      assertNotNull(target, "the galaxy must have a reachable system");
+      holder[0].SelectedSystemId(target.Id());
+      sound.clear();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(' ', false, false));
+      gui.updateScreen();
+
+      assertSame(target, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertEquals(List.of(SoundEffect.WARP), sound.played(), "the trip plays the warp sound");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void everyPanelAsksForItsAmbience() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      window.showTitleScreen();
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      assertEquals(AmbienceKey.TITLE, sound.lastAmbience(), "the title screen has its own ambience");
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('x', false, false));
+      assertEquals(AmbienceKey.NAVIGATION, sound.lastAmbience(), "any key enters the navigation");
+
+      // Every panel asks for its key, and closing it comes back to navigation.
+      assertPanelAmbience(window, sound, new KeyStroke('c', false, false), AmbienceKey.TRADE,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('b', false, false), AmbienceKey.BANK,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('q', false, false), AmbienceKey.QUESTS,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('p', false, false), AmbienceKey.PERSONNEL,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('n', false, false), AmbienceKey.NEWS,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('s', false, false), AmbienceKey.SHIPLIST,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('e', false, false), AmbienceKey.EQUIPMENT,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke('i', false, false), AmbienceKey.COMMANDER,
+          new KeyStroke(' ', false, false));
+      assertPanelAmbience(window, sound, new KeyStroke('v', false, false), AmbienceKey.SHIP,
+          new KeyStroke(' ', false, false));
+      assertPanelAmbience(window, sound, new KeyStroke('a', false, false), AmbienceKey.ABOUT,
+          new KeyStroke(' ', false, false));
+      assertPanelAmbience(window, sound, new KeyStroke(KeyType.F3), AmbienceKey.HIGHSCORES,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke(KeyType.F8), AmbienceKey.OPTIONS,
+          new KeyStroke(KeyType.Escape));
+      assertPanelAmbience(window, sound, new KeyStroke(KeyType.F10), AmbienceKey.MENU,
+          new KeyStroke(KeyType.Escape));
+
+      // The designer needs a shipyard in the current system.
+      StarSystem shipyard = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system.Shipyard() != null) {
+          shipyard = system;
+          break;
+        }
+      }
+      assertNotNull(shipyard, "the universe must have shipyards");
+      holder[0].Commander().CurrentSystem(shipyard);
+      presenter.updateAll();
+      gui.updateScreen();
+      assertPanelAmbience(window, sound, new KeyStroke('d', false, false), AmbienceKey.DESIGNER,
+          new KeyStroke(KeyType.Escape));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  /** Opens a panel with a key, checks its ambience, and closes it with another. */
+  private static void assertPanelAmbience(LanternaMainWindow window, TestSoundService sound, KeyStroke open,
+      AmbienceKey expected, KeyStroke close) {
+    window.asWindow().getFocusedInteractable().handleInput(open);
+    assertEquals(expected, sound.lastAmbience(), "opening asks for " + expected);
+    window.asWindow().getFocusedInteractable().handleInput(close);
+    assertEquals(AmbienceKey.NAVIGATION, sound.lastAmbience(), "closing comes back to navigation");
+  }
+
+  @Test
   void theOptionsNAndPMoveTheSelection() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -2184,12 +2590,13 @@ class LanternaMainWindowTest {
       assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
           Strings.OptionAutoFuel, Strings.OptionsOff)), screenText(screen));
 
-      // p at the first entry wraps up to the last one: ENTER changes the galaxy columns.
+      // p at the first entry wraps up to the last one (the sound): ENTER turns it off.
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('p', false, false));
       window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
       gui.updateScreen();
+      assertFalse(holder[0].Options().getSound(), "p must wrap to the sound option");
       assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
-          Strings.OptionGalaxyColumns, "3")), screenText(screen));
+          Strings.OptionSound, Strings.OptionsOff)), screenText(screen));
       assertTrue(screenText(screen).contains(Functions.StringVars(Strings.OptionsValue,
           Strings.OptionAutoFuel, Strings.OptionsOff)), "p must not toggle the first entry");
 
@@ -2306,6 +2713,159 @@ class LanternaMainWindowTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void theDesignerSaysWhyItCannotConstructOrSave() throws IOException, InterruptedException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().CurrentSystem(firstShipyard(holder[0]));
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('d', false, false));
+      gui.updateScreen();
+
+      // The current ship template has a name; a default one leaves the name empty.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      gui.updateScreen();
+      assertEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerConstruct),
+          "the construct row is dim without a name");
+      assertEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerSave),
+          "and so is the save one");
+
+      // [C] refuses and says why; nothing is built or saved.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.DesignerNeedsName), screenText(screen));
+      assertEquals(ShipType.Gnat, holder[0].Commander().getShip().Type(), "no design was built");
+      assertEquals(1000, holder[0].Commander().getCash());
+
+      // [V] refuses the same way, and no file dialog opens.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.DesignerNeedsName), screenText(screen));
+      assertEquals(1, gui.getWindows().size(), "no file dialog while the name is missing");
+
+      // ENTER on the construct row refuses too.
+      for(int i = 0; i < 10; i++) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      }
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.Enter));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Strings.DesignerNeedsName), screenText(screen));
+
+      // With a name the save is enabled; over the unit limit the construct is not.
+      Thread renamer = new Thread(() -> window.asWindow().getFocusedInteractable()
+          .handleInput(new KeyStroke('r', false, false)));
+      renamer.setDaemon(true);
+      renamer.start();
+      Window dialog = waitForDialog(gui, window.asWindow());
+      type(dialog, "Halcon");
+      dialog.handleInput(new KeyStroke(KeyType.Enter));
+      renamer.join(5000);
+      assertFalse(renamer.isAlive(), "the rename dialog closes with the name accepted");
+
+      // From the construct row around the wrap to the cargo one, and up it goes.
+      for(int i = 0; i < 4; i++) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowDown));
+      }
+      for(int i = 0; i < 200; i++) {
+        window.asWindow().getFocusedInteractable().handleInput(new KeyStroke(KeyType.ArrowRight));
+      }
+      gui.updateScreen();
+
+      String percent = percentFromUnits(screenText(screen));
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains(Functions.StringVars(Strings.DesignerOverUnits, percent)),
+          "the refusal names the percentage: " + screenText(screen));
+      assertEquals(ShipType.Gnat, holder[0].Commander().getShip().Type(), "still nothing built");
+      assertEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerConstruct),
+          "the row stays dim while the design is over the limit");
+      assertNotEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerSave),
+          "the save row is enabled again with a name");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void aValidDesignIsConstructedFromThePanel() throws IOException {
+    String customNameBefore = Strings.ShipNames.get(ShipType.Custom.CastToInt());
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestDialogService dialogs = new TestDialogService();
+      dialogs.setResult(DialogResult.Yes);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), dialogs);
+      holder[0].Commander().setCash(10000000);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      holder[0].Commander().CurrentSystem(firstShipyard(holder[0]));
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('d', false, false));
+      gui.updateScreen();
+      assertNotEquals(new TextColor.Indexed(240), colorOf(screen, Strings.DesignerConstruct),
+          "the default design is ready to be built");
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('c', false, false));
+      gui.updateScreen();
+
+      assertEquals(ShipType.Custom, holder[0].Commander().getShip().Type(), "the design was built");
+      assertTrue(holder[0].Commander().getCash() < 10000000, "and the yard charged for it");
+      assertFalse(screenText(screen).contains(Strings.DesignerConstruct), "the designer closed");
+    } finally {
+      // Building a custom ship renames the Custom type for the whole JVM (Strings
+      // is static): put it back so the rest of the tests see the bundle name.
+      Strings.SetShipName(ShipType.Custom, customNameBefore);
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static StarSystem firstShipyard(Game game) {
+    for(StarSystem system : game.Universe()) {
+      if(system.Shipyard() != null) {
+        return system;
+      }
+    }
+    throw new AssertionError("the universe must have shipyards");
+  }
+
+  /** The foreground colour of the first cell of a text of the screen, or null. */
+  private static TextColor colorOf(Screen screen, String text) {
+    for(int y = 0; y < screen.getTerminalSize().getRows(); y++) {
+      int x = row(screen, y).indexOf(text);
+      if(x >= 0) {
+        return screen.getFrontCharacter(x, y).getForegroundColor();
+      }
+    }
+    return null;
+  }
+
+  /** The percentage of the units line of the designer, like {@code 430%}. */
+  private static String percentFromUnits(String text) {
+    Matcher matcher = Pattern.compile("\\(([^)]*%)\\)").matcher(text);
+    assertTrue(matcher.find(), "the units line must show a percentage: " + text);
+    return matcher.group(1);
   }
 
   @Test
@@ -3126,6 +3686,48 @@ class LanternaMainWindowTest {
   }
 
   @Test
+  void theSingularityJumpPlaysTheWarpSound() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      TestSoundService sound = new TestSoundService();
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui, sound);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(),
+          (type, messageArgs) -> DialogResult.Yes);
+      holder[0].setAutoSave(false);
+      holder[0].setCanSuperWarp(true);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      StarSystem current = holder[0].Commander().CurrentSystem();
+      StarSystem far = null;
+      for(StarSystem system : holder[0].Universe()) {
+        if(system != current && !system.DestOk()) {
+          far = system;
+          break;
+        }
+      }
+      assertNotNull(far, "the galaxy must have a system out of range");
+      holder[0].SelectedSystemId(far.Id());
+      sound.clear();
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('g', false, false));
+      gui.updateScreen();
+
+      assertSame(far, holder[0].Commander().CurrentSystem(), screenText(screen));
+      assertEquals(List.of(SoundEffect.WARP), sound.played(), "the jump of the singularity plays the warp sound");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
   void showsTheTargetPriceOfTheSelectedItemInTheTradePanel() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
@@ -3341,7 +3943,7 @@ class LanternaMainWindowTest {
       StarSystem current = holder[0].Commander().CurrentSystem();
       String dockLine = Functions.StringVars(Strings.DockHullStatus, "100");
       assertTrue(screenText(screen).contains(current.Name()), screenText(screen));
-      assertTrue(screenText(screen).contains(dockLine), screenText(screen));
+      assertFalse(screenText(screen).contains(dockLine), "the dock block lives in the ship panel now");
 
       // Selecting another system shows its data instead of the current one.
       StarSystem target = current;
@@ -3361,8 +3963,45 @@ class LanternaMainWindowTest {
       assertTrue(text.contains(Functions.StringVars(Strings.MainTech, target.TechLevel().name,
           target.PoliticalSystem().Name())), text);
       assertTrue(text.contains(Strings.MainTargetOffRange), text);
-      assertFalse(text.contains(dockLine), "the dock data belongs to the current system");
+      assertFalse(text.contains(dockLine), "the dock block is not in the navigation panel");
       assertFalse(text.contains(current.Name()), text);
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theShipPanelShowsTheDockBlockAndItsKeys() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = new Game("Antonio", Difficulty.Normal, 4, 4, 4, 4, new QuietHost(), DialogService.NONE);
+      holder[0].Commander().getShip().setHull(90);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      String hullLine = Functions.StringVars(Strings.DockHullStatus, "90");
+      assertFalse(screenText(screen).contains(hullLine),
+          "the navigation panel has no dock block: " + screenText(screen));
+
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains(hullLine), "the ship panel shows the hull state: " + text);
+      assertTrue(text.contains(Functions.StringVars(Strings.DockRepairCost,
+          Functions.FormatMoney(10 * holder[0].Commander().getShip().getRepairCost()))),
+          "and what the repairs will cost: " + text);
+      assertTrue(text.contains(Strings.DockTankFull), "the full tank is said as well: " + text);
+      assertTrue(text.contains("[F] fuel") && text.contains("[R] repairs"),
+          "the keys of the dock block are at the foot: " + text);
     } finally {
       screen.stopScreen();
       screen.close();
@@ -3532,8 +4171,6 @@ class LanternaMainWindowTest {
 
       String text = screenText(screen);
       assertTrue(text.contains("[G] jump"), text);
-      assertTrue(text.contains("[F] fuel"), text);
-      assertTrue(text.contains("[R] repairs"), text);
       assertTrue(text.contains("[F10] menu"), text);
       assertTrue(text.indexOf("[F10] menu") > text.indexOf("[G] jump"),
           "the program menu goes after the contextual actions:\n" + text);
@@ -3541,6 +4178,123 @@ class LanternaMainWindowTest {
       screen.stopScreen();
       screen.close();
     }
+  }
+
+  @Test
+  void buyingRepairsPlaysTheSceneAndAppliesTheHull() throws Exception {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      holder[0].Commander().getShip().setHull(90);
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // The dock actions live in the ship panel now: open it first.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+
+      // The key opens the amount dialog and then plays the scene, both blocking:
+      // it goes in a worker, as the dialog tests do.
+      Thread worker = new Thread(() ->
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('r', false, false)));
+      worker.setDaemon(true);
+      worker.start();
+
+      Window amount = waitForWindow(gui, Strings.DialogRepairsTitle);
+      amount.handleInput(new KeyStroke('2', false, false));
+      amount.handleInput(new KeyStroke('0', false, false));
+      amount.handleInput(new KeyStroke(KeyType.Enter));
+
+      // The worker holds the main component while the scene is open: the test
+      // thread only talks to the scene (repainting it would need that lock).
+      Window scene = waitForWindow(gui, Strings.RepairSceneTitle);
+      assertTrue(scene.getComponent() instanceof RepairSceneComponent, "the scene of the repairs");
+      RepairSceneComponent content = (RepairSceneComponent) scene.getComponent();
+      // One key skips to the end, the next one takes the scene away.
+      scene.getFocusedInteractable().handleInput(new KeyStroke('x', false, false));
+      assertTrue(content.finished(), "the key completes the repair");
+      scene.getFocusedInteractable().handleInput(new KeyStroke('x', false, false));
+
+      worker.join(5000);
+      assertFalse(worker.isAlive(), "the key press returns when the scene closes");
+      assertEquals(100, holder[0].Commander().getShip().getHull(), "the presenter applies the repair");
+      assertEquals(980, holder[0].Commander().getCash());
+      assertTrue(gui.getWindows().contains(window.asWindow()), "the main window stays");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  @Test
+  void theDockActionsLiveInTheShipPanel() throws Exception {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      Game[] holder = new Game[1];
+      LanternaMainWindow window = new LanternaMainWindow(() -> holder[0], gui);
+      holder[0] = newGame();
+      MainPresenter presenter = new MainPresenter(() -> holder[0], window);
+      window.setPresenter(presenter);
+      presenter.updateAll();
+      gui.addWindow(window.asWindow());
+      gui.updateScreen();
+
+      // On the map, f and r do nothing now: the keys go unhandled and no dialog opens.
+      assertEquals(Interactable.Result.UNHANDLED,
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('f', false, false)));
+      assertEquals(Interactable.Result.UNHANDLED,
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('r', false, false)));
+      assertEquals(1, gui.getWindows().size(), "no dialog opens from the map");
+
+      // In the ship panel, f buys fuel: it opens its amount dialog.
+      window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('v', false, false));
+      gui.updateScreen();
+      Thread fuel = new Thread(() ->
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('f', false, false)));
+      fuel.setDaemon(true);
+      fuel.start();
+      Window fuelDialog = waitForDialog(gui, window.asWindow());
+      assertEquals(Strings.DialogFuelTitle, fuelDialog.getTitle(), "the fuel dialog comes from the panel");
+      fuelDialog.handleInput(new KeyStroke(KeyType.Escape));
+      fuel.join(5000);
+      assertFalse(fuel.isAlive(), "the fuel dialog closes with Escape");
+
+      // And r repairs: its dialog is the one of the repairs.
+      Thread repairs = new Thread(() ->
+          window.asWindow().getFocusedInteractable().handleInput(new KeyStroke('r', false, false)));
+      repairs.setDaemon(true);
+      repairs.start();
+      Window repairsDialog = waitForDialog(gui, window.asWindow());
+      assertEquals(Strings.DialogRepairsTitle, repairsDialog.getTitle(), "the repairs dialog comes from the panel");
+      repairsDialog.handleInput(new KeyStroke(KeyType.Escape));
+      repairs.join(5000);
+      assertFalse(repairs.isAlive(), "the repairs dialog closes with Escape");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
+  private static Window waitForWindow(MultiWindowTextGUI gui, String title) throws InterruptedException {
+    for(int i = 0; i < 500; i++) {
+      for(Window window : gui.getWindows()) {
+        if(title.equals(window.getTitle())) {
+          return window;
+        }
+      }
+      Thread.sleep(10);
+    }
+    fail("the window was not shown: " + title);
+    return null;
   }
 
   @Test

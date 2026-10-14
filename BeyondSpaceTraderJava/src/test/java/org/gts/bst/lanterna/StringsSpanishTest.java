@@ -105,6 +105,37 @@ class StringsSpanishTest {
     assertFalse(spanish.containsKey("ComposerKeys"), "ComposerKeys is gone from the Spanish bundle");
   }
 
+  /** The keys of the ship panel name the dock shortcuts in both languages. */
+  @Test
+  void theShipKeysNameTheDockShortcutsInBothLanguages() throws IOException {
+    Properties english = properties("Strings.properties");
+    Properties spanish = properties("Strings_es.properties");
+    assertEquals("[F] fuel \u00b7 [R] repairs \u00b7 [SPACE] close", english.getProperty("ShipKeys"));
+    assertEquals("[F] combustible \u00b7 [R] reparaciones \u00b7 [ESPACIO] cerrar", spanish.getProperty("ShipKeys"));
+  }
+
+  /** The direct keys of the map no longer name the dock shortcuts: they live in the ship panel. */
+  @Test
+  void theDirectKeysLeaveTheDockShortcutsToTheShipPanel() throws IOException {
+    Properties english = properties("Strings.properties");
+    Properties spanish = properties("Strings_es.properties");
+    assertFalse(english.getProperty("DirectKeys").contains("[F]"), "no [F] in the english direct keys");
+    assertFalse(english.getProperty("DirectKeys").contains("[R]"), "no [R] in the english direct keys");
+    assertFalse(spanish.getProperty("DirectKeys").contains("[F]"), "no [F] in the spanish direct keys");
+    assertFalse(spanish.getProperty("DirectKeys").contains("[R]"), "no [R] in the spanish direct keys");
+  }
+
+  /** The refusals of the designer are localised, with the amount placeholder where it belongs. */
+  @Test
+  void theDesignerRefusalsAreLocalisedInBothBundles() throws IOException {
+    Properties english = properties("Strings.properties");
+    Properties spanish = properties("Strings_es.properties");
+    assertEquals("Give the design a name with [R].", english.getProperty("DesignerNeedsName"));
+    assertEquals("Ponle un nombre al diseño con [R].", spanish.getProperty("DesignerNeedsName"));
+    assertEquals("You are over the unit limit (^1). Remove cargo or slots.", english.getProperty("DesignerOverUnits"));
+    assertEquals("Te pasas del límite de unidades (^1). Quita carga o ranuras.", spanish.getProperty("DesignerOverUnits"));
+  }
+
   private static Set<String> keys(String resource) throws IOException {
     return properties(resource).stringPropertyNames();
   }

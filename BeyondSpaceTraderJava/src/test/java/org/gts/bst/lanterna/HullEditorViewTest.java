@@ -67,6 +67,42 @@ class HullEditorViewTest {
   }
 
   @Test
+  void thePanelShowsTheHullSizeAndItsUsers() throws IOException {
+    String chassisText = "[small-1]\nsize=small\ncolor=white\nxxxxx\n[small-9]\nsize=small\ncolor=white\nxxxxx\n";
+    List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(chassisText));
+    Path chassisFile = Files.createTempFile("chassis", ".txt");
+    Files.writeString(chassisFile, chassisText);
+    Path shipsFile = Files.createTempFile("naves", ".txt");
+    Files.writeString(shipsFile, "[gnat]\ntype=Gnat\nchasis=small-1\n");
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+      gui.setTheme(LanternaTheme.create());
+      HullEditorView view = new HullEditorView(hulls);
+      view.hullsPath(chassisFile.toString());
+      view.shipsPath(shipsFile.toString());
+      gui.addWindow(view);
+      gui.updateScreen();
+
+      String text = screenText(screen);
+      assertTrue(text.contains("Hull: small-1"), "the name of the hull: " + text);
+      assertTrue(text.contains("Size: small"), "its size: " + text);
+      assertTrue(text.contains("Used by: Gnat"), "and the types that wear it: " + text);
+
+      // A hull nobody wears says so.
+      view.handleKey(new KeyStroke(KeyType.Tab));
+      gui.updateScreen();
+      assertTrue(screenText(screen).contains("Used by: (free)"), screenText(screen));
+    } finally {
+      screen.stopScreen();
+      screen.close();
+      Files.deleteIfExists(chassisFile);
+      Files.deleteIfExists(shipsFile);
+    }
+  }
+
+  @Test
   void nAndPMoveInsideTheColourList() throws IOException {
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader("[uno]\ncolor=white\nxxxxx\nxxxxx\n"));
     Path file = Files.createTempFile("chassis", ".txt");
@@ -221,12 +257,12 @@ class HullEditorViewTest {
 
   @Test
   void zOnlyCyclesTheSizeOfAFreeHull() throws IOException {
-    String chassisText = "[shuttle]\nsize=small\ncolor=white\nxxxxx\nxxxxx\n[libre]\nsize=small\ncolor=white\nxxxxx\nxxxxx\n";
+    String chassisText = "[small-1]\nsize=small\ncolor=white\nxxxxx\nxxxxx\n[libre]\nsize=small\ncolor=white\nxxxxx\nxxxxx\n";
     List<ShipArtFile> hulls = ShipArtFile.parse(new StringReader(chassisText));
     Path chassisFile = Files.createTempFile("chassis", ".txt");
     Files.writeString(chassisFile, chassisText);
     Path shipsFile = Files.createTempFile("naves", ".txt");
-    Files.writeString(shipsFile, "[gnat]\ntype=Gnat\nchasis=shuttle\n");
+    Files.writeString(shipsFile, "[gnat]\ntype=Gnat\nchasis=small-1\n");
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
     screen.startScreen();
     try {
@@ -238,13 +274,13 @@ class HullEditorViewTest {
       gui.addWindow(view);
       gui.updateScreen();
 
-      // the shuttle is used by the Gnat: its size is fixed by that type
+      // the small-1 hull is used by the Gnat: its size is fixed by that type
       view.handleKey(new KeyStroke('z', false, false));
       gui.updateScreen();
       assertTrue(screenText(screen).contains("in use by [Gnat] (small)"),
           "z warns who fixes the size: " + screenText(screen));
       view.handleKey(new KeyStroke('s', false, false));
-      assertTrue(Files.readString(chassisFile).contains("[shuttle]\nsize=small"),
+      assertTrue(Files.readString(chassisFile).contains("[small-1]\nsize=small"),
           "the size of a hull in use does not change: " + Files.readString(chassisFile));
 
       // the libre hull is used by nobody: z cycles its size

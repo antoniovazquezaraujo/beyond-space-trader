@@ -6,17 +6,21 @@
  * Trader for Windows, which is based on Space Trader by Pieter Spronck; see
  * the NOTICE file for the full provenance chain.
  */
-package org.gts.bst.view;
+package org.gts.bst.ports;
+
+import org.gts.bst.events.EncounterResult;
 
 
 /**
- * Result of a modal dialog, mirroring the values used by the front-ends.
+ * What the model needs from the application window: the encounter screen and the
+ * refreshes. The Lanterna main window implements it.
  */
-public enum DialogResult {
-  None,
-  OK,
-  Cancel,
-  Yes,
-  No;
-}
+public interface GameWindow {
+  EncounterResult showEncounter();
 
+  void showNewspaper();
+
+  void UpdateStatusBar();
+
+  void UpdateAll();
+}

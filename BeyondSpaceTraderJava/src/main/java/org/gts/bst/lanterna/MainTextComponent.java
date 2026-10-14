@@ -67,6 +67,8 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private static final int NAVIGATION_PANEL_WIDTH = 42;
+  /** The dim colour of a disabled action (no dedicated entry in {@link UiPalette}). */
+  private static final TextColor DISABLED = new TextColor.Indexed(240);
   private static final int TRADE_PANEL_WIDTH = 48;
   private static final int TRADE_PANEL_TARGET_WIDTH = 75;
   /** From this screen width the trade panel shows the target columns. */
@@ -832,6 +834,9 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         UiPalette.draw(graphics, x, row++, line, UiPalette.WARN, x + panelWidth);
       }
     }
+    if(dock != null) {
+      row = drawDockBlock(graphics, x, row, height - 5);
+    }
     if(row < height - 5) {
       UiPalette.title(graphics, x, row++, Strings.ShipCargoLabel, panelWidth);
     }
@@ -847,6 +852,38 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       }
       graphics.putString(x, row++, cut(cargoLine, panelWidth));
     }
+  }
+
+  /**
+   * The dock block of the ship panel: fuel and hull of the ship in flight, with
+   * the costs of the port when there is something to buy. It is the same model
+   * the navigation panel used to draw.
+   */
+  private int drawDockBlock(TextGUIGraphics graphics, int x, int row, int maxRow) {
+    row++;
+    row = drawDockLine(graphics, x, row, dock.fuelStatus(), UiPalette.TEXT, maxRow);
+    row = drawDockLine(graphics, x, row, dock.fuelCost(),
+        dock.fuelButtonVisible() ? UiPalette.MONEY : UiPalette.TEXT, maxRow);
+    row = drawDockLine(graphics, x, row, dock.hullStatus(), UiPalette.TEXT, maxRow);
+    row = drawDockLine(graphics, x, row, dock.repairCost(),
+        dock.repairButtonVisible() ? UiPalette.MONEY : UiPalette.TEXT, maxRow);
+    return row + 1;
+  }
+
+  /** A wrapped line of the dock block, never past {@code maxRow}. */
+  private int drawDockLine(TextGUIGraphics graphics, int x, int row, String text, TextColor color, int maxRow) {
+    if(row >= maxRow) {
+      return row;
+    }
+    List<String> lines = new ArrayList<>();
+    wrap(lines, text, panelWidth);
+    for(String line : lines) {
+      if(row >= maxRow) {
+        break;
+      }
+      UiPalette.draw(graphics, x, row++, line, color, x + panelWidth);
+    }
+    return row;
   }
 
   private void drawShipListPanel(TextGUIGraphics graphics, int x, int height) {
@@ -908,6 +945,18 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
   }
 
   private void drawDesignerRow(TextGUIGraphics graphics, int x, int row, int field, String text) {
+    drawDesignerRow(graphics, x, row, field, text, true);
+  }
+
+  /**
+   * The same, for a row whose action is off: the marker still says where the
+   * field is, but the text goes dim so the refusal is visible before pressing.
+   */
+  private void drawDesignerRow(TextGUIGraphics graphics, int x, int row, int field, String text, boolean enabled) {
+    if(!enabled) {
+      UiPalette.draw(graphics, x, row, text, DISABLED, x + panelWidth);
+      return;
+    }
     drawRow(graphics, x, row, designerField == field, text);
   }
 
@@ -968,6 +1017,13 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       return row;
     }
     UiPalette.title(graphics, x, row++, title, panelWidth);
+    if(count == 0) {
+      // Nothing for sale here (the system tech level): say it, do not leave a gap.
+      if(row < height - 5) {
+        UiPalette.line(graphics, x, row++, Strings.EquipmentNoneForSale, panelWidth);
+      }
+      return row;
+    }
     List<String> buy = new ArrayList<>();
     buy.addAll(equipment.buyWeapons());
     buy.addAll(equipment.buyShields());
@@ -1063,10 +1119,11 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
       graphics.putString(x, row++, cut(Functions.StringVars(Strings.DesignerTotal, designer.totalCost()), panelWidth));
     }
     if(row < height - 5) {
-      drawDesignerRow(graphics, x, row++, 10, marker(10) + Strings.DesignerConstruct);
+      drawDesignerRow(graphics, x, row++, 10, marker(10) + Strings.DesignerConstruct,
+          designer.constructEnabled());
     }
     if(row < height - 5) {
-      drawDesignerRow(graphics, x, row, 11, marker(11) + Strings.DesignerSave);
+      drawDesignerRow(graphics, x, row, 11, marker(11) + Strings.DesignerSave, designer.saveEnabled());
     }
   }
 
@@ -1387,17 +1444,6 @@ public final class MainTextComponent extends AbstractInteractableComponent<MainT
         if(system.specialVisible() && !system.specialTooltip().isEmpty()) {
           row = drawWrapped(graphics, x, row, Functions.StringVars(Strings.MainSpecial, system.specialTooltip()),
               UiPalette.ACCENT);
-        }
-        row++;
-      }
-      if(dock != null) {
-        row = drawWrapped(graphics, x, row, dock.fuelStatus(), UiPalette.TEXT);
-        if(dock.fuelButtonVisible()) {
-          row = drawWrapped(graphics, x, row, dock.fuelCost(), UiPalette.MONEY);
-        }
-        row = drawWrapped(graphics, x, row, dock.hullStatus(), UiPalette.TEXT);
-        if(dock.repairButtonVisible()) {
-          row = drawWrapped(graphics, x, row, dock.repairCost(), UiPalette.MONEY);
         }
         row++;
       }

@@ -62,6 +62,11 @@ public final class ShipArtItems {
     return items;
   }
 
+  /** True for the encounter types where the other ship is the police. */
+  public static boolean police(EncounterType type) {
+    return ROLE_POLICE.equals(role(type));
+  }
+
   /** The role marker of an encounter: pirate, police or trader; null for the rest. */
   public static String role(EncounterType type) {
     switch(type) {

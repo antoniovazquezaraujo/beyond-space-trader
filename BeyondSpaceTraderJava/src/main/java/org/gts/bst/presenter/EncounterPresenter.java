@@ -18,12 +18,16 @@ import org.gts.bst.cargo.CargoSellOffer;
 import org.gts.bst.cargo.CargoSellOp;
 import org.gts.bst.events.EncounterResult;
 import org.gts.bst.events.EncounterType;
+import org.gts.bst.ports.MusicTheme;
+import org.gts.bst.ports.SoundEffect;
 import org.gts.bst.ship.ShipType;
+import org.gts.bst.ship.equip.Weapon;
+import org.gts.bst.ship.equip.WeaponType;
 import org.gts.bst.view.AlertDefinition;
 import org.gts.bst.view.Alerts;
 import org.gts.bst.view.EncounterAction;
 import spacetrader.Strings;
-import org.gts.bst.view.EncounterDialogHost;
+import org.gts.bst.ports.EncounterDialogHost;
 import org.gts.bst.view.EncounterView;
 import org.gts.bst.view.EncounterViewModel;
 import org.gts.bst.view.ShipCatalog;
@@ -48,6 +52,10 @@ public class EncounterPresenter implements EncounterDialogHost {
   /** The number of the round: every one is a new part for the scene. */
   private int round;
   private boolean running;
+  /** The police alarm sounds once per encounter, even if it turns police later. */
+  private boolean policeAlertPlayed;
+  /** True when the trade reached its offer: then the encounter ends after it. */
+  private boolean tradeOffered;
 
   public EncounterPresenter(Game game, EncounterView view) {
     this.game = game;
@@ -57,7 +65,10 @@ public class EncounterPresenter implements EncounterDialogHost {
 
   public void start() {
     game.encounter().EncounterBegin();
-    view.render(model(game.encounter().EncounterTextInitial(), game.encounter().EncounterActionInitial()));
+    view.weapons(() -> strongest(cmdrship), () -> strongest(game.encounter().getOpponent()));
+    // The first part keeps the initial texts (the trader hello, the police
+    // demand): the show goes on to the in-course ones from the first round.
+    render(game.encounter().EncounterTextInitial(), game.encounter().EncounterActionInitial());
   }
 
   public EncounterResult result() {
@@ -187,9 +198,16 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void trade() {
+    tradeOffered = false;
     // The catwalk and the question run inside the offer (the scene of the trade).
     game.encounter().EncounterTrade(this);
-    exit(EncounterResult.Normal);
+    if(tradeOffered) {
+      exit(EncounterResult.Normal);
+    } else {
+      // Nothing was offered (the trader has nothing we can pay for): the
+      // encounter goes on, so the player can still ignore, attack or flee.
+      update();
+    }
   }
 
   public void yield() {
@@ -226,6 +244,7 @@ public class EncounterPresenter implements EncounterDialogHost {
   public void buyTraderCargo(int tradeItem) {
     CargoBuyOffer offer = Trade.CargoBuyOffer(game, tradeItem, CargoBuyOp.BuyTrader);
     if(offer != null) {
+      tradeOffered = true;
       Integer qty = view.askCargoBuyQuantity(offer);
       if(qty != null) {
         Trade.CargoBuy(game, offer, qty);
@@ -237,6 +256,7 @@ public class EncounterPresenter implements EncounterDialogHost {
   public void sellTraderCargo(int tradeItem) {
     CargoSellOffer offer = Trade.CargoSellOffer(game, tradeItem, CargoSellOp.SellTrader);
     if(offer != null) {
+      tradeOffered = true;
       Integer qty = view.askCargoSellQuantity(offer);
       if(qty != null) {
         Trade.CargoSell(game, offer, qty);
@@ -273,7 +293,93 @@ public class EncounterPresenter implements EncounterDialogHost {
   }
 
   public void update() {
-    view.render(model(game.encounter().EncounterText(), game.encounter().EncounterAction()));
+    render(game.encounter().EncounterText(), game.encounter().EncounterAction());
+  }
+
+  /** Renders a part: the police alarm and the tension are common to all of them. */
+  private void render(String text, String action) {
+    playPoliceAlert();
+    view.music(music(game.encounter().getEncounterType()));
+    view.render(model(text, action));
+  }
+
+  /** The police alarm, once per encounter (also when the police shows up later). */
+  private void playPoliceAlert() {
+    if(!policeAlertPlayed && ShipArtItems.police(game.encounter().getEncounterType())) {
+      policeAlertPlayed = true;
+      view.effect(SoundEffect.POLICE);
+    }
+  }
+
+  /**
+   * The music of an encounter: tension for the pirates, the police and the
+   * mission hunters; calm for the traders and the rare encounters (captains,
+   * bottles, Marie Celeste). Re-evaluated on every part, so a trader that turns
+   * violent (or the police showing up) crossfades to tension.
+   */
+  static MusicTheme music(EncounterType type) {
+    switch(type) {
+      case PirateAttack:
+      case PirateIgnore:
+      case PirateFlee:
+      case PirateSurrender:
+      case PirateDisabled:
+      case PoliceAttack:
+      case PoliceIgnore:
+      case PoliceFlee:
+      case PoliceSurrender:
+      case PoliceDisabled:
+      case PoliceInspect:
+      case MarieCelestePolice:
+      case DragonflyAttack:
+      case FamousCaptainAttack:
+      case ScorpionAttack:
+      case SpaceMonsterAttack:
+      case ScarabAttack:
+      case TraderAttack:
+        return MusicTheme.TENSE;
+      default:
+        return MusicTheme.CALM;
+    }
+  }
+
+  /** The weapon that sounds when a ship fires: the strongest one on board. */
+  static WeaponType strongest(Ship ship) {
+    return strongest(ship.Weapons());
+  }
+
+  static WeaponType strongest(Weapon[] weapons) {
+    WeaponType best = null;
+    for(Weapon weapon : weapons) {
+      if(weapon == null) {
+        continue;
+      }
+      WeaponType type = weapon.Type();
+      if(best == null || rank(type) < rank(best)) {
+        best = type;
+      }
+    }
+    return best;
+  }
+
+  /** The loudest shot first: Morgan's, Military, Beam, Pulse, Quantum, Photon. */
+  private static int rank(WeaponType type) {
+    switch(type) {
+      case MorgansLaser:
+        return 0;
+      case MilitaryLaser:
+        return 1;
+      case BeamLaser:
+        return 2;
+      case PulseLaser:
+        return 3;
+      case QuantumDistruptor:
+        return 4;
+      case PhotonDisruptor:
+        return 5;
+      default:
+        return 6;
+    }
   }
 
   private void exit(EncounterResult result) {

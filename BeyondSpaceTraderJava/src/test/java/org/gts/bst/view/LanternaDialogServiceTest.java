@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.gts.bst.ports.DialogResult;
 import org.junit.jupiter.api.Test;
 import spacetrader.Functions;
 import spacetrader.Strings;

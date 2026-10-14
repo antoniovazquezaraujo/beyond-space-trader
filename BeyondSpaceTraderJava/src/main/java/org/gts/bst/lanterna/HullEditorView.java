@@ -16,6 +16,7 @@ import com.googlecode.lanterna.input.KeyType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.gts.bst.ports.SoundService;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.view.HullFile;
 import org.gts.bst.view.LetterGrid;
@@ -63,9 +64,16 @@ public final class HullEditorView extends ArtEditorWindow {
   private String hullsPath = ShipArtFile.resolve("chassis.txt").toString();
   /** The ships file the editor reads to know which types use a hull. */
   private String shipsPath = ShipArtFile.resolve("ships.txt").toString();
+  /** The designs of {@link #shipsPath}, read once (the panel asks for them on paint). */
+  private List<ShipDesign> designs;
 
   public HullEditorView(List<ShipArtFile> hulls) {
-    super(Strings.EditorHullTitle);
+    this(hulls, SoundService.NONE);
+  }
+
+  /** The same, with the sound of the tool that opens the editor. */
+  public HullEditorView(List<ShipArtFile> hulls, SoundService sound) {
+    super(Strings.EditorHullTitle, sound);
     this.hulls = new ArrayList<>(hulls);
     loadHull(0);
   }
@@ -78,6 +86,7 @@ public final class HullEditorView extends ArtEditorWindow {
   /** Points the editor to another ships file (the tests use a temp one). */
   void shipsPath(String path) {
     shipsPath = path;
+    designs = null;
   }
 
   private void loadHull(int index) {
@@ -159,9 +168,12 @@ public final class HullEditorView extends ArtEditorWindow {
       char character = type == KeyType.Character ? Character.toLowerCase(key.getCharacter()) : 0;
       if((type == KeyType.ArrowUp || character == 'p') && !items.isEmpty()) {
         listIndex = (listIndex + items.size() - 1) % items.size();
+        menuMove();
       } else if((type == KeyType.ArrowDown || character == 'n') && !items.isEmpty()) {
         listIndex = (listIndex + 1) % items.size();
+        menuMove();
       } else if(type == KeyType.Enter) {
+        menuSelect();
         pick();
       }
       redraw();
@@ -171,6 +183,7 @@ public final class HullEditorView extends ArtEditorWindow {
       char letter = Character.toUpperCase(key.getCharacter());
       ShipArtFile.ColorLetter old = currentLetter();
       if(letter != ' ') {
+        menuSelect();
         letters.set(letterIndex, new ShipArtFile.ColorLetter(letter, old.color(), old.bgColor(), old.blink()));
         message = "letter " + letter;
       }
@@ -180,24 +193,34 @@ public final class HullEditorView extends ArtEditorWindow {
     }
     if(key.getKeyType() == KeyType.Tab) {
       nextHull(1);
+      menuMove();
       return true;
     }
     if(key.getKeyType() == KeyType.ReverseTab) {
       nextHull(-1);
+      menuMove();
       return true;
     }
     switch(key.getKeyType()) {
       case ArrowLeft:
-        cursorX = Math.max(0, cursorX - 1);
+        if(cursorX > 0) {
+          cursorX--;
+          menuMove();
+        }
         break;
       case ArrowRight:
         cursorX++;
+        menuMove();
         break;
       case ArrowUp:
-        cursorY = Math.max(0, cursorY - 1);
+        if(cursorY > 0) {
+          cursorY--;
+          menuMove();
+        }
         break;
       case ArrowDown:
         cursorY++;
+        menuMove();
         break;
       case Character:
         character(Character.toLowerCase(key.getCharacter()));
@@ -233,23 +256,35 @@ public final class HullEditorView extends ArtEditorWindow {
   /** The letters are vim keys (move), the digits pick an element; the rest are commands. */
   private void character(char character) {
     if(character >= '1' && character <= '9') {
+      if(character - '1' < letters.size()) {
+        menuMove();
+      }
       pickLetter(character - '1');
       return;
     }
     switch(character) {
       case 'h':
-        cursorX = Math.max(0, cursorX - 1);
+        if(cursorX > 0) {
+          cursorX--;
+          menuMove();
+        }
         break;
       case 'l':
         cursorX++;
+        menuMove();
         break;
       case 'k':
-        cursorY = Math.max(0, cursorY - 1);
+        if(cursorY > 0) {
+          cursorY--;
+          menuMove();
+        }
         break;
       case 'j':
         cursorY++;
+        menuMove();
         break;
       case ' ':
+        menuSelect();
         toggleCell();
         break;
       case 'n':
@@ -258,29 +293,45 @@ public final class HullEditorView extends ArtEditorWindow {
       case 'p':
         cycleLetter(-1);
         break;
-      case '+':
+      case '+': {
+        int before = letters.size();
         addLetter();
+        if(letters.size() != before) {
+          menuMove();
+        }
         break;
-      case '-':
+      }
+      case '-': {
+        int before = letters.size();
         removeLetter();
+        if(letters.size() != before) {
+          menuMove();
+        }
         break;
+      }
       case 'r':
+        menuSelect();
         nameLetter = true;
         message = "type the letter for the combination " + currentLetter().color();
         break;
       case 't':
+        menuSelect();
         openList(false);
         break;
       case 'f':
+        menuSelect();
         openList(true);
         break;
       case 'i':
+        menuMove();
         styleBlink();
         break;
       case 'z':
+        menuMove();
         styleSize();
         break;
       case 's':
+        menuSelect();
         save();
         break;
       default:
@@ -294,6 +345,7 @@ public final class HullEditorView extends ArtEditorWindow {
       message = "no elements: add one with [+]";
       return;
     }
+    menuMove();
     letterIndex = (letterIndex + step + letters.size()) % letters.size();
     message = "element: " + elementLabel(letterIndex);
   }
@@ -364,30 +416,50 @@ public final class HullEditorView extends ArtEditorWindow {
     message = "size: " + (hullSize.isEmpty() ? "(not set)" : hullSize);
   }
 
-  /** The types that wear a hull, with their size (`[Gnat] (small)`); empty when it is free. */
-  private String usedBy(ShipArtFile hull) {
+  /** The types that wear a hull; the file is read once and cached for the paint. */
+  private List<ShipType> usersOf(ShipArtFile hull) {
     if(hull == null) {
-      return "";
+      return List.of();
     }
-    List<ShipDesign> designs;
-    try {
-      designs = ShipDesign.load(shipsPath);
-    } catch(IOException e) {
-      return "";
-    }
-    StringBuilder users = new StringBuilder();
-    for(ShipDesign design : designs) {
+    List<ShipType> types = new ArrayList<>();
+    for(ShipDesign design : designs()) {
       ShipType type = ShipSites.typeOf(design.type());
-      if(type == null || !design.chassis().equalsIgnoreCase(hull.name())) {
+      if(type == null || !design.chassis().equalsIgnoreCase(hull.name()) || types.contains(type)) {
         continue;
       }
-      String label = "[" + type.name() + "] (" + ShipSites.budgetOf(type.name()).size().name()
-          .toLowerCase(java.util.Locale.ROOT) + ")";
-      if(users.indexOf(label) < 0) {
-        users.append(users.length() == 0 ? "" : ", ").append(label);
+      types.add(type);
+    }
+    return types;
+  }
+
+  /** The types that wear a hull, with their size (`[Gnat] (small)`); empty when it is free. */
+  private String usedBy(ShipArtFile hull) {
+    StringBuilder text = new StringBuilder();
+    for(ShipType type : usersOf(hull)) {
+      text.append(text.length() == 0 ? "" : ", ").append("[").append(type.name()).append("] (")
+          .append(ShipSites.budgetOf(type.name()).size().name().toLowerCase(java.util.Locale.ROOT)).append(")");
+    }
+    return text.toString();
+  }
+
+  /** The names of the types that wear a hull, for the panel (`Gnat, Bottle` or `(free)`). */
+  private String usedByNames(ShipArtFile hull) {
+    StringBuilder users = new StringBuilder();
+    for(ShipType type : usersOf(hull)) {
+      users.append(users.length() == 0 ? "" : ", ").append(type.name());
+    }
+    return users.length() == 0 ? "(free)" : users.toString();
+  }
+
+  private List<ShipDesign> designs() {
+    if(designs == null) {
+      try {
+        designs = ShipDesign.load(shipsPath);
+      } catch(IOException e) {
+        designs = List.of();
       }
     }
-    return users.toString();
+    return designs;
   }
 
   private void addLetter() {
@@ -580,24 +652,36 @@ public final class HullEditorView extends ArtEditorWindow {
     graphics.putString(1, size.getRows() - 1, "[arrows] choose · [ENTER] take · [ESC] cancel");
   }
 
-  /** The vertical panel on the left: the numbered colour elements, ready to pick. */
+  /** The vertical panel on the left: the colour elements, and the info of the hull. */
   private void paintPanel(TextGUIGraphics graphics, int width, int rows) {
     graphics.setForegroundColor(TextColor.ANSI.WHITE);
     graphics.putString(0, 0, EditorText.section("Elements", width));
+    ShipArtFile hull = hull();
+    int infoRow = rows - 3;
+    int elementsBottom = hull == null ? rows : Math.max(1, infoRow);
     int row = 1;
     if(letters.isEmpty()) {
       graphics.putString(0, row, EditorText.cut("(no elements: [+] adds one)", width));
-      return;
-    }
-    for(int i = 0; i < letters.size() && row < rows; i++, row++) {
-      String text = (i + 1) + ". " + elementLabel(i);
-      if(i == letterIndex) {
-        graphics.setForegroundColor(TextColor.ANSI.BLACK);
-        graphics.setBackgroundColor(TextColor.ANSI.WHITE);
+    } else {
+      for(int i = 0; i < letters.size() && row < elementsBottom; i++, row++) {
+        String text = (i + 1) + ". " + elementLabel(i);
+        if(i == letterIndex) {
+          graphics.setForegroundColor(TextColor.ANSI.BLACK);
+          graphics.setBackgroundColor(TextColor.ANSI.WHITE);
+        }
+        graphics.putString(0, row, EditorText.cut(String.format("%-" + width + "s", text), width));
+        graphics.setForegroundColor(TextColor.ANSI.WHITE);
+        graphics.setBackgroundColor(TextColor.ANSI.BLACK);
       }
-      graphics.putString(0, row, EditorText.cut(String.format("%-" + width + "s", text), width));
+    }
+    if(hull != null && infoRow >= 2) {
+      // The info the author asked for: the name, the size it wears and its users.
       graphics.setForegroundColor(TextColor.ANSI.WHITE);
       graphics.setBackgroundColor(TextColor.ANSI.BLACK);
+      graphics.putString(0, infoRow, EditorText.cut("Hull: " + hull.name(), width));
+      graphics.putString(0, infoRow + 1,
+          EditorText.cut("Size: " + (hullSize.isEmpty() ? "(not set)" : hullSize), width));
+      graphics.putString(0, infoRow + 2, EditorText.cut("Used by: " + usedByNames(hull), width));
     }
   }
 

@@ -1,7 +1,7 @@
 package spacetrader;
 import org.gts.bst.crew.CrewMemberId;
-import org.gts.bst.view.DialogResult;
-import org.gts.bst.view.DialogService;
+import org.gts.bst.ports.DialogResult;
+import org.gts.bst.ports.DialogService;
 import org.gts.bst.ship.ShipType;
 import org.gts.bst.ship.equip.Equipment;
 import org.gts.bst.ship.equip.GadgetType;
@@ -96,10 +96,14 @@ public class Commander extends CrewMember {
       dialogs().alert(AlertType.DebtNoBuy);
     } else if(netPrice > CashToSpend()) {
       dialogs().alert(AlertType.ShipBuyIF);
-    } else if(specToBuy.getCrewQuarters() < getShip().SpecialCrew().length) {
-      String passengers = getShip().SpecialCrew()[1].Name();
-      if(getShip().SpecialCrew().length > 2) {
-        passengers += " and " + getShip().SpecialCrew()[2].Name();
+    } else if(getShip().SpecialCrew().length > 1
+        && specToBuy.getCrewQuarters() < getShip().SpecialCrew().length) {
+      // The commander is the first special crew member: without a real passenger
+      // there is no name to show, and the crew check below tells the story.
+      CrewMember[] specialCrew = getShip().SpecialCrew();
+      String passengers = specialCrew[1].Name();
+      if(specialCrew.length > 2) {
+        passengers += " and " + specialCrew[2].Name();
       }
       dialogs().alert(AlertType.ShipBuyPassengerQuarters, passengers);
     } else if(specToBuy.getCrewQuarters() < getShip().CrewCount()) {

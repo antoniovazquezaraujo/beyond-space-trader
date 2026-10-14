@@ -17,7 +17,7 @@ import java.util.Locale;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.view.BankView;
 import org.gts.bst.view.BankViewModel;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import spacetrader.Consts;

@@ -25,11 +25,37 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.virtual.DefaultVirtualTerminal;
 import java.io.IOException;
 import java.util.List;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.testing.TestSoundService;
 import org.junit.jupiter.api.Test;
 import spacetrader.Strings;
 
 
 class ShipComposerTest {
+  @Test
+  void theMenuSoundsOnMovesAndChoices() throws IOException {
+    Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));
+    screen.startScreen();
+    try {
+      MultiWindowTextGUI gui = ShipComposer.createGui(screen);
+      TestSoundService sound = new TestSoundService();
+      ShipComposer.MenuWindow menu = ShipComposer.menu(sound);
+      gui.addWindow(menu);
+      gui.updateScreen();
+
+      sound.clear();
+      menu.handleInput(new KeyStroke('n', false, false));
+      assertEquals(List.of(SoundEffect.MENU_MOVE), sound.played(), "n moves the menu selection");
+
+      sound.clear();
+      menu.handleInput(new KeyStroke(KeyType.Enter));
+      assertEquals(List.of(SoundEffect.MENU_SELECT), sound.played(), "ENTER chooses the option");
+    } finally {
+      screen.stopScreen();
+      screen.close();
+    }
+  }
+
   @Test
   void theCoverIsPaintedCentredBehindTheMenu() throws IOException {
     Screen screen = new TerminalScreen(new DefaultVirtualTerminal(new TerminalSize(100, 30)));

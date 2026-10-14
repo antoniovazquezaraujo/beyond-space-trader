@@ -42,6 +42,14 @@ public interface MainView {
   Integer askRepairsAmount(int maxAmount);
 
   /**
+   * Plays the hull repair scene from {@code from} to {@code to} hull points and
+   * returns when it is over (or skipped). The caller applies the repair after.
+   * A front-end without a scene can leave it as a no-op.
+   */
+  default void repairScene(int from, int to) {
+  }
+
+  /**
    * Asks the player how much cargo to buy; returns {@code null} when cancelled.
    */
   Integer askCargoBuyQuantity(CargoBuyOffer offer);

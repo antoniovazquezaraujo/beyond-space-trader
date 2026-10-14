@@ -30,10 +30,10 @@ import org.junit.jupiter.api.Test;
 /**
  * The data rails of the shipped art: the CI guard over the real
  * {@code ships/ships.txt} and {@code ships/chassis.txt}. The game and the ship
- * editor may only load designs whose {@code type=} is exactly one game type,
- * once per type, with a {@code chasis=} that exists and has the size of that
- * type, and with {@code group=} letters that are site letters. A broken file
- * fails here with the offending line, before it reaches the editor.
+ * editor may only load designs whose header is exactly one game type, once per
+ * type, with a {@code chasis=} that exists and has the size of that type, and
+ * with {@code group=} letters that are site letters. A broken file fails here
+ * with the offending line, before it reaches the editor.
  */
 class ShipDataRailsTest {
   /** The site letters of the game (docs/developer/ships.md): C, M, D, B, R, A, E, G and P. */
@@ -54,18 +54,18 @@ class ShipDataRailsTest {
     for(ShipDesign design : designs) {
       ShipType type = ShipSites.typeOf(design.type());
       if(type == null) {
-        unknown.add("[" + design.name() + "] type=" + design.type());
+        unknown.add("[" + design.type() + "]");
       } else {
         if(!type.name().equals(design.type())) {
-          inexact.add("[" + design.name() + "] type=" + design.type() + " (¿" + type.name() + "?)");
+          inexact.add("[" + design.type() + "] (¿" + type.name() + "?)");
         }
         counts.merge(type, 1, Integer::sum);
       }
     }
 
     // Assert
-    assertTrue(unknown.isEmpty(), "ships.txt tiene diseños con un type= que no es de ShipType: " + unknown);
-    assertTrue(inexact.isEmpty(), "el type= debe ser exactamente el nombre del enum: " + inexact);
+    assertTrue(unknown.isEmpty(), "ships.txt tiene diseños con una cabecera que no es de ShipType: " + unknown);
+    assertTrue(inexact.isEmpty(), "la cabecera debe ser exactamente el nombre del enum: " + inexact);
     List<String> wrong = new ArrayList<>();
     for(Map.Entry<ShipType, Integer> count : counts.entrySet()) {
       if(count.getValue() != 1) {
@@ -87,11 +87,11 @@ class ShipDataRailsTest {
     Map<String, List<String>> users = new LinkedHashMap<>();
     Map<String, List<ShipSize>> sizes = new LinkedHashMap<>();
     for(ShipDesign design : designs) {
-      String where = "[" + design.name() + "] type=" + design.type();
+      String where = "[" + design.type() + "]";
       ShipArtFile hull = hulls.get(design.chassis().toLowerCase(Locale.ROOT));
       assertNotNull(hull, "el chasis=`" + design.chassis() + "` de " + where + " no está en chassis.txt");
       ShipSites.Budget budget = ShipSites.budgetOf(design.type());
-      assertNotNull(budget, "el type= de " + where + " no es un tipo del juego con presupuesto");
+      assertNotNull(budget, "el tipo de " + where + " no es un tipo del juego con presupuesto");
       assertTrue(budget.size().name().equalsIgnoreCase(hull.size()),
           where + " es de talla " + budget.size() + " pero usa el chasis `" + hull.name() + "` "
               + (hull.size().isEmpty() ? "sin talla" : "de talla " + hull.size()));
@@ -117,7 +117,7 @@ class ShipDataRailsTest {
     for(ShipDesign design : designs) {
       for(ShipDesign.LetterGroup group : design.groups()) {
         assertTrue(SITE_LETTERS.indexOf(Character.toUpperCase(group.letter())) >= 0,
-            "[" + design.name() + "] type=" + design.type() + " usa group=" + group.letter()
+            "[" + design.type() + "] usa group=" + group.letter()
                 + ", que no es una letra de sitio (válidas: " + SITE_LETTERS + ")");
       }
     }

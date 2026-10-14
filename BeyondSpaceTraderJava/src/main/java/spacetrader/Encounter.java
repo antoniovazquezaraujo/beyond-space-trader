@@ -20,8 +20,8 @@ import org.gts.bst.ship.equip.EquipmentType;
 import org.gts.bst.ship.equip.GadgetType;
 import org.gts.bst.ship.equip.ShieldType;
 import org.gts.bst.ship.equip.WeaponType;
-import org.gts.bst.view.DialogResult;
-import org.gts.bst.view.EncounterDialogHost;
+import org.gts.bst.ports.DialogResult;
+import org.gts.bst.ports.EncounterDialogHost;
 import spacetrader.enums.AlertType;
 import spacetrader.enums.SkillType;
 

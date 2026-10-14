@@ -9,3 +9,8 @@ cambia, se añade un ADR nuevo que la sustituye y se marca el viejo como
 - [0001 — Diseño de las naves: chasis, piezas y sitios](0001-diseno-de-naves.md)
 - [0002 — Las letras como datos: fuselajes, piezas y naves](0002-letras-como-datos.md)
 - [0003 — El encuentro como escena: el juego arbitra, la escena cuenta](0003-el-encuentro-como-escena.md)
+- [0004 — Descomposición de Game: fachada y componentes](0004-descomposicion-de-game.md)
+- [0005 — Los puertos del modelo: `org.gts.bst.ports`](0005-puertos-del-modelo.md)
+- [0006 — Efectos de sonido sintetizados: el puerto `SoundService`](0006-sonido-sintetizado.md)
+  *(sustituido por el 0007)*
+- [0007 — Audio por muestras: `sounds/`, mezclador y ambiente por pantalla](0007-audio-por-muestras.md)

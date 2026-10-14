@@ -8,6 +8,8 @@
  */
 package org.gts.bst.view;
 
+import org.gts.bst.ports.DialogResult;
+
 
 /**
  * One button of an alert: its text and the result it returns.

@@ -17,7 +17,7 @@ import java.util.Locale;
 import org.gts.bst.crew.CrewMemberId;
 import org.gts.bst.difficulty.Difficulty;
 import org.gts.bst.ship.ShipType;
-import org.gts.bst.view.DialogResult;
+import org.gts.bst.ports.DialogResult;
 import org.gts.bst.view.PersonnelInfo;
 import org.gts.bst.view.PersonnelView;
 import org.gts.bst.view.PersonnelViewModel;
@@ -103,6 +103,25 @@ class PersonnelPresenterTest {
     dialogs.setResult(DialogResult.Yes);
     assertTrue(presenter.hireFire());
     assertFalse(ship.HasCrew(merc.Id()));
+  }
+
+  @Test
+  void showsTheNewShipAfterATrade() {
+    Game game = newGame(new TestDialogService());
+    Ship ship = game.Commander().getShip();
+    FakeView view = new FakeView();
+    PersonnelPresenter presenter = new PersonnelPresenter(game, view);
+    presenter.update();
+    assertEquals(ship.Crew().length - 1, view.model.crewEntries().size(), "the Gnat has one quarter");
+
+    // The trade swaps the whole ship: the screen must read the new one, not the old.
+    Ship traded = new Ship(ShipType.Beetle);
+    game.Commander().setShip(traded);
+    presenter.update();
+
+    assertEquals(traded.Crew().length - 1, view.model.crewEntries().size(),
+        "the quarters of the Beetle: " + view.model.crewEntries());
+    assertEquals(2, view.model.crewEntries().size());
   }
 
   private static Game newGame(TestDialogService dialogs) {

@@ -9,8 +9,12 @@
 package org.gts.bst.view;
 
 
+import java.util.function.Supplier;
 import org.gts.bst.cargo.CargoBuyOffer;
 import org.gts.bst.cargo.CargoSellOffer;
+import org.gts.bst.ports.MusicTheme;
+import org.gts.bst.ports.SoundEffect;
+import org.gts.bst.ship.equip.WeaponType;
 
 
 /**
@@ -66,6 +70,27 @@ public interface EncounterView {
 
   /** The pirates looting the ship: the catwalk and the boxes if they take cargo. */
   default void looted(boolean cargo) {
+  }
+
+  /**
+   * The tension of the encounter, re-evaluated on every part: the view crossfades
+   * the music when it changes (see ADR 0007).
+   */
+  default void music(MusicTheme theme) {
+  }
+
+  /**
+   * The strongest weapon of each ship, so the scene can sound the shot with the
+   * right sample. The suppliers are read when a beam is born, not now.
+   */
+  default void weapons(Supplier<WeaponType> you, Supplier<WeaponType> opponent) {
+  }
+
+  /**
+   * A one-shot the encounter asks for outside the scene (the police arriving);
+   * the view forwards it to the sound service.
+   */
+  default void effect(SoundEffect effect) {
   }
 
 }
