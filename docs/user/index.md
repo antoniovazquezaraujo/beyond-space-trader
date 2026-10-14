@@ -1,9 +1,16 @@
 
 [🇪🇸 Leer en Español](index_es.md)
 
-<p align="center">
-  <img src="images/cover.png" alt="Beyond Space Trader" width="280">
-</p>
+<div style="display: flex; justify-content: center; width: 100%; overflow: hidden; margin-top: 20px; margin-bottom: 20px;">
+<pre style="font-size: 1.2em; line-height: 1.2; font-weight: bold; background: transparent; border: none; overflow: hidden; padding: 0; text-align: left;">
+ ___ ___ _____
+| _ ) __|_   _|
+| _ \__ \ | |
+|___/___/ |_|
+    Beyond
+ Space Trader
+</pre>
+</div>
 
 <p align="center">
   <a href="https://github.com/antoniovazquezaraujo/beyond-space-trader/releases/latest">

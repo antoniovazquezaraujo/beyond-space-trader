@@ -1,6 +1,11 @@
-<p align="center">
-  <img src="docs/user/images/cover.png" alt="Beyond Space Trader" width="240">
-</p>
+```
+ ___ ___ _____
+| _ ) __|_   _|
+| _ \__ \ | |
+|___/___/ |_|
+    Beyond
+ Space Trader
+```
 
 # Beyond Space Trader
 
