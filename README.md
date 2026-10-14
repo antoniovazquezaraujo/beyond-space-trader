@@ -1,11 +1,6 @@
-```
- ___ ___ _____
-| _ ) __|_   _|
-| _ \__ \ | |
-|___/___/ |_|
-    Beyond
- Space Trader
-```
+<p align="center">
+  <img src="docs/user/images/cover.png" alt="Beyond Space Trader (title screen)" width="100%">
+</p>
 
 # Beyond Space Trader
 
