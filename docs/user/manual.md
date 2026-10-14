@@ -189,6 +189,8 @@ font.
 
 ### 4.1 The chart and the target
 
+![The short-range chart, the target panel and the key line](images/star-chart.png)
+
 The chart is the axis of the game. Use the **arrow keys** (or `h`, `j`, `k`, `l`)
 to select the next system in that direction; `TAB` switches between the
 short-range chart (1:1, with names) and the galactic chart (the whole galaxy,
@@ -259,6 +261,8 @@ costs 2,000 credits; with one on board, losing a fight is not the end.
 ## 5. Trade, the ship and the panels
 
 ### 5.1 Trade (`C`)
+
+![The trade panel: the local market, your cargo and the target prices](images/trade.png)
 
 The trade panel shows, for every item, its **buy** and **sell** price in the
 current system, your cargo and your cash. When a system within range is selected
@@ -391,6 +395,8 @@ During a trip the game rolls for encounters: **pirates**, **police**, **traders*
 happens, the scene takes the whole screen: the two ships facing each other (yours
 on the left), the header with the live values of the fight, the log at the bottom
 and the available actions with their keys in the last row.
+
+![An encounter: the two ships, the log and the available actions](images/encounter.png)
 
 ### 6.1 Flying and shooting
 

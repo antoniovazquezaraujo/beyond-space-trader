@@ -197,6 +197,8 @@ para ajustarla a tu fuente.
 
 ### 4.1 El mapa y el objetivo
 
+![El mapa de corto alcance, el panel del objetivo y la línea de teclas](images/star-chart.png)
+
 El mapa es el eje del juego. Usa las **flechas** (o `h`, `j`, `k`, `l`) para
 seleccionar el siguiente sistema en esa dirección; `TAB` alterna entre el mapa de
 corto alcance (1:1, con nombres) y el mapa galáctico (toda la galaxia, con
@@ -272,6 +274,8 @@ final.
 ## 5. Comercio, la nave y los paneles
 
 ### 5.1 Comercio (`C`)
+
+![El panel de comercio: el mercado local, tu carga y los precios del objetivo](images/trade.png)
 
 El panel de comercio muestra, para cada artículo, su precio de **compra** y de
 **venta** en el sistema actual, tu carga y tu dinero. Cuando hay un sistema
@@ -407,6 +411,8 @@ encuentros de misión. Cuando ocurre uno, la escena ocupa toda la pantalla: las
 dos naves frente a frente (la tuya a la izquierda), la cabecera con los valores
 en vivo del combate, el registro abajo y las acciones disponibles con su tecla
 en la última fila.
+
+![Un encuentro: las dos naves, el registro y las acciones disponibles](images/encounter.png)
 
 ### 6.1 Volar y disparar
 

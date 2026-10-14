@@ -1,11 +1,6 @@
-```
- ___ ___ _____
-| _ ) __|_   _|
-| _ \__ \ | |
-|___/___/ |_|
-    Beyond
- Space Trader
-```
+<p align="center">
+  <img src="docs/user/images/cover.png" alt="Beyond Space Trader (title screen)" width="100%">
+</p>
 
 # Beyond Space Trader
 
@@ -24,6 +19,16 @@ terminal with a [Lanterna](https://github.com/mabe02/lanterna) UI and structured
 around Model-View-Presenter. Trade between star systems, upgrade your ship, take
 on quests, dodge pirates and police, and try to retire to your own moon in
 Utopia.
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="docs/user/images/star-chart.png" alt="The short-range chart, the target panel and the key line" width="100%">
+</p>
+<p align="center">
+  <img src="docs/user/images/trade.png" alt="The trade panel: the local market, your cargo and the target prices" width="49%">
+  <img src="docs/user/images/encounter.png" alt="An encounter with a pirate" width="49%">
+</p>
 
 ## 🎮 Download and play (no Java needed)
 
